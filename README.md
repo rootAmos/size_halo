@@ -34,6 +34,20 @@ and ActuatorDiskPropulsor. They return named results and expose limits; callers
 own explicit Opti equations. The example couples a series-hybrid power balance
 at one illustrative hover point, with a 20% battery contribution.
 
+## Verification notebooks
+
+Each tier has its own executed notebook (outputs kept so plots render remotely):
+
+| Tier | Notebook |
+|---|---|
+| 0 | [Foundation](notebooks/tier0_foundation/foundation_verification.ipynb): environment, layout, governance, skills, conventions |
+| 1 | [Powertrain components](notebooks/tier1_powertrain_components/powertrain_verification.ipynb): identities, limits, trends, symbolic use, coupled point |
+
+```powershell
+uv sync --group notebooks
+uv run jupyter lab notebooks
+```
+
 Read [architecture](docs/ARCHITECTURE.md), [interfaces](docs/MODEL_INTERFACES.md),
 [roadmap](docs/FIDELITY_ROADMAP.md), and [reference assumptions](docs/HALO_REFERENCE.md).
 All defaults are illustrative, not Archer specifications. Next: Tier 2 typed
