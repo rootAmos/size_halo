@@ -7,7 +7,7 @@ from aircraft_closure.powertrain.components.battery import Battery
 from aircraft_closure.powertrain.components.turboshaft import SimpleTurboshaft
 from aircraft_closure.powertrain.components.gearbox import Gearbox
 from aircraft_closure.powertrain.components.propulsor import ActuatorDiskPropulsor
-from examples.series_hybrid_point import solve_reference_point
+from examples.series_hybrid_point_explicit import solve_reference_point
 
 
 class SymbolicTests(unittest.TestCase):
