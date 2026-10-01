@@ -1,8 +1,9 @@
 # Halo-inspired aircraft closure
 
 AeroSandbox/CasADi framework for an unmanned hybrid-electric tiltrotor sizing
-and mission-performance project. Implements foundation and standalone
-powertrain Tiers 0–1, following the supplied bootstrap. Aircraft sizing and
+and mission-performance project. Implements foundation, standalone
+powertrain components and typed powertrain topology (Tiers 0–2), following the
+supplied bootstrap. Aircraft sizing and
 mission performance are planned subsequent tiers, not implemented yet.
 
 ## Environment and execution
@@ -17,6 +18,7 @@ The default dev group includes PyYAML for validating local skill files;
 uv sync
 uv run python -m unittest discover -s tests -v
 uv run python examples/series_hybrid_point.py
+uv run python examples/series_hybrid_point_explicit.py
 uv run python -m aircraft_closure.powertrain.components.propulsor
 ```
 
@@ -31,8 +33,11 @@ python -m venv .venv
 
 The six components are Motor, Generator, Battery, SimpleTurboshaft, Gearbox
 and ActuatorDiskPropulsor. They return named results and expose limits; callers
-own explicit Opti equations. The example couples a series-hybrid power balance
-at one illustrative hover point, with a 20% battery contribution.
+own explicit Opti equations. A Tier 2 `Topology` describes how components are
+wired (typed ports, an electrical bus, rotor multiplicity) and returns connection
+residuals the caller constrains; it never creates variables or solves. Both
+examples couple a series-hybrid point at one illustrative hover condition with a
+20% battery contribution: one by hand, one through the topology.
 
 ## Verification notebooks
 
@@ -42,6 +47,7 @@ Each tier has its own executed notebook (outputs kept so plots render remotely):
 |---|---|
 | 0 | [Foundation](notebooks/tier0_foundation/foundation_verification.ipynb): environment, layout, governance, skills, conventions |
 | 1 | [Powertrain components](notebooks/tier1_powertrain_components/powertrain_verification.ipynb): identities, limits, trends, symbolic use, coupled point |
+| 2 | [Powertrain topology](notebooks/tier2_powertrain_topology/topology_verification.ipynb): ports, wiring rules, residuals, Tier 1 reproduction, multiplicity |
 
 ```powershell
 uv sync --group notebooks
@@ -50,6 +56,6 @@ uv run jupyter lab notebooks
 
 Read [architecture](docs/ARCHITECTURE.md), [interfaces](docs/MODEL_INTERFACES.md),
 [roadmap](docs/FIDELITY_ROADMAP.md), and [reference assumptions](docs/HALO_REFERENCE.md).
-All defaults are illustrative, not Archer specifications. Next: Tier 2 typed
-ports and topology, then compatibility, vehicle/mass, aero, controls,
+All defaults are illustrative, not Archer specifications. Next: Tier 3 compatibility
+margins, then vehicle/mass, aero, controls,
 requirements, independently tested mission segments and coupled closure.

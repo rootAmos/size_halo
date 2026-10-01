@@ -50,11 +50,41 @@ the project does not change process-wide CasADi settings to silence it. Matplotl
 may try to cache fonts outside a sandbox; verification used MPLCONFIGDIR pointing
 to the ignored workspace `.mpl-cache` directory when needed.
 
+## Tier 2: typed ports and topology
+
+`core/` holds generic ports, `Topology`, electrical buses and
+`connection_residuals`; `powertrain/ports.py` declares component ports in a
+dispatch table so the Tier 1 component interface is unchanged;
+`powertrain/topologies.py` builds the series hybrid. The topology creates no
+Opti variables, constraints or solves: the caller supplies port values and
+applies the labelled residuals. `examples/series_hybrid_point.py` is the
+topology-coupled point; the Tier 1 hand-written coupling is kept as
+`examples/series_hybrid_point_explicit.py`.
+
+The topology example adds explicit coupling variables at the connections
+(turboshaft torque, rotor speed and torque, bus voltage) so shaft and bus
+residuals are active rather than trivially satisfied. With one rotor it matches
+the explicit Tier 1 result to better than 1e-6 relative (89.286 kW rotor shaft,
+18.653 kW battery, 0.005852 kg/s fuel). With four symmetric rotor strings on one
+bus, the battery is modeled as four reference packs in parallel (resistance / 4)
+so bus voltage and per-motor current match the single case; total motor
+current and battery power are exactly 4x, while fuel flow exceeds 4x because the
+single generator's quadratic torque loss is unscaled. This is an illustrative
+scaling choice, not a sizing rule.
+
+Limits: no splitters, combiners, multi-input gearboxes, inverters, thermal or
+fuel-tank ports; direct connections need equal counts; multiplicity is
+symmetric, so failed-propulsor cases cannot yet be represented. Verification:
+58 unittest cases (28 new) and the Tier 2 notebook (71 checks).
+
+## Verification notebooks
+
+One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
+Tier 1 component physics and Tier 2 topology. Outputs are kept so plots render
+remotely.
+
 ## Next stage
 
-Create a separate Tier 2 plan for typed mechanical/electrical/fuel ports,
-connections, multiplicity and a series-hybrid assembly. Keep that graph limited
-to topology; expose cyclic voltage/current and shaft coupling through Opti.
-Then add compatibility margins before vehicle/mass, low-fidelity aero, controls,
-requirements and mission segments. The bootstrap explicitly defers complete
-aircraft sizing and mission closure beyond this first implementation.
+Create a Tier 3 plan for speed/torque/voltage/current/power compatibility
+margins built on the topology's port values, before vehicle/mass, low-fidelity
+aero, controls, requirements and mission segments.

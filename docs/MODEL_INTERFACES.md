@@ -40,3 +40,35 @@ Positive sizes, capacities, voltage, density, specific powers and efficiencies
 (0 < efficiency <= 1) are required. Operating domains are documented in the
 modules. Invalid physical data is not silently repaired. Max torque and max
 speed are independent bounds; caller also applies the rated-power bound.
+
+## Topology (Tier 2)
+
+`core/ports.py`: `Domain` (MECHANICAL, ELECTRICAL, FUEL), `Direction` (IN, OUT),
+`PortSpec(name, domain, direction)` and the port values
+`MechanicalPortValue(speed_rad_s, torque_Nm)`,
+`ElectricalPortValue(voltage_V, current_A)` and `FuelPortValue(fuel_flow_kg_s)`.
+Flow (torque, current, fuel flow) is positive in the port's nominal direction.
+
+`core/topology.py`: `Topology.add(name, component, ports, count=1)`,
+`add_bus(name)`, `connect(a, b)`, read-only `instances`, `buses`, `connections`.
+Direct connections join one OUT and one IN port of equal domain and count; each
+port connects once; electrical buses are the only junction. Wiring errors raise
+at `connect`. `connection_residuals(topology, port_values)` maps
+`"instance.port"` to port values and returns `Residual(label, value)` items:
+field differences for direct connections; for each bus, voltage equality to the
+first attached port and `sum(sign * count * current) = 0` (OUT +, IN -). It
+creates no variables or constraints. Unconnected ports are boundaries.
+
+| Component | Ports (direction) |
+|---|---|
+| Motor | electrical (IN), shaft (OUT) |
+| Generator | shaft (IN), electrical (OUT) |
+| Battery | electrical (OUT; positive current discharges) |
+| SimpleTurboshaft | fuel (IN), shaft (OUT) |
+| Gearbox | shaft_in (IN), shaft_out (OUT) |
+| ActuatorDiskPropulsor | shaft (IN) |
+
+Declarations live in `powertrain/ports.py` (`port_specs_for`), not on the
+component classes. `powertrain/topologies.py` provides
+`build_series_hybrid(..., count_rotors=n)`. Multiplicity is symmetric: n copies
+share one set of port values; asymmetric or failed instances are deferred.

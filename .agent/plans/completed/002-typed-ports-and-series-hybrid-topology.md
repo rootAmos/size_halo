@@ -1,6 +1,6 @@
 # Typed ports, connections and series-hybrid topology
 
-Status: ACTIVE — approved 2026-10-01 with the proposed options.
+Status: COMPLETED 2026-10-01 — approved with the proposed options; acceptance met.
 
 ## Goal and scope
 
@@ -152,6 +152,21 @@ notebook executes with all checks passing; docs updated.
 
 - 2026-10-01: Plan drafted after Tier 0-1 completion; user approved the
   proposed options and requested one verification notebook per tier.
+- Reference case 2 refinement: the per-rotor state only matches n = 1 if the
+  shared bus voltage does, so the 4-rotor case models the battery as four
+  reference packs in parallel (resistance / 4). Generator/turboshaft ratings
+  scale with n but their losses do not, so fuel flow is > 4x (tested as such).
+- The topology example adds coupling variables at connections (turboshaft
+  torque, rotor speed/torque, bus voltage) so residuals are genuinely active.
+- Tier 1 hand-coupled example kept as `series_hybrid_point_explicit.py`; Tier 1
+  test and notebook import it. `docs/ARCHITECTURE.md` intentionally unchanged
+  (it already describes this design and mirrors `context/ARCHITECTURE.md`).
+- Tier 0/1 combined notebook split into one notebook per tier.
+- Verification: 58 unittest cases pass (28 new); Tier 0 notebook 169/169,
+  Tier 1 71/71, Tier 2 71/71 checks. One rotor reproduces Tier 1 within 1e-6
+  relative; four rotors give exactly 4x total motor current and battery power
+  with unchanged per-rotor state; connection residuals < 1e-6.
+- Acceptance criteria satisfied. Next: Tier 3 compatibility-margin plan.
 
 ## Deferred
 
