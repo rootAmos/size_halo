@@ -55,4 +55,13 @@ topology, with cycles expressed as caller-owned Opti equalities.
 - Native actuator-disk helper divides by airspeed at hover. Use algebraically
   equivalent momentum equations; test agreement in positive forward flight.
 - Use standard-library unittest, avoiding an unnecessary test dependency.
-- Implementation and verification in progress.
+- Completed: six components, named results/limits, six manual examples,
+  engineering docs, six validated local skills and locked uv environment.
+- Verification: 30 unittest cases pass, including three actual Opti integration
+  solves; all manual examples and the coupled reference execute successfully.
+- Resolved environment: AeroSandbox 4.2.10, CasADi 3.8.1, Python 3.13.3.
+  NumPy compatibility FutureWarning is documented in implementation notes.
+- User requested staged commits with detailed comments and notes. Foundation,
+  components, and verification are recorded as separate commits.
+- Acceptance criteria satisfied. Recommended next work remains a new Tier 2
+  topology plan; later aircraft and mission tiers have not been implemented.
