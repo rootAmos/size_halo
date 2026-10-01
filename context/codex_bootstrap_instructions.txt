@@ -1,0 +1,846 @@
+AIRCRAFT CLOSURE FRAMEWORK — CODEX BOOTSTRAP INSTRUCTIONS
+=========================================================
+
+Purpose
+-------
+Set up a new Python repository for a lightweight multidisciplinary aircraft sizing and closure framework for unmanned hybrid-electric VTOL aircraft.
+
+The framework should use AeroSandbox and CasADi wherever practical instead of recreating functionality that AeroSandbox already provides.
+
+The long-term framework must support:
+- vehicle configuration, payload, mass buildup, and CG
+- configurable hybrid-electric powertrain architectures
+- propulsor models
+- low- to high-fidelity aerodynamics
+- structural mass estimation
+- empennage and control-surface sizing
+- aircraft sizing requirements
+- mission and trajectory analysis
+- hybridization / energy-management strategies
+- coupled aircraft optimization and closure
+
+Do NOT attempt to implement the entire framework at once.
+
+The repository must be developed incrementally using explicit implementation tiers. First establish the repository structure, governance, engineering conventions, tests, and simple standalone powertrain components.
+
+
+1. CORE DESIGN PHILOSOPHY
+-------------------------
+
+Combine:
+- OpenMDAO-like organization and explicit subsystem connectivity
+- AeroSandbox/CasADi symbolic flexibility
+- simple, readable Python
+- progressively replaceable model fidelity
+
+Do NOT recreate OpenMDAO.
+
+The framework may provide lightweight:
+- components
+- ports
+- connections
+- graphs
+- subsystem composition
+
+The framework must NOT create its own:
+- optimizer
+- nonlinear solver
+- linear solver
+- Jacobian infrastructure
+- design-variable manager
+- constraint manager
+- execution engine
+
+AeroSandbox Opti / CasADi owns optimization and coupled solves.
+
+Components build symbolic equations.
+
+Optimization variables, constraints, and objectives remain explicit at the aircraft-sizing or mission formulation level.
+
+Avoid hidden iterative convergence loops when a coupling can instead be expressed directly as an AeroSandbox/CasADi equality constraint.
+
+
+2. RELATIONSHIP WITH AEROSANDBOX
+--------------------------------
+
+This project is a separate repository that imports AeroSandbox as a dependency.
+
+Do not duplicate existing AeroSandbox capability without a concrete reason.
+
+Prefer AeroSandbox for:
+- symbolic mathematics
+- aerosandbox.numpy
+- Opti
+- Atmosphere
+- OperatingPoint
+- aircraft geometry where appropriate
+- existing aerodynamic models
+- trajectory / dynamics capability where appropriate
+
+This project primarily adds the missing aircraft-closure and hybrid-VTOL-specific architecture.
+
+Before implementing a new abstraction, inspect whether AeroSandbox already provides an appropriate implementation.
+
+
+3. REPOSITORY STRUCTURE
+-----------------------
+
+Create initially:
+
+aircraft-closure/
+    AGENTS.md
+    pyproject.toml
+
+    .agent/
+        PLANS.md
+        plans/
+            active/
+            completed/
+
+    .agents/
+        skills/
+            framework-development/
+                SKILL.md
+            powertrain-modeling/
+                SKILL.md
+            aircraft-aero/
+                SKILL.md
+            structural-mass-modeling/
+                SKILL.md
+            control-surface-sizing/
+                SKILL.md
+            mission-and-sizing/
+                SKILL.md
+
+    docs/
+        ARCHITECTURE.md
+        CODING_CONVENTIONS.md
+        MODEL_INTERFACES.md
+        OPTIMIZATION_PHILOSOPHY.md
+        FIDELITY_ROADMAP.md
+        TESTING_STRATEGY.md
+
+    src/
+        aircraft_closure/
+            __init__.py
+            core/
+                __init__.py
+            vehicle/
+                __init__.py
+            powertrain/
+                __init__.py
+                components/
+                    __init__.py
+            aero/
+                __init__.py
+            structures/
+                __init__.py
+            controls/
+                __init__.py
+            requirements/
+                __init__.py
+            energy_management/
+                __init__.py
+            sizing/
+                __init__.py
+
+    tests/
+        powertrain/
+        core/
+        integration/
+
+Do not create speculative folders simply because they might be useful someday.
+
+
+4. CODING CONVENTIONS
+---------------------
+
+Use SI units internally.
+
+Dimensional scalar variable names must include units wherever practical.
+
+Examples:
+mass_motor_kg
+mass_payload_kg
+power_motor_W
+power_rated_motor_W
+torque_motor_Nm
+speed_motor_rad_s
+voltage_bus_V
+current_battery_A
+area_wing_m2
+altitude_m
+velocity_m_s
+temperature_K
+energy_battery_J
+
+Dimensionless quantities do not require unit suffixes:
+efficiency
+soc
+mach
+cl
+cd
+cm
+advance_ratio
+hybridization_electric
+
+Avoid global ALL_CAPS constants at all costs.
+
+Do not create module-level collections of hidden engineering constants.
+
+Model assumptions should be:
+- constructor inputs
+- explicit local variables
+- configuration inputs
+- documented empirical correlations
+
+Prefer descriptive physical names over abbreviations unless the abbreviation is standard aerospace notation.
+
+Use consistent qualifiers:
+max_
+min_
+rated_
+req_
+delta_
+ref_
+
+Preserve symbolic compatibility:
+- use aerosandbox.numpy for math that may operate symbolically
+- avoid float() on symbolic values
+- avoid standard NumPy operations on symbolic values
+- avoid Python branching on symbolic expressions
+- avoid hidden iterative solvers
+
+
+5. OBJECT AND DATA ORGANIZATION
+-------------------------------
+
+Organize state around physical aircraft components and subsystems.
+
+Do NOT create giant cross-cutting buckets such as:
+- Geometry
+- Mass
+- Area
+- CG database
+
+Physical objects own their own properties.
+
+Examples:
+aircraft.wing.area_m2
+aircraft.wing.span_m
+aircraft.wing.mass_kg
+
+aircraft.payload.mass_kg
+aircraft.payload.cg_x_m
+
+motor.mass_kg
+motor.power_rated_W
+
+battery.mass_kg
+battery.energy_capacity_J
+
+Aircraft-level aggregation may later provide:
+aircraft.get_mass()
+aircraft.get_cg()
+
+Avoid endless nested dictionaries.
+
+Use explicit classes or dataclasses once an interface is stable.
+Use dictionaries only for genuinely dynamic collections.
+
+Prefer explicit data flow over hidden mutation. Discipline evaluations should usually return results rather than silently mutating vehicle objects.
+
+
+6. DISCIPLINE OWNERSHIP
+-----------------------
+
+Vehicle/configuration:
+- payload
+- component placement
+- aircraft geometry/configuration
+- CG buildup
+- systems
+- aircraft-level mass aggregation
+
+Powertrain:
+- turbine
+- generator
+- battery
+- inverter
+- motor
+- gearbox
+- buses
+- topology
+- hybrid-electric energy flow
+- connection to propulsors
+
+Aerodynamics:
+- initially only low-fidelity models not already conveniently available in AeroSandbox
+- later AeroSandbox-native models
+- later CFD/data-driven surrogate models
+
+Structures:
+- mass estimation only
+- do not evolve into FEM/stress analysis unless explicitly requested later
+- Raymer-style empirical mass equations are acceptable for V0
+
+Controls:
+- HTP sizing
+- VTP sizing
+- elevator sizing
+- rudder sizing
+- trim/control authority
+- static stability sizing
+- asymmetric-thrust / failed-propulsor yaw sizing
+- start with HTP + VTP
+- V-tail is later
+
+Requirements:
+- payload
+- climb
+- maximum speed
+- ceiling
+- hover
+- operating envelope
+- failed-propulsor requirements
+
+Energy management:
+- determines how available energy sources share required power
+
+
+7. POWERTRAIN COMPONENT INTERFACE
+---------------------------------
+
+Start with only:
+get_mass()
+get_limits(...)
+evaluate(...)
+
+Do not add validate() or summary() without a concrete need.
+
+Each component file should contain a small:
+if __name__ == "__main__":
+manual sanity example.
+
+Formal validation belongs in tests.
+
+
+8. POWERTRAIN FIDELITY
+----------------------
+
+If fidelity changes while the physical operating inputs remain substantially the same, use an interchangeable submodel.
+
+Example:
+Motor
+    SimpleMotorLossModel
+    AnalyticMotorLossModel
+    MotorMapLossModel
+
+The motor public operating interface is based on:
+speed_rad_s
+torque_Nm
+voltage_V
+
+Do not make constant efficiency a fundamental motor API input.
+
+Outputs may include:
+power_shaft_W
+power_electric_W
+current_A
+power_loss_W
+
+When fidelity changes the governing physics and required inputs materially, use a different model class.
+
+Examples:
+ActuatorDiskPropulsor
+AdvanceRatioPropulsor
+BEMPropulsor
+PropulsorDeck
+
+SimpleTurboshaft
+EngineDeckTurboshaft
+
+
+9. INITIAL PROPULSOR
+--------------------
+
+The V0 propulsor is actuator disk.
+
+Do not require RPM for actuator disk theory.
+
+Inputs should be based on:
+axial_velocity_m_s
+atmosphere
+shaft_power_W
+
+Geometry supplies disk area or diameter.
+
+Outputs should include:
+thrust_N
+shaft_power_W
+induced_velocity_m_s
+
+RPM appears only in later blade-resolved or map/deck models.
+
+
+10. FUTURE POWERTRAIN GRAPH
+---------------------------
+
+Do not implement the full graph in the first task.
+
+Document the intended design.
+
+Eventually support:
+powertrain.add(...)
+powertrain.connect(...)
+
+The graph must support:
+- components
+- typed physical ports
+- connections
+- multiplicity
+- buses
+- splitters
+- combiners
+- gearboxes
+- arbitrary series/parallel hybrid topology
+
+Initial physical port domains:
+Mechanical
+Electrical
+Fuel
+
+Mechanical connectivity should eventually carry:
+speed_rad_s
+torque_Nm
+
+Electrical connectivity should eventually carry:
+voltage_V
+current_A
+
+Power is derived where appropriate.
+
+The graph only describes topology and symbolic relationships.
+It does not own optimization or convergence.
+
+
+11. CYCLIC COUPLING
+-------------------
+
+The graph must eventually permit cycles.
+
+Example:
+battery voltage
+-> motor/inverter current
+-> bus current
+-> battery voltage
+
+Do not solve these cycles using hidden fixed-point iterations.
+
+Expose coupling variables to AeroSandbox/CasADi and enforce physical consistency using equality constraints.
+
+
+12. COMPATIBILITY CHECKS
+------------------------
+
+Future architecture-level compatibility checking is first-class.
+
+Check adjacent components for:
+- speed
+- torque
+- voltage
+- current
+- power
+
+Do not assume max_power = max_speed * max_torque unless simultaneously achievable.
+
+Eventually allow limits such as:
+max_torque(speed, voltage)
+
+Gearboxes transform upstream envelopes before downstream comparison.
+
+Compatibility reporting should identify:
+- margin
+- limiting component
+- incompatible connection
+
+Do not silently resize components.
+
+
+13. STRUCTURAL MASS
+-------------------
+
+Structures returns mass estimates only.
+
+Use empirical equations such as Raymer-style methods.
+
+Do not build a structural analysis framework.
+
+Powertrain mass initially uses simple specific power / energy relationships where appropriate.
+
+Examples:
+mass_motor_kg = power_rated_motor_W / specific_power_motor_W_kg
+
+mass_generator_kg = power_rated_generator_W / specific_power_generator_W_kg
+
+mass_battery_kg = energy_capacity_battery_J / specific_energy_battery_J_kg
+
+Battery sizing should eventually consider both energy and power limitations.
+
+
+14. AERODYNAMICS
+----------------
+
+Initial custom model:
+CL = CL0 + CL_alpha * alpha
+
+CD = CD0 + CD_induced
+
+CD_induced = CL^2 / (pi * e * AR)
+
+Leave explicit hooks for:
+- horizontal-tail contribution
+- vertical-tail contribution
+- control-surface increments
+- DATCOM-style parasite drag buildup
+- trim drag
+- propeller scrubbing/interference
+- propwash lift augmentation
+- local dynamic-pressure changes
+
+Do not duplicate higher-fidelity AeroSandbox models.
+
+Future model options:
+- Simple analytic
+- AeroSandbox-native
+- AeroSandbox airfoil/polar-driven
+- CFD-derived polar / lookup / surrogate
+
+Do not run CFD live in the sizing optimizer.
+High-fidelity external analysis should generate data or differentiable surrogates.
+
+
+15. CONTROLS
+------------
+
+V0:
+- HTP
+- VTP
+- elevator
+- rudder
+- longitudinal static stability
+- pitch trim/control authority
+- directional stability
+- failed-propulsor / asymmetric-thrust yaw control
+
+Plain-flap / DATCOM-style low-fidelity control-effectiveness methods are acceptable.
+
+Do not implement V-tail first.
+
+Later V-tail support should map required pitch/yaw authority into:
+- canted tail geometry
+- total area
+- ruddervator allocation
+- control mixing
+
+
+16. REQUIREMENTS VERSUS MISSION
+-------------------------------
+
+Requirements describe what the aircraft must be capable of.
+
+Mission describes what it flies.
+
+Examples of requirements:
+- payload
+- climb rate
+- max speed
+- service ceiling
+- operating altitude
+- hover condition
+- failed-propulsor capability
+- operating envelope
+
+Requirements become explicit sizing constraints.
+Do not bury them inside component physics.
+
+
+17. MISSION
+-----------
+
+Do not recreate flight physics that AeroSandbox already provides.
+
+AeroSandbox owns:
+- OperatingPoint
+- atmosphere
+- dynamics
+- aerodynamic forces
+- trajectory physics
+
+This project may add a thin mission/sizing layer to constrain AeroSandbox variables.
+
+Mission evolution:
+
+M0:
+single operating-point test
+
+M1:
+isolated segment test
+
+M2:
+prescribed multi-segment mission
+
+M3:
+semi-free mission
+
+M4:
+fully coupled AeroSandbox trajectory optimization
+
+Never jump directly to M4.
+
+Every segment must be testable independently before inclusion in a full mission.
+
+
+18. ENERGY MANAGEMENT
+---------------------
+
+Powertrain defines what energy sources exist.
+
+Energy management defines how they are used.
+
+Canonical optional metric:
+hybridization_electric = electric_power / total_required_power
+
+Future control modes:
+- prescribed electric fraction
+- prescribed thermal fraction
+- prescribed electric power
+- prescribed thermal power
+- optimized electric fraction
+- optimized electric/thermal power
+
+If electric power is prescribed:
+thermal source fills the gap.
+
+If thermal power is prescribed:
+electric source fills the gap.
+
+Strategies may vary by mission phase.
+
+
+19. TESTING
+-----------
+
+Testing starts immediately.
+
+Analytic models:
+- closed-form identities
+- limiting cases
+- physical trend tests
+- sign conventions
+- symbolic AeroSandbox/CasADi compatibility
+
+Map/deck models:
+- grid-node recovery
+- interpolation accuracy
+- boundary behavior
+- explicit out-of-domain policy
+- known reference operating points
+
+Examples:
+
+Motor:
+- power_shaft_W = speed_rad_s * torque_Nm
+- losses >= 0
+- increased torque at fixed speed increases power demand
+- zero-loss model gives electrical power = shaft power
+
+Gearbox:
+- correct speed transformation
+- correct torque transformation
+- correct efficiency relation
+- ratio=1 and efficiency=1 behaves like a transparent shaft
+
+Battery:
+- energy/SOC bookkeeping
+- charge/discharge sign convention
+- constant-power reference case
+
+Actuator disk:
+- compare to ideal momentum theory
+- larger disk area lowers induced power at fixed thrust
+- zero power gives zero thrust
+- density trends are physical
+
+Turboshaft:
+- analytic fuel-flow identity
+- fuel flow increases with output power
+- fuel flow decreases with improved efficiency
+
+Every reusable component should have at least one symbolic compatibility test using AeroSandbox Opti variables.
+
+
+20. IMPLEMENTATION TIERS
+------------------------
+
+Tier 0 — Foundation
+- repo structure
+- coding conventions
+- docs
+- tests
+- AeroSandbox dependency
+- first interfaces
+
+Tier 1 — Standalone simple powertrain
+- Motor
+- Generator
+- Battery
+- Turboshaft
+- Gearbox
+- ActuatorDiskPropulsor
+
+Tier 2 — Powertrain topology graph
+- ports
+- connections
+- graph
+- multiplicity
+- buses
+- arbitrary architecture
+
+Tier 3 — Compatibility
+- torque/speed envelopes
+- voltage/current envelopes
+- power envelopes
+- gearbox transformations
+- reports
+
+Tier 4 — Vehicle and mass
+- payload
+- component geometry objects
+- CG
+- structural mass
+- powertrain mass
+- aircraft mass closure
+
+Tier 5 — Low-fidelity aero
+- CL
+- CD0
+- induced drag
+- control hooks
+- prop-interference hook
+
+Tier 6 — Controls
+- HTP
+- VTP
+- elevator
+- rudder
+- stability
+- asymmetric-thrust sizing
+
+Tier 7 — Requirements
+- climb
+- speed
+- ceiling
+- hover
+- operating envelope
+- payload
+
+Tier 8 — Mission
+- M0 operating point
+- M1 isolated segment
+- M2 prescribed mission
+- M3 semi-free
+- M4 optimized trajectory
+
+Tier 9 — Coupled aircraft closure
+- vehicle
+- aero
+- structures
+- controls
+- powertrain
+- requirements
+- mission
+- energy management
+
+Tier 10 — Higher fidelity
+- motor maps
+- battery cell maps
+- engine decks
+- BEM / propeller decks
+- CFD polars
+- aero surrogates
+- V-tail
+- advanced hybridization
+
+
+21. EXECPLANS
+-------------
+
+Create .agent/PLANS.md.
+
+Use an ExecPlan when work:
+- adds a framework tier
+- changes a public interface
+- spans several disciplines
+- changes graph architecture
+- changes aircraft-level optimization
+
+Each plan should include:
+- goal
+- scope
+- current tier
+- relevant architecture docs
+- physical assumptions
+- inputs
+- outputs
+- parameters
+- design variables
+- states
+- controls if applicable
+- equality constraints
+- inequality constraints
+- interfaces touched
+- symbolic/CasADi considerations
+- tests
+- reference cases
+- implementation sequence
+- acceptance criteria
+- explicitly deferred work
+
+
+22. IMMEDIATE TASK
+------------------
+
+For the first implementation task only:
+
+1. Create the repository structure.
+2. Write governance and architecture documentation.
+3. Create six concise Codex skills.
+4. Create:
+   .agent/plans/active/001-foundation-and-simple-powertrain.md
+5. Implement only:
+   - Motor
+   - Generator
+   - Battery
+   - Turboshaft
+   - Gearbox
+   - ActuatorDiskPropulsor
+6. Keep implementations intentionally simple.
+7. Add __main__ sanity examples.
+8. Add proper tests.
+9. Add symbolic compatibility tests.
+10. Do not implement the generic graph yet.
+11. Do not implement aircraft sizing, aero, controls, structures, requirements, or mission yet.
+12. Do not implement maps, decks, BEM, CFD integration, or V-tail.
+
+At completion report:
+- files created
+- architectural decisions
+- tests added
+- test status
+- assumptions that need future decisions
+- recommended Tier 2 plan
+
+Favor clarity over cleverness.
+Keep abstractions lightweight.
+Do not design APIs for hypothetical complexity unless required by the documented long-term architecture.
