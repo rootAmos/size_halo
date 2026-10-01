@@ -1,1 +1,41 @@
-"# size_halo" 
+# Halo-inspired aircraft closure
+
+AeroSandbox/CasADi framework for an unmanned hybrid-electric tiltrotor sizing
+and mission-performance project. Implements foundation and standalone
+powertrain Tiers 0–1, following the supplied bootstrap. Aircraft sizing and
+mission performance are planned subsequent tiers, not implemented yet.
+
+## Environment and execution
+
+With uv installed, `uv sync` creates `.venv` and installs the project and its
+dependencies from `pyproject.toml`. Python 3.13 is selected by `.python-version`.
+Use `uv sync --locked` to reproduce the checked-in lockfile.
+The default dev group includes PyYAML for validating local skill files;
+`uv sync --no-dev` installs only runtime dependencies.
+
+```powershell
+uv sync
+uv run python -m unittest discover -s tests -v
+uv run python examples/series_hybrid_point.py
+uv run python -m aircraft_closure.powertrain.components.propulsor
+```
+
+Alternatively, use standard Python tooling:
+
+```powershell
+python -m venv .venv
+.venv/Scripts/python -m pip install -e .
+.venv/Scripts/python -m unittest discover -s tests -v
+.venv/Scripts/python examples/series_hybrid_point.py
+```
+
+The six components are Motor, Generator, Battery, SimpleTurboshaft, Gearbox
+and ActuatorDiskPropulsor. They return named results and expose limits; callers
+own explicit Opti equations. The example couples a series-hybrid power balance
+at one illustrative hover point, with a 20% battery contribution.
+
+Read [architecture](docs/ARCHITECTURE.md), [interfaces](docs/MODEL_INTERFACES.md),
+[roadmap](docs/FIDELITY_ROADMAP.md), and [reference assumptions](docs/HALO_REFERENCE.md).
+All defaults are illustrative, not Archer specifications. Next: Tier 2 typed
+ports and topology, then compatibility, vehicle/mass, aero, controls,
+requirements, independently tested mission segments and coupled closure.

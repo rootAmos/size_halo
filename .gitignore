@@ -1,0 +1,10 @@
+context/*
+.venv/
+.idea/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.uv-cache/
+.mpl-cache/
