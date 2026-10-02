@@ -62,6 +62,9 @@ class SimpleAerodynamics:
     interference_tail: Any = 1.05
     interference_fuselage: Any = 1.0
     drag_area_misc_m2: Any = 0.25
+    # Fraction of hover rotor thrust lost to airframe download (wing under the
+    # rotor wake); XV-15: 0.07 with flaps deflected (NASA TM X-62407 sec. 5.1).
+    download_fraction_hover: Any = 0.0
 
     def _flow(self, velocity_m_s, altitude_m):
         atmosphere = asb.Atmosphere(altitude=altitude_m)

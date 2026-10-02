@@ -7,7 +7,8 @@ point is a caller-side coupling of several disciplines. Components remain
 equation-only. The powertrain must be the series-hybrid reference topology
 (instances turboshaft, generator, battery, motor, gearbox, propulsor).
 
-Hover: thrust per active rotor = (T/W) W / n_active at zero airspeed.
+Hover: thrust per active rotor = (T/W) W / ((1 - download) n_active) at zero
+airspeed; the download fraction belongs to the aerodynamics model.
 Airplane mode (tiltrotor cruise, rotors as propellers): wing lift = W cos(gamma),
 thrust = D + W sin(gamma), sin(gamma) = climb rate / V.
 """
@@ -77,7 +78,7 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     if condition.mode == "hover":
         alpha_deg, aero = None, None
         velocity_m_s = 0.0
-        thrust_total_N = condition.thrust_to_weight * weight_N
+        thrust_total_N = condition.thrust_to_weight * weight_N / (1 - aerodynamics.download_fraction_hover)
     else:
         velocity_m_s = condition.velocity_m_s
         alpha_deg = opti.variable(init_guess=4.0, lower_bound=-5.0, upper_bound=20.0)
@@ -110,7 +111,7 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     speed_generator_rad_s = generator_model.loss_model.speed_peak_efficiency_rad_s
     torque_generator_Nm = opti.variable(init_guess=500.0, scale=500.0, lower_bound=0.0)
     generator = generator_model.evaluate(speed_generator_rad_s, torque_generator_Nm, voltage_bus_V)
-    engine = turboshaft_model.evaluate(speed_generator_rad_s * torque_generator_Nm)
+    engine = turboshaft_model.evaluate(speed_generator_rad_s * torque_generator_Nm, atmosphere)
     power_scale_W = active_rotor_count * motor_model.power_rated_W
     opti.subject_to([
         (battery.power_electric_W - hybridization_electric * power_electric_motors_W) / power_scale_W == 0,
@@ -130,7 +131,7 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
         "propulsor.shaft": MechanicalPortValue(gear.speed_output_rad_s, gear.torque_output_Nm),
     }
     margins = tuple(type(m)(f"{condition.label}: {m.label}", m.value)
-                    for m in operating_margins(aircraft.powertrain.topology, port_values))
+                    for m in operating_margins(aircraft.powertrain.topology, port_values, atmosphere))
     return FlightPoint(condition=condition, weight_N=weight_N, alpha_deg=alpha_deg, aero=aero,
                        thrust_per_rotor_N=thrust_per_rotor_N, power_shaft_rotor_W=rotor.shaft_power_W,
                        speed_rotor_rad_s=speed_rotor_rad_s, speed_motor_rad_s=speed_motor_rad_s,

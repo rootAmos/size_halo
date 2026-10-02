@@ -239,6 +239,32 @@ an empty weight of 7,391 lb, 19 % light. Per-group calibration factors
 (actual / predicted) reproduce 13,000 lb exactly. Verification: 201 unittest
 cases (27 new) and the Tier 10 notebook's 15 checks.
 
+## Tier 10b: engine lapse, part power and hover power
+
+Fig. 6.2.2 of NASA TM X-62407 was digitized by pixel crossings:
+
+| Altitude (ft) | 0 | 4,000 | 8,000 | 12,000 | 16,000 | 20,000 |
+|---|---|---|---|---|---|---|
+| XV-15 rotor shaft power available per engine (shp) | 1,374 | 1,285 | 1,181 | 1,061 | 942 | 788 |
+
+A least-squares fit gives sigma^0.80, within 6 % to 20,000 ft. The real curve
+is flatter low down and steeper higher up, as for a flat-rated engine.
+
+The hover figure of merit was calibrated at sea level with the stated 7 %
+download, giving 0.67. Predicted OGE hover weights are then within 2 % up to
+10,000 ft and 3 % at 20,000 ft. The hover ceiling at 13,000 lb comes out at
+7,140 ft. The figure's take-off line gives about 7,800 ft, and SP-4517 gives
+8,650 ft at an unstated rating. The gap comes from the lapse under-prediction
+between 4,000 and 12,000 ft.
+
+The AeroSandbox / Geiss part-power knockdown matches the LTC1K-4K's sfc at its
+four ratings within 1 %, taking contingency as maximum power.
+
+Consequence for Tier 9: its hover power (FM 0.80, no download) was low by
+33 %. At the 13,000 ft Halo-class ceiling, 73 % of sea-level power remains.
+Verification: 217 unittest cases (16 new) and the Tier 10b notebook's
+10 checks.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
@@ -248,7 +274,8 @@ remotely.
 
 ## Next stage
 
-Plan 012 (Tier 10b): turboshaft altitude lapse, a mass-correlated turboshaft,
-and a hover and cruise power check against the XV-15. Then plan 013
-(Tier 10c): a two-rotor Halo-class series hybrid sized to XV-15-derived
-requirements with the Tier 10a calibration.
+Plan 013 (Tier 10c): a two-rotor Halo-class series hybrid sized to
+XV-15-derived requirements, with a 13,000 ft ceiling set by the user. It uses
+the Tier 10a weight calibration (adjusted for an unmanned aircraft) and the
+Tier 10b engine and hover models. Airplane-mode cruise power is still not
+validated.

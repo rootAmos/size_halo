@@ -74,6 +74,9 @@ class CoupledSizingResult:
     binding: tuple
     min_margin: float
     component_masses_kg: tuple
+    powertrain_masses_kg: tuple
+    torque_peak_motor_Nm: float
+    torque_peak_generator_Nm: float
 
 
 def solve_coupled_sizing(objective="mass_takeoff", requirements=RequirementSet(), mission=None,
@@ -186,10 +189,15 @@ def solve_coupled_sizing(objective="mass_takeoff", requirements=RequirementSet()
         closure_residual_kg=value(mass_takeoff_kg - total.mass),
         segments=tuple((r.segment.label, value(r.duration_s), value(r.mass_fuel_burnt_kg),
                         value(r.energy_battery_chemical_J), value(r.soc_end), value(r.point.hybridization_electric),
-                        value(r.point.power_shaft_rotor_W)) for r in flown.segments),
+                        value(r.point.power_shaft_rotor_W), value(r.point.speed_motor_rad_s),
+                        value(r.point.torque_motor_Nm)) for r in flown.segments),
         binding=tuple(e.label for e in report if abs(float(e.value)) < 1e-5),
         min_margin=float(report[0].value),
         component_masses_kg=tuple((f.name, value(getattr(breakdown, f.name).mass)) for f in fields(MassBreakdown)),
+        powertrain_masses_kg=tuple((item.instance_name, value(item.mass_properties.mass))
+                                   for item in aircraft.powertrain.get_instance_mass_properties()),
+        torque_peak_motor_Nm=value(sizing.torque_peak_motor_Nm),
+        torque_peak_generator_Nm=value(sizing.torque_peak_generator_Nm),
     )
 
 
@@ -202,5 +210,5 @@ if __name__ == "__main__":
               f"disk {r.area_disk_m2:.2f} m2, motor {r.power_rated_motor_W / 1e3:.1f} kW, turboshaft "
               f"{r.power_rated_turboshaft_W / 1e3:.1f} kW, cruise {r.velocity_cruise_m_s:.1f} m/s, L/D {r.lift_to_drag_cruise:.2f}")
         print("binding:", ", ".join(r.binding))
-        for label, duration, fuel, energy, soc, h_e, shaft in r.segments:
+        for label, duration, fuel, energy, soc, h_e, shaft, *_ in r.segments:
             print(f"  {label:<15}{duration:7.0f} s {fuel:6.2f} kg {energy / 3.6e6:6.2f} kWh SOC {soc:.3f} h_e {h_e:.2f}")

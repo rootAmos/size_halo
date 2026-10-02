@@ -77,8 +77,12 @@ def port_envelope(component, port_name):
     raise KeyError(f"No envelope for port '{port_name}' of {type(component).__name__}.")
 
 
-def operating_margins(topology, port_values):
-    """Per-instance margins from the port values used for connection residuals."""
+def operating_margins(topology, port_values, atmosphere=None):
+    """Per-instance margins from the port values used for connection residuals.
+
+    `atmosphere` is the operating point's; it sets turboshaft power available
+    (sea-level rating when None). Other limits do not depend on altitude here.
+    """
     margins = []
     for name, instance in topology.instances.items():
         component = instance.component
@@ -109,7 +113,7 @@ def operating_margins(topology, port_values):
         elif isinstance(component, SimpleTurboshaft):
             shaft = value("shaft")
             margins.append(margin_below(f"{name} power_shaft_W", shaft.speed_rad_s * shaft.torque_Nm,
-                                        component.power_rated_W))
+                                        component.power_available_W(atmosphere)))
         elif isinstance(component, Gearbox):
             shaft = value("shaft_in")
             margins.append(margin_below(f"{name} power_input_W", shaft.speed_rad_s * shaft.torque_Nm,

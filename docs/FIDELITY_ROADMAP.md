@@ -13,8 +13,8 @@
 | 8 | Operating point then isolated segment then prescribed mission | Implemented |
 | 9 | Coupled aircraft closure and energy allocation | Implemented |
 | 10a | AFDD tiltrotor weights, XV-15 group-weight validation and calibration | Implemented |
-| 10b | Turboshaft altitude lapse, correlated engine, XV-15 hover/cruise power check | Next |
-| 10c | Two-rotor Halo-class series hybrid sized to XV-15-derived requirements | Planned |
+| 10b | Turboshaft lapse and part-power submodels, hover download, XV-15 hover-power check | Implemented |
+| 10c | Two-rotor Halo-class series hybrid sized to XV-15-derived requirements (13,000 ft ceiling) | Next |
 | 11 | Maps, engine decks, BEM, surrogates, advanced missions | Planned |
 
 Keep simple implementations when higher fidelity is introduced. Use AeroSandbox

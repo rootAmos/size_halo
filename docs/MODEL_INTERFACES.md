@@ -276,3 +276,47 @@ interconnect is airframe mass, not a port connection.
 - `solve_xv15_closure`;
 - `mass_turboshaft_from_power_kg`, which inverts AeroSandbox's
   `power_turboshaft` with one explicit Opti equality.
+
+## Engine lapse, part power and hover download (Tier 10b)
+
+`SimpleTurboshaft` gains three submodels. Each default reproduces Tiers 1–9.
+
+| Field | Effect | Default |
+|---|---|---|
+| `lapse_exponent` | power available = rated x sigma^n | 0 |
+| `part_power_knockdown` | multiplies efficiency by AeroSandbox's Geiss knockdown, as a ratio | False |
+| `mass_kg` | explicit mass, overriding specific power | None |
+
+For the knockdown, throttle is shaft power over power available.
+
+New methods:
+
+- `power_available_W(atmosphere=None)`;
+- `get_limits(atmosphere=None)`;
+- `thermal_efficiency_at(shaft_power_W, atmosphere=None)`;
+- `evaluate(shaft_power_W, atmosphere=None)`.
+
+None means sea level.
+
+`operating_margins(topology, port_values, atmosphere=None)` checks the
+turboshaft against power available at the point. Design margins stay on
+sea-level ratings. `build_flight_point` passes the point's atmosphere.
+
+`SimpleAerodynamics.download_fraction_hover` (default 0) sets hover thrust to
+T/W x W / (1 - f).
+
+`examples/xv15_performance.py` provides:
+
+- `Xv15PowerData`: digitized TM X-62407 figs. 6.2.2 and 5.1.1 and the sec. 6.2
+  sfc ratings;
+- `fit_lapse_exponent`;
+- `calibrate_figure_of_merit`;
+- `hover_mass_kg` and `hover_ceiling_m`, each one explicit Opti equality;
+- `part_power_sfc_ratios`;
+- `tier9_hover_power_ratio`.
+
+`CoupledSizingResult` also reports:
+
+- `powertrain_masses_kg` per instance;
+- the motor and generator peak torques;
+- per-segment motor speed and torque, appended to each segment tuple.

@@ -210,3 +210,56 @@ class BatterySmoothingTests(unittest.TestCase):
             smooth = Battery(max_discharge_power_W=power_W, mass_smoothing_kg=2.0).get_mass()
             self.assertGreaterEqual(float(smooth), float(exact) - 1e-12)
             self.assertLessEqual(float(smooth), float(exact) + 2.0 * np.log(2) + 1e-12)
+
+
+class TurboshaftSubmodelTests(unittest.TestCase):
+    def test_defaults_are_the_tier1_engine(self):
+        engine = SimpleTurboshaft()
+        high = asb.Atmosphere(altitude=4000)
+        self.assertEqual(engine.power_available_W(high), engine.power_rated_W)
+        self.assertEqual(engine.evaluate(1e5, high).fuel_flow_kg_s, engine.evaluate(1e5).fuel_flow_kg_s)
+
+    def test_lapse_is_density_ratio_power(self):
+        engine = SimpleTurboshaft(power_rated_W=1e6, lapse_exponent=0.8)
+        atmosphere = asb.Atmosphere(altitude=4000)
+        sigma = atmosphere.density() / asb.Atmosphere(altitude=0).density()
+        self.assertAlmostEqual(float(engine.power_available_W(atmosphere)), 1e6 * float(sigma)**0.8, places=6)
+        self.assertAlmostEqual(float(engine.power_available_W(asb.Atmosphere(altitude=0))), 1e6, places=6)
+        self.assertEqual(engine.power_available_W(), 1e6)
+        self.assertLess(float(engine.get_limits(asb.Atmosphere(altitude=6000)).power_rated_W),
+                        float(engine.get_limits(atmosphere).power_rated_W))
+
+    def test_knockdown_is_aerosandbox_ratio(self):
+        from aerosandbox.library.power_turboshaft import thermal_efficiency_turboshaft
+        engine = SimpleTurboshaft(power_rated_W=1e6, part_power_knockdown=True)
+        for throttle in (0.3, 0.7, 1.0):
+            expected = (thermal_efficiency_turboshaft(250.0, throttle_setting=throttle)
+                        / thermal_efficiency_turboshaft(250.0, throttle_setting=1.0))
+            self.assertAlmostEqual(float(engine.thermal_efficiency_at(throttle * 1e6) / engine.thermal_efficiency),
+                                   float(expected), places=12)
+        self.assertAlmostEqual(float(engine.thermal_efficiency_at(1e6)), engine.thermal_efficiency, places=12)
+
+    def test_part_power_costs_fuel_per_watt(self):
+        engine = SimpleTurboshaft(power_rated_W=1e6, part_power_knockdown=True)
+        specific = lambda power_W: float(engine.evaluate(power_W).fuel_flow_kg_s) / power_W
+        self.assertGreater(specific(4e5), specific(8e5))
+
+    def test_throttle_uses_power_available_at_altitude(self):
+        engine = SimpleTurboshaft(power_rated_W=1e6, lapse_exponent=1.0, part_power_knockdown=True)
+        high = asb.Atmosphere(altitude=4000)
+        self.assertAlmostEqual(float(engine.thermal_efficiency_at(engine.power_available_W(high), high)),
+                               engine.thermal_efficiency, places=12)
+
+    def test_explicit_mass_overrides_specific_power(self):
+        self.assertEqual(SimpleTurboshaft(mass_kg=250.0).get_mass(), 250.0)
+
+    def test_symbolic_altitude_and_power(self):
+        opti = asb.Opti()
+        altitude_m = opti.variable(init_guess=1000.0)
+        power_W = opti.variable(init_guess=5e5)
+        engine = SimpleTurboshaft(power_rated_W=1e6, lapse_exponent=0.8, part_power_knockdown=True)
+        fuel = engine.evaluate(power_W, asb.Atmosphere(altitude=altitude_m)).fuel_flow_kg_s
+        opti.subject_to([altitude_m == 3000.0, power_W == 5e5])
+        solution = opti.solve(verbose=False)
+        self.assertAlmostEqual(float(solution.value(fuel)),
+                               float(engine.evaluate(5e5, asb.Atmosphere(altitude=3000.0)).fuel_flow_kg_s), places=10)

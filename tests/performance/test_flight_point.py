@@ -49,6 +49,15 @@ class FlightPointTests(unittest.TestCase):
         self.assertAlmostEqual(float(s.value(point.speed_motor_rad_s * point.torque_motor_Nm)),
                                float(expected) / 0.97, places=3)
 
+    def test_hover_download_raises_rotor_thrust(self):
+        condition = FlightCondition(mode="hover", altitude_m=0.0, thrust_to_weight=1.0, label="hover")
+        opti = asb.Opti()
+        point = build_flight_point(opti, aircraft, SimpleAerodynamics(download_fraction_hover=0.07), condition, mass_kg)
+        opti.minimize(point.fuel_flow_kg_s * 100)
+        s = opti.solve(verbose=False)
+        self.assertAlmostEqual(float(s.value(4 * point.thrust_per_rotor_N)),
+                               mass_kg * acceleration_gravity_m_s2 / 0.93, places=6)
+
     def test_airplane_force_balance(self):
         condition = FlightCondition(velocity_m_s=50.0, altitude_m=1000.0, climb_rate_m_s=5.0, label="climb")
         point, s = solve_point(condition)

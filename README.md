@@ -3,11 +3,12 @@
 AeroSandbox/CasADi framework for sizing an unmanned series-hybrid-electric
 tiltrotor together with its mission. Every discipline contributes equations to
 one `asb.Opti` problem; there are no hidden convergence loops or second
-solvers. Tiers 0–9 and 10a of the [fidelity roadmap](docs/FIDELITY_ROADMAP.md)
+solvers. Tiers 0–9, 10a and 10b of the [fidelity roadmap](docs/FIDELITY_ROADMAP.md)
 are implemented. Tier 9 is a coupled problem that sizes the aircraft,
 optimizes its mission and allocates battery versus turbogenerator energy per
-segment. Tier 10a checks the mass models against the Bell XV-15, the published
-twin tiltrotor now used as the Halo-class reference.
+segment. Tiers 10a and 10b check the mass models and the engine and hover models against
+the Bell XV-15, the published twin tiltrotor now used as the Halo-class
+reference.
 
 All numbers are illustrative engineering inputs, not Archer or Halo data
 (see [reference assumptions](docs/HALO_REFERENCE.md)).
@@ -40,6 +41,7 @@ from the repository root.
 ```powershell
 uv sync
 uv run python -m unittest discover -s tests
+uv run python -m examples.xv15_performance        # Tier 10b: XV-15 lapse, hover and sfc checks
 uv run python -m examples.xv15_reference          # Tier 10a: XV-15 group-weight validation
 uv run python -m examples.coupled_sizing          # Tier 9: sizing + mission + energy allocation
 uv run python -m examples.mission_analysis        # Tier 8: prescribed and semi-free missions
@@ -68,6 +70,7 @@ One executed notebook per tier (outputs kept so plots render on GitHub):
 | 8 | [Missions](notebooks/tier8_missions/mission_verification.ipynb): segments, prescribed and semi-free missions |
 | 9 | [Coupled sizing](notebooks/tier9_coupled_sizing/coupled_sizing_verification.ipynb): simultaneous sizing, mission optimization and energy allocation |
 | 10a | [XV-15 mass validation](notebooks/tier10_xv15_reference/xv15_mass_validation.ipynb): AFDD weights, group-by-group comparison, calibration |
+| 10b | [XV-15 power validation](notebooks/tier10_xv15_reference/xv15_power_validation.ipynb): engine lapse, hover figure of merit and download, part-power sfc |
 
 ```powershell
 uv sync --group notebooks
@@ -76,9 +79,10 @@ uv run jupyter lab notebooks
 
 ## Status and next step
 
-Tier 10b is next: turboshaft altitude lapse and a hover and cruise power
-check against the XV-15. Tier 10c follows: a two-rotor Halo-class aircraft
-sized to XV-15-derived requirements.
+Tier 10c is next: a two-rotor Halo-class aircraft sized to XV-15-derived
+requirements with a 13,000 ft ceiling. Tier 10b showed that Tier 9's hover
+power was 33 % optimistic and that engine power falls to 73 % of sea level
+at 13,000 ft.
 
 At XV-15 scale, the uncalibrated mass models close 13 % light. The Raymer GA
 wing, fuselage and flight-control equations are the weak groups; the AFDD

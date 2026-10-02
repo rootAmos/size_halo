@@ -79,6 +79,16 @@ class OperatingMarginTests(unittest.TestCase):
         self.assertAlmostEqual(margins["propulsor power_shaft_W"], (100000 - 77600) / 100000)
         self.assertAlmostEqual(margins["battery discharge_power_W"], (100000 - 16000) / 100000)
 
+    def test_turboshaft_margin_uses_power_available_at_altitude(self):
+        engine = SimpleTurboshaft(lapse_exponent=1.0)
+        atmosphere = asb.Atmosphere(altitude=3000)
+        sigma = float(atmosphere.density() / asb.Atmosphere(altitude=0).density())
+        topology = build_series_hybrid(Motor(), Generator(), Battery(), engine, Gearbox(), ActuatorDiskPropulsor())
+        sea_level = {m.label: m.value for m in operating_margins(topology, reference_port_values())}
+        high = {m.label: m.value for m in operating_margins(topology, reference_port_values(), atmosphere)}
+        self.assertAlmostEqual(sea_level["turboshaft power_shaft_W"], (150000 - 100000) / 150000)
+        self.assertAlmostEqual(float(high["turboshaft power_shaft_W"]), (150000 * sigma - 100000) / (150000 * sigma))
+
     def test_battery_charge_sign(self):
         margins = {m.label: m.value for m in operating_margins(
             series_hybrid(), reference_port_values(current_battery_A=-75))}
