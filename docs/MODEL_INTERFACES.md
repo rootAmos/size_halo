@@ -13,8 +13,14 @@ Models build equations and do not enforce limits, clip outputs or resize parts.
 | Gearbox | speed_input_rad_s, torque_input_Nm | shaft input |
 | ActuatorDiskPropulsor | axial_velocity_m_s, atmosphere, thrust_N OR shaft_power_W and induced_velocity_m_s | shaft input |
 
-Motor/generator loss coefficients are nonnegative; the default quadratic model
-is an illustrative loss proxy, not a calibrated electromagnetic model. Voltage
+Motor/generator default losses follow McDonald, AIAA 2015-1676 (plan 005):
+P_L = C0 + C1 w + C2 w^3 + C3 Q^2 with coefficients from the peak-efficiency
+speed, torque and value and the parasite loss ratio k0 in [0, 1]
+(`McDonaldMotorLossModel`; defaults 400 rad/s, 200 Nm, 0.96, 0.5).
+`rubber_machine(...)` builds a machine whose ratings follow the paper's
+ratios (Q_rated = kQ Q_hat, P_rated = kP w_hat Q_hat, w_limit = kw w_hat).
+C0 is a constant loss present at standstill. The quadratic
+`SimpleMotorLossModel` remains available. Neither is calibrated to hardware. Voltage
 affects current only at this tier. Loss fidelity is interchangeable. Generator
 operation requires shaft power >= losses. Neither machine models regeneration
 or bidirectional operation.

@@ -5,7 +5,7 @@ applies the generated connection residuals and constrains the Tier 3 operating
 margins to be non-negative in place of a hand-written rating list. With one rotor it reproduces `series_hybrid_point_explicit.py`.
 Illustrative, not an aircraft sizing or mission model.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 import aerosandbox as asb
@@ -44,8 +44,9 @@ def build_reference_topology(count_rotors=1, motor=None):
 
     The battery is n reference packs in parallel (capacity and power x n,
     resistance / n) so bus voltage, and therefore per-motor current, is the same
-    for every n. Generator and turboshaft ratings scale with n; their loss and
-    efficiency parameters do not, so fuel flow is not exactly n times larger.
+    for every n. The generator is a rubber machine scaled by n (ratings and
+    peak-efficiency torque), so its losses and the fuel flow scale with n; the
+    turboshaft rating scales with n at constant efficiency.
     """
     reference_battery = Battery()
     reference_generator = Generator()
@@ -53,8 +54,13 @@ def build_reference_topology(count_rotors=1, motor=None):
                       resistance_ohm=reference_battery.resistance_ohm / count_rotors,
                       max_discharge_power_W=reference_battery.max_discharge_power_W * count_rotors,
                       max_charge_power_W=reference_battery.max_charge_power_W * count_rotors)
+    # Rubber scaling (McDonald): the peak-efficiency torque scales with the
+    # rating, so generator losses scale exactly with n at fixed speed.
+    reference_losses = reference_generator.loss_model
     generator = Generator(power_rated_W=reference_generator.power_rated_W * count_rotors,
-                          max_torque_Nm=reference_generator.max_torque_Nm * count_rotors)
+                          max_torque_Nm=reference_generator.max_torque_Nm * count_rotors,
+                          loss_model=replace(reference_losses, torque_peak_efficiency_Nm=(
+                              reference_losses.torque_peak_efficiency_Nm * count_rotors)))
     turboshaft = SimpleTurboshaft(power_rated_W=SimpleTurboshaft().power_rated_W * count_rotors)
     return build_series_hybrid(motor or Motor(), generator, battery, turboshaft, Gearbox(),
                                ActuatorDiskPropulsor(), count_rotors=count_rotors)

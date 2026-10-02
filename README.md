@@ -52,7 +52,7 @@ Each tier has its own executed notebook (outputs kept so plots render remotely):
 | Tier | Notebook |
 |---|---|
 | 0 | [Foundation](notebooks/tier0_foundation/foundation_verification.ipynb): environment, layout, governance, skills, conventions |
-| 1 | [Powertrain components](notebooks/tier1_powertrain_components/powertrain_verification.ipynb): identities, limits, trends, symbolic use, coupled point |
+| 1 | [Powertrain components](notebooks/tier1_powertrain_components/powertrain_verification.ipynb): identities, limits, trends, symbolic use, coupled point; [McDonald machine losses](notebooks/tier1_powertrain_components/motor_loss_model_verification.ipynb) |
 | 2 | [Powertrain topology](notebooks/tier2_powertrain_topology/topology_verification.ipynb): ports, wiring rules, residuals, Tier 1 reproduction, multiplicity |
 | 3 | [Compatibility margins](notebooks/tier3_compatibility_margins/compatibility_verification.ipynb): envelopes, operating and design margins, binding limits, rating sizing |
 | 4 | [Vehicle mass closure](notebooks/tier4_vehicle_mass_closure/mass_closure_verification.ipynb): geometry, Raymer masses, CG, one-solve closure, payload growth |

@@ -112,6 +112,19 @@ root (`python -m examples.aircraft_mass_closure`) because it imports the
 topology example. Verification: 102 unittest cases (25 new) and the Tier 4
 notebook (62 checks).
 
+## Plan 005: McDonald electric-machine losses
+
+Motor and generator default losses now follow McDonald, "Modeling of Electric
+Motor Driven Propellers for Conceptual Aircraft Design", AIAA 2015-1676, eqs.
+1-4, through the unchanged machine interface. Defaults place the peak (0.96) at
+the reference hover operating point. Rotor shaft power, margins and masses are
+unchanged; the reference point now needs 19.184 kW battery power and
+0.006207 kg/s fuel (Tier 1-2 sections above record the earlier simple-model
+values, 18.653 kW and 0.005852 kg/s). The reference generator is rubber-scaled
+with rotor count, so four-rotor fuel flow is exactly 4x. The paper's Figure 1
+instance is reproduced in `notebooks/tier1_powertrain_components/
+motor_loss_model_verification.ipynb` (32 checks); 112 unittest cases pass.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
