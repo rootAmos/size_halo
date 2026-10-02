@@ -25,7 +25,10 @@ class MachineTests(unittest.TestCase):
                 self.assertEqual(result.power_electric_W, result.power_shaft_W)
 
     def test_zero_and_increasing_demand(self):
-        self.assertEqual(Motor().evaluate(0, 0, 800).power_electric_W, 0)
+        # The simple model has no standstill loss; McDonald's C0 is a constant loss.
+        self.assertEqual(Motor(loss_model=SimpleMotorLossModel()).evaluate(0, 0, 800).power_electric_W, 0)
+        self.assertAlmostEqual(Motor().evaluate(0, 0, 800).power_electric_W,
+                               Motor().loss_model.coefficients().constant_W)
         self.assertGreater(Motor().evaluate(400, 200, 800).power_electric_W,
                            Motor().evaluate(400, 100, 800).power_electric_W)
 
@@ -34,7 +37,9 @@ class MachineTests(unittest.TestCase):
         self.assertEqual(result.power_shaft_W, result.power_electric_W + result.power_loss_W)
         self.assertGreater(result.current_A, 0)
         self.assertEqual(result.current_A * 800, result.power_electric_W)
-        self.assertEqual(Generator().evaluate(0, 0, 800).power_electric_W, 0)
+        self.assertEqual(Generator(loss_model=SimpleMotorLossModel()).evaluate(0, 0, 800).power_electric_W, 0)
+        self.assertAlmostEqual(Generator().evaluate(0, 0, 800).power_electric_W,
+                               -Generator().loss_model.coefficients().constant_W)
 
     def test_generator_output_trend(self):
         self.assertGreater(Generator().evaluate(400, 200, 800).power_electric_W,

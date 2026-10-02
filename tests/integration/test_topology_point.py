@@ -20,8 +20,9 @@ class TopologyPointTests(unittest.TestCase):
         for field in ("thrust_N", "shaft_power_W", "battery_power_W", "fuel_flow_kg_s"):
             self.assertRelative(getattr(self.single, field), getattr(self.explicit, field))
         self.assertRelative(self.single.shaft_power_W, 89285.745, rel=1e-5)
-        self.assertRelative(self.single.battery_power_W, 18653.249, rel=1e-5)
-        self.assertRelative(self.single.fuel_flow_kg_s, 0.0058516, rel=1e-4)
+        # McDonald default losses (plan 005): eta_hat 0.96 at 400 rad/s, 200 Nm.
+        self.assertRelative(self.single.battery_power_W, 19184.051, rel=1e-5)
+        self.assertRelative(self.single.fuel_flow_kg_s, 0.0062072, rel=1e-4)
 
     def test_connection_and_physics_residuals_vanish(self):
         for result in (self.single, self.quad):
@@ -37,9 +38,9 @@ class TopologyPointTests(unittest.TestCase):
         self.assertRelative(self.quad.voltage_bus_V, self.single.voltage_bus_V)
         self.assertRelative(self.quad.current_motors_total_A, 4 * self.single.current_motors_total_A)
         self.assertRelative(self.quad.battery_power_W, 4 * self.single.battery_power_W)
-        # One generator carries 4x load with unscaled loss coefficients, so
-        # fuel flow rises by more than 4x.
-        self.assertGreater(self.quad.fuel_flow_kg_s, 4 * self.single.fuel_flow_kg_s)
+        # The shared generator is a rubber machine scaled by 4, so its losses
+        # and the fuel flow scale exactly.
+        self.assertRelative(self.quad.fuel_flow_kg_s, 4 * self.single.fuel_flow_kg_s)
 
     def test_operating_margins_replace_rating_list(self):
         self.assertGreater(self.single.min_operating_margin, 0)

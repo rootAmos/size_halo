@@ -1,7 +1,7 @@
 """Generating quadrant; positive shaft input and electrical output."""
 from dataclasses import dataclass, field
 from typing import Any
-from .motor import SimpleMotorLossModel, MotorLimits
+from .motor import McDonaldMotorLossModel, MotorLimits
 
 
 @dataclass(frozen=True)
@@ -20,7 +20,7 @@ class Generator:
     max_torque_Nm: Any = 500.0
     min_voltage_V: Any = 400.0
     max_voltage_V: Any = 900.0
-    loss_model: SimpleMotorLossModel = field(default_factory=SimpleMotorLossModel)
+    loss_model: Any = field(default_factory=McDonaldMotorLossModel)
 
     def get_mass(self):
         return self.power_rated_W / self.specific_power_W_kg

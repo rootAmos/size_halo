@@ -31,7 +31,8 @@ class SymbolicTests(unittest.TestCase):
                                                        thrust_N=thrust_N).shaft_power_W]
         self.assertTrue(all(isinstance(expression, cas.MX) for expression in expressions))
         solution = opti.solve(verbose=False)
-        expected = [80960, 79040, 0.9 - 80000 * 60 / 36000000,
+        expected = [Motor().evaluate(400, 200, 800).power_electric_W,
+                    Generator().evaluate(400, 200, 800).power_electric_W, 0.9 - 80000 * 60 / 36000000,
                     80000 / (0.3 * 43000000), 77600,
                     ActuatorDiskPropulsor().evaluate(0, asb.Atmosphere(altitude=0), thrust_N=5000).shaft_power_W]
         for expression, numeric in zip(expressions, expected):
