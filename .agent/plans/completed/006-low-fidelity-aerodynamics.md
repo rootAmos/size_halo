@@ -1,6 +1,6 @@
 # Low-fidelity aerodynamics
 
-Status: ACTIVE — user requested "go all the way" (Tiers 5-10) on 2026-10-01 and
+Status: COMPLETED 2026-10-01 — user requested "go all the way" (Tiers 5-10) on 2026-10-01 and
 delegated review; decisions are self-reviewed against AGENTS.md and the
 aircraft-aero skill.
 
@@ -96,6 +96,12 @@ Tier 5 notebook passes; earlier notebooks pass.
 - 2026-10-01: Plan written and self-reviewed. Raymer's wing form factor is
   written here (AeroSandbox has no standalone function for it); everything else
   reuses AeroSandbox.
+- Comparison with AeroBuildup is reported, not tuned: its slope includes tail
+  lift; its CD excludes the misc drag area.
+- The minimum-power CL exceeds CLmax for this polar; the notebook checks that
+  derived property instead of an interior minimum-power speed.
+- Results: CD0 0.038, e 0.76, (L/D)max 11.8; cruise closure L/D 11.1, MTOM
+  1552.9 kg. Verification: 126 tests; Tier 5 notebook 28/28.
 
 ## Deferred
 

@@ -3,7 +3,8 @@
 AeroSandbox/CasADi framework for an unmanned hybrid-electric tiltrotor sizing
 and mission-performance project. Implements foundation, standalone
 powertrain components and typed powertrain topology, compatibility margins and vehicle mass closure
-(Tiers 0–4), following the
+and low-fidelity aerodynamics
+(Tiers 0–5), following the
 supplied bootstrap. Aircraft sizing and
 mission performance are planned subsequent tiers, not implemented yet.
 
@@ -21,6 +22,7 @@ uv run python -m unittest discover -s tests -v
 uv run python examples/series_hybrid_point.py
 uv run python examples/series_hybrid_point_explicit.py
 uv run python -m examples.aircraft_mass_closure
+uv run python -m examples.cruise_closure
 uv run python -m aircraft_closure.powertrain.components.propulsor
 ```
 
@@ -41,7 +43,9 @@ residuals the caller constrains; it never creates variables or solves. Tier 3
 margins express ratings and adjacent-component compatibility as normalized
 quantities (>= 0 compatible) that callers constrain or report. Tier 4 vehicle
 components own geometry and empirical masses; the take-off mass closes through
-one explicit Opti equality, with the CG placed by solving for wing position. Both
+one explicit Opti equality, with the CG placed by solving for wing position. Tier 5
+adds linear lift, parasite buildup and induced drag, and a cruise equilibrium
+inside the closure. Both
 examples couple a series-hybrid point at one illustrative hover condition with a
 20% battery contribution: one by hand, one through the topology.
 
@@ -56,6 +60,7 @@ Each tier has its own executed notebook (outputs kept so plots render remotely):
 | 2 | [Powertrain topology](notebooks/tier2_powertrain_topology/topology_verification.ipynb): ports, wiring rules, residuals, Tier 1 reproduction, multiplicity |
 | 3 | [Compatibility margins](notebooks/tier3_compatibility_margins/compatibility_verification.ipynb): envelopes, operating and design margins, binding limits, rating sizing |
 | 4 | [Vehicle mass closure](notebooks/tier4_vehicle_mass_closure/mass_closure_verification.ipynb): geometry, Raymer masses, CG, one-solve closure, payload growth |
+| 5 | [Aerodynamics](notebooks/tier5_aerodynamics/aerodynamics_verification.ipynb): lift, parasite buildup, polar, AeroBuildup comparison, cruise closure |
 
 ```powershell
 uv sync --group notebooks
@@ -64,6 +69,6 @@ uv run jupyter lab notebooks
 
 Read [architecture](docs/ARCHITECTURE.md), [interfaces](docs/MODEL_INTERFACES.md),
 [roadmap](docs/FIDELITY_ROADMAP.md), and [reference assumptions](docs/HALO_REFERENCE.md).
-All defaults are illustrative, not Archer specifications. Next: Tier 5 low-fidelity
-aerodynamics, then vehicle/mass, aero, controls,
+All defaults are illustrative, not Archer specifications. Next: Tier 6 stability and
+control, then vehicle/mass, aero, controls,
 requirements, independently tested mission segments and coupled closure.
