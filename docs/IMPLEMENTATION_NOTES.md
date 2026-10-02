@@ -125,14 +125,29 @@ with rotor count, so four-rotor fuel flow is exactly 4x. The paper's Figure 1
 instance is reproduced in `notebooks/tier1_powertrain_components/
 motor_loss_model_verification.ipynb` (32 checks); 112 unittest cases pass.
 
+## Tier 5: low-fidelity aerodynamics
+
+`SimpleAerodynamics` reuses AeroSandbox skin friction, lift-slope ratio, Oswald
+factor and fuselage form factor; only Raymer's surface form factor is written
+here. On the reference aircraft at 60 m/s and 1000 m: CD0 0.038 (the 0.25 m2
+miscellaneous drag area for gear, nacelles and stowed rotors is 54 % of it),
+e 0.76, (L/D)max 11.8 at CL 0.91, stall 13.1 deg at CLmax 1.5.
+`examples/cruise_closure.py` solves mass closure, CG placement and lift =
+weight together; cruise L/D 11.1, drag power 82 kW, MTOM 1552.9 kg (within
+0.04 % of the assumed-L/D closure: the fuselage correlation is weakly coupled).
+With this polar the minimum-power CL (1.57) exceeds CLmax, so drag power rises
+monotonically from stall. AeroBuildup's slope is 20 % higher because it
+includes tail lift (Tier 6). Verification: 126 unittest cases (14 new), Tier 5
+notebook 28 checks.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
-Tier 1 component physics, Tier 2 topology, Tier 3 compatibility margins and Tier 4 mass closure. Outputs are kept so plots render
+Tier 1 component physics, Tier 2 topology, Tier 3 compatibility margins, Tier 4 mass closure and Tier 5
+aerodynamics. Outputs are kept so plots render
 remotely.
 
 ## Next stage
 
-Tier 5: low-fidelity aerodynamics (linear lift, parasite and induced drag)
-on the Tier 4 geometry, replacing the assumed cruise lift-to-drag, then
-controls, requirements and mission segments.
+Tier 6: conventional-tail stability, trim, directional stability and
+failed-propulsor yaw control, then requirements and mission segments.

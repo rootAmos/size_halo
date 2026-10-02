@@ -136,3 +136,23 @@ Mass closure is the caller's explicit equality `mass_takeoff_kg ==
 aircraft.get_mass(StructuralDesignCondition(mass_takeoff_kg))`; see
 `examples/aircraft_mass_closure.py`. No fixed-point iteration exists. Not
 modeled: fuel, inertia tensors, nacelle/tilt-mechanism structure.
+
+## Aerodynamics (Tier 5)
+
+`aerodynamics/simple.py` `SimpleAerodynamics(alpha_zero_lift_deg, cl_max,
+thickness_location_chordwise, interference_wing, interference_tail,
+interference_fuselage, drag_area_misc_m2)` reads geometry from the physical
+components (no vehicle import).
+
+- `evaluate(aircraft, velocity_m_s, altitude_m, alpha_deg, drag_increments=())`
+  returns `AeroResult` (cl, cd, cd0, cdi, cl_alpha_per_rad, oswald_efficiency,
+  dynamic_pressure_Pa, mach, lift_N, drag_N, lift_to_drag); reference area is
+  the wing planform area.
+- CL = 2 pi CL_over_Cl(AR, M) (alpha - alpha_0L) (AeroSandbox; DATCOM).
+- `parasite_drag_breakdown(...)`: Cf (AeroSandbox `Cf_flat_plate`) x form
+  factor (Raymer 12.30 for surfaces; AeroSandbox fuselage form factor) x
+  interference x S_wet / S_ref per component, plus CDA_misc / S_ref.
+- CDi = CL^2 / (pi e AR), e from AeroSandbox `oswalds_efficiency`.
+- `DragIncrement(label, cd)` is the additive extension hook.
+- `alpha_stall_deg(...)` gives the linear-lift angle at CLmax for callers to
+  bound alpha. Wing lift only; tails, trim and propeller effects are Tier 6+.

@@ -7,8 +7,8 @@
 | 2 | Typed ports, connections, multiplicity, series-hybrid topology | Implemented |
 | 3 | Speed/torque/voltage/current/power compatibility margins | Implemented |
 | 4 | Vehicle geometry, CG and empirical mass closure | Implemented |
-| 5 | Linear lift, parasite and induced drag, extension hooks | Next |
-| 6 | Conventional tails, trim, stability, asymmetric thrust | Deferred |
+| 5 | Linear lift, parasite and induced drag, extension hooks | Implemented |
+| 6 | Conventional tails, trim, stability, asymmetric thrust | Next |
 | 7 | Payload, hover, climb, speed, ceiling constraints | Deferred |
 | 8 | Operating point then isolated segment then prescribed mission | Deferred |
 | 9 | Coupled aircraft closure and energy allocation | Deferred |
