@@ -57,6 +57,7 @@ class SeriesHybridSizing:
     reduction_ratio: Any = 4.0
     mass_per_disk_area_kg_m2: Any = 3.0
     resistance_energy_product_ohm_J: Any = 1800000.0
+    battery_mass_smoothing_kg: Any = None
 
 
 def build_series_hybrid_from_sizing(sizing):
@@ -70,7 +71,8 @@ def build_series_hybrid_from_sizing(sizing):
     battery = Battery(energy_capacity_J=sizing.energy_capacity_battery_J,
                       resistance_ohm=sizing.resistance_energy_product_ohm_J / sizing.energy_capacity_battery_J,
                       max_discharge_power_W=sizing.power_max_discharge_battery_W,
-                      max_charge_power_W=0.5 * sizing.power_max_discharge_battery_W)
+                      max_charge_power_W=0.5 * sizing.power_max_discharge_battery_W,
+                      mass_smoothing_kg=sizing.battery_mass_smoothing_kg)
     turboshaft = SimpleTurboshaft(power_rated_W=sizing.power_rated_turboshaft_W)
     return build_series_hybrid(motor, generator, battery, turboshaft, gearbox, propulsor,
                                count_rotors=sizing.count_rotors)

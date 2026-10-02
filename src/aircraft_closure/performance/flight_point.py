@@ -83,20 +83,22 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
         alpha_deg = opti.variable(init_guess=4.0, lower_bound=-5.0, upper_bound=20.0)
         aero = aerodynamics.evaluate(aircraft, velocity_m_s, condition.altitude_m, alpha_deg, drag_increments)
         sin_gamma = condition.climb_rate_m_s / velocity_m_s
-        opti.subject_to([aero.lift_N == weight_N * np.sqrt(1 - sin_gamma**2),
+        # Equalities are normalized (lift by weight, powers by installed motor
+        # rating) so IPOPT sees O(1) residuals in large coupled problems.
+        opti.subject_to([aero.lift_N / weight_N == np.sqrt(1 - sin_gamma**2),
                          alpha_deg <= aerodynamics.alpha_stall_deg(aircraft, velocity_m_s, condition.altitude_m)])
         thrust_total_N = aero.drag_N + weight_N * sin_gamma
 
     thrust_per_rotor_N = thrust_total_N / active_rotor_count
     rotor = rotor_model.evaluate(velocity_m_s, atmosphere, thrust_N=thrust_per_rotor_N)
     speed_motor_limit_rad_s = motor_model.max_speed_rad_s
-    speed_rotor_rad_s = opti.variable(init_guess=100.0, lower_bound=10.0)
+    speed_rotor_rad_s = opti.variable(init_guess=100.0, scale=100.0, lower_bound=10.0)
     speed_motor_rad_s = gearbox_model.reduction_ratio * speed_rotor_rad_s
     # Gearbox loss is taken from torque, so input torque = P_out / (eta * omega_in).
     torque_motor_Nm = rotor.shaft_power_W / (gearbox_model.efficiency * speed_motor_rad_s)
     gear = gearbox_model.evaluate(speed_motor_rad_s, torque_motor_Nm)
 
-    current_battery_A = opti.variable(init_guess=50.0)
+    current_battery_A = opti.variable(init_guess=50.0, scale=100.0)
     battery = battery_model.evaluate(current_battery_A, condition.soc)
     voltage_bus_V = battery.voltage_V
     motor = motor_model.evaluate(speed_motor_rad_s, torque_motor_Nm, voltage_bus_V)
@@ -106,12 +108,13 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     if hybridization_electric is None:
         hybridization_electric = opti.variable(init_guess=0.3, lower_bound=0.0, upper_bound=1.0)
     speed_generator_rad_s = generator_model.loss_model.speed_peak_efficiency_rad_s
-    torque_generator_Nm = opti.variable(init_guess=500.0, lower_bound=0.0)
+    torque_generator_Nm = opti.variable(init_guess=500.0, scale=500.0, lower_bound=0.0)
     generator = generator_model.evaluate(speed_generator_rad_s, torque_generator_Nm, voltage_bus_V)
     engine = turboshaft_model.evaluate(speed_generator_rad_s * torque_generator_Nm)
+    power_scale_W = active_rotor_count * motor_model.power_rated_W
     opti.subject_to([
-        battery.power_electric_W == hybridization_electric * power_electric_motors_W,
-        generator.power_electric_W == (1 - hybridization_electric) * power_electric_motors_W,
+        (battery.power_electric_W - hybridization_electric * power_electric_motors_W) / power_scale_W == 0,
+        (generator.power_electric_W - (1 - hybridization_electric) * power_electric_motors_W) / power_scale_W == 0,
         speed_motor_rad_s <= speed_motor_limit_rad_s,
     ])
 

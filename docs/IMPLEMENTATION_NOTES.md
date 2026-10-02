@@ -180,11 +180,39 @@ cruise speed lies near 50-55 m/s. Fuel sits at the rotor station so hover
 trim holds through the mission. Verification: 166 unittest cases (11 new),
 Tier 8 notebook 50 checks.
 
+## Tier 9: coupled sizing, mission optimization and energy allocation
+
+One Opti sizes MTOM, fuel, wing position and area, tails, rubber motor and
+generator, turboshaft, battery power and energy and rotor disk area, while
+choosing cruise speed and every segment's electric power fraction, subject to
+mass closure, hover trim, the Tier 7 requirements, the Tier 8 mission (fuel
+reserve, SOC floor), an engine-out reserve (60 s battery-only hover from SOC
+0.30 to >= 0.10), static margin, Cn_beta, failed-rotor rudder and all
+operating margins.
+
+Minimum MTOM: 883.6 kg (empty 561 kg, fuel 22.7 kg, battery 13.5 kWh), wing
+5.05 m2, disk 4.6 m2, 46.8 kW motors, 175 kW turboshaft, cruise 45.3 m/s. Max
+speed sizes the turbogenerator, hover the motors, the engine-out reserve the
+battery, static margin and Cn_beta the tails; the optimizer spends the carried
+battery in loiter and landing down to the SOC floor. Minimum fuel: 2123 kg,
+1.3 kg fuel, 184 kWh battery (all-electric mission). Cruise 50/100/150 km gives
+MTOM 873/884/894 kg.
+
+Findings from making it converge: (1) raw-unit equalities (W, N) stalled IPOPT;
+normalizing flight-point equalities and scaling variables fixed conditioning.
+(2) The battery mass kink (energy- vs power-sized) sits at the optimum; an
+optional smooth maximum (<= 2 kg x ln 2 overestimate) resolves it. (3) On mass
+alone the battery never pays (0.9 MJ/kg versus 12.9 MJ/kg shaft energy from
+fuel at 30 %), so without a redundancy requirement min-MTOM deletes it; the
+engine-out reserve is the sizing reason, as in real series hybrids. Small
+min-MTOM wings follow from having no field-length or gust requirement.
+Verification: 174 unittest cases (8 new), Tier 9 notebook 26 checks.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
 Tier 1 component physics, Tier 2 topology, Tier 3 compatibility margins, Tier 4 mass closure, Tier 5
-aerodynamics, Tier 6 stability and control, Tier 7 requirements and Tier 8 missions. Outputs are kept so plots render
+aerodynamics, Tier 6 stability and control, Tier 7 requirements, Tier 8 missions and Tier 9 coupled sizing. Outputs are kept so plots render
 remotely.
 
 ## Next stage

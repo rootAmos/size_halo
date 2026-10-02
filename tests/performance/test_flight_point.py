@@ -61,8 +61,9 @@ class FlightPointTests(unittest.TestCase):
     def test_bus_split(self):
         point, s = solve_point(FlightCondition(velocity_m_s=60.0, label="cruise"), hybridization=0.3)
         demand_W = float(s.value(point.power_electric_motors_W))
-        self.assertAlmostEqual(float(s.value(point.power_battery_W)), 0.3 * demand_W, places=4)
-        self.assertAlmostEqual(float(s.value(point.generator.power_electric_W)), 0.7 * demand_W, places=4)
+        # Bus equalities are normalized by installed motor power, so compare relatively.
+        self.assertAlmostEqual(float(s.value(point.power_battery_W)) / demand_W, 0.3, places=7)
+        self.assertAlmostEqual(float(s.value(point.generator.power_electric_W)) / demand_W, 0.7, places=7)
         engine = aircraft.powertrain.topology.instances["turboshaft"].component
         self.assertAlmostEqual(float(s.value(point.fuel_flow_kg_s)),
                                float(s.value(engine.evaluate(point.generator.power_shaft_W).fuel_flow_kg_s)), places=12)

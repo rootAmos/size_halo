@@ -11,8 +11,8 @@
 | 6 | Conventional tails, trim, stability, asymmetric thrust | Implemented |
 | 7 | Payload, hover, climb, speed, ceiling constraints | Implemented |
 | 8 | Operating point then isolated segment then prescribed mission | Implemented |
-| 9 | Coupled aircraft closure and energy allocation | Next |
-| 10 | Maps, engine decks, BEM, surrogates, advanced missions | Deferred |
+| 9 | Coupled aircraft closure and energy allocation | Implemented |
+| 10 | Maps, engine decks, BEM, surrogates, advanced missions | Next |
 
 Keep simple implementations when higher fidelity is introduced. Use AeroSandbox
 geometry, aero, weights and dynamics wherever suitable. Do not jump to a full

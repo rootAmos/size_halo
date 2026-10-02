@@ -33,12 +33,18 @@ class Battery:
     max_charge_power_W: Any = 50000.0
     min_soc: float = 0.2
     max_soc: float = 0.95
+    mass_smoothing_kg: Any = None
 
     def get_mass(self):
         # Energy capacity alone can undersize a hover pack: both charge and
         # discharge ratings must be supported by the installed pack mass.
-        return np.maximum(self.energy_capacity_J / self.specific_energy_J_kg,
-                          np.maximum(self.max_discharge_power_W, self.max_charge_power_W) / self.specific_power_W_kg)
+        mass_energy_kg = self.energy_capacity_J / self.specific_energy_J_kg
+        mass_power_kg = np.maximum(self.max_discharge_power_W, self.max_charge_power_W) / self.specific_power_W_kg
+        if self.mass_smoothing_kg is None:
+            return np.maximum(mass_energy_kg, mass_power_kg)
+        # Optional smooth maximum for optimizers that size energy and power
+        # together; it overestimates the exact maximum by at most smoothing x ln 2.
+        return np.softmax(mass_energy_kg, mass_power_kg, softness=self.mass_smoothing_kg)
 
     def get_limits(self):
         return BatteryLimits(self.max_discharge_power_W, self.max_charge_power_W, self.min_soc, self.max_soc)

@@ -225,3 +225,14 @@ duration_s, margins)`; each `SegmentResult` holds its flight point, duration,
 start mass, fuel, chemical and terminal battery energy and SOC. Segments use
 their start mass; SOC falls by chemical energy / capacity; thrust >= 0 is
 enforced. No in-flight charging (h_e in [0, 1]).
+
+## Coupled sizing (Tier 9)
+
+`examples/coupled_sizing.py` `solve_coupled_sizing(objective="mass_takeoff" |
+"fuel", requirements, mission, aerodynamics)` is the readable aircraft-level
+formulation (deliberately an example script, not a library class): design and
+mission variables, all constraints and the objective are written out in one
+function. Supporting library changes: `Battery.mass_smoothing_kg` (optional
+softmax of energy- and power-sized mass; default exact maximum) and
+`SeriesHybridSizing.battery_mass_smoothing_kg`; flight-point equalities are
+normalized (lift by weight, bus powers by installed motor power).

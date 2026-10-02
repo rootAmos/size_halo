@@ -198,3 +198,15 @@ class RotorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BatterySmoothingTests(unittest.TestCase):
+    def test_default_is_exact_maximum(self):
+        self.assertEqual(Battery().get_mass(), max(36e6 / 9e5, 1e5 / 3000))
+
+    def test_smoothing_bounds(self):
+        for power_W in (5e4, 1.2e5, 3e5):
+            exact = Battery(max_discharge_power_W=power_W).get_mass()
+            smooth = Battery(max_discharge_power_W=power_W, mass_smoothing_kg=2.0).get_mass()
+            self.assertGreaterEqual(float(smooth), float(exact) - 1e-12)
+            self.assertLessEqual(float(smooth), float(exact) + 2.0 * np.log(2) + 1e-12)
