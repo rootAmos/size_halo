@@ -236,3 +236,43 @@ function. Supporting library changes: `Battery.mass_smoothing_kg` (optional
 softmax of energy- and power-sized mass; default exact maximum) and
 `SeriesHybridSizing.battery_mass_smoothing_kg`; flight-point equalities are
 normalized (lift by weight, bus powers by installed motor power).
+
+## Tiltrotor weights and XV-15 reference (Tier 10a)
+
+`weights/afdd.py`: AFDD rotorcraft weight equations from NDARC Theory
+(NASA/TP-2009-215402, ch. 19). SI in, kg out, with no unit conversion left to
+the caller. Every function accepts symbols:
+
+- `mass_blades_afdd82_kg`, `mass_hub_afdd82_kg`, `mass_rotor_group_afdd82_kg`
+  (all rotors);
+- `mass_gearbox_rotor_shaft_afdd83_kg` (whole drive system);
+- `mass_drive_shaft_afdd82_kg`;
+- `mass_engine_support_afdd82_kg`, `mass_air_induction_afdd82_kg`,
+  `mass_engine_cowling_afdd82_kg`.
+
+`vehicle/items.py`:
+
+- `Nacelles(mass_engines_kg, count_engines, area_wetted_m2, ...)`: AFDD82
+  engine section, without pylon.
+- `InterconnectShaft(power_drive_limit_W, speed_rotor_rad_s, length_m, ...)`.
+- `FixedEquipment(mass_kg, x_m, z_m)`.
+- `LandingGear.is_retractable` (default False).
+
+`Aircraft` and `MassBreakdown` gain optional `nacelles`, `drive_shaft` and
+`equipment` fields. An absent item contributes zero mass, and all three count
+as empty mass.
+
+`powertrain/topologies.py` `build_mechanical_tiltrotor(turboshaft, gearbox,
+propulsor, count_rotors=2)` builds n x (turboshaft -> gearbox -> rotor). The
+interconnect is airframe mass, not a port connection.
+
+`examples/xv15_reference.py` provides:
+
+- `Xv15Reference`: published data in SI;
+- `published_groups`;
+- `build_xv15_aircraft(reference, factors, mass_engine_kg)`;
+- `compare_groups`;
+- `calibration_factors`, which returns actual / predicted per group;
+- `solve_xv15_closure`;
+- `mass_turboshaft_from_power_kg`, which inverts AeroSandbox's
+  `power_turboshaft` with one explicit Opti equality.

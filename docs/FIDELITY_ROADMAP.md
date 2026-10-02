@@ -12,7 +12,10 @@
 | 7 | Payload, hover, climb, speed, ceiling constraints | Implemented |
 | 8 | Operating point then isolated segment then prescribed mission | Implemented |
 | 9 | Coupled aircraft closure and energy allocation | Implemented |
-| 10 | Maps, engine decks, BEM, surrogates, advanced missions | Next |
+| 10a | AFDD tiltrotor weights, XV-15 group-weight validation and calibration | Implemented |
+| 10b | Turboshaft altitude lapse, correlated engine, XV-15 hover/cruise power check | Next |
+| 10c | Two-rotor Halo-class series hybrid sized to XV-15-derived requirements | Planned |
+| 11 | Maps, engine decks, BEM, surrogates, advanced missions | Planned |
 
 Keep simple implementations when higher fidelity is introduced. Use AeroSandbox
 geometry, aero, weights and dynamics wherever suitable. Do not jump to a full

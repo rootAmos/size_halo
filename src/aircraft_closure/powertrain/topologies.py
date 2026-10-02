@@ -34,6 +34,21 @@ def build_series_hybrid(motor, generator, battery, turboshaft, gearbox, propulso
     return topology
 
 
+def build_mechanical_tiltrotor(turboshaft, gearbox, propulsor, count_rotors=2):
+    """n x (turboshaft -> gearbox -> rotor), as on the XV-15.
+
+    The rotor interconnect (cross-shaft) carries power only after an engine
+    failure; it is a mass item on the airframe, not a port connection here.
+    """
+    topology = Topology()
+    topology.add("turboshaft", turboshaft, port_specs_for(turboshaft), count=count_rotors)
+    topology.add("gearbox", gearbox, port_specs_for(gearbox), count=count_rotors)
+    topology.add("propulsor", propulsor, port_specs_for(propulsor), count=count_rotors)
+    topology.connect("turboshaft.shaft", "gearbox.shaft_in")
+    topology.connect("gearbox.shaft_out", "propulsor.shaft")
+    return topology
+
+
 @dataclass(frozen=True)
 class SeriesHybridSizing:
     """Rubber-scaled series-hybrid ratings; every field may be an Opti variable.

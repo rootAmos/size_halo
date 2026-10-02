@@ -6,7 +6,8 @@ import casadi as cas
 
 from aircraft_closure.vehicle.condition import StructuralDesignCondition
 from aircraft_closure.vehicle.fuselage import Fuselage
-from aircraft_closure.vehicle.items import LandingGear, Payload, Systems
+from aircraft_closure.vehicle.items import FixedEquipment, InterconnectShaft, LandingGear, Nacelles, Payload, Systems
+from aircraft_closure.weights import afdd
 from aircraft_closure.vehicle.surfaces import HorizontalTail, VerticalTail, Wing
 
 condition = StructuralDesignCondition(mass_design_kg=1500.0)
@@ -109,6 +110,32 @@ class ItemTests(unittest.TestCase):
     def test_payload_is_a_point_mass(self):
         payload = Payload(mass_kg=250.0, x_m=3.1, z_m=-0.2).get_mass_properties()
         self.assertEqual((payload.mass, payload.x_cg, payload.z_cg), (250.0, 3.1, -0.2))
+
+    def test_retractable_gear_is_heavier_and_matches_raymer(self):
+        fixed = float(LandingGear().get_mass_properties(condition).mass)
+        retractable = float(LandingGear(is_retractable=True).get_mass_properties(condition).mass)
+        expected = (raymer.mass_main_landing_gear(0.6, 1500.0, is_retractable=True)
+                    + raymer.mass_nose_landing_gear(0.5, 1500.0, is_retractable=True))
+        self.assertAlmostEqual(retractable, float(expected), places=9)
+        self.assertGreater(retractable, fixed)
+
+    def test_nacelles_sum_the_afdd_engine_section(self):
+        nacelles = Nacelles(mass_engines_kg=500.0, count_engines=2, area_wetted_m2=17.0, x_m=3.2, z_m=0.7,
+                            mass_factor=1.2)
+        expected = (afdd.mass_engine_support_afdd82_kg(500.0, 2) + afdd.mass_air_induction_afdd82_kg(500.0, 2)
+                    + afdd.mass_engine_cowling_afdd82_kg(17.0))
+        properties = nacelles.get_mass_properties()
+        self.assertAlmostEqual(float(properties.mass), 1.2 * expected, places=9)
+        self.assertEqual((properties.x_cg, properties.z_cg), (3.2, 0.7))
+
+    def test_interconnect_shaft_is_the_afdd_drive_shaft(self):
+        shaft = InterconnectShaft(power_drive_limit_W=2e6, speed_rotor_rad_s=60.0, length_m=10.0)
+        self.assertAlmostEqual(float(shaft.get_mass_properties().mass),
+                               afdd.mass_drive_shaft_afdd82_kg(2e6, 60.0, 10.0, 2, 0.6), places=9)
+
+    def test_fixed_equipment_is_a_point_mass(self):
+        equipment = FixedEquipment(mass_kg=40.0, x_m=2.0).get_mass_properties()
+        self.assertEqual((equipment.mass, equipment.x_cg), (40.0, 2.0))
 
 
 class SymbolicTests(unittest.TestCase):

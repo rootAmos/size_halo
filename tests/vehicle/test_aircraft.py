@@ -3,6 +3,7 @@ from dataclasses import fields, replace
 
 from aircraft_closure.vehicle.aircraft import MassBreakdown
 from aircraft_closure.vehicle.condition import StructuralDesignCondition
+from aircraft_closure.vehicle.items import FixedEquipment
 from aircraft_closure.vehicle.powertrain_installation import InstalledInstance, PowertrainInstallation
 from examples.aircraft_mass_closure import build_reference_aircraft
 from examples.series_hybrid_point import build_reference_topology
@@ -45,6 +46,17 @@ class AircraftAggregationTests(unittest.TestCase):
         self.assertAlmostEqual(float(total.x_cg), x_cg_m, places=9)
         self.assertAlmostEqual(float(total.z_cg), z_cg_m, places=9)
         self.assertAlmostEqual(float(breakdown.mass_empty_kg()), mass_kg - 300.0, places=9)
+
+    def test_optional_items_default_to_zero_mass(self):
+        breakdown = build_reference_aircraft().get_mass_breakdown(condition)
+        for name in ("nacelles", "drive_shaft", "equipment"):
+            self.assertEqual(float(getattr(breakdown, name).mass), 0.0)
+
+    def test_equipment_counts_as_empty_mass(self):
+        aircraft = replace(build_reference_aircraft(), equipment=FixedEquipment(mass_kg=50.0))
+        breakdown = aircraft.get_mass_breakdown(condition)
+        reference = build_reference_aircraft().get_mass_breakdown(condition)
+        self.assertAlmostEqual(float(breakdown.mass_empty_kg() - reference.mass_empty_kg()), 50.0, places=9)
 
     def test_payload_shift_moves_cg_by_mass_ratio(self):
         aircraft = build_reference_aircraft()

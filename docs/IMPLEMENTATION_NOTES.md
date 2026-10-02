@@ -208,14 +208,47 @@ engine-out reserve is the sizing reason, as in real series hybrids. Small
 min-MTOM wings follow from having no field-length or gust requirement.
 Verification: 174 unittest cases (8 new), Tier 9 notebook 26 checks.
 
+## Tier 10a: tiltrotor weights and XV-15 validation
+
+AeroSandbox has no rotorcraft weight equations. `weights/afdd.py` wraps NDARC's
+AFDD82/83 rotor, drive-system and engine-section equations in SI. The XV-15 is
+then built from framework components at its published geometry and compared,
+group by group, with its Nov 1974 weight statement at 13,000 lb.
+
+| Group | Predicted / actual (lb) | Ratio |
+|---|---|---|
+| Transmission | 1,265 / 1,263 | 1.00 |
+| Powerplant | 1,532 / 1,754 | |
+| Tails | 186 / 209 | |
+| Gear | 585 / 508 | |
+| Rotor | 1,545 / 1,070 | |
+| Wing | 452 / 873 | 0.52 |
+| Fuselage | 696 / 1,442 | 0.48 |
+| Hydraulics and flight controls | 247 / 934 | 0.26 |
+
+The powerplant combines AeroSandbox's turboshaft regression (556 lb per engine)
+with the AFDD82 engine section. The rotor figure uses a coning frequency of
+1.55/rev, read from TM X-62407 fig. 7.1.1; 1.35/rev reproduces 1,070 lb.
+
+The rotorcraft-specific equations do well. The Raymer GA fixed-wing groups do
+not: the tiltrotor wing is stiffness-sized, the fuselage is built for crash
+loads, and the controls include rotor and conversion actuators.
+
+With the XV-15 useful load, the uncalibrated framework closes at 11,315 lb and
+an empty weight of 7,391 lb, 19 % light. Per-group calibration factors
+(actual / predicted) reproduce 13,000 lb exactly. Verification: 201 unittest
+cases (27 new) and the Tier 10 notebook's 15 checks.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
 Tier 1 component physics, Tier 2 topology, Tier 3 compatibility margins, Tier 4 mass closure, Tier 5
-aerodynamics, Tier 6 stability and control, Tier 7 requirements, Tier 8 missions and Tier 9 coupled sizing. Outputs are kept so plots render
+aerodynamics, Tier 6 stability and control, Tier 7 requirements, Tier 8 missions, Tier 9 coupled sizing and Tier 10 XV-15 mass validation. Outputs are kept so plots render
 remotely.
 
 ## Next stage
 
-Tier 7 requirements (payload, hover, climb, speed, ceiling), Tier 8 mission
-segments and Tier 9 coupled sizing with mission and energy allocation.
+Plan 012 (Tier 10b): turboshaft altitude lapse, a mass-correlated turboshaft,
+and a hover and cruise power check against the XV-15. Then plan 013
+(Tier 10c): a two-rotor Halo-class series hybrid sized to XV-15-derived
+requirements with the Tier 10a calibration.

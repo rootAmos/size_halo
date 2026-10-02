@@ -10,6 +10,11 @@ from typing import Any
 import aerosandbox as asb
 
 
+def _optional_mass_properties(item):
+    """Items without a design condition; an absent item weighs nothing."""
+    return item.get_mass_properties() if item is not None else asb.MassProperties(mass=0)
+
+
 @dataclass(frozen=True)
 class MassBreakdown:
     wing: Any
@@ -21,10 +26,14 @@ class MassBreakdown:
     powertrain: Any
     payload: Any
     fuel: Any
+    nacelles: Any
+    drive_shaft: Any
+    equipment: Any
 
     def total(self):
         return (self.wing + self.horizontal_tail + self.vertical_tail + self.fuselage + self.landing_gear
-                + self.systems + self.powertrain + self.payload + self.fuel)
+                + self.systems + self.powertrain + self.payload + self.fuel + self.nacelles + self.drive_shaft
+                + self.equipment)
 
     def mass_empty_kg(self):
         """Everything except payload and fuel."""
@@ -42,6 +51,9 @@ class Aircraft:
     powertrain: Any
     payload: Any
     fuel: Any = None
+    nacelles: Any = None
+    drive_shaft: Any = None
+    equipment: Any = None
 
     def distance_wing_to_tail_m(self):
         """Root quarter-chord of the wing to that of the horizontal tail (Raymer)."""
@@ -58,7 +70,10 @@ class Aircraft:
             systems=self.systems.get_mass_properties(condition, self.wing, self.fuselage),
             powertrain=self.powertrain.get_mass_properties(),
             payload=self.payload.get_mass_properties(),
-            fuel=self.fuel.get_mass_properties() if self.fuel is not None else asb.MassProperties(mass=0),
+            fuel=_optional_mass_properties(self.fuel),
+            nacelles=_optional_mass_properties(self.nacelles),
+            drive_shaft=_optional_mass_properties(self.drive_shaft),
+            equipment=_optional_mass_properties(self.equipment),
         )
 
     def get_mass(self, condition):

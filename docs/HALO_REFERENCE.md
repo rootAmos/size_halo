@@ -23,3 +23,29 @@ explicit power residual for inverse operation. Native motor and turboshaft
 helpers were inspected; these dataclasses add the requested stable physical
 interfaces, explicit ratings, replaceable losses and transparent assumptions.
 https://aerosandbox.readthedocs.io/en/master/autoapi/aerosandbox/library/propulsion_propeller/index.html
+
+## XV-15 class reference (from 2026-10-02)
+
+The Tier 9 result (884 kg) was judged too light for a Halo-class aircraft,
+which is a Group 5 platform. Public coverage gives no Halo weight, payload or
+range. It does say Halo uses two large tiltrotors. The Bell XV-15 is the
+closest published concept: two tiltrotors, cross-shafted turboshafts and a
+13,000 lb design gross weight. It is used as follows:
+
+1. **Mass-model validation and calibration** (Tier 10a). The XV-15 group
+   weight statement in NASA TM X-62407 (1975), sec. 3.1.2,
+   https://ntrs.nasa.gov/citations/19750016648
+2. **Source of a Halo-class requirement set** (Tier 10c). Data from SP-4517,
+   appendix A, https://www.nasa.gov/wp-content/uploads/2023/04/sp-4517.pdf
+   - 13,000 lb design gross weight;
+   - 2 x 1,550 shp take-off power;
+   - 25 ft rotors;
+   - 300 kt maximum speed;
+   - 29,000 ft service ceiling;
+   - 8,650 ft OGE hover ceiling;
+   - 445 nm range.
+
+The XV-15 is a manned research aircraft with ejection seats, crashworthy fuel
+cells, redundant flight controls and an oxygen system. TM X-62407 warns that
+these weigh more than the concept needs, so its calibration factors are applied
+to an unmanned aircraft with stated adjustments, not wholesale.

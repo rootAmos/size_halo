@@ -8,7 +8,7 @@ from aircraft_closure.powertrain.components.motor import Motor
 from aircraft_closure.powertrain.components.propulsor import ActuatorDiskPropulsor
 from aircraft_closure.powertrain.components.turboshaft import SimpleTurboshaft
 from aircraft_closure.powertrain.ports import port_specs_for
-from aircraft_closure.powertrain.topologies import build_series_hybrid
+from aircraft_closure.powertrain.topologies import build_mechanical_tiltrotor, build_series_hybrid
 
 
 def components():
@@ -67,6 +67,16 @@ class SeriesHybridTopologyTests(unittest.TestCase):
         parts = components()
         topology = build_series_hybrid(*parts)
         self.assertIs(topology.instances["motor"].component, parts[0])
+
+
+class MechanicalTiltrotorTopologyTests(unittest.TestCase):
+    def test_structure(self):
+        topology = build_mechanical_tiltrotor(SimpleTurboshaft(), Gearbox(), ActuatorDiskPropulsor())
+        counts = {name: instance.count for name, instance in topology.instances.items()}
+        self.assertEqual(counts, {"turboshaft": 2, "gearbox": 2, "propulsor": 2})
+        self.assertEqual(set(topology.buses), set())
+        links = {(c.source, c.target) for c in topology.connections}
+        self.assertEqual(links, {("turboshaft.shaft", "gearbox.shaft_in"), ("gearbox.shaft_out", "propulsor.shaft")})
 
 
 if __name__ == "__main__":
