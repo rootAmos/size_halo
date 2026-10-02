@@ -14,8 +14,8 @@
 | 9 | Coupled aircraft closure and energy allocation | Implemented |
 | 10a | AFDD tiltrotor weights, XV-15 group-weight validation and calibration | Implemented |
 | 10b | Turboshaft lapse and part-power submodels, hover download, XV-15 hover-power check | Implemented |
-| 10c | Two-rotor Halo-class series hybrid sized to XV-15-derived requirements (13,000 ft ceiling) | Next |
-| 11 | Maps, engine decks, BEM, surrogates, advanced missions | Planned |
+| 10c | Two-rotor Halo-class series hybrid sized to XV-15-derived requirements (13,000 ft ceiling) | Implemented |
+| 11 | Maps, engine decks, BEM, conversion, compressibility, cruise-power validation | Next |
 
 Keep simple implementations when higher fidelity is introduced. Use AeroSandbox
 geometry, aero, weights and dynamics wherever suitable. Do not jump to a full

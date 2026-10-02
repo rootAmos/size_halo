@@ -320,3 +320,28 @@ T/W x W / (1 - f).
 - `powertrain_masses_kg` per instance;
 - the motor and generator peak torques;
 - per-segment motor speed and torque, appended to each segment tuple.
+
+## Halo-class sizing (Tier 10c)
+
+Library changes, each with a default that reproduces earlier tiers:
+
+- `build_series_hybrid(..., count_turbogenerators=1)`.
+- `FlightCondition.active_generator_count` (None means all). Each active
+  turbogenerator carries an equal share of the generator power, and fuel flow
+  scales by the active count.
+- `ActuatorDiskPropulsor` gains:
+  - `coefficient_of_performance_airplane` (None means the same as hover),
+    used by airplane-mode flight points through `in_airplane_mode()`;
+  - `speed_tip_max_m_s` (None means no bound), which flight points enforce
+    as rotor speed x radius <= the bound;
+  - `radius_m()`.
+
+`examples/halo_sizing.py` provides:
+
+- `HaloRequirements`, `HaloAssumptions`, and `HaloDesign` (every sized
+  quantity; numbers or Opti variables);
+- `build_halo_aircraft(design, ...)`;
+- `halo_mission(...)`;
+- `solve_halo_sizing(requirements, assumptions, factors, initial=None)`,
+  which returns `HaloSizingResult`. `initial` warm-starts from an earlier
+  result, which sensitivity studies need.

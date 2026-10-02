@@ -1,5 +1,5 @@
 """Axial actuator disk, normal working state only; no RPM or hidden solve."""
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 import aerosandbox as asb
 import aerosandbox.numpy as np
@@ -20,10 +20,24 @@ class PropulsorLimits:
 
 @dataclass(frozen=True)
 class ActuatorDiskPropulsor:
+    """`coefficient_of_performance` is the hover figure of merit. Optional:
+    `coefficient_of_performance_airplane` for propeller-mode flight (None = the
+    same value) and `speed_tip_max_m_s`, a tip-speed bound callers enforce."""
     area_disk_m2: Any = 10.0
     mass_kg: Any = 30.0
     coefficient_of_performance: float = 0.8
     max_shaft_power_W: Any = 100000.0
+    coefficient_of_performance_airplane: Any = None
+    speed_tip_max_m_s: Any = None
+
+    def radius_m(self):
+        return np.sqrt(self.area_disk_m2 / np.pi)
+
+    def in_airplane_mode(self):
+        """The same rotor with its propeller-mode coefficient."""
+        if self.coefficient_of_performance_airplane is None:
+            return self
+        return replace(self, coefficient_of_performance=self.coefficient_of_performance_airplane)
 
     def get_mass(self):
         return self.mass_kg

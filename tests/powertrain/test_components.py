@@ -200,6 +200,20 @@ if __name__ == "__main__":
     unittest.main()
 
 
+class RotorModeTests(unittest.TestCase):
+    def test_airplane_mode_coefficient(self):
+        rotor = ActuatorDiskPropulsor(coefficient_of_performance=0.67, coefficient_of_performance_airplane=0.87)
+        self.assertEqual(rotor.in_airplane_mode().coefficient_of_performance, 0.87)
+        self.assertEqual(ActuatorDiskPropulsor().in_airplane_mode().coefficient_of_performance, 0.8)
+        atmosphere = asb.Atmosphere(altitude=0)
+        hover = rotor.evaluate(60.0, atmosphere, thrust_N=2000.0).shaft_power_W
+        cruise = rotor.in_airplane_mode().evaluate(60.0, atmosphere, thrust_N=2000.0).shaft_power_W
+        self.assertAlmostEqual(float(cruise / hover), 0.67 / 0.87, places=12)
+
+    def test_radius(self):
+        self.assertAlmostEqual(float(ActuatorDiskPropulsor(area_disk_m2=np.pi * 4.0).radius_m()), 2.0, places=12)
+
+
 class BatterySmoothingTests(unittest.TestCase):
     def test_default_is_exact_maximum(self):
         self.assertEqual(Battery().get_mass(), max(36e6 / 9e5, 1e5 / 3000))

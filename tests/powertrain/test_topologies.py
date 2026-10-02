@@ -69,6 +69,14 @@ class SeriesHybridTopologyTests(unittest.TestCase):
         self.assertIs(topology.instances["motor"].component, parts[0])
 
 
+class TurbogeneratorCountTests(unittest.TestCase):
+    def test_two_turbogenerators(self):
+        topology = build_series_hybrid(*components(), count_rotors=2, count_turbogenerators=2)
+        counts = {name: instance.count for name, instance in topology.instances.items()}
+        self.assertEqual(counts, {"turboshaft": 2, "generator": 2, "battery": 1, "motor": 2, "gearbox": 2,
+                                  "propulsor": 2})
+
+
 class MechanicalTiltrotorTopologyTests(unittest.TestCase):
     def test_structure(self):
         topology = build_mechanical_tiltrotor(SimpleTurboshaft(), Gearbox(), ActuatorDiskPropulsor())

@@ -58,6 +58,50 @@ class FlightPointTests(unittest.TestCase):
         self.assertAlmostEqual(float(s.value(4 * point.thrust_per_rotor_N)),
                                mass_kg * acceleration_gravity_m_s2 / 0.93, places=6)
 
+    def test_one_of_two_generators_carries_the_share(self):
+        sized = build_series_hybrid_from_sizing(SeriesHybridSizing())
+        instances = sized.instances
+        from aircraft_closure.powertrain.topologies import build_series_hybrid
+        topology = build_series_hybrid(instances["motor"].component, instances["generator"].component,
+                                       instances["battery"].component, instances["turboshaft"].component,
+                                       instances["gearbox"].component, instances["propulsor"].component,
+                                       count_rotors=4, count_turbogenerators=2)
+        twin = build_reference_aircraft(3.23, area_horizontal_tail_m2=2.16, area_vertical_tail_m2=1.92,
+                                        topology=topology)
+
+        def solve(active):
+            opti = asb.Opti()
+            point = build_flight_point(opti, twin, aero, FlightCondition(velocity_m_s=60.0, active_generator_count=active,
+                                                                         label="cruise"), mass_kg, 0.0)
+            opti.minimize(point.fuel_flow_kg_s * 100)
+            s = opti.solve(verbose=False)
+            return (float(s.value(point.generator.power_electric_W)), float(s.value(point.power_electric_motors_W)),
+                    float(s.value(point.fuel_flow_kg_s)))
+
+        both, one = solve(None), solve(1)
+        self.assertAlmostEqual(2 * both[0] / both[1], 1.0, places=6)
+        self.assertAlmostEqual(one[0] / one[1], 1.0, places=6)
+        self.assertGreater(one[0], 1.9 * both[0])
+
+    def test_tip_speed_bound_holds(self):
+        from dataclasses import replace
+        from aircraft_closure.vehicle.powertrain_installation import PowertrainInstallation
+        topology = build_reference_topology(4)
+        rotor = topology.instances["propulsor"].component
+        bounded_rotor = replace(rotor, speed_tip_max_m_s=150.0)
+        from aircraft_closure.powertrain.topologies import build_series_hybrid
+        i = topology.instances
+        bounded = build_series_hybrid(i["motor"].component, i["generator"].component, i["battery"].component,
+                                      i["turboshaft"].component, i["gearbox"].component, bounded_rotor, count_rotors=4)
+        plane = build_reference_aircraft(3.23, area_horizontal_tail_m2=2.16, area_vertical_tail_m2=1.92,
+                                         topology=bounded)
+        opti = asb.Opti()
+        point = build_flight_point(opti, plane, aero, FlightCondition(mode="hover", altitude_m=0.0, label="hover"),
+                                   mass_kg)
+        opti.minimize(-point.speed_rotor_rad_s / 100)
+        s = opti.solve(verbose=False)
+        self.assertLessEqual(float(s.value(point.speed_rotor_rad_s)) * float(rotor.radius_m()), 150.0 * (1 + 1e-6))
+
     def test_airplane_force_balance(self):
         condition = FlightCondition(velocity_m_s=50.0, altitude_m=1000.0, climb_rate_m_s=5.0, label="climb")
         point, s = solve_point(condition)

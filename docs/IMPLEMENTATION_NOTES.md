@@ -265,6 +265,51 @@ Consequence for Tier 9: its hover power (FM 0.80, no download) was low by
 Verification: 217 unittest cases (16 new) and the Tier 10b notebook's
 10 checks.
 
+## Tier 10c: Halo-class sizing
+
+The Tier 9 formulation, re-baselined on the XV-15:
+
+- two tip rotors and two turbogenerators plus a battery on one bus;
+- Tier 10a calibrated weights;
+- AFDD rotors and gearboxes;
+- AeroSandbox turboshaft mass and efficiency regressions, with the mass-power
+  relation as an explicit equality;
+- Tier 10b lapse, part-power and hover models.
+
+Requirements (user-approved): 900 kg payload, 445 nm, 250 kt at 10,000 ft,
+13,000 ft ceiling, OGE hover at 4,000 ft with T/W 1.05, engine-out hover on
+one turbogenerator plus battery, stall at or below 120 kt.
+
+**Result:**
+
+- 8,500 kg (18,740 lb) take-off, 6,347 kg empty;
+- powertrain 55 % of empty mass;
+- 2 x 1,280 kW turboshafts and 2 x 1,439 kW motors;
+- 140 kWh / 1,666 kW battery;
+- 27.4 ft rotors at 78 kg/m2 disk loading;
+- 23.8 m2 wing at 357 kg/m2;
+- cruise 180 kt at L/D 8.3.
+
+**What binds:** max speed sizes the turbogenerators. Hover sizes the motors,
+gearboxes and rotors. Engine-out hover sizes battery power, and the 120 kt
+stall limit sizes the wing.
+
+**Sensitivities (warm-started):**
+
+| Case | Take-off weight (lb) |
+|---|---|
+| Hover FM 0.75 | 17,444 |
+| Cruise rotor coefficient 0.80 | 19,935 |
+| Payload 600 / 1,200 kg | 16,741 / 20,763 |
+| Uncalibrated weights | 13,537 |
+
+From the cold default guess, the coefficient-0.80 and uncalibrated cases stop
+at a local infeasibility in IPOPT. Nearby values solve cold, and both solve
+warm-started, so `initial=` exists.
+
+Verification: 230 unittest cases (13 new) and the Tier 10c notebook's
+14 checks.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
@@ -274,8 +319,12 @@ remotely.
 
 ## Next stage
 
-Plan 013 (Tier 10c): a two-rotor Halo-class series hybrid sized to
-XV-15-derived requirements, with a 13,000 ft ceiling set by the user. It uses
-the Tier 10a weight calibration (adjusted for an unmanned aircraft) and the
-Tier 10b engine and hover models. Airplane-mode cruise power is still not
-validated.
+Tier 11 candidates:
+
+- airplane-mode rotor efficiency and cruise-power validation (the largest
+  remaining assumption);
+- compressibility drag (cruise is about Mach 0.4);
+- the conversion corridor;
+- dual-wound motor and rotor-loss modelling;
+- engine decks;
+- BEM rotors.

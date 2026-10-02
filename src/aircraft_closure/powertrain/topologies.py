@@ -12,14 +12,15 @@ from .components.turboshaft import SimpleTurboshaft
 from .ports import port_specs_for
 
 
-def build_series_hybrid(motor, generator, battery, turboshaft, gearbox, propulsor, count_rotors=1):
-    """Turboshaft -> generator -> bus <- battery; bus -> n x (motor -> gearbox -> rotor).
+def build_series_hybrid(motor, generator, battery, turboshaft, gearbox, propulsor, count_rotors=1,
+                        count_turbogenerators=1):
+    """m x (turboshaft -> generator) -> bus <- battery; bus -> n x (motor -> gearbox -> rotor).
 
     The turboshaft fuel port is left unconnected as a boundary port.
     """
     topology = Topology()
-    topology.add("turboshaft", turboshaft, port_specs_for(turboshaft))
-    topology.add("generator", generator, port_specs_for(generator))
+    topology.add("turboshaft", turboshaft, port_specs_for(turboshaft), count=count_turbogenerators)
+    topology.add("generator", generator, port_specs_for(generator), count=count_turbogenerators)
     topology.add("battery", battery, port_specs_for(battery))
     topology.add_bus("bus")
     topology.add("motor", motor, port_specs_for(motor), count=count_rotors)

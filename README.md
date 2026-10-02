@@ -3,12 +3,13 @@
 AeroSandbox/CasADi framework for sizing an unmanned series-hybrid-electric
 tiltrotor together with its mission. Every discipline contributes equations to
 one `asb.Opti` problem; there are no hidden convergence loops or second
-solvers. Tiers 0–9, 10a and 10b of the [fidelity roadmap](docs/FIDELITY_ROADMAP.md)
-are implemented. Tier 9 is a coupled problem that sizes the aircraft,
+solvers. Tiers 0–10c of the [fidelity roadmap](docs/FIDELITY_ROADMAP.md) are
+implemented. Tier 9 is a coupled problem that sizes the aircraft,
 optimizes its mission and allocates battery versus turbogenerator energy per
 segment. Tiers 10a and 10b check the mass models and the engine and hover models against
-the Bell XV-15, the published twin tiltrotor now used as the Halo-class
-reference.
+the Bell XV-15. Tier 10c uses them to size a Halo-class two-rotor series
+hybrid: 18,740 lb take-off for 900 kg payload, 445 nm, 250 kt and a 13,000 ft
+ceiling.
 
 All numbers are illustrative engineering inputs, not Archer or Halo data
 (see [reference assumptions](docs/HALO_REFERENCE.md)).
@@ -41,6 +42,7 @@ from the repository root.
 ```powershell
 uv sync
 uv run python -m unittest discover -s tests
+uv run python -m examples.halo_sizing             # Tier 10c: Halo-class two-rotor series-hybrid sizing
 uv run python -m examples.xv15_performance        # Tier 10b: XV-15 lapse, hover and sfc checks
 uv run python -m examples.xv15_reference          # Tier 10a: XV-15 group-weight validation
 uv run python -m examples.coupled_sizing          # Tier 9: sizing + mission + energy allocation
@@ -71,6 +73,7 @@ One executed notebook per tier (outputs kept so plots render on GitHub):
 | 9 | [Coupled sizing](notebooks/tier9_coupled_sizing/coupled_sizing_verification.ipynb): simultaneous sizing, mission optimization and energy allocation |
 | 10a | [XV-15 mass validation](notebooks/tier10_xv15_reference/xv15_mass_validation.ipynb): AFDD weights, group-by-group comparison, calibration |
 | 10b | [XV-15 power validation](notebooks/tier10_xv15_reference/xv15_power_validation.ipynb): engine lapse, hover figure of merit and download, part-power sfc |
+| 10c | [Halo-class sizing](notebooks/tier10_halo_sizing/halo_sizing_verification.ipynb): two-rotor series hybrid, binding constraints, mission, sensitivities |
 
 ```powershell
 uv sync --group notebooks
@@ -79,10 +82,9 @@ uv run jupyter lab notebooks
 
 ## Status and next step
 
-Tier 10c is next: a two-rotor Halo-class aircraft sized to XV-15-derived
-requirements with a 13,000 ft ceiling. Tier 10b showed that Tier 9's hover
-power was 33 % optimistic and that engine power falls to 73 % of sea level
-at 13,000 ft.
+The largest remaining assumption is airplane-mode rotor efficiency (the cruise
+coefficient). Compressibility drag, conversion flight and rotor-loss handling
+are also open. These are Tier 11 candidates.
 
 At XV-15 scale, the uncalibrated mass models close 13 % light. The Raymer GA
 wing, fuselage and flight-control equations are the weak groups; the AFDD

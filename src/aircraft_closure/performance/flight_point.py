@@ -32,6 +32,7 @@ class FlightCondition:
     climb_rate_m_s: Any = 0.0
     thrust_to_weight: Any = 1.0
     active_rotor_count: Any = None
+    active_generator_count: Any = None
     soc: Any = 0.8
     hybridization_electric: Any = None
     label: str = "point"
@@ -72,6 +73,7 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     rotor_model = instances["propulsor"].component
     turboshaft_model = instances["turboshaft"].component
     active_rotor_count = condition.active_rotor_count or instances["propulsor"].count
+    active_generator_count = condition.active_generator_count or instances["generator"].count
     weight_N = mass_kg * acceleration_gravity_m_s2
     atmosphere = asb.Atmosphere(altitude=condition.altitude_m)
 
@@ -91,6 +93,8 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
         thrust_total_N = aero.drag_N + weight_N * sin_gamma
 
     thrust_per_rotor_N = thrust_total_N / active_rotor_count
+    if condition.mode == "airplane":
+        rotor_model = rotor_model.in_airplane_mode()
     rotor = rotor_model.evaluate(velocity_m_s, atmosphere, thrust_N=thrust_per_rotor_N)
     speed_motor_limit_rad_s = motor_model.max_speed_rad_s
     speed_rotor_rad_s = opti.variable(init_guess=100.0, scale=100.0, lower_bound=10.0)
@@ -112,12 +116,16 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     torque_generator_Nm = opti.variable(init_guess=500.0, scale=500.0, lower_bound=0.0)
     generator = generator_model.evaluate(speed_generator_rad_s, torque_generator_Nm, voltage_bus_V)
     engine = turboshaft_model.evaluate(speed_generator_rad_s * torque_generator_Nm, atmosphere)
+    # Each active turbogenerator carries an equal share of the generator power.
     power_scale_W = active_rotor_count * motor_model.power_rated_W
     opti.subject_to([
         (battery.power_electric_W - hybridization_electric * power_electric_motors_W) / power_scale_W == 0,
-        (generator.power_electric_W - (1 - hybridization_electric) * power_electric_motors_W) / power_scale_W == 0,
+        (active_generator_count * generator.power_electric_W - (1 - hybridization_electric) * power_electric_motors_W)
+        / power_scale_W == 0,
         speed_motor_rad_s <= speed_motor_limit_rad_s,
     ])
+    if rotor_model.speed_tip_max_m_s is not None:
+        opti.subject_to(speed_rotor_rad_s * rotor_model.radius_m() <= rotor_model.speed_tip_max_m_s)
 
     port_values = {
         "turboshaft.shaft": MechanicalPortValue(speed_generator_rad_s, torque_generator_Nm),
@@ -137,5 +145,6 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
                        speed_rotor_rad_s=speed_rotor_rad_s, speed_motor_rad_s=speed_motor_rad_s,
                        torque_motor_Nm=torque_motor_Nm, power_electric_motors_W=power_electric_motors_W,
                        hybridization_electric=hybridization_electric, battery=battery, generator=generator,
-                       engine=engine, power_battery_W=battery.power_electric_W, fuel_flow_kg_s=engine.fuel_flow_kg_s,
+                       engine=engine, power_battery_W=battery.power_electric_W,
+                       fuel_flow_kg_s=active_generator_count * engine.fuel_flow_kg_s,
                        margins=margins)
