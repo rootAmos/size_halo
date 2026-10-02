@@ -57,3 +57,14 @@ class Payload:
 
     def get_mass_properties(self):
         return asb.MassProperties(mass=self.mass_kg, x_cg=self.x_m, z_cg=self.z_m)
+
+
+@dataclass(frozen=True)
+class FuelLoad:
+    """Usable fuel at take-off as a point mass at the tank position."""
+    mass_kg: Any = 0.0
+    x_m: Any = 3.5
+    z_m: Any = 0.0
+
+    def get_mass_properties(self):
+        return asb.MassProperties(mass=self.mass_kg, x_cg=self.x_m, z_cg=self.z_m)

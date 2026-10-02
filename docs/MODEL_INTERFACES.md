@@ -204,3 +204,24 @@ Requires the series-hybrid reference instance names.
 `requirements/capability.py`: `HoverRequirement`, `ClimbRequirement`,
 `SpeedRequirement`, `CeilingRequirement` (each `.flight_condition()`), and
 `RequirementSet`. Sustained requirements default to h_e = 0; hover is free.
+
+## Missions (Tier 8)
+
+`vehicle/items.py` `FuelLoad(mass_kg, x_m, z_m)`; `Aircraft.fuel` is optional
+and `MassBreakdown.fuel` is always present (zero without a load);
+`mass_empty_kg()` excludes payload and fuel.
+
+`mission/segments.py`: `HoverSegment(duration, altitude, h_e)`,
+`ClimbSegment(h_start, h_end, rate, V, h_e)`, `CruiseSegment(distance, h, V,
+h_e)`, `LoiterSegment(duration, h, V, h_e)`, `DescentSegment(h_start, h_end,
+rate, V, h_e)`; each has `duration_s()` and `flight_condition(soc)`; any field
+may be an Opti variable; `ground_distance_m(segment)`. Climb/descent use the
+mean altitude; hover is T/W = 1.
+
+`mission/mission.py`: `Mission(segments)`, `build_mission(opti, aircraft,
+aerodynamics, mission, mass_start_kg, soc_start)` -> `MissionResult(segments,
+mass_fuel_burnt_kg, energy_battery_chemical_J, soc_end, mass_end_kg,
+duration_s, margins)`; each `SegmentResult` holds its flight point, duration,
+start mass, fuel, chemical and terminal battery energy and SOC. Segments use
+their start mass; SOC falls by chemical energy / capacity; thrust >= 0 is
+enforced. No in-flight charging (h_e in [0, 1]).

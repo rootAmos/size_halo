@@ -30,6 +30,7 @@ class MassClosureTests(unittest.TestCase):
 
     def test_masses_sum_and_are_positive(self):
         masses = dict(self.reference.component_masses_kg)
+        self.assertEqual(masses.pop("fuel"), 0.0)  # no fuel load at this tier
         self.assertTrue(all(mass_kg > 0 for mass_kg in masses.values()))
         self.assertAlmostEqual(sum(masses.values()), self.reference.mass_takeoff_kg, places=6)
         self.assertAlmostEqual(self.reference.mass_empty_kg, self.reference.mass_takeoff_kg - 300.0, places=6)

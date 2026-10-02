@@ -13,7 +13,7 @@ import aerosandbox as asb
 from aircraft_closure.vehicle.aircraft import Aircraft, MassBreakdown
 from aircraft_closure.vehicle.condition import StructuralDesignCondition
 from aircraft_closure.vehicle.fuselage import Fuselage
-from aircraft_closure.vehicle.items import LandingGear, Payload, Systems
+from aircraft_closure.vehicle.items import FuelLoad, LandingGear, Payload, Systems
 from aircraft_closure.vehicle.powertrain_installation import InstalledInstance, PowertrainInstallation
 from aircraft_closure.vehicle.surfaces import HorizontalTail, VerticalTail, Wing
 from examples.series_hybrid_point import build_reference_topology
@@ -35,7 +35,8 @@ class ClosureResult:
 
 
 def build_reference_aircraft(x_le_wing_m=2.5, mass_payload_kg=300.0, count_rotors=4,
-                             area_horizontal_tail_m2=2.4, area_vertical_tail_m2=1.6, topology=None, wing=None):
+                             area_horizontal_tail_m2=2.4, area_vertical_tail_m2=1.6, topology=None, wing=None,
+                             mass_fuel_kg=None):
     """Tiltrotor-like layout: rotor strings at the wing quarter chord, engine aft.
 
     All rotors share one x station, so hover pitch trim with equal thrust needs
@@ -64,6 +65,8 @@ def build_reference_aircraft(x_le_wing_m=2.5, mass_payload_kg=300.0, count_rotor
         systems=Systems(),
         powertrain=PowertrainInstallation(topology, locations, installation_factor=1.1),
         payload=Payload(mass_kg=mass_payload_kg),
+        # Fuel tank at the common rotor station: burning fuel does not move the CG.
+        fuel=FuelLoad(mass_kg=mass_fuel_kg, x_m=x_rotor_m) if mass_fuel_kg is not None else None,
     )
 
 

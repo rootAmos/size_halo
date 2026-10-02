@@ -166,11 +166,25 @@ falls to 3.8 m2 because point requirements carry no energy cost (missions fix
 that in Tier 8/9). No turboshaft altitude lapse yet (Tier 10). Verification:
 155 unittest cases (14 new), Tier 7 notebook 51 checks.
 
+## Tier 8: missions
+
+Segments (M1) chain into missions (M2) with fuel burn and SOC;
+`examples/mission_analysis.py` closes MTOM, fuel load (1.1 x burnt) and wing
+position with a 64-minute reference mission (two 60 s hovers, climb to 1000 m,
+100 km cruise, 20 min loiter, descent) on the fixed Tier 6 aircraft.
+Prescribed (hover 70 % battery, otherwise turbogenerator): MTOM 1588.4 kg, fuel
+32.0 kg, landing SOC 0.80. Semi-free (M3: cruise speed and every h_e free,
+minimum fuel): cruise 51.7 m/s, battery to the 0.30 floor mostly in loiter,
+fuel 25.0 kg (-22 %), MTOM 1580.7 kg. With fixed speeds the minimum-fuel
+cruise speed lies near 50-55 m/s. Fuel sits at the rotor station so hover
+trim holds through the mission. Verification: 166 unittest cases (11 new),
+Tier 8 notebook 50 checks.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
 Tier 1 component physics, Tier 2 topology, Tier 3 compatibility margins, Tier 4 mass closure, Tier 5
-aerodynamics, Tier 6 stability and control and Tier 7 requirements. Outputs are kept so plots render
+aerodynamics, Tier 6 stability and control, Tier 7 requirements and Tier 8 missions. Outputs are kept so plots render
 remotely.
 
 ## Next stage

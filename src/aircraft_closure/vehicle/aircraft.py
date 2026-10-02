@@ -20,14 +20,15 @@ class MassBreakdown:
     systems: Any
     powertrain: Any
     payload: Any
+    fuel: Any
 
     def total(self):
         return (self.wing + self.horizontal_tail + self.vertical_tail + self.fuselage + self.landing_gear
-                + self.systems + self.powertrain + self.payload)
+                + self.systems + self.powertrain + self.payload + self.fuel)
 
     def mass_empty_kg(self):
-        """Everything except payload (no fuel is modeled at this tier)."""
-        return self.total().mass - self.payload.mass
+        """Everything except payload and fuel."""
+        return self.total().mass - self.payload.mass - self.fuel.mass
 
 
 @dataclass(frozen=True)
@@ -40,6 +41,7 @@ class Aircraft:
     systems: Any
     powertrain: Any
     payload: Any
+    fuel: Any = None
 
     def distance_wing_to_tail_m(self):
         """Root quarter-chord of the wing to that of the horizontal tail (Raymer)."""
@@ -56,6 +58,7 @@ class Aircraft:
             systems=self.systems.get_mass_properties(condition, self.wing, self.fuselage),
             powertrain=self.powertrain.get_mass_properties(),
             payload=self.payload.get_mass_properties(),
+            fuel=self.fuel.get_mass_properties() if self.fuel is not None else asb.MassProperties(mass=0),
         )
 
     def get_mass(self, condition):
