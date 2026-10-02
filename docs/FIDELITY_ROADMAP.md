@@ -5,8 +5,8 @@
 | 0 | Governance, package, interfaces, tests | Implemented |
 | 1 | Six standalone simple powertrain components | Implemented |
 | 2 | Typed ports, connections, multiplicity, series-hybrid topology | Implemented |
-| 3 | Speed/torque/voltage/current/power compatibility margins | Next |
-| 4 | Vehicle geometry, CG and empirical mass closure | Deferred |
+| 3 | Speed/torque/voltage/current/power compatibility margins | Implemented |
+| 4 | Vehicle geometry, CG and empirical mass closure | Next |
 | 5 | Linear lift, parasite and induced drag, extension hooks | Deferred |
 | 6 | Conventional tails, trim, stability, asymmetric thrust | Deferred |
 | 7 | Payload, hover, climb, speed, ceiling constraints | Deferred |

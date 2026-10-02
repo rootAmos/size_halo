@@ -77,14 +77,28 @@ fuel-tank ports; direct connections need equal counts; multiplicity is
 symmetric, so failed-propulsor cases cannot yet be represented. Verification:
 58 unittest cases (28 new) and the Tier 2 notebook (71 checks).
 
+## Tier 3: compatibility margins
+
+Operating margins replace the hand-written rating list in
+`examples/series_hybrid_point.py`; the solution is unchanged (ratings are
+inactive at 5000 N) and the report names motor shaft power as most critical
+(7.95 % headroom). `build_point_problem` exposes the coupled point so callers
+choose the objective: maximizing thrust shows the motor rating binding below
+100 kW and the 100 kW gearbox input rating capping thrust above it (about
+5284 N per rotor). Design margins of the default parts record the 150 kW
+turboshaft overdriving the 100 kW generator as -0.5 without resizing; an Opti
+using design margins as constraints sizes the minimum generator at 150 kW.
+Verification: 77 unittest cases (19 new) and the Tier 3 notebook (47 checks).
+Not modeled: current limits on machines, SOC and thermal margins, failure-case
+margins, gear-transformed speed/torque envelopes.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
-Tier 1 component physics and Tier 2 topology. Outputs are kept so plots render
+Tier 1 component physics, Tier 2 topology and Tier 3 compatibility margins. Outputs are kept so plots render
 remotely.
 
 ## Next stage
 
-Create a Tier 3 plan for speed/torque/voltage/current/power compatibility
-margins built on the topology's port values, before vehicle/mass, low-fidelity
+Tier 4: vehicle geometry, CG and empirical mass closure, then low-fidelity
 aero, controls, requirements and mission segments.

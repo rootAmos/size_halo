@@ -72,3 +72,32 @@ Declarations live in `powertrain/ports.py` (`port_specs_for`), not on the
 component classes. `powertrain/topologies.py` provides
 `build_series_hybrid(..., count_rotors=n)`. Multiplicity is symmetric: n copies
 share one set of port values; asymmetric or failed instances are deferred.
+
+## Compatibility margins (Tier 3)
+
+`core/margins.py`: `Margin(label, value)`; `margin_below(label, value, limit)`
+= (limit - value) / limit; `margin_above(label, value, limit)` = (value -
+limit) / limit. `>= 0` is compatible; 0.1 is 10 % headroom. `margin_report(
+margins, value_of)` returns `MarginReportEntry(label, value, compatible)`
+sorted most-critical first; it requires numeric values (e.g. `solution.value`).
+
+`powertrain/compatibility.py`:
+
+- `operating_margins(topology, port_values)`: per instance, from the same port
+  values used for connection residuals. Motor/generator: shaft power vs rating,
+  torque, speed, voltage window. Battery: terminal discharge and charge power.
+  Turboshaft shaft power, gearbox input power, rotor shaft power.
+- `design_margins(topology)`: ratings only. Per direct shaft connection the
+  downstream port must tolerate the upstream maximum, field by field (speed,
+  torque, power) where both sides declare it. Per bus: the battery terminal
+  range (`battery_voltage_range_V`, at max discharge and max charge power) must
+  lie in each machine's voltage window, and loss-free supply must cover demand
+  with instance counts. Electrical power bounds are shaft ratings, so the bus
+  power margin is optimistic.
+- `port_envelope(component, port)`: `MechanicalEnvelope(max_speed_rad_s,
+  max_torque_Nm, max_power_W)` (None = no bound) or `ElectricalEnvelope(
+  min_voltage_V, max_voltage_V, max_power_W, sets_voltage)`.
+
+Margins never clip or resize. Callers constrain `margin.value >= 0` or report.
+Speed/torque envelopes are not yet transformed through gearboxes because no
+component downstream of a gearbox declares speed or torque limits.
