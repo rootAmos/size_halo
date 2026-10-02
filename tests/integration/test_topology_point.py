@@ -1,6 +1,8 @@
 import unittest
 
-from examples.series_hybrid_point import solve_topology_point
+import aerosandbox as asb
+
+from examples.series_hybrid_point import build_point_problem, solve_topology_point
 from examples.series_hybrid_point_explicit import solve_reference_point
 
 
@@ -38,6 +40,24 @@ class TopologyPointTests(unittest.TestCase):
         # One generator carries 4x load with unscaled loss coefficients, so
         # fuel flow rises by more than 4x.
         self.assertGreater(self.quad.fuel_flow_kg_s, 4 * self.single.fuel_flow_kg_s)
+
+    def test_operating_margins_replace_rating_list(self):
+        self.assertGreater(self.single.min_operating_margin, 0)
+        # Rotor shaft power / gearbox efficiency against the 100 kW motor rating.
+        self.assertEqual(self.single.binding_margin_label, "motor power_shaft_W")
+        self.assertRelative(self.single.min_operating_margin, 1 - self.single.shaft_power_W / 0.97 / 100000)
+
+    def test_max_thrust_is_limited_by_a_margin(self):
+        opti = asb.Opti()
+        problem = build_point_problem(opti)
+        opti.minimize(-problem.rotor.thrust_N / 5000)
+        solution = opti.solve(verbose=False)
+        margins = {m.label: float(solution.value(m.value)) for m in problem.margins}
+        # Default motor (100 kW) and gearbox (100 kW input) ratings bind together.
+        for label in ("motor power_shaft_W", "gearbox power_input_W"):
+            self.assertLess(abs(margins[label]), 1e-6)
+        self.assertGreater(min(margins.values()), -1e-6)
+        self.assertGreater(float(solution.value(problem.rotor.thrust_N)), 5000)
 
 
 if __name__ == "__main__":
