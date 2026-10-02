@@ -92,13 +92,34 @@ Verification: 77 unittest cases (19 new) and the Tier 3 notebook (47 checks).
 Not modeled: current limits on machines, SOC and thermal margins, failure-case
 margins, gear-transformed speed/torque envelopes.
 
+## Tier 4: vehicle geometry, CG and mass closure
+
+`vehicle/` adds physical components that own geometry, hand it to `asb.Wing`
+and `asb.Fuselage`, and call AeroSandbox's Raymer general-aviation correlations;
+CG aggregation is `asb.MassProperties` addition, so no correlation or
+mass-weighting formula is duplicated. `examples/aircraft_mass_closure.py`
+closes the reference aircraft (12 m2 AR 9 wing, 7 m fuselage, 300 kg payload,
+four rotor strings from the Tier 2/3 topology, 1.1 installation factor) in one
+solve: MTOM 1552.4 kg, empty 1252.4 kg, powertrain 880 kg; the wing leading
+edge at 3.233 m places the CG at 25 % MAC. Payload growth factor is about 1.11
+with the powertrain fixed. Hover thrust per rotor is about 3806 N, below the
+Tier 3 capability of about 5284 N; this is reported, not yet a requirement.
+
+Raymer GA correlations are for light manned aircraft and are uncalibrated here;
+`mass_factor` is the calibration hook. Powertrain ratings are not resized with
+MTOM until coupled closure (Tier 9). Run the example as a module from the repo
+root (`python -m examples.aircraft_mass_closure`) because it imports the
+topology example. Verification: 102 unittest cases (25 new) and the Tier 4
+notebook (62 checks).
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
-Tier 1 component physics, Tier 2 topology and Tier 3 compatibility margins. Outputs are kept so plots render
+Tier 1 component physics, Tier 2 topology, Tier 3 compatibility margins and Tier 4 mass closure. Outputs are kept so plots render
 remotely.
 
 ## Next stage
 
-Tier 4: vehicle geometry, CG and empirical mass closure, then low-fidelity
-aero, controls, requirements and mission segments.
+Tier 5: low-fidelity aerodynamics (linear lift, parasite and induced drag)
+on the Tier 4 geometry, replacing the assumed cruise lift-to-drag, then
+controls, requirements and mission segments.

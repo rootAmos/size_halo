@@ -101,3 +101,32 @@ sorted most-critical first; it requires numeric values (e.g. `solution.value`).
 Margins never clip or resize. Callers constrain `margin.value >= 0` or report.
 Speed/torque envelopes are not yet transformed through gearboxes because no
 component downstream of a gearbox declares speed or torque limits.
+
+## Vehicle and mass closure (Tier 4)
+
+Physical components own geometry and return `asb.MassProperties` (point mass
+and CG) from `get_mass_properties(...)`; masses are AeroSandbox's Raymer
+general-aviation correlations on the component's own `asb.Wing`/`asb.Fuselage`
+times a dimensionless `mass_factor` (default 1).
+
+| Component | Geometry inputs | Mass source | CG |
+|---|---|---|---|
+| Wing, HorizontalTail | area_m2, aspect_ratio, taper_ratio, x_le_root_m, z_m, airfoil | raymer mass_wing / mass_hstab | 40 % MAC |
+| VerticalTail | area_m2, aspect_ratio (h^2/S), taper_ratio, x_le_root_m, z_root_m | raymer mass_vstab | 40 % MAC, 40 % height |
+| Fuselage | length_m, diameter_m, nose/tail fractions, x_nose_m | raymer mass_fuselage (needs wing-to-tail arm) | 45 % length |
+| LandingGear | gear lengths, x_main_m, x_nose_m | raymer main + nose, fixed | mass-weighted |
+| Systems | mass_avionics_uninstalled_kg, x_m | raymer flight controls + avionics | stated |
+| Payload | mass_kg, x_m, z_m | given | stated |
+| PowertrainInstallation | topology, InstalledInstance(name, x_m, z_m) per instance | installation_factor x count x get_mass() | stated |
+
+`StructuralDesignCondition(mass_design_kg, load_factor_ultimate=5.7,
+velocity_cruise_m_s, altitude_cruise_m, lift_to_drag_cruise)` carries the design
+mass into every correlation. `Aircraft.get_mass_breakdown(condition)` returns
+`MassBreakdown` (one `MassProperties` per item, `total()`, `mass_empty_kg()`);
+`get_mass`, `get_cg_x_m` and `to_asb()` (an `asb.Airplane`) build on it.
+Surfaces are unswept trapezoids; body axes are x aft from the nose, z up.
+
+Mass closure is the caller's explicit equality `mass_takeoff_kg ==
+aircraft.get_mass(StructuralDesignCondition(mass_takeoff_kg))`; see
+`examples/aircraft_mass_closure.py`. No fixed-point iteration exists. Not
+modeled: fuel, inertia tensors, nacelle/tilt-mechanism structure.
