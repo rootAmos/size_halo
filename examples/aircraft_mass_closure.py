@@ -6,7 +6,7 @@ wing position is solved so the CG sits at a chosen fraction of the MAC (a
 reference placement, not a stability criterion: that is Tier 6).
 Illustrative configuration, not Halo data; no aerodynamics or mission yet.
 """
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, replace
 
 import aerosandbox as asb
 
@@ -35,15 +35,18 @@ class ClosureResult:
 
 
 def build_reference_aircraft(x_le_wing_m=2.5, mass_payload_kg=300.0, count_rotors=4,
-                             area_horizontal_tail_m2=2.4, area_vertical_tail_m2=1.6):
+                             area_horizontal_tail_m2=2.4, area_vertical_tail_m2=1.6, topology=None, wing=None):
     """Tiltrotor-like layout: rotor strings at the wing quarter chord, engine aft.
 
     All rotors share one x station, so hover pitch trim with equal thrust needs
-    the CG under that station (25 % of the rectangular wing's MAC).
+    the CG under that station (25 % of the rectangular wing's MAC). A sized
+    `topology` (e.g. from `build_series_hybrid_from_sizing`) and a `wing`
+    template (area, aspect ratio) may be supplied; the wing is moved to
+    `x_le_wing_m`.
     """
-    wing = Wing(x_le_root_m=x_le_wing_m)
+    wing = replace(wing, x_le_root_m=x_le_wing_m) if wing is not None else Wing(x_le_root_m=x_le_wing_m)
     x_rotor_m = x_le_wing_m + 0.25 * wing.chord_root_m()
-    topology = build_reference_topology(count_rotors)
+    topology = topology if topology is not None else build_reference_topology(count_rotors)
     locations = (
         InstalledInstance("turboshaft", x_m=4.6, z_m=0.1),
         InstalledInstance("generator", x_m=4.1, z_m=0.1),

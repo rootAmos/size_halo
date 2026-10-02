@@ -9,8 +9,8 @@
 | 4 | Vehicle geometry, CG and empirical mass closure | Implemented |
 | 5 | Linear lift, parasite and induced drag, extension hooks | Implemented |
 | 6 | Conventional tails, trim, stability, asymmetric thrust | Implemented |
-| 7 | Payload, hover, climb, speed, ceiling constraints | Next |
-| 8 | Operating point then isolated segment then prescribed mission | Deferred |
+| 7 | Payload, hover, climb, speed, ceiling constraints | Implemented |
+| 8 | Operating point then isolated segment then prescribed mission | Next |
 | 9 | Coupled aircraft closure and energy allocation | Deferred |
 | 10 | Maps, engine decks, BEM, surrogates, advanced missions | Deferred |
 

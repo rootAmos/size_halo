@@ -153,11 +153,24 @@ fin (1.92 m2); the outboard-rotor failure at 1.2 V_stall needs 14.1 deg rudder
 represented by symmetric multiplicity). Verification: 141 unittest cases (15
 new), Tier 6 notebook 28 checks.
 
+## Tier 7: requirements and flight points
+
+The flight point couples aerodynamics and the full powertrain at one
+quasi-steady condition; requirements are flight points with operating margins
+>= 0. On the Tier 6 aircraft with reference ratings all four requirements are
+feasible. `examples/requirements_sizing.py` resizes the rubber powertrain in
+the closure at minimum MTOM: 1113 kg; max speed (80 m/s) on turbogenerator
+power sizes turboshaft and generator (200 kW); hover T/W 1.1 at 1000 m sizes
+motors (73 kW each) with the battery covering 67 % of hover power; disk area
+falls to 3.8 m2 because point requirements carry no energy cost (missions fix
+that in Tier 8/9). No turboshaft altitude lapse yet (Tier 10). Verification:
+155 unittest cases (14 new), Tier 7 notebook 51 checks.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
 Tier 1 component physics, Tier 2 topology, Tier 3 compatibility margins, Tier 4 mass closure, Tier 5
-aerodynamics and Tier 6 stability and control. Outputs are kept so plots render
+aerodynamics, Tier 6 stability and control and Tier 7 requirements. Outputs are kept so plots render
 remotely.
 
 ## Next stage

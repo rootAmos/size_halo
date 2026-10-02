@@ -178,3 +178,29 @@ thin-airfoil plain-flap tau times a viscous correction. Tails own
 
 Surfaces are unswept (ac at quarter MAC). V-tail, roll control, dynamic modes
 and hover/transition control are deferred.
+
+## Flight points and requirements (Tier 7)
+
+`powertrain/topologies.py`: `SeriesHybridSizing` (motor/generator peak
+torques, turboshaft rating, battery discharge power and energy, disk area,
+rotor count; any field may be an Opti variable) and
+`build_series_hybrid_from_sizing` (McDonald rubber machines with kQ 2.5,
+kP 1.25, kw 2.5; gearbox rated to the motor; rotor rated to the gearbox output;
+rotor mass 3 kg/m2; battery resistance x capacity constant).
+
+`performance/flight_point.py` (orchestration; creates per-point variables):
+`FlightCondition(mode "hover"|"airplane", velocity_m_s, altitude_m,
+climb_rate_m_s, thrust_to_weight, active_rotor_count, soc,
+hybridization_electric, label)` and `build_flight_point(opti, aircraft,
+aerodynamics, condition, mass_kg, hybridization_electric=None,
+drag_increments=())` -> `FlightPoint` with thrust, rotor power, rotor/motor
+speed, motor torque, motor electrical demand, battery and generator results,
+fuel flow and labelled Tier 3 operating margins. Hover: thrust = (T/W) W / n.
+Airplane mode: lift = W cos gamma (alpha variable), thrust = D + W sin gamma.
+Rotor speed is a variable (motor efficiency enters via McDonald); generator
+runs at its peak-efficiency speed; h_e in [0, 1] is a variable unless fixed.
+Requires the series-hybrid reference instance names.
+
+`requirements/capability.py`: `HoverRequirement`, `ClimbRequirement`,
+`SpeedRequirement`, `CeilingRequirement` (each `.flight_condition()`), and
+`RequirementSet`. Sustained requirements default to h_e = 0; hover is free.
