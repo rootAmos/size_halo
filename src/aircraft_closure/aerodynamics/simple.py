@@ -94,9 +94,13 @@ class SimpleAerodynamics:
             ParasiteDragItem("miscellaneous", self.drag_area_misc_m2 / area_ref_m2),
         )
 
-    def lift_curve_slope_per_rad(self, aircraft, velocity_m_s, altitude_m):
+    def surface_lift_curve_slope_per_rad(self, aspect_ratio, velocity_m_s, altitude_m):
+        """Finite-surface slope 2 pi CL_over_Cl(AR, M); also used for the tails (Tier 6)."""
         _, _, mach, _ = self._flow(velocity_m_s, altitude_m)
-        return 2 * np.pi * CL_over_Cl(aircraft.wing.aspect_ratio, mach=mach)
+        return 2 * np.pi * CL_over_Cl(aspect_ratio, mach=mach)
+
+    def lift_curve_slope_per_rad(self, aircraft, velocity_m_s, altitude_m):
+        return self.surface_lift_curve_slope_per_rad(aircraft.wing.aspect_ratio, velocity_m_s, altitude_m)
 
     def oswald_efficiency(self, aircraft):
         wing = aircraft.wing

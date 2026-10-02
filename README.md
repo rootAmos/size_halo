@@ -23,6 +23,7 @@ uv run python examples/series_hybrid_point.py
 uv run python examples/series_hybrid_point_explicit.py
 uv run python -m examples.aircraft_mass_closure
 uv run python -m examples.cruise_closure
+uv run python -m examples.tail_sizing
 uv run python -m aircraft_closure.powertrain.components.propulsor
 ```
 
@@ -61,6 +62,7 @@ Each tier has its own executed notebook (outputs kept so plots render remotely):
 | 3 | [Compatibility margins](notebooks/tier3_compatibility_margins/compatibility_verification.ipynb): envelopes, operating and design margins, binding limits, rating sizing |
 | 4 | [Vehicle mass closure](notebooks/tier4_vehicle_mass_closure/mass_closure_verification.ipynb): geometry, Raymer masses, CG, one-solve closure, payload growth |
 | 5 | [Aerodynamics](notebooks/tier5_aerodynamics/aerodynamics_verification.ipynb): lift, parasite buildup, polar, AeroBuildup comparison, cruise closure |
+| 6 | [Stability and control](notebooks/tier6_stability_control/stability_control_verification.ipynb): neutral point, trim, Cn_beta, failed-rotor rudder, tail sizing |
 
 ```powershell
 uv sync --group notebooks

@@ -74,6 +74,7 @@ class HorizontalTail(_SymmetricSurface):
     z_m: Any = 0.3
     airfoil: Any = field(default_factory=lambda: asb.Airfoil("naca0012"))
     mass_factor: Any = 1.0
+    elevator_chord_fraction: Any = 0.3
 
     def get_mass_properties(self, condition):
         tail = self.to_asb()
@@ -93,6 +94,7 @@ class VerticalTail:
     z_root_m: Any = 0.5
     airfoil: Any = field(default_factory=lambda: asb.Airfoil("naca0012"))
     mass_factor: Any = 1.0
+    rudder_chord_fraction: Any = 0.3
 
     def height_m(self):
         return _trapezoid_chords_m(self.area_m2, self.aspect_ratio, self.taper_ratio)[0]

@@ -156,3 +156,25 @@ components (no vehicle import).
 - `DragIncrement(label, cd)` is the additive extension hook.
 - `alpha_stall_deg(...)` gives the linear-lift angle at CLmax for callers to
   bound alpha. Wing lift only; tails, trim and propeller effects are Tier 6+.
+
+## Stability and control (Tier 6)
+
+`controls/stability.py` builds equations; callers own trim variables and
+constraints. `flap_effectiveness(chord_fraction, correction=0.8)` is the
+thin-airfoil plain-flap tau times a viscous correction. Tails own
+`elevator_chord_fraction` / `rudder_chord_fraction` (0.3).
+
+- `LongitudinalStability(tail_dynamic_pressure_ratio=0.9, cm_ac_wing=-0.09,
+  fuselage_pitch_factor_per_deg=0.012, tail_incidence_deg=0)`:
+  `neutral_point_x_m`, `static_margin`, `lift_curve_slope_total_per_rad`, and
+  `evaluate(aircraft, aerodynamics, x_cg_m, V, h, alpha_deg, elevator_deg)` ->
+  `LongitudinalResult(cl_total, cl_wing, cl_tail, cm, downwash_deg, lift_N,
+  trim_drag)`; trim drag is a Tier 5 `DragIncrement` (tail induced drag).
+  Downwash 2 CL_w/(pi AR); fuselage Cm_alpha from Raymer eq. 16.25.
+- `DirectionalStability(...)`: `cn_beta_per_rad` (fin with 1.55 x geometric AR
+  end-plate factor plus Raymer eq. 16.47 fuselage term) and
+  `rudder_for_yaw_moment_deg`.
+- `failed_propulsor_yaw_moment_Nm(thrust, lateral_arm_m, drag_failed=0)`.
+
+Surfaces are unswept (ac at quarter MAC). V-tail, roll control, dynamic modes
+and hover/transition control are deferred.

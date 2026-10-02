@@ -140,14 +140,27 @@ monotonically from stall. AeroBuildup's slope is 20 % higher because it
 includes tail lift (Tier 6). Verification: 126 unittest cases (14 new), Tier 5
 notebook 28 checks.
 
+## Tier 6: stability, trim and tail sizing
+
+At the Tier 4 CG the reference aircraft has a 12.1 % static margin, trims at
+60 m/s with -5.1 deg elevator (tail download) and has Cn_beta 0.040 /rad.
+Because all rotors share one x station, hover pitch trim with equal thrust
+requires the CG under that station; `examples/tail_sizing.py` uses this as an
+equality and minimizes MTOM over wing position and both tail areas. Static
+margin >= 10 % sizes the horizontal tail (2.16 m2) and Cn_beta >= 0.06 /rad the
+fin (1.92 m2); the outboard-rotor failure at 1.2 V_stall needs 14.1 deg rudder
+(limit 20). MTOM 1553.3 kg. Rotor lateral positions are explicit inputs (not
+represented by symmetric multiplicity). Verification: 141 unittest cases (15
+new), Tier 6 notebook 28 checks.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
-Tier 1 component physics, Tier 2 topology, Tier 3 compatibility margins, Tier 4 mass closure and Tier 5
-aerodynamics. Outputs are kept so plots render
+Tier 1 component physics, Tier 2 topology, Tier 3 compatibility margins, Tier 4 mass closure, Tier 5
+aerodynamics and Tier 6 stability and control. Outputs are kept so plots render
 remotely.
 
 ## Next stage
 
-Tier 6: conventional-tail stability, trim, directional stability and
-failed-propulsor yaw control, then requirements and mission segments.
+Tier 7 requirements (payload, hover, climb, speed, ceiling), Tier 8 mission
+segments and Tier 9 coupled sizing with mission and energy allocation.

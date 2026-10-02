@@ -34,8 +34,13 @@ class ClosureResult:
     component_masses_kg: tuple
 
 
-def build_reference_aircraft(x_le_wing_m=2.5, mass_payload_kg=300.0, count_rotors=4):
-    """Tiltrotor-like layout: rotor strings at the wing quarter chord, engine aft."""
+def build_reference_aircraft(x_le_wing_m=2.5, mass_payload_kg=300.0, count_rotors=4,
+                             area_horizontal_tail_m2=2.4, area_vertical_tail_m2=1.6):
+    """Tiltrotor-like layout: rotor strings at the wing quarter chord, engine aft.
+
+    All rotors share one x station, so hover pitch trim with equal thrust needs
+    the CG under that station (25 % of the rectangular wing's MAC).
+    """
     wing = Wing(x_le_root_m=x_le_wing_m)
     x_rotor_m = x_le_wing_m + 0.25 * wing.chord_root_m()
     topology = build_reference_topology(count_rotors)
@@ -49,8 +54,8 @@ def build_reference_aircraft(x_le_wing_m=2.5, mass_payload_kg=300.0, count_rotor
     )
     return Aircraft(
         wing=wing,
-        horizontal_tail=HorizontalTail(),
-        vertical_tail=VerticalTail(),
+        horizontal_tail=HorizontalTail(area_m2=area_horizontal_tail_m2),
+        vertical_tail=VerticalTail(area_m2=area_vertical_tail_m2),
         fuselage=Fuselage(),
         landing_gear=LandingGear(),
         systems=Systems(),
