@@ -28,7 +28,10 @@ import aerosandbox.numpy as np
 import aerosandbox.tools.units as u
 from aerosandbox.library.power_turboshaft import power_turboshaft, thermal_efficiency_turboshaft
 
+from aircraft_closure.aerodynamics.buildup import BuildupAerodynamics
+from aircraft_closure.aerodynamics.scholz import ScholzAerodynamics
 from aircraft_closure.aerodynamics.simple import SimpleAerodynamics
+from aircraft_closure.aerodynamics.slipstream import BlownWing
 from aircraft_closure.controls.stability import DirectionalStability, LongitudinalStability
 from aircraft_closure.core.margins import margin_above, margin_below, margin_report
 from aircraft_closure.mission.mission import Mission, build_mission
@@ -173,6 +176,15 @@ class HaloAssumptions:
     # resistance follow SOC through long segments; and points in the 60 s engine-out hover (SOC 0.30 -> 0.10).
     subsegments_mission: tuple = (1, 1, 4, 1, 1, 1)
     subsegments_engine_out: int = 3
+    # ---- Tier 21 aerodynamics (plan 025) ----
+    # "simple": SimpleAerodynamics with `drag_area_misc_m2` and the constant download (the reference);
+    # "buildup": AeroSandbox AeroBuildup plus Scholz interference, the misc. drag area below, blown wing and the
+    # geometric hover download; "scholz": the Scholz level-0 hand check (linear lift, no blown wing).
+    aerodynamics_model: str = "simple"
+    length_nacelle_m: float = 9.0 * u.foot        # assumed; with the diameter, ~95 ft2 wetted (cowling mass)
+    diameter_nacelle_m: float = 3.3 * u.foot
+    drag_area_misc_buildup_m2: float = 3.00 * u.foot**2  # XV-15 "fuselage fittings & fixtures" (NDARC, Johnson 2010)
+    blown_wing: bool = True                       # "buildup": rotor slipstream increments in airplane mode
 
 
 @dataclass(frozen=True)
@@ -216,6 +228,19 @@ def build_halo_battery(design, assumptions=HaloAssumptions()):
                        max_charge_power_W=0.5 * d.power_max_discharge_battery_W,
                        mass_smoothing_kg=a.battery_mass_smoothing_kg)
     raise ValueError(f"Unknown battery model '{a.battery_model}'.")
+
+
+def build_halo_aerodynamics(requirements=HaloRequirements(), assumptions=HaloAssumptions()):
+    a, r = assumptions, requirements
+    if a.aerodynamics_model == "simple":
+        return SimpleAerodynamics(drag_area_misc_m2=a.drag_area_misc_m2,
+                                  download_fraction_hover=a.download_fraction_hover, cl_max=r.cl_max)
+    if a.aerodynamics_model == "buildup":
+        return BuildupAerodynamics(cl_max=r.cl_max, drag_area_misc_m2=a.drag_area_misc_buildup_m2,
+                                   blown_wing=BlownWing() if a.blown_wing else None)
+    if a.aerodynamics_model == "scholz":
+        return ScholzAerodynamics(cl_max=r.cl_max, drag_area_misc_m2=a.drag_area_misc_buildup_m2)
+    raise ValueError(f"Unknown aerodynamics model '{a.aerodynamics_model}'.")
 
 
 def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None,
@@ -315,7 +340,8 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
         fuel=FuelLoad(mass_kg=d.mass_fuel_kg, x_m=x_rotor_m, z_m=wing.z_m),
         nacelles=Nacelles(mass_engines_kg=a.count_turbogenerators * d.mass_turboshaft_bare_kg,
                           count_engines=a.count_turbogenerators, area_wetted_m2=a.area_wetted_nacelles_m2,
-                          x_m=x_rotor_m, z_m=wing.z_m, mass_factor=factors.powerplant),
+                          x_m=x_rotor_m, z_m=wing.z_m, mass_factor=factors.powerplant,
+                          length_m=a.length_nacelle_m, diameter_m=a.diameter_nacelle_m, y_m=wing.span_m() / 2),
         equipment=FixedEquipment(mass_kg=a.mass_equipment_kg, x_m=3.5),
     )
 
@@ -391,8 +417,7 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     factors = factors if factors is not None else calibration_factors()
     lapse_exponent = fit_lapse_exponent()
     a, r = assumptions, requirements
-    aerodynamics = SimpleAerodynamics(drag_area_misc_m2=a.drag_area_misc_m2,
-                                      download_fraction_hover=a.download_fraction_hover, cl_max=r.cl_max)
+    aerodynamics = build_halo_aerodynamics(r, a)
     longitudinal, directional = LongitudinalStability(), DirectionalStability()
     opti = asb.Opti()
 

@@ -79,6 +79,10 @@ class Nacelles:
 
     `mass_engines_kg` is the dry mass of all engines the nacelles carry, usually
     the installed turboshaft mass expression. Pylon structure is not included.
+
+    Optional geometry (Tier 21): a symmetric pair of bodies of revolution of
+    `length_m` x `diameter_m` centred at (`x_m`, +/-`y_m`, `z_m`); the spinner is
+    the body's nose. Without it the nacelles have no aerodynamic shape.
     """
     mass_engines_kg: Any
     count_engines: Any = 2
@@ -87,6 +91,21 @@ class Nacelles:
     x_m: Any = 3.0
     z_m: Any = 0.6
     mass_factor: Any = 1.0
+    length_m: Any = None
+    diameter_m: Any = None
+    y_m: Any = 0.0
+
+    def to_asb(self):
+        """The nacelle bodies as AeroSandbox fuselages (empty without geometry)."""
+        if self.length_m is None:
+            return []
+        radius_m = self.diameter_m / 2
+        # Spinner nose to 25 % length, full section to 70 %, tapering to a 30 % radius at the tail.
+        stations = [(0.0, 0.05), (0.25, 1.0), (0.7, 1.0), (1.0, 0.3)]
+        return [asb.Fuselage(name=f"nacelle_{side}", xsecs=[
+            asb.FuselageXSec(xyz_c=[self.x_m + (fraction - 0.5) * self.length_m, sign * self.y_m, self.z_m],
+                             radius=radius_fraction * radius_m)
+            for fraction, radius_fraction in stations]) for side, sign in (("right", 1), ("left", -1))]
 
     def get_mass_properties(self):
         mass_kg = (afdd.mass_engine_support_afdd82_kg(self.mass_engines_kg, self.count_engines,

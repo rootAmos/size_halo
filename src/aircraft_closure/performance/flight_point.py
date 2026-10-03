@@ -24,6 +24,7 @@ from typing import Any
 import aerosandbox as asb
 import aerosandbox.numpy as np
 
+from aircraft_closure.aerodynamics.slipstream import RotorState
 from aircraft_closure.core.ports import ElectricalPortValue, MechanicalPortValue
 from aircraft_closure.powertrain.compatibility import operating_margins
 from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery
@@ -90,26 +91,38 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
 
     if condition.mode == "hover":
         alpha_deg, aero = None, None
+        speed_rotor_rad_s = opti.variable(init_guess=100.0, scale=100.0, lower_bound=10.0)
         velocity_m_s = 0.0
-        thrust_total_N = condition.thrust_to_weight * weight_N / (1 - aerodynamics.download_fraction_hover)
+        download_fraction = aerodynamics.hover_download_fraction(aircraft)
+        thrust_total_N = condition.thrust_to_weight * weight_N / (1 - download_fraction)
     else:
         velocity_m_s = condition.velocity_m_s
         alpha_deg = opti.variable(init_guess=4.0, lower_bound=-5.0, upper_bound=20.0)
+        speed_rotor_rad_s = opti.variable(init_guess=100.0, scale=100.0, lower_bound=10.0)
+        rotor_state = None
+        if getattr(aerodynamics, "blown_wing", None) is not None:
+            # Tier 21 blown wing: the slipstream depends on thrust, thrust on drag. Thrust per rotor is a variable
+            # tied to the drag by an equality below (no iteration).
+            rotor_state = RotorState(opti.variable(init_guess=5000.0, scale=5000.0, lower_bound=0.0),
+                                     speed_rotor_rad_s)
         aero = aerodynamics.evaluate(aircraft, velocity_m_s, condition.altitude_m, alpha_deg, drag_increments,
-                                     temperature_offset_K=temperature_offset_K)
+                                     temperature_offset_K=temperature_offset_K, rotor_state=rotor_state)
         sin_gamma = condition.climb_rate_m_s / velocity_m_s
         # Equalities are normalized (lift by weight, powers by installed motor
         # rating) so IPOPT sees O(1) residuals in large coupled problems.
         opti.subject_to([aero.lift_N / weight_N == np.sqrt(1 - sin_gamma**2),
                          alpha_deg <= aerodynamics.alpha_stall_deg(aircraft, velocity_m_s, condition.altitude_m,
-                                                                   temperature_offset_K=temperature_offset_K)])
+                                                                   temperature_offset_K=temperature_offset_K,
+                                                                   aero=aero)])
         thrust_total_N = aero.drag_N + weight_N * sin_gamma
+        if rotor_state is not None:
+            opti.subject_to((active_rotor_count * rotor_state.thrust_per_rotor_N - thrust_total_N) / weight_N == 0)
+            thrust_total_N = active_rotor_count * rotor_state.thrust_per_rotor_N
 
     thrust_per_rotor_N = thrust_total_N / active_rotor_count
     if condition.mode == "airplane":
         rotor_model = rotor_model.in_airplane_mode()
     speed_motor_limit_rad_s = motor_model.max_speed_rad_s
-    speed_rotor_rad_s = opti.variable(init_guess=100.0, scale=100.0, lower_bound=10.0)
     rotor = rotor_model.evaluate(velocity_m_s, atmosphere, thrust_N=thrust_per_rotor_N, speed_rad_s=speed_rotor_rad_s)
     # Rotor-speed physics models (Tier 12) return blade loading and helical tip Mach to bound.
     if getattr(rotor_model, "blade_loading_max", None) is not None:
