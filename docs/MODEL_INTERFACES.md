@@ -656,7 +656,10 @@ min and max terminal voltage.
   - `assumptions_tier17` (ECM);
   - `requirements_tier16` with `assumptions_tier16` (the 900 kg
     constant-battery aircraft of Tiers 13–16).
-  - Since plan 022 the defaults are the ECM pack at 780 kg.
+  - `requirements_plan022` with `assumptions_plan022` (the 780 kg ECM
+    aircraft with the Raymer wing).
+  - Since plan 026 the defaults are the ECM pack with the AFDD tiltrotor
+    wing at 900 kg.
 - **Trajectory** (`build_tiltrotor_trajectory`):
   - accepts either battery;
   - the motors see the terminal voltage;

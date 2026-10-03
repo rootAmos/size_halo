@@ -5,14 +5,15 @@ from dataclasses import replace
 import aerosandbox.tools.units as u
 
 from examples.halo_sizing import (HaloAssumptions, HaloRequirements, assumptions_tier12b, assumptions_tier16,
-                                  assumptions_tier17, requirements_tier12b, requirements_tier16, solve_halo_sizing,
+                                  assumptions_plan022, assumptions_tier17, requirements_plan022, requirements_tier12b,
+                                  requirements_tier16, solve_halo_sizing,
                                   soc_emergency_floor, soc_minimum)
 
 
 class HaloEquivalentCircuitBatteryTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.reference = solve_halo_sizing()
+        cls.reference = solve_halo_sizing(requirements_plan022, assumptions_plan022)
         # Max payload: warm-started from the constant-battery Tier 16 design (from the equivalent-circuit
         # minimum-mass design IPOPT reaches local infeasibility; plan 022).
         cls.base = solve_halo_sizing(requirements_tier16, assumptions_tier16)
@@ -20,10 +21,10 @@ class HaloEquivalentCircuitBatteryTests(unittest.TestCase):
         cls.denser = solve_halo_sizing(assumptions=replace(assumptions_tier17, factor_power_density_battery=8.0),
                                        objective="payload", initial=cls.ecm)
 
-    def test_reference_is_the_equivalent_circuit_battery_at_780_kg(self):
-        """Plan 022 (user decision 2026-10-03: take a lower payload)."""
+    def test_plan022_reference_reproduces(self):
+        """Plan 022 (user decision 2026-10-03: take a lower payload): 780 kg, Raymer wing."""
         self.assertEqual(HaloAssumptions().battery_model, "ecm")
-        self.assertEqual(HaloRequirements().mass_payload_kg, 780.0)
+        self.assertEqual(requirements_plan022.mass_payload_kg, 780.0)
         r = self.reference
         self.assertGreater(r.min_margin, -1e-6)
         self.assertLess(abs(r.closure_residual_kg), 1e-5)

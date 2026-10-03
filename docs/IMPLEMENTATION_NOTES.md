@@ -819,6 +819,25 @@ flight-control groups are not split out (no public breakdown).
 
 Verification: 392 unittest cases (39 new) and the Tier 20 notebook's checks.
 
+## Plan 026: AFDD tiltrotor wing as the reference
+
+The user approved the switch on 2026-10-03.
+
+- **Defaults:** `wing_weight_model="afdd_tiltrotor"`, payload back to
+  900 kg.
+- **Reference:** 6,462 kg (14,247 lb).
+  - Battery: 62.7 kWh, 426 kg.
+  - Wing: 22.2 m².
+  - Binding: whirl-flutter torsion at the 210 kt point, and the engine-out
+    end voltage.
+- **Starting point** (equivalent-circuit battery, no `initial`):
+  - first, the constant-battery solve;
+  - if that start fails, the equivalent-circuit solve at 85 % payload.
+  - The 900 kg case needs the second start.
+- **Legacy sets** pin `wing_weight_model="raymer"`.
+  `requirements_plan022` / `assumptions_plan022` keep the 780 kg plan 022
+  reference at 14,436 lb.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,

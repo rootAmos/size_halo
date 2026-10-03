@@ -4,8 +4,8 @@ The Tier 9 formulation, re-baselined on the Bell XV-15 (plans 011-013):
 two tip-mounted rotors, two turbogenerators on one bus with a battery, and the
 validated Tier 10 models.
 
-Requirements (user-approved 2026-10-02, revised 2026-10-03): 780 kg payload (plan 022; 900 kg until
-then), 445 nm mission, 210 kt at 10,000 ft, 13,000 ft ceiling, OGE hover at 4,000 ft, engine-out
+Requirements (user-approved 2026-10-02, revised 2026-10-03): 900 kg payload (780 kg in plan 022, back to
+900 kg with the AFDD tiltrotor wing in plan 026), 445 nm mission, 210 kt at 10,000 ft, 13,000 ft ceiling, OGE hover at 4,000 ft, engine-out
 hover on one turbogenerator plus battery, stall at most 120 kt.
 
 Models carried from Tier 10:
@@ -106,9 +106,9 @@ def mass_equipment_from_items_kg(items):
 
 @dataclass(frozen=True)
 class HaloRequirements:
-    # 780 kg (plan 022, user decision 2026-10-03 "take a lower payload"): the equivalent-circuit pack allows at
-    # most 785 kg at 210 kt on the fixed engines; 900 kg until then (requirements_tier16).
-    mass_payload_kg: float = 780.0
+    # 900 kg (plan 026): with the AFDD tiltrotor wing the equivalent-circuit pack carries up to 959 kg at 210 kt.
+    # 780 kg with the Raymer wing (plan 022, requirements_plan022); 900 kg before that (requirements_tier16).
+    mass_payload_kg: float = 900.0
     range_m: float = 445 * 1852.0
     altitude_cruise_m: float = 10000 * u.foot
     # 210 kt (plan 017): the most the fixed 2 x 1,120 hp turboshafts sustain with 900 kg over 445 nm (max
@@ -215,10 +215,11 @@ class HaloAssumptions:
     subsegments_mission: tuple = (1, 1, 4, 1, 1, 1)
     subsegments_engine_out: int = 3
     # ---- Tier 20 wing weight (plan 024) ----
-    # "raymer": Raymer GA wing x the XV-15 wing factor (the reference); "afdd_tiltrotor": the AFDD tiltrotor wing
+    # "afdd_tiltrotor" (the reference from plan 026, user-approved 2026-10-03): the AFDD tiltrotor wing
     # (NDARC 19-1.1) x its own XV-15 factor, built for the wing design rotor speed (a design variable) and checked
     # by whirl-flutter frequency margins at every airplane-mode point.
-    wing_weight_model: str = "raymer"
+    # "raymer": Raymer GA wing x the XV-15 wing factor (the reference until plan 026).
+    wing_weight_model: str = "afdd_tiltrotor"
     # XV-15 symmetric wing modes in per rev of its airplane-mode rotor speed (torsion 1.09, beam 0.43, chord 0.83).
     frequency_torsion_wing_per_rev: float = Xv15Reference().frequency_torsion_wing_per_rev
     frequency_beam_wing_per_rev: float = Xv15Reference().frequency_beam_wing_per_rev
@@ -467,11 +468,20 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
 
     With the equivalent-circuit battery and no `initial`, the same problem is first solved with the constant
     battery and used as the initial guess: IPOPT reaches local infeasibility from the generic guess (plan 022).
-    This is a starting point only; the coupled problem is still one solve.
+    If the problem then still fails, the equivalent-circuit problem at 85 % of the payload is solved (by the same
+    rule) and used as the start (plan 026). These are starting points only; each coupled problem is one solve.
     """
     if initial is None and assumptions.battery_model == "ecm":
-        initial = solve_halo_sizing(requirements, replace(assumptions, battery_model="constant"), factors,
-                                    max_iter=max_iter)
+        constant_start = solve_halo_sizing(requirements, replace(assumptions, battery_model="constant"), factors,
+                                           max_iter=max_iter)
+        try:
+            return solve_halo_sizing(requirements, assumptions, factors, verbose, max_iter, constant_start, objective)
+        except RuntimeError:
+            if objective != "mass_takeoff" or requirements.mass_payload_kg < 300.0:
+                raise
+        lighter_start = solve_halo_sizing(replace(requirements, mass_payload_kg=0.85 * requirements.mass_payload_kg),
+                                          assumptions, factors, max_iter=max_iter)
+        return solve_halo_sizing(requirements, assumptions, factors, verbose, max_iter, lighter_start, objective)
     factors = factors if factors is not None else calibration_factors()
     lapse_exponent = fit_lapse_exponent()
     a, r = assumptions, requirements
@@ -765,16 +775,21 @@ requirements_tier10c = HaloRequirements(mass_payload_kg=900.0, velocity_max_m_s=
 requirements_tier12b = HaloRequirements(mass_payload_kg=900.0, hover_hot_day=False)
 # Tiers 13-16 reference (plans 018-020): 900 kg with the constant-OCV battery (13,760 lb).
 requirements_tier16 = HaloRequirements(mass_payload_kg=900.0)
-assumptions_tier16 = HaloAssumptions(battery_model="constant")
-assumptions_tier12 = HaloAssumptions(battery_model="constant", power_rated_turboshaft_fixed_W=None,
+assumptions_tier16 = HaloAssumptions(battery_model="constant", wing_weight_model="raymer")
+# Plan 022 reference: 780 kg with the equivalent-circuit battery and the Raymer wing (14,436 lb).
+requirements_plan022 = HaloRequirements(mass_payload_kg=780.0)
+assumptions_plan022 = HaloAssumptions(wing_weight_model="raymer")
+assumptions_tier12 = HaloAssumptions(battery_model="constant", wing_weight_model="raymer",
+                                     power_rated_turboshaft_fixed_W=None,
                                      hybridization_electric_min=0.0, soc_floor_every_segment=False,
                                      machine_mass_by_torque=False)
 # Tier 12b reference (plan 017): fixed engines with the constant-OCV battery and Tier 12b machines.
-assumptions_tier12b = HaloAssumptions(battery_model="constant", machine_mass_by_torque=False)
-# Tier 17 (plan 021): the equivalent-circuit 50G-shaped pack at end of life (the default from plan 022).
-assumptions_tier17 = HaloAssumptions(battery_model="ecm")
+assumptions_tier12b = HaloAssumptions(battery_model="constant", wing_weight_model="raymer",
+                                      machine_mass_by_torque=False)
+# Tier 17 (plan 021): the equivalent-circuit 50G-shaped pack at end of life, on the Raymer-wing aircraft.
+assumptions_tier17 = HaloAssumptions(battery_model="ecm", wing_weight_model="raymer")
 assumptions_tier11a = replace(assumptions_tier12, rotor_speed_physics=False)
-# Tier 20 (plan 024): the reference with the AFDD tiltrotor wing.
+# Tier 20 (plan 024): the AFDD tiltrotor wing (the default from plan 026).
 assumptions_tier20 = HaloAssumptions(wing_weight_model="afdd_tiltrotor")
 
 if __name__ == "__main__":

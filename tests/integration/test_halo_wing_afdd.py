@@ -1,16 +1,19 @@
-"""Tier 20 (plan 024): Halo reference with the AFDD tiltrotor wing; default unchanged; itemised equipment."""
+"""Tier 20 (plan 024) and plan 026: Halo with the AFDD tiltrotor wing (the default from plan 026); equipment."""
 import unittest
 from dataclasses import replace
 
 import aerosandbox.tools.units as u
 
 from examples.halo_sizing import (HaloAssumptions, HaloRequirements, assumptions_tier20, halo_equipment_items,
-                                  mass_equipment_from_items_kg, solve_halo_sizing, uncrewed_equipment_adjustments)
+                                  mass_equipment_from_items_kg, requirements_plan022, solve_halo_sizing,
+                                  uncrewed_equipment_adjustments)
 
 
 class DefaultsTests(unittest.TestCase):
-    def test_default_wing_model_is_raymer(self):
-        self.assertEqual(HaloAssumptions().wing_weight_model, "raymer")
+    def test_default_wing_model_is_afdd_at_900_kg(self):
+        """Plan 026 (user-approved 2026-10-03)."""
+        self.assertEqual(HaloAssumptions().wing_weight_model, "afdd_tiltrotor")
+        self.assertEqual(HaloRequirements().mass_payload_kg, 900.0)
         self.assertEqual(assumptions_tier20.wing_weight_model, "afdd_tiltrotor")
 
     def test_itemised_equipment_keeps_the_reference_mass(self):
@@ -25,7 +28,7 @@ class DefaultsTests(unittest.TestCase):
 class HaloAfddWingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.result = solve_halo_sizing(HaloRequirements(), assumptions_tier20)
+        cls.result = solve_halo_sizing(requirements_plan022, assumptions_tier20)      # 780 kg, as in plan 024
 
     def test_closes_lighter_than_reference(self):
         r = self.result
@@ -57,6 +60,25 @@ class HaloAfddWingTests(unittest.TestCase):
                                     objective="payload")
         result = solve_halo_sizing(HaloRequirements(), assumptions_tier20, objective="payload", initial=initial)
         self.assertAlmostEqual(result.mass_payload_kg, 959, delta=10)
+
+
+class Plan026ReferenceTests(unittest.TestCase):
+    """The reference from plan 026: 900 kg, AFDD wing, equivalent-circuit battery, solved from the defaults."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.result = solve_halo_sizing()
+
+    def test_reference_closes_at_900_kg(self):
+        r = self.result
+        self.assertGreater(r.min_margin, -1e-6)
+        self.assertLess(abs(r.closure_residual_kg), 1e-5)
+        self.assertEqual(r.mass_payload_kg, 900.0)
+        self.assertAlmostEqual(r.mass_takeoff_kg / u.lbm, 14247, delta=5)
+
+    def test_whirl_flutter_and_battery_voltage_size_the_design(self):
+        self.assertIn("whirl flutter torsion per rev (max_speed)", self.result.binding)
+        self.assertIn("engine-out hover 3/3: battery end voltage_V", self.result.binding)
 
 
 if __name__ == "__main__":
