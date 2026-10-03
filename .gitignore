@@ -12,3 +12,6 @@ dist/
 # User-supplied engine and propeller data (not committed; see plan 014)
 data/engines/
 data/propellers/
+
+# Claude Code agent worktrees
+.claude/

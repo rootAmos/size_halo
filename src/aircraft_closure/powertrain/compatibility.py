@@ -13,6 +13,7 @@ import aerosandbox.numpy as np
 from aircraft_closure.core.margins import margin_above, margin_below
 from aircraft_closure.core.ports import Direction
 from .components.battery import Battery
+from .components.battery_ecm import EquivalentCircuitBattery
 from .components.gearbox import Gearbox
 from .components.generator import Generator
 from .components.motor import Motor
@@ -63,6 +64,11 @@ def port_envelope(component, port_name):
     elif isinstance(component, Battery) and port_name == "electrical":
         min_voltage_V, max_voltage_V = battery_voltage_range_V(component)
         return ElectricalEnvelope(min_voltage_V, max_voltage_V, component.max_discharge_power_W, sets_voltage=True)
+    elif isinstance(component, EquivalentCircuitBattery) and port_name == "electrical":
+        # Tier 17: the cell voltage window x count_series (2.5-4.2 V per 50G cell); rated power at nominal voltage.
+        limits = component.get_limits()
+        return ElectricalEnvelope(limits.min_voltage_V, limits.max_voltage_V, component.power_max_discharge_W,
+                                  sets_voltage=True)
     elif isinstance(component, SimpleTurboshaft):
         if port_name == "shaft":
             return MechanicalEnvelope(max_power_W=component.power_rated_W)
@@ -110,6 +116,15 @@ def operating_margins(topology, port_values, atmosphere=None):
             margins += [
                 margin_below(f"{name} discharge_power_W", power_terminal_W, component.max_discharge_power_W),
                 margin_below(f"{name} charge_power_W", -power_terminal_W, component.max_charge_power_W),
+            ]
+        elif isinstance(component, EquivalentCircuitBattery):
+            electrical = value("electrical")
+            limits = component.get_limits()
+            margins += [
+                margin_below(f"{name} discharge_current_A", electrical.current_A, limits.max_discharge_current_A),
+                margin_below(f"{name} charge_current_A", -electrical.current_A, limits.max_charge_current_A),
+                margin_above(f"{name} min_voltage_V", electrical.voltage_V, limits.min_voltage_V),
+                margin_below(f"{name} max_voltage_V", electrical.voltage_V, limits.max_voltage_V),
             ]
         elif isinstance(component, SimpleTurboshaft):
             shaft = value("shaft")

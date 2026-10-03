@@ -11,6 +11,12 @@ Hover: thrust per active rotor = (T/W) W / ((1 - download) n_active) at zero
 airspeed; the download fraction belongs to the aerodynamics model.
 Airplane mode (tiltrotor cruise, rotors as propellers): wing lift = W cos(gamma),
 thrust = D + W sin(gamma), sin(gamma) = climb rate / V.
+
+Equivalent-circuit battery (Tier 17): the point holds the current for
+`duration_s` from the RC state `voltage_rc_start_V` (None: steady-state
+polarization), and the bus voltage is the interval-mean terminal voltage. The
+power balance R_eff I^2 - V* I + P = 0 is an equality like any other; the
+branch constraint V >= V*/2 selects its physical low-current root.
 """
 from dataclasses import dataclass
 from typing import Any
@@ -20,6 +26,7 @@ import aerosandbox.numpy as np
 
 from aircraft_closure.core.ports import ElectricalPortValue, MechanicalPortValue
 from aircraft_closure.powertrain.compatibility import operating_margins
+from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery
 
 acceleration_gravity_m_s2 = 9.80665
 
@@ -67,7 +74,7 @@ class FlightPoint:
 
 def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridization_electric=None, *,
                        hybridization_electric_min=0.0,
-                       drag_increments=()):
+                       drag_increments=(), duration_s=0.0, voltage_rc_start_V=None):
     instances = aircraft.powertrain.topology.instances
     motor_model = instances["motor"].component
     generator_model = instances["generator"].component
@@ -117,7 +124,12 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     gear = gearbox_model.evaluate(speed_motor_rad_s, torque_motor_Nm)
 
     current_battery_A = opti.variable(init_guess=50.0, scale=100.0)
-    battery = battery_model.evaluate(current_battery_A, condition.soc)
+    if isinstance(battery_model, EquivalentCircuitBattery):
+        battery = battery_model.evaluate(current_battery_A, condition.soc, duration_s, voltage_rc_start_V)
+        # Low-current root of R_eff I^2 - V* I + P = 0; also P <= V*^2 / (4 R_eff).
+        opti.subject_to(battery.voltage_V / battery.voltage_driving_V >= 0.5)
+    else:
+        battery = battery_model.evaluate(current_battery_A, condition.soc)
     voltage_bus_V = battery.voltage_V
     motor = motor_model.evaluate(speed_motor_rad_s, torque_motor_Nm, voltage_bus_V)
     power_electric_motors_W = active_rotor_count * motor.power_electric_W

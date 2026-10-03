@@ -21,12 +21,14 @@ class HoverSegment:
     hybridization_electric: Any = None
     label: str = "hover"
     temperature_offset_K: Any = 0.0            # Tier 16: ISA + offset at the altitude
+    active_generator_count: Any = None    # None: all; fewer models a turbogenerator out (Tier 17 reserve)
 
     def duration_s(self):
         return self.duration_s_given
 
     def flight_condition(self, soc):
         return FlightCondition(mode="hover", velocity_m_s=0.0, altitude_m=self.altitude_m, thrust_to_weight=1.0,
+                               active_generator_count=self.active_generator_count,
                                soc=soc, hybridization_electric=self.hybridization_electric, label=self.label,
                                temperature_offset_K=self.temperature_offset_K)
 

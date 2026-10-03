@@ -622,6 +622,68 @@ Effects:
 Verification: 285 unittest cases (21 new) and the Tier 16 notebook's 18
 checks.
 
+## Tier 17: battery equivalent circuit
+
+**Data.** The Samsung INR21700-50G (Paudel et al. 2025, CC BY 4.0),
+digitized into `data/batteries/`:
+
+- **Fig. 8 (vector):** curve vertices via PyMuPDF `get_drawings()`. That gives
+  1,232 points (DCIR and pulse power, 2/10/30/180 s, six temperatures),
+  essentially exact. Collinear vertices that MATLAB merged were restored.
+- **Fig. 7 OCV and Fig. 12 ECM (raster):** colour clusters at each 5 % SOC
+  column, about +-5 mV at 30/45 C.
+- **Cross-check:** eq. (12), P = 2.5 (OCV - 2.5) / DCIR, reproduces the
+  separately digitized power curves to 1.3 % rms.
+
+**Model.** `EquivalentCircuitBattery`:
+
+- OCV: a degree-7 polynomial at 30 C.
+- Resistance: R0 + 2 RC (8 s, 43 s), with smooth R(SOC, T) fitted by an
+  `asb.Opti` least squares to all discharge DCIR, 4.7 % rms.
+- A power-density factor F: resistance / F, current rating x F (user
+  decision).
+- End-of-life capacity 0.8 and resistance 1.5; cell/pack mass 0.7.
+
+**Algebraic loop.** The loop V = V* - I R, P = V I stays as Opti equalities.
+`build_flight_point` adds V >= V*/2, which keeps IPOPT on the physical
+low-current root. From a high-root start IPOPT reports infeasibility; it
+never returns that root.
+
+**Missions.** `subsegments` lets OCV and resistance follow SOC through long
+segments. RC states propagate exactly between points, and each point checks
+its end-of-interval voltage against the cutoff. The default of 1 keeps
+earlier results bit-for-bit.
+
+**Halo result.** The reference keeps the constant battery (14,877 lb). With
+the ECM pack (`assumptions_tier17`, F = 5, end of life, 25 C), 900 kg at
+210 kt does not close on the fixed 2 x 1,120 hp engines.
+
+- **The binding constraint:** the engine-out reserve (60 s at about
+  590 kW between SOC 0.30 and 0.10). It needs about 60–70 kWh at
+  147 Wh/kg, against the old 250 Wh/kg.
+- **Maximum payload:**
+
+  | F | 2 | 3 | 5 | 8 | 12 | 20 |
+  |---|---|---|---|---|---|---|
+  | Max payload (kg) | 62 | 384 | 638 | 687 | 707 | 722 |
+
+  F = 1.5 does not close. Power binds up to F of about 5 (current rating,
+  then the 525 V cutoff at SOC 0.11). From F = 8 the reserve energy binds.
+- **At F = 5:**
+  - Pack: 4,730 cells, 466 kg, 68.7 kWh.
+  - Bus voltage: 860 V at take-off and 750 V at the floor. In the
+    engine-out hover it falls to the 525 V cutoff, which is the
+    minimum-voltage case.
+  - Sensitivities: beginning of life 693 kg; 0 C cell 431 kg.
+- **On the current aircraft** (Tier 13 torque-sized machines, Tier 16
+  hot-day hover; merged 2026-10-03): max payload is 785 kg at F = 5,
+  832 kg at F = 8 and 851 kg at F = 12. That is still short of 900 kg.
+  At F = 5 the engine-out end voltage still binds; from F = 8 the reserve
+  SOC binds. The table above and the Tier 17 notebook stay pinned to the
+  Tier 12b aircraft.
+- **User decision needed:** payload or speed, the reserve definition, or the
+  cell (plan 021).
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
