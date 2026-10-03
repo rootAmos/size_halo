@@ -13,8 +13,9 @@ class HaloSizingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.base = solve_halo_sizing()
-        cls.better_rotor = solve_halo_sizing(assumptions=replace(HaloAssumptions(), figure_of_merit=0.75),
-                                             initial=cls.base)
+        # The figure-of-merit assumption only drives the actuator-disk rotor (Tier 12 physics ignores it).
+        cls.better_rotor = solve_halo_sizing(assumptions=replace(HaloAssumptions(), rotor_speed_physics=False,
+                                                                 figure_of_merit=0.75))
         cls.heavy_payload = solve_halo_sizing(requirements=replace(HaloRequirements(), mass_payload_kg=1200.0),
                                               initial=cls.base)
 
@@ -62,8 +63,23 @@ class HaloSizingTests(unittest.TestCase):
         self.assertTrue(all(-1e-6 <= s["hybridization"] <= 1 + 1e-6 for s in self.base.segments))
         self.assertIn("soc_after_engine_out_hover", self.base.binding)
 
+    def test_rotor_slows_in_cruise_and_obeys_its_limits(self):
+        """Tier 12: cruise rotor speed below hover for profile-power reasons, inside the JVX validity bound."""
+        segments = {s["label"]: s for s in self.base.segments}
+        self.assertLess(segments["cruise"]["speed_motor_rad_s"], segments["take-off hover"]["speed_motor_rad_s"])
+        d = self.base.design
+        speed_rotor = segments["cruise"]["speed_motor_rad_s"] / HaloAssumptions().reduction_ratio
+        advance_ratio = self.base.velocity_cruise_m_s / (speed_rotor * self.base.radius_rotor_m)
+        self.assertLessEqual(advance_ratio, 0.60 + 1e-5)
+        self.assertTrue(0.06 - 1e-9 <= d.solidity <= 0.14 + 1e-9)
+
+    def test_actuator_disk_option_reproduces_tier_10c_11a(self):
+        baseline = solve_halo_sizing(assumptions=replace(HaloAssumptions(), rotor_speed_physics=False))
+        self.assertAlmostEqual(baseline.mass_takeoff_kg / 0.45359237, 18506, delta=5)
+        self.assertLess(self.base.mass_takeoff_kg, baseline.mass_takeoff_kg)
+
     def test_sensitivity_trends(self):
-        self.assertLess(self.better_rotor.mass_takeoff_kg, self.base.mass_takeoff_kg)
+        self.assertLess(self.better_rotor.mass_takeoff_kg / 0.45359237, 18506)  # actuator-disk FM 0.67 baseline
         self.assertGreater(self.heavy_payload.mass_takeoff_kg, self.base.mass_takeoff_kg)
 
 

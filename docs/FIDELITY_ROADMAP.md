@@ -17,8 +17,8 @@
 | 10c | Two-rotor Halo-class series hybrid sized to XV-15-derived requirements (13,000 ft ceiling) | Implemented |
 | 11a | Turboshaft deck part-power fuel curve (user-supplied GASP deck) | Implemented |
 | 11b | Continuous integration: tests on every push; notebook execution on demand | Implemented |
-| 12 | Rotor speed physics: induced plus profile power, propeller-mode efficiency in J and tip Mach | Next |
-| 13 | Electric machines sized by torque; machine speed and gear ratio as design variables | Planned |
+| 12 | Rotor speed physics: induced plus profile power, propeller-mode efficiency in J and tip Mach | Implemented |
+| 13 | Electric machines sized by torque; machine speed and gear ratio as design variables | Next |
 | 14 | Electrical layer: inverters, cables, protection, DC/DC; bus voltage as a discrete choice | Planned |
 | 15 | Hot and high: ISA + delta-T atmosphere, temperature lapse, hover at destination after the mission | Planned |
 | 16 | Battery equivalent circuit with sag and ageing: OCV(SOC), R(SOC, C-rate, T), end-of-life, cycle cost | Planned |

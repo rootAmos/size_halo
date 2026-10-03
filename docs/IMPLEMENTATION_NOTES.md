@@ -345,6 +345,53 @@ present.
 
 Verification: 242 unittest cases (12 new) and Tier 0's 296 checks.
 
+## Tier 12: rotor speed physics (JVX-calibrated)
+
+`MomentumProfileRotor`: momentum induced power plus blade profile power over
+sections at sqrt((Omega r)^2 + V^2), with one drag polar in loading referred
+to the mean section dynamic pressure.
+
+**Data.** NASA/TM-2016-219070 Appendix D, parsed by word coordinates (the
+text layer wraps):
+
+- hover Table D-1: 58 points, Mtip 0.67–0.68;
+- hover Table D-2: 13 points, Mtip 0.73;
+- Phase II airplane mode, Tables D-7a and D-7c: 42 points, lambda
+  0.26–0.56.
+
+The parsed airplane points reproduce eta = CT lambda / CP within 0.0004.
+
+**Fit.** A free least-squares fit gives kappa < 1 (hover) and < 0
+(airplane), because the induced and loading terms are collinear over the
+data. So kappa is fixed at 1.15 and the fits are linear in the drag terms:
+
+- hover polar: c_d = 0.0185 - 0.222 x + 1.066 x^2, with its bucket at
+  CT/sigma ~ 0.10. Figure-of-merit RMS error 0.012; the Mtip 0.73 points
+  (held out) are predicted within 2.2 % in power;
+- airplane increment: 0.0017 + 0.0188 lambda^2. Efficiency RMS error 0.013,
+  max 0.036, with no remaining trend in lambda (a constant increment left a
+  -0.02 to +0.015 trend).
+
+**Limitation found.** The model has no blade-stall physics. At large lambda
+the (1 + 3 lambda^2) reference makes heavily loaded blades look light, so
+cruise power keeps falling as the rotor slows. Unbounded, the Halo sizing
+slowed cruise to lambda 0.83 (45 % of design tip speed), well outside the
+data. `advance_ratio_max` = 0.60 is therefore a validity bound, and the
+bound, not the physics, sets cruise rotor speed (about 61 % of design tip
+speed against the XV-15's 81 %). BEM with stall is the deferred remedy.
+
+**Halo-class result:**
+
+- 7,814 kg (17,228 lb), against 18,506 lb with the actuator disk (that
+  option reproduces it exactly);
+- solidity 0.074 and design tip speed 238 m/s (at the hover tip-Mach
+  bound);
+- rotor radius at the span-clearance limit;
+- motors 958 kW (was 1,419 kW) and battery 750 kW, because hover power falls
+  with the JVX-class figure of merit of about 0.8.
+
+Verification: 261 unittest cases (19 new).
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,

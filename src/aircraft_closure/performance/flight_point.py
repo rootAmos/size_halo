@@ -95,9 +95,16 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     thrust_per_rotor_N = thrust_total_N / active_rotor_count
     if condition.mode == "airplane":
         rotor_model = rotor_model.in_airplane_mode()
-    rotor = rotor_model.evaluate(velocity_m_s, atmosphere, thrust_N=thrust_per_rotor_N)
     speed_motor_limit_rad_s = motor_model.max_speed_rad_s
     speed_rotor_rad_s = opti.variable(init_guess=100.0, scale=100.0, lower_bound=10.0)
+    rotor = rotor_model.evaluate(velocity_m_s, atmosphere, thrust_N=thrust_per_rotor_N, speed_rad_s=speed_rotor_rad_s)
+    # Rotor-speed physics models (Tier 12) return blade loading and helical tip Mach to bound.
+    if getattr(rotor_model, "blade_loading_max", None) is not None:
+        opti.subject_to(rotor.blade_loading <= rotor_model.blade_loading_max)
+    if getattr(rotor_model, "mach_tip_helical_max", None) is not None:
+        opti.subject_to(rotor.mach_tip_helical <= rotor_model.mach_tip_helical_max)
+    if condition.mode == "airplane" and getattr(rotor_model, "advance_ratio_max", None) is not None:
+        opti.subject_to(rotor.advance_ratio <= rotor_model.advance_ratio_max)
     speed_motor_rad_s = gearbox_model.reduction_ratio * speed_rotor_rad_s
     # Gearbox loss is taken from torque, so input torque = P_out / (eta * omega_in).
     torque_motor_Nm = rotor.shaft_power_W / (gearbox_model.efficiency * speed_motor_rad_s)

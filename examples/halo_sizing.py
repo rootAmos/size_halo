@@ -37,6 +37,7 @@ from aircraft_closure.powertrain.components.gearbox import Gearbox
 from aircraft_closure.powertrain.components.generator import Generator
 from aircraft_closure.powertrain.components.motor import Motor, rubber_machine
 from aircraft_closure.powertrain.components.propulsor import ActuatorDiskPropulsor
+from aircraft_closure.powertrain.components.rotor import MomentumProfileRotor
 from aircraft_closure.powertrain.components.turboshaft import SimpleTurboshaft, deck_1120hp_part_power_model
 from aircraft_closure.powertrain.topologies import build_series_hybrid
 from aircraft_closure.requirements.capability import (CeilingRequirement, ClimbRequirement, HoverRequirement,
@@ -95,8 +96,12 @@ class HaloAssumptions:
     solidity: float = 0.089                       # XV-15
     speed_tip_m_s: float = 740 * u.foot           # XV-15 hover tip speed, also the bound
     frequency_coning_per_rev: float = 1.55        # XV-15 reading; the rotor factor calibrates it
-    figure_of_merit: float = 0.67                 # XV-15 calibrated (Tier 10b)
-    coefficient_airplane: float = 0.87            # assumed; ~0.85 propulsive efficiency in cruise
+    figure_of_merit: float = 0.67                 # XV-15 calibrated (Tier 10b); actuator-disk rotor only
+    coefficient_airplane: float = 0.87            # assumed; actuator-disk rotor only
+    # Tier 12: momentum + profile rotor calibrated on JVX (rotor speed, solidity and tip speed matter); False
+    # restores the Tier 10c actuator disk with the two constant coefficients above.
+    rotor_speed_physics: bool = True
+    mach_tip_hover_max: float = 0.70              # hover tip Mach bound on the design tip speed (JVX tested 0.68-0.73)
     download_fraction_hover: float = 0.07         # XV-15 TM X-62407 sec. 5.1
     reduction_ratio: float = 7.0                  # motor near peak-efficiency speed in hover
     speed_peak_motor_rad_s: float = 400.0
@@ -132,6 +137,8 @@ class HaloDesign:
     energy_capacity_battery_J: Any
     area_disk_m2: Any
     mass_fuel_kg: Any
+    solidity: Any = None                          # None: the assumption value (fixed)
+    speed_tip_m_s: Any = None                     # design (hover) tip speed; None: the assumption value
 
 
 def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None,
@@ -143,19 +150,26 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
     motor = rubber_machine(Motor, a.speed_peak_motor_rad_s, d.torque_peak_motor_Nm, **ratios)
     generator = rubber_machine(Generator, a.speed_peak_generator_rad_s, d.torque_peak_generator_Nm, **ratios)
     radius_m = np.sqrt(d.area_disk_m2 / np.pi)
-    chord_m = a.solidity * np.pi * radius_m / a.count_blades
-    speed_rotor_design_rad_s = a.speed_tip_m_s / radius_m
+    solidity = d.solidity if d.solidity is not None else a.solidity
+    speed_tip_m_s = d.speed_tip_m_s if d.speed_tip_m_s is not None else a.speed_tip_m_s
+    chord_m = solidity * np.pi * radius_m / a.count_blades
+    speed_rotor_design_rad_s = speed_tip_m_s / radius_m
     mass_rotors_kg = factors.rotor * afdd.mass_rotor_group_afdd82_kg(a.count_rotors, a.count_blades, radius_m, chord_m,
-                                                                     a.speed_tip_m_s, a.frequency_coning_per_rev)
+                                                                     speed_tip_m_s, a.frequency_coning_per_rev)
     mass_gearboxes_kg = factors.transmission * afdd.mass_gearbox_rotor_shaft_afdd83_kg(
         a.count_rotors * motor.power_rated_W, speed_rotor_design_rad_s, a.speed_peak_motor_rad_s, a.count_rotors, 0.6)
     gearbox = Gearbox(reduction_ratio=a.reduction_ratio, power_rated_W=motor.power_rated_W,
                       specific_power_W_kg=motor.power_rated_W / (mass_gearboxes_kg / a.count_rotors))
-    rotor = ActuatorDiskPropulsor(area_disk_m2=d.area_disk_m2, mass_kg=mass_rotors_kg / a.count_rotors,
-                                  coefficient_of_performance=a.figure_of_merit,
-                                  coefficient_of_performance_airplane=a.coefficient_airplane,
-                                  max_shaft_power_W=gearbox.power_rated_W * gearbox.efficiency,
-                                  speed_tip_max_m_s=a.speed_tip_m_s)
+    if a.rotor_speed_physics:
+        rotor = MomentumProfileRotor(area_disk_m2=d.area_disk_m2, solidity=solidity, mass_kg=mass_rotors_kg / a.count_rotors,
+                                     max_shaft_power_W=gearbox.power_rated_W * gearbox.efficiency,
+                                     speed_tip_max_m_s=speed_tip_m_s)
+    else:
+        rotor = ActuatorDiskPropulsor(area_disk_m2=d.area_disk_m2, mass_kg=mass_rotors_kg / a.count_rotors,
+                                      coefficient_of_performance=a.figure_of_merit,
+                                      coefficient_of_performance_airplane=a.coefficient_airplane,
+                                      max_shaft_power_W=gearbox.power_rated_W * gearbox.efficiency,
+                                      speed_tip_max_m_s=speed_tip_m_s)
     battery = Battery(energy_capacity_J=d.energy_capacity_battery_J,
                       resistance_ohm=a.resistance_energy_product_ohm_J / d.energy_capacity_battery_J,
                       max_discharge_power_W=d.power_max_discharge_battery_W,
@@ -282,6 +296,15 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         area_disk_m2=opti.variable(init_guess=guess.area_disk_m2, scale=10.0, lower_bound=5.0, upper_bound=120.0),
         mass_fuel_kg=opti.variable(init_guess=guess.mass_fuel_kg, scale=500.0, lower_bound=0.0),
     )
+    if a.rotor_speed_physics:
+        # Tier 12: solidity and design tip speed are trades; hover tip Mach bounded at sea level.
+        speed_sound_sea_level_m_s = asb.Atmosphere(altitude=0).speed_of_sound()
+        design = replace(design,
+                         solidity=opti.variable(init_guess=guess.solidity if guess.solidity is not None else 0.10,
+                                                lower_bound=0.06, upper_bound=0.14),
+                         speed_tip_m_s=opti.variable(
+                             init_guess=guess.speed_tip_m_s if guess.speed_tip_m_s is not None else 220.0, scale=100.0,
+                             lower_bound=150.0, upper_bound=a.mach_tip_hover_max * speed_sound_sea_level_m_s))
     mission = halo_mission(r, velocity_cruise_m_s=opti.variable(
         init_guess=initial.velocity_cruise_m_s if initial else 110.0, scale=50.0, lower_bound=60.0,
         upper_bound=r.velocity_max_m_s), velocity_loiter_m_s=opti.variable(
@@ -349,7 +372,8 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     return HaloSizingResult(
         mass_takeoff_kg=value(mass_takeoff_kg), mass_empty_kg=value(breakdown.mass_empty_kg()),
         mass_fuel_kg=value(design.mass_fuel_kg), mass_fuel_burnt_kg=value(flown.mass_fuel_burnt_kg),
-        design=HaloDesign(**{f.name: value(getattr(design, f.name)) for f in fields(HaloDesign)}),
+        design=HaloDesign(**{f.name: value(getattr(design, f.name)) if getattr(design, f.name) is not None else None
+                             for f in fields(HaloDesign)}),
         energy_battery_kWh=value(design.energy_capacity_battery_J) / 3.6e6,
         radius_rotor_m=value(radius_m), span_m=value(span_m),
         disk_loading_kg_m2=value(mass_takeoff_kg / (a.count_rotors * design.area_disk_m2)),

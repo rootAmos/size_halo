@@ -11,7 +11,8 @@ Models build equations and do not enforce limits, clip outputs or resize parts.
 | Battery | current_A, soc, duration_s | terminal discharge/charge power |
 | SimpleTurboshaft | shaft_power_W | shaft output |
 | Gearbox | speed_input_rad_s, torque_input_Nm | shaft input |
-| ActuatorDiskPropulsor | axial_velocity_m_s, atmosphere, thrust_N OR shaft_power_W and induced_velocity_m_s | shaft input |
+| ActuatorDiskPropulsor | axial_velocity_m_s, atmosphere, thrust_N OR shaft_power_W and induced_velocity_m_s (speed_rad_s accepted, ignored) | shaft input |
+| MomentumProfileRotor | axial_velocity_m_s, atmosphere, thrust_N, speed_rad_s | shaft input; limits blade_loading_max, mach_tip_helical_max, advance_ratio_max |
 
 Motor/generator default losses follow McDonald, AIAA 2015-1676 (plan 005):
 P_L = C0 + C1 w + C2 w^3 + C3 Q^2 with coefficients from the peak-efficiency
@@ -73,6 +74,7 @@ creates no variables or constraints. Unconnected ports are boundaries.
 | SimpleTurboshaft | fuel (IN), shaft (OUT) |
 | Gearbox | shaft_in (IN), shaft_out (OUT) |
 | ActuatorDiskPropulsor | shaft (IN) |
+| MomentumProfileRotor | shaft (IN) |
 
 Declarations live in `powertrain/ports.py` (`port_specs_for`), not on the
 component classes. `powertrain/topologies.py` provides
@@ -371,3 +373,37 @@ Library changes, each with a default that reproduces earlier tiers:
 - `fit_cubic_part_power(fractions, sfc_ratio)`.
 
 `HaloAssumptions.part_power_model` defaults to the deck cubic.
+
+## Rotor speed physics (Tier 12)
+
+`powertrain/components/rotor.py` `MomentumProfileRotor` computes
+
+CP = CT lambda + kappa CT lambda_i + (sigma / 2) c_d I(lambda)
+
+- c_d is a blade drag polar in loading referred to the mean section dynamic
+  pressure, x = (CT / sigma) / (1 + 3 lambda^2). Airplane mode adds the
+  increment a + b lambda^2.
+- I(lambda) is the closed-form profile integral (`profile_integral`), with
+  hover evaluated at exactly 1/4.
+- Constants are the JVX least-squares calibration
+  (`examples/jvx_rotor_calibration.py`, data in `data/rotors/`, from
+  NASA/TM-2016-219070).
+- `evaluate` returns `RotorResult`: thrust, shaft power, induced velocity,
+  blade loading, helical tip Mach and advance ratio.
+- `get_limits` returns `RotorLimits`.
+- `in_airplane_mode()` selects the airplane-mode constants.
+
+`build_flight_point` handles both rotor models:
+
+- it creates rotor speed before evaluating the rotor and passes
+  `speed_rad_s` to it;
+- it enforces `blade_loading_max` and `mach_tip_helical_max`, and
+  `advance_ratio_max` in airplane mode, whenever the rotor defines them.
+
+The actuator disk defines none of these limits, so its behaviour is
+unchanged.
+
+`HaloAssumptions.rotor_speed_physics` (default True) selects the new rotor.
+`HaloDesign.solidity` and `HaloDesign.speed_tip_m_s` become design variables
+(sigma 0.06–0.14, hover tip Mach <= 0.70 at sea level); None keeps the fixed
+assumption values.

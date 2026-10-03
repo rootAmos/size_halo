@@ -17,6 +17,7 @@ from .components.gearbox import Gearbox
 from .components.generator import Generator
 from .components.motor import Motor
 from .components.propulsor import ActuatorDiskPropulsor
+from .components.rotor import MomentumProfileRotor
 from .components.turboshaft import SimpleTurboshaft
 
 
@@ -72,7 +73,7 @@ def port_envelope(component, port_name):
             return MechanicalEnvelope(max_power_W=component.power_rated_W)
         if port_name == "shaft_out":
             return MechanicalEnvelope(max_power_W=component.power_rated_W * component.efficiency)
-    elif isinstance(component, ActuatorDiskPropulsor) and port_name == "shaft":
+    elif isinstance(component, (ActuatorDiskPropulsor, MomentumProfileRotor)) and port_name == "shaft":
         return MechanicalEnvelope(max_power_W=component.max_shaft_power_W)
     raise KeyError(f"No envelope for port '{port_name}' of {type(component).__name__}.")
 
@@ -118,7 +119,7 @@ def operating_margins(topology, port_values, atmosphere=None):
             shaft = value("shaft_in")
             margins.append(margin_below(f"{name} power_input_W", shaft.speed_rad_s * shaft.torque_Nm,
                                         component.power_rated_W))
-        elif isinstance(component, ActuatorDiskPropulsor):
+        elif isinstance(component, (ActuatorDiskPropulsor, MomentumProfileRotor)):
             shaft = value("shaft")
             margins.append(margin_below(f"{name} power_shaft_W", shaft.speed_rad_s * shaft.torque_Nm,
                                         component.max_shaft_power_W))

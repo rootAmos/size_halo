@@ -46,8 +46,11 @@ class ActuatorDiskPropulsor:
         return PropulsorLimits(self.max_shaft_power_W)
 
     def evaluate(self, axial_velocity_m_s, atmosphere, *, shaft_power_W=None,
-                 induced_velocity_m_s=None, thrust_N=None):
+                 induced_velocity_m_s=None, thrust_N=None, speed_rad_s=None):
         """Supply thrust, or power AND externally solved induced velocity.
+
+        `speed_rad_s` is accepted for interchangeability with rotor-speed models
+        and ignored: actuator-disk power does not depend on rotor speed.
 
         In power mode caller enforces power_residual_W == 0. Valid domain:
         axial_velocity >= 0, thrust/power/induced_velocity >= 0, density > 0.

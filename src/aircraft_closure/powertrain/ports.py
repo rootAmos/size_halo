@@ -10,6 +10,7 @@ from .components.gearbox import Gearbox
 from .components.generator import Generator
 from .components.motor import Motor
 from .components.propulsor import ActuatorDiskPropulsor
+from .components.rotor import MomentumProfileRotor
 from .components.turboshaft import SimpleTurboshaft
 
 _port_specs_by_type = {
@@ -23,6 +24,7 @@ _port_specs_by_type = {
     Gearbox: (PortSpec("shaft_in", Domain.MECHANICAL, Direction.IN),
               PortSpec("shaft_out", Domain.MECHANICAL, Direction.OUT)),
     ActuatorDiskPropulsor: (PortSpec("shaft", Domain.MECHANICAL, Direction.IN),),
+    MomentumProfileRotor: (PortSpec("shaft", Domain.MECHANICAL, Direction.IN),),
 }
 
 
