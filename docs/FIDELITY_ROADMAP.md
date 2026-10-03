@@ -18,6 +18,7 @@
 | 11a | Turboshaft deck part-power fuel curve (user-supplied GASP deck) | Implemented |
 | 11b | Continuous integration: tests on every push; notebook execution on demand | Implemented |
 | 12 | Rotor speed physics: induced plus profile power, propeller-mode efficiency in J and tip Mach | Implemented |
+| 12b | Fixed off-the-shelf turboshafts (2 x 1,120 hp deck engine), battery-assisted hover, in-flight recharge | Implemented |
 | 13 | Electric machines sized by torque; machine speed and gear ratio as design variables | Next |
 | 14 | Trajectory optimization (AeroSandbox) on a sized aircraft: minimum-energy transition, time to climb | Planned |
 | 15 | Electrical layer: inverters, cables, protection, DC/DC; bus voltage as a discrete choice | Planned |
@@ -93,6 +94,14 @@ predecessor available.
   0.67 / 0.87 coefficients are removed.
 
 ### 13 Electric machines sized by torque (review item 2)
+
+- **Distinct power sizing (user, 2026-10-03):** motor power, generator power
+  and turbine power are sized separately; they are linked through the
+  efficiency chain and the battery share. The constraint diagram shows each
+  requirement in one colour, with line style for the component it sizes:
+  solid for motor shaft, dashed for generator output, dotted for turbine
+  shaft (sea-level equivalent). Installed ratings appear as markers in the
+  matching style.
 
 - **Mass model:** machine mass from torque density (N·m/kg) plus a speed
   term, with McDonald losses unchanged. Peak torque and peak speed are both

@@ -392,6 +392,44 @@ speed against the XV-15's 81 %). BEM with stall is the deferred remedy.
 
 Verification: 261 unittest cases (19 new).
 
+## Tier 12b: fixed engines, battery-assisted hover, in-flight recharge
+
+User rules (2026-10-03):
+
+- turbine power required never exceeds power available;
+- engines are fixed at the user's 1,120 hp deck engine (a non-OEM cannot
+  raise power);
+- the battery supplements hover and is recharged in flight;
+- downsize the aircraft if needed.
+
+**Implementation.**
+
+- `HaloAssumptions.power_rated_turboshaft_fixed_W` = 1,120 hp.
+- `build_flight_point` and `build_mission` take
+  `hybridization_electric_min`: a negative battery share means recharge.
+- `build_mission` keeps SOC inside the battery window at every segment and,
+  with `soc_floor`, holds the 0.30 reserve throughout. Without that floor,
+  cruise dipped to 0.20, below the engine-out reserve's assumption.
+- `solve_halo_sizing(objective="payload")`.
+
+**Result.** Maximum payload against sustained max speed:
+
+| Max speed (kt) | 180–200 | 205 | 210 | 215 | 220 | 225 |
+|---|---|---|---|---|---|---|
+| Max payload (kg) | 1,240 | 1,186 | 935 | 683 | 424 | 163 |
+
+At 180–200 kt the climb requirement on turbines alone limits payload. 250 kt
+is infeasible at any size, partly because the fuselage stays at XV-15 size.
+
+**Provisional reference:** 900 kg at 210 kt gives 6,748 kg (14,877 lb):
+
+- 2 x 811 kW motors and 2 x 716 kW generators;
+- a 67 kWh / 799 kW battery that covers about 27 % of take-off hover and
+  49 % of landing hover, and is recharged in climb and descent.
+
+The named legacy sets (`requirements_tier10c`, `assumptions_tier11a`,
+`assumptions_tier12`) reproduce the earlier tiers exactly.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,

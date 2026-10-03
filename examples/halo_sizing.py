@@ -63,7 +63,9 @@ class HaloRequirements:
     mass_payload_kg: float = 900.0
     range_m: float = 445 * 1852.0
     altitude_cruise_m: float = 10000 * u.foot
-    velocity_max_m_s: float = 250 * u.knot
+    # 210 kt (plan 017): the most the fixed 2 x 1,120 hp turboshafts sustain with 900 kg over 445 nm (max
+    # payload 935 kg); 250 kt is infeasible at any size with these engines. Pending the user's choice.
+    velocity_max_m_s: float = 210 * u.knot
     altitude_hover_m: float = 4000 * u.foot
     thrust_to_weight_hover: float = 1.05
     altitude_ceiling_m: float = 13000 * u.foot
@@ -101,6 +103,15 @@ class HaloAssumptions:
     # Tier 12: momentum + profile rotor calibrated on JVX (rotor speed, solidity and tip speed matter); False
     # restores the Tier 10c actuator disk with the two constant coefficients above.
     rotor_speed_physics: bool = True
+    # Plan 017 (user, 2026-10-03): off-the-shelf turboshafts, power fixed by the engine deck (1,120 hp SLS, the
+    # user-supplied GASP_TS deck); a non-OEM cannot raise power available. None restores a sized (rubber) engine.
+    power_rated_turboshaft_fixed_W: Any = 1120 * u.hp
+    # The battery supplements the turbines (hover) and is recharged by the generators on free-split segments
+    # (negative battery share), within its charge rating and SOC window. 0 forbids in-flight charging.
+    hybridization_electric_min: float = -1.0
+    # Hold the mission SOC floor at every segment end (the engine-out reserve is assessed from it); False keeps
+    # only the battery's own window, as in Tiers 10c-12.
+    soc_floor_every_segment: bool = True
     mach_tip_hover_max: float = 0.70              # hover tip Mach bound on the design tip speed (JVX tested 0.68-0.73)
     download_fraction_hover: float = 0.07         # XV-15 TM X-62407 sec. 5.1
     reduction_ratio: float = 7.0                  # motor near peak-efficiency speed in hover
@@ -232,6 +243,7 @@ def halo_mission(requirements=HaloRequirements(), velocity_cruise_m_s=None, velo
 @dataclass(frozen=True)
 class HaloSizingResult:
     mass_takeoff_kg: float
+    mass_payload_kg: float
     mass_empty_kg: float
     mass_fuel_kg: float
     mass_fuel_burnt_kg: float
@@ -262,8 +274,12 @@ class HaloSizingResult:
 
 
 def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None, verbose=False,
-                      max_iter=3000, initial=None):
-    """`initial`: an earlier `HaloSizingResult` used as the initial guess (sensitivity studies)."""
+                      max_iter=3000, initial=None, objective="mass_takeoff"):
+    """`initial`: an earlier `HaloSizingResult` used as the initial guess (sensitivity studies).
+
+    objective "mass_takeoff" minimizes take-off mass at the required payload; "payload" makes payload a
+    variable and maximizes it (the aircraft is sized around fixed engines, plan 017).
+    """
     factors = factors if factors is not None else calibration_factors()
     lapse_exponent = fit_lapse_exponent()
     a, r = assumptions, requirements
@@ -288,7 +304,9 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         torque_peak_motor_Nm=opti.variable(init_guess=guess.torque_peak_motor_Nm, scale=1000.0, lower_bound=100.0),
         torque_peak_generator_Nm=opti.variable(init_guess=guess.torque_peak_generator_Nm, scale=1000.0,
                                                lower_bound=100.0),
-        power_rated_turboshaft_W=opti.variable(init_guess=guess.power_rated_turboshaft_W, scale=1e6, lower_bound=5e4),
+        power_rated_turboshaft_W=(a.power_rated_turboshaft_fixed_W if a.power_rated_turboshaft_fixed_W is not None
+                                  else opti.variable(init_guess=guess.power_rated_turboshaft_W, scale=1e6,
+                                                     lower_bound=5e4)),
         mass_turboshaft_bare_kg=opti.variable(init_guess=guess.mass_turboshaft_bare_kg, scale=100.0, lower_bound=10.0),
         power_max_discharge_battery_W=opti.variable(init_guess=guess.power_max_discharge_battery_W, scale=1e6,
                                                     lower_bound=1e4),
@@ -312,9 +330,16 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         upper_bound=r.velocity_max_m_s))
 
     # ---- Aircraft, mission, requirements ----------------------------------------------
+    if objective == "payload":
+        mass_payload_kg = opti.variable(init_guess=initial.mass_payload_kg if initial else 600.0, scale=100.0,
+                                        lower_bound=0.0)
+        r = replace(r, mass_payload_kg=mass_payload_kg)
     aircraft = build_halo_aircraft(design, r, a, factors, lapse_exponent)
     instances = aircraft.powertrain.topology.instances
-    flown = build_mission(opti, aircraft, aerodynamics, mission, mass_takeoff_kg, soc_take_off)
+    flown = build_mission(opti, aircraft, aerodynamics, mission, mass_takeoff_kg, soc_take_off,
+                          hybridization_electric_min=a.hybridization_electric_min,
+                          # The engine-out reserve is assessed from the SOC floor, so hold it at every segment.
+                          soc_floor=soc_minimum if a.soc_floor_every_segment else None)
     requirement_points = [build_flight_point(opti, aircraft, aerodynamics, c, mass_takeoff_kg)
                           for c in r.requirement_set().flight_conditions()]
     cruise = next(s for s in flown.segments if isinstance(s.segment, CruiseSegment))
@@ -362,7 +387,7 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         power_turboshaft(design.mass_turboshaft_bare_kg) / design.power_rated_turboshaft_W == 1,  # engine regression
     ])
     opti.subject_to([m.value >= 0 for m in all_margins])
-    opti.minimize(mass_takeoff_kg / 1000)
+    opti.minimize(-r.mass_payload_kg / 100 if objective == "payload" else mass_takeoff_kg / 1000)
 
     solution = opti.solve(verbose=verbose, max_iter=max_iter)
     value = lambda expression: float(solution.value(expression))
@@ -370,7 +395,8 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     altitudes = [(0, 0), (0, r.altitude_cruise_m), (r.altitude_cruise_m,) * 2, (r.altitude_cruise_m,) * 2,
                  (r.altitude_cruise_m, 0), (0, 0)]
     return HaloSizingResult(
-        mass_takeoff_kg=value(mass_takeoff_kg), mass_empty_kg=value(breakdown.mass_empty_kg()),
+        mass_takeoff_kg=value(mass_takeoff_kg), mass_payload_kg=value(r.mass_payload_kg),
+        mass_empty_kg=value(breakdown.mass_empty_kg()),
         mass_fuel_kg=value(design.mass_fuel_kg), mass_fuel_burnt_kg=value(flown.mass_fuel_burnt_kg),
         design=HaloDesign(**{f.name: value(getattr(design, f.name)) if getattr(design, f.name) is not None else None
                              for f in fields(HaloDesign)}),
@@ -402,6 +428,13 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
                                    for item in aircraft.powertrain.get_instance_mass_properties()),
     )
 
+
+
+# Named earlier baselines, so each tier's notebook keeps reproducing its own result.
+requirements_tier10c = HaloRequirements(velocity_max_m_s=250 * u.knot)
+assumptions_tier12 = HaloAssumptions(power_rated_turboshaft_fixed_W=None, hybridization_electric_min=0.0,
+                                     soc_floor_every_segment=False)
+assumptions_tier11a = replace(assumptions_tier12, rotor_speed_physics=False)
 
 if __name__ == "__main__":
     result = solve_halo_sizing(verbose=False)

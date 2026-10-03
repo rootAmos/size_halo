@@ -63,7 +63,8 @@ class FlightPoint:
     margins: tuple
 
 
-def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridization_electric=None,
+def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridization_electric=None, *,
+                       hybridization_electric_min=0.0,
                        drag_increments=()):
     instances = aircraft.powertrain.topology.instances
     motor_model = instances["motor"].component
@@ -118,7 +119,9 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     if hybridization_electric is None:
         hybridization_electric = condition.hybridization_electric
     if hybridization_electric is None:
-        hybridization_electric = opti.variable(init_guess=0.3, lower_bound=0.0, upper_bound=1.0)
+        # A negative share means the generators also recharge the battery (bounded by its charge rating).
+        hybridization_electric = opti.variable(init_guess=0.3 if hybridization_electric_min >= 0 else 0.0,
+                                               lower_bound=hybridization_electric_min, upper_bound=1.0)
     speed_generator_rad_s = generator_model.loss_model.speed_peak_efficiency_rad_s
     torque_generator_Nm = opti.variable(init_guess=500.0, scale=500.0, lower_bound=0.0)
     generator = generator_model.evaluate(speed_generator_rad_s, torque_generator_Nm, voltage_bus_V)
