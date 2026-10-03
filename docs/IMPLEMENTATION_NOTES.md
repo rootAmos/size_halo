@@ -430,6 +430,40 @@ is infeasible at any size, partly because the fuselage stays at XV-15 size.
 The named legacy sets (`requirements_tier10c`, `assumptions_tier11a`,
 `assumptions_tier12`) reproduce the earlier tiers exactly.
 
+## Tier 13: machines sized by torque
+
+Machine mass is now the smooth maximum of peak torque / torque density and
+rated power / specific-power cap:
+
+- torque density 15 N.m/kg, anchored on magniX magni650 (3,216 N.m in
+  206 kg) and magni350 (1,608 N.m in 128 kg), both including inverters and
+  cables;
+- a 10 kW/kg cap at high speed.
+
+Motor speed, rotor gear ratio and generator speed are design variables. The
+rotor gearbox uses AFDD00, and an optional step-up gearbox sits between each
+engine's 1,210 rpm output shaft and its generator.
+
+**Architectures** (maximum payload at 210 kt, fixed 2 x 1,120 hp):
+
+| Architecture | Max payload | Notes |
+|---|---|---|
+| Specific-power machines (Tier 12b) | 935 kg | |
+| Torque-sized, geared rotors, step-up generators | 1,014 kg | |
+| Generators on the 1,210 rpm shaft | 33 kg | 1,464 kg of generators |
+| Direct-drive rotors | infeasible | about 30 kN.m per motor, about 2 t each |
+
+**Reference** (900 kg at 210 kt): 13,760 lb, against 14,877 lb. The motor
+runs at about 13,100 rpm behind a 30.6:1 gearbox (AFDD00's mild ratio
+penalty; stage count is not modelled), and the generator runs at about
+13,400 rpm.
+
+**Torque trap:** climb, with the rotor held slow by the lambda <= 0.6 bound
+at high power, sets peak motor torque (568 N.m, against 414 N.m in hover).
+
+Verification: 276 unittest cases (12 new) and the Tier 13 notebook's
+8 checks.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,

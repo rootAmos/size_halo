@@ -407,3 +407,23 @@ unchanged.
 `HaloDesign.solidity` and `HaloDesign.speed_tip_m_s` become design variables
 (sigma 0.06–0.14, hover tip Mach <= 0.70 at sea level); None keeps the fixed
 assumption values.
+
+## Machines sized by torque (Tier 13)
+
+- **`motor.TorqueDensityMassModel(torque_density_Nm_kg=15, specific_power_max_W_kg=1e4, smoothing_kg=2)`:**
+  `mass_kg(machine)` = softmax(max_torque / torque_density,
+  power_rated / specific_power_max).
+- **`Motor.mass_model` and `Generator.mass_model`:** None (the default)
+  keeps power / specific power.
+- **`afdd.mass_gearbox_rotor_shaft_afdd00_kg(count_rotors, power_drive_limit_W, speed_engine_rad_s, speed_rotor_rad_s)`.**
+- **`build_series_hybrid(..., generator_gearbox=None)`:** an optional
+  step-up gearbox (reduction_ratio < 1) between turboshaft and generator.
+  The flight point handles it: engine shaft power = generator shaft power /
+  gearbox efficiency.
+- **`HaloAssumptions`:** `machine_mass_by_torque` (default True),
+  `torque_density_Nm_kg`, `specific_power_max_machine_W_kg`,
+  `generator_step_up`, `speed_output_turboshaft_rad_s` (1,210 rpm),
+  `direct_drive_rotor`.
+- **`HaloDesign`:** `speed_peak_motor_rad_s`, `reduction_ratio`,
+  `speed_peak_generator_rad_s`.
+- **Legacy set:** `assumptions_tier12b` reproduces Tier 12b.

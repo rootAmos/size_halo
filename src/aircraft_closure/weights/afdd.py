@@ -45,6 +45,12 @@ def mass_gearbox_rotor_shaft_afdd83_kg(power_drive_limit_W, speed_rotor_rad_s, s
         / (speed_rotor_rad_s / u.rpm)**0.6379 * u.lbm
 
 
+def mass_gearbox_rotor_shaft_afdd00_kg(count_rotors, power_drive_limit_W, speed_engine_rad_s, speed_rotor_rad_s):
+    """Gearboxes plus rotor shafts (AFDD00; 8.6 % mean error on 52 aircraft). The input-speed exponent (0.099)
+    gives a mild penalty for higher reduction ratios, unlike AFDD83's 0.0369."""
+    return 95.7634 * count_rotors**0.38553 * (power_drive_limit_W / u.hp)**0.78137         * (speed_engine_rad_s / u.rpm)**0.09899 / (speed_rotor_rad_s / u.rpm)**0.80686 * u.lbm
+
+
 def mass_drive_shaft_afdd82_kg(power_drive_limit_W, speed_rotor_rad_s, length_drive_shaft_m, count_drive_shafts,
                                fraction_power_second_rotor):
     """Intermediate drive shafts, e.g. a tiltrotor interconnect (AFDD82; 16 % mean error on 28 aircraft)."""

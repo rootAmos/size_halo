@@ -19,7 +19,7 @@
 | 11b | Continuous integration: tests on every push; notebook execution on demand | Implemented |
 | 12 | Rotor speed physics: induced plus profile power, propeller-mode efficiency in J and tip Mach | Implemented |
 | 12b | Fixed off-the-shelf turboshafts (2 x 1,120 hp deck engine), battery-assisted hover, in-flight recharge | Implemented |
-| 13 | Electric machines sized by torque; machine speed and gear ratio as design variables | Next |
+| 13 | Electric machines sized by torque; machine speed and gear ratio as design variables | Implemented |
 | 14 | Trajectory optimization (AeroSandbox) on a sized aircraft: minimum-energy transition, time to climb | Planned |
 | 15 | Electrical layer: inverters, cables, protection, DC/DC; bus voltage as a discrete choice | Planned |
 | 16 | Hot and high: ISA + delta-T atmosphere, temperature lapse, hover at destination after the mission | Planned |

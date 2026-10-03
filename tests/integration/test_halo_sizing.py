@@ -8,6 +8,7 @@ from aircraft_closure.vehicle.condition import StructuralDesignCondition
 import aerosandbox.tools.units as u
 
 from examples.halo_sizing import (HaloAssumptions, HaloRequirements, assumptions_tier11a, assumptions_tier12,
+                                  assumptions_tier12b,
                                   build_halo_aircraft, requirements_tier10c, solve_halo_sizing, soc_emergency_floor,
                                   soc_minimum)
 
@@ -81,6 +82,20 @@ class HaloSizingTests(unittest.TestCase):
         tier12 = solve_halo_sizing(requirements=requirements_tier10c, assumptions=assumptions_tier12)
         self.assertAlmostEqual(tier11a.mass_takeoff_kg / u.lbm, 18506, delta=5)
         self.assertAlmostEqual(tier12.mass_takeoff_kg / u.lbm, 17228, delta=5)
+
+    def test_tier12b_baseline_reproduces(self):
+        self.assertAlmostEqual(solve_halo_sizing(assumptions=assumptions_tier12b).mass_takeoff_kg / u.lbm, 14877, delta=5)
+
+    def test_torque_sized_machines_and_drive_choices(self):
+        """Tier 13: fast geared machines; a step-up gearbox beats a generator on the engine's 1,210 rpm shaft."""
+        d = self.base.design
+        self.assertIsNotNone(d.reduction_ratio)
+        self.assertGreater(d.speed_peak_generator_rad_s, HaloAssumptions().speed_output_turboshaft_rad_s)
+        masses = dict(self.base.powertrain_masses_kg)
+        self.assertIn("generator_gearbox", masses)
+        on_shaft = solve_halo_sizing(assumptions=replace(HaloAssumptions(), generator_step_up=False), objective="payload")
+        stepped = solve_halo_sizing(objective="payload", initial=self.base)
+        self.assertLess(on_shaft.mass_payload_kg, 0.25 * stepped.mass_payload_kg)
 
     def test_turboshafts_are_the_fixed_deck_engine(self):
         self.assertEqual(self.base.design.power_rated_turboshaft_W, 1120 * u.hp)

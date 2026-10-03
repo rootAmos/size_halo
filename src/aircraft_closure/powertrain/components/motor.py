@@ -6,6 +6,8 @@ Default losses: McDonald parametric model (AIAA 2015-1676); the quadratic
 from dataclasses import dataclass, field
 from typing import Any
 
+import aerosandbox.numpy as np
+
 
 @dataclass(frozen=True)
 class SimpleMotorLossModel:
@@ -62,6 +64,26 @@ class McDonaldMotorLossModel:
 
 
 @dataclass(frozen=True)
+class TorqueDensityMassModel:
+    """Machine mass from peak torque, with a specific-power cap at high speed (Tier 13, plan 018).
+
+    mass = softmax(max_torque / torque_density, power_rated / specific_power_max): electromagnetic
+    machine mass scales with rotor volume, i.e. torque, until high speed makes a power-density limit bind.
+    Defaults: about 15 N.m/kg (magniX magni650: 3,216 N.m peak, 206 kg; magni350: 1,608 N.m, 128 kg; both
+    including inverters and HV cables), and 10 kW/kg as a conventional high-speed cap (NASA's partially
+    superconducting HEMM targets 16 kW/kg electromagnetic). The smooth maximum overestimates the exact one by
+    at most smoothing_kg x ln 2.
+    """
+    torque_density_Nm_kg: Any = 15.0
+    specific_power_max_W_kg: Any = 10000.0
+    smoothing_kg: Any = 2.0
+
+    def mass_kg(self, machine):
+        return np.softmax(machine.max_torque_Nm / self.torque_density_Nm_kg,
+                          machine.power_rated_W / self.specific_power_max_W_kg, softness=self.smoothing_kg)
+
+
+@dataclass(frozen=True)
 class MotorResult:
     power_shaft_W: Any
     power_electric_W: Any
@@ -87,8 +109,11 @@ class Motor:
     min_voltage_V: Any = 400.0
     max_voltage_V: Any = 900.0
     loss_model: Any = field(default_factory=McDonaldMotorLossModel)
+    mass_model: Any = None
 
     def get_mass(self):
+        if self.mass_model is not None:
+            return self.mass_model.mass_kg(self)
         return self.power_rated_W / self.specific_power_W_kg
 
     def get_limits(self):

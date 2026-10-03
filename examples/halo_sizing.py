@@ -35,7 +35,7 @@ from aircraft_closure.performance.flight_point import FlightCondition, accelerat
 from aircraft_closure.powertrain.components.battery import Battery
 from aircraft_closure.powertrain.components.gearbox import Gearbox
 from aircraft_closure.powertrain.components.generator import Generator
-from aircraft_closure.powertrain.components.motor import Motor, rubber_machine
+from aircraft_closure.powertrain.components.motor import Motor, TorqueDensityMassModel, rubber_machine
 from aircraft_closure.powertrain.components.propulsor import ActuatorDiskPropulsor
 from aircraft_closure.powertrain.components.rotor import MomentumProfileRotor
 from aircraft_closure.powertrain.components.turboshaft import SimpleTurboshaft, deck_1120hp_part_power_model
@@ -112,6 +112,14 @@ class HaloAssumptions:
     # Hold the mission SOC floor at every segment end (the engine-out reserve is assessed from it); False keeps
     # only the battery's own window, as in Tiers 10c-12.
     soc_floor_every_segment: bool = True
+    # Tier 13 (plan 018): machines sized by torque (TorqueDensityMassModel); motor speed, rotor gear ratio and
+    # generator speed become design variables. False keeps power / specific power (5 / 4 kW/kg) and fixed speeds.
+    machine_mass_by_torque: bool = True
+    torque_density_Nm_kg: float = 15.0                 # magniX class, including inverters and cables
+    specific_power_max_machine_W_kg: float = 10000.0   # high-speed cap
+    generator_step_up: bool = True                     # step-up gearbox from the engine's output shaft
+    speed_output_turboshaft_rad_s: float = 1210 * u.rpm  # deck propeller_rpm: the engine as delivered (non-OEM)
+    direct_drive_rotor: bool = False                   # True: no rotor gearbox, motor turns at rotor speed
     mach_tip_hover_max: float = 0.70              # hover tip Mach bound on the design tip speed (JVX tested 0.68-0.73)
     download_fraction_hover: float = 0.07         # XV-15 TM X-62407 sec. 5.1
     reduction_ratio: float = 7.0                  # motor near peak-efficiency speed in hover
@@ -150,6 +158,9 @@ class HaloDesign:
     mass_fuel_kg: Any
     solidity: Any = None                          # None: the assumption value (fixed)
     speed_tip_m_s: Any = None                     # design (hover) tip speed; None: the assumption value
+    speed_peak_motor_rad_s: Any = None            # Tier 13 variables; None: the assumption values
+    reduction_ratio: Any = None
+    speed_peak_generator_rad_s: Any = None
 
 
 def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None,
@@ -158,8 +169,20 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
     factors = factors if factors is not None else calibration_factors()
     lapse_exponent = lapse_exponent if lapse_exponent is not None else fit_lapse_exponent()
     ratios = dict(torque_ratio=2.5, power_ratio=1.25, speed_ratio=2.5)
-    motor = rubber_machine(Motor, a.speed_peak_motor_rad_s, d.torque_peak_motor_Nm, **ratios)
-    generator = rubber_machine(Generator, a.speed_peak_generator_rad_s, d.torque_peak_generator_Nm, **ratios)
+    by_torque = a.machine_mass_by_torque
+    mass_model = TorqueDensityMassModel(a.torque_density_Nm_kg, a.specific_power_max_machine_W_kg) if by_torque else None
+    speed_peak_motor_rad_s = d.speed_peak_motor_rad_s if d.speed_peak_motor_rad_s is not None else a.speed_peak_motor_rad_s
+    if d.speed_peak_generator_rad_s is not None:
+        speed_peak_generator_rad_s = d.speed_peak_generator_rad_s
+    elif by_torque and not a.generator_step_up:
+        speed_peak_generator_rad_s = a.speed_output_turboshaft_rad_s    # generator on the engine output shaft
+    else:
+        speed_peak_generator_rad_s = a.speed_peak_generator_rad_s
+    reduction_ratio = 1.0 if a.direct_drive_rotor else (d.reduction_ratio if d.reduction_ratio is not None
+                                                        else a.reduction_ratio)
+    motor = rubber_machine(Motor, speed_peak_motor_rad_s, d.torque_peak_motor_Nm, **ratios, mass_model=mass_model)
+    generator = rubber_machine(Generator, speed_peak_generator_rad_s, d.torque_peak_generator_Nm, **ratios,
+                               mass_model=mass_model)
     radius_m = np.sqrt(d.area_disk_m2 / np.pi)
     solidity = d.solidity if d.solidity is not None else a.solidity
     speed_tip_m_s = d.speed_tip_m_s if d.speed_tip_m_s is not None else a.speed_tip_m_s
@@ -167,10 +190,28 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
     speed_rotor_design_rad_s = speed_tip_m_s / radius_m
     mass_rotors_kg = factors.rotor * afdd.mass_rotor_group_afdd82_kg(a.count_rotors, a.count_blades, radius_m, chord_m,
                                                                      speed_tip_m_s, a.frequency_coning_per_rev)
-    mass_gearboxes_kg = factors.transmission * afdd.mass_gearbox_rotor_shaft_afdd83_kg(
-        a.count_rotors * motor.power_rated_W, speed_rotor_design_rad_s, a.speed_peak_motor_rad_s, a.count_rotors, 0.6)
-    gearbox = Gearbox(reduction_ratio=a.reduction_ratio, power_rated_W=motor.power_rated_W,
-                      specific_power_W_kg=motor.power_rated_W / (mass_gearboxes_kg / a.count_rotors))
+    if a.direct_drive_rotor:
+        # No rotor gearbox: a lossless, massless pass-through keeps the topology uniform.
+        gearbox = Gearbox(reduction_ratio=1.0, efficiency=1.0, power_rated_W=motor.power_rated_W, specific_power_W_kg=1e12)
+    else:
+        if by_torque:
+            # AFDD00: mild penalty for higher reduction ratio (input-speed exponent 0.099).
+            mass_gearboxes_kg = factors.transmission * afdd.mass_gearbox_rotor_shaft_afdd00_kg(
+                a.count_rotors, a.count_rotors * motor.power_rated_W, speed_peak_motor_rad_s, speed_rotor_design_rad_s)
+        else:
+            mass_gearboxes_kg = factors.transmission * afdd.mass_gearbox_rotor_shaft_afdd83_kg(
+                a.count_rotors * motor.power_rated_W, speed_rotor_design_rad_s, a.speed_peak_motor_rad_s, a.count_rotors,
+                0.6)
+        gearbox = Gearbox(reduction_ratio=reduction_ratio, power_rated_W=motor.power_rated_W,
+                          specific_power_W_kg=motor.power_rated_W / (mass_gearboxes_kg / a.count_rotors))
+    generator_gearbox = None
+    if by_torque and a.generator_step_up and d.speed_peak_generator_rad_s is not None:
+        # Step-up from the engine's output shaft; AFDD00 with the slow (engine) side as the "rotor" speed.
+        mass_generator_gearbox_kg = factors.transmission * afdd.mass_gearbox_rotor_shaft_afdd00_kg(
+            1, d.power_rated_turboshaft_W, speed_peak_generator_rad_s, a.speed_output_turboshaft_rad_s)
+        generator_gearbox = Gearbox(reduction_ratio=a.speed_output_turboshaft_rad_s / speed_peak_generator_rad_s,
+                                    power_rated_W=d.power_rated_turboshaft_W,
+                                    specific_power_W_kg=d.power_rated_turboshaft_W / mass_generator_gearbox_kg)
     if a.rotor_speed_physics:
         rotor = MomentumProfileRotor(area_disk_m2=d.area_disk_m2, solidity=solidity, mass_kg=mass_rotors_kg / a.count_rotors,
                                      max_shaft_power_W=gearbox.power_rated_W * gearbox.efficiency,
@@ -191,7 +232,7 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                                   thermal_efficiency=thermal_efficiency_turboshaft(d.mass_turboshaft_bare_kg),
                                   lapse_exponent=lapse_exponent, part_power_model=a.part_power_model)
     topology = build_series_hybrid(motor, generator, battery, turboshaft, gearbox, rotor, count_rotors=a.count_rotors,
-                                   count_turbogenerators=a.count_turbogenerators)
+                                   count_turbogenerators=a.count_turbogenerators, generator_gearbox=generator_gearbox)
 
     wing = Wing(area_m2=d.area_wing_m2, aspect_ratio=a.aspect_ratio_wing, taper_ratio=1.0, x_le_root_m=d.x_le_wing_m,
                 z_m=1.2, airfoil=asb.Airfoil("naca2423"), mass_factor=factors.wing)
@@ -203,6 +244,8 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                  InstalledInstance("motor", x_m=x_rotor_m, z_m=z_rotor_m),
                  InstalledInstance("gearbox", x_m=x_rotor_m, z_m=z_rotor_m),
                  InstalledInstance("propulsor", x_m=x_rotor_m, z_m=z_rotor_m + 0.5))
+    if generator_gearbox is not None:
+        locations = locations + (InstalledInstance("generator_gearbox", x_m=x_rotor_m, z_m=wing.z_m),)
     return Aircraft(
         wing=wing,
         horizontal_tail=HorizontalTail(area_m2=d.area_horizontal_tail_m2, aspect_ratio=3.27, taper_ratio=1.0,
@@ -314,6 +357,19 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         area_disk_m2=opti.variable(init_guess=guess.area_disk_m2, scale=10.0, lower_bound=5.0, upper_bound=120.0),
         mass_fuel_kg=opti.variable(init_guess=guess.mass_fuel_kg, scale=500.0, lower_bound=0.0),
     )
+    if a.machine_mass_by_torque:
+        # Tier 13: motor speed, rotor gear ratio and (with a step-up gearbox) generator speed are trades.
+        design = replace(design, speed_peak_motor_rad_s=opti.variable(
+            init_guess=guess.speed_peak_motor_rad_s if guess.speed_peak_motor_rad_s is not None
+            else (60.0 if a.direct_drive_rotor else 400.0), scale=100.0, lower_bound=20.0, upper_bound=2000.0))
+        if not a.direct_drive_rotor:
+            design = replace(design, reduction_ratio=opti.variable(
+                init_guess=guess.reduction_ratio if guess.reduction_ratio is not None else 7.0,
+                lower_bound=1.5, upper_bound=40.0))
+        if a.generator_step_up:
+            design = replace(design, speed_peak_generator_rad_s=opti.variable(
+                init_guess=guess.speed_peak_generator_rad_s if guess.speed_peak_generator_rad_s is not None else 600.0,
+                scale=100.0, lower_bound=a.speed_output_turboshaft_rad_s, upper_bound=2500.0))
     if a.rotor_speed_physics:
         # Tier 12: solidity and design tip speed are trades; hover tip Mach bounded at sea level.
         speed_sound_sea_level_m_s = asb.Atmosphere(altitude=0).speed_of_sound()
@@ -433,7 +489,8 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
 # Named earlier baselines, so each tier's notebook keeps reproducing its own result.
 requirements_tier10c = HaloRequirements(velocity_max_m_s=250 * u.knot)
 assumptions_tier12 = HaloAssumptions(power_rated_turboshaft_fixed_W=None, hybridization_electric_min=0.0,
-                                     soc_floor_every_segment=False)
+                                     soc_floor_every_segment=False, machine_mass_by_torque=False)
+assumptions_tier12b = HaloAssumptions(machine_mass_by_torque=False)
 assumptions_tier11a = replace(assumptions_tier12, rotor_speed_physics=False)
 
 if __name__ == "__main__":

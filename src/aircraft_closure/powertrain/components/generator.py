@@ -21,8 +21,11 @@ class Generator:
     min_voltage_V: Any = 400.0
     max_voltage_V: Any = 900.0
     loss_model: Any = field(default_factory=McDonaldMotorLossModel)
+    mass_model: Any = None          # e.g. TorqueDensityMassModel(); None: power / specific power
 
     def get_mass(self):
+        if self.mass_model is not None:
+            return self.mass_model.mass_kg(self)
         return self.power_rated_W / self.specific_power_W_kg
 
     def get_limits(self):

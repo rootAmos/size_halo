@@ -125,7 +125,20 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     speed_generator_rad_s = generator_model.loss_model.speed_peak_efficiency_rad_s
     torque_generator_Nm = opti.variable(init_guess=500.0, scale=500.0, lower_bound=0.0)
     generator = generator_model.evaluate(speed_generator_rad_s, torque_generator_Nm, voltage_bus_V)
-    engine = turboshaft_model.evaluate(speed_generator_rad_s * torque_generator_Nm, atmosphere)
+    # Optional step-up gearbox between turboshaft output and generator (Tier 13): ratio = input / output speed.
+    speed_engine_rad_s, torque_engine_Nm = speed_generator_rad_s, torque_generator_Nm
+    generator_gear_ports = {}
+    if "generator_gearbox" in instances:
+        generator_gearbox_model = instances["generator_gearbox"].component
+        speed_engine_rad_s = speed_generator_rad_s * generator_gearbox_model.reduction_ratio
+        torque_engine_Nm = torque_generator_Nm / (generator_gearbox_model.reduction_ratio * generator_gearbox_model.efficiency)
+        generator_gear = generator_gearbox_model.evaluate(speed_engine_rad_s, torque_engine_Nm)
+        generator_gear_ports = {
+            "generator_gearbox.shaft_in": MechanicalPortValue(speed_engine_rad_s, torque_engine_Nm),
+            "generator_gearbox.shaft_out": MechanicalPortValue(generator_gear.speed_output_rad_s,
+                                                               generator_gear.torque_output_Nm),
+        }
+    engine = turboshaft_model.evaluate(speed_engine_rad_s * torque_engine_Nm, atmosphere)
     # Each active turbogenerator carries an equal share of the generator power.
     power_scale_W = active_rotor_count * motor_model.power_rated_W
     opti.subject_to([
@@ -138,7 +151,8 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
         opti.subject_to(speed_rotor_rad_s * rotor_model.radius_m() <= rotor_model.speed_tip_max_m_s)
 
     port_values = {
-        "turboshaft.shaft": MechanicalPortValue(speed_generator_rad_s, torque_generator_Nm),
+        "turboshaft.shaft": MechanicalPortValue(speed_engine_rad_s, torque_engine_Nm),
+        **generator_gear_ports,
         "generator.shaft": MechanicalPortValue(speed_generator_rad_s, torque_generator_Nm),
         "generator.electrical": ElectricalPortValue(voltage_bus_V, generator.current_A),
         "battery.electrical": ElectricalPortValue(voltage_bus_V, current_battery_A),

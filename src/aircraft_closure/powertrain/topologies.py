@@ -13,10 +13,11 @@ from .ports import port_specs_for
 
 
 def build_series_hybrid(motor, generator, battery, turboshaft, gearbox, propulsor, count_rotors=1,
-                        count_turbogenerators=1):
-    """m x (turboshaft -> generator) -> bus <- battery; bus -> n x (motor -> gearbox -> rotor).
+                        count_turbogenerators=1, generator_gearbox=None):
+    """m x (turboshaft [-> generator_gearbox] -> generator) -> bus <- battery; bus -> n x (motor -> gearbox -> rotor).
 
-    The turboshaft fuel port is left unconnected as a boundary port.
+    The turboshaft fuel port is left unconnected as a boundary port. `generator_gearbox` (optional) is a
+    step-up gearbox between the engine output shaft and the generator (reduction_ratio < 1).
     """
     topology = Topology()
     topology.add("turboshaft", turboshaft, port_specs_for(turboshaft), count=count_turbogenerators)
@@ -26,7 +27,12 @@ def build_series_hybrid(motor, generator, battery, turboshaft, gearbox, propulso
     topology.add("motor", motor, port_specs_for(motor), count=count_rotors)
     topology.add("gearbox", gearbox, port_specs_for(gearbox), count=count_rotors)
     topology.add("propulsor", propulsor, port_specs_for(propulsor), count=count_rotors)
-    topology.connect("turboshaft.shaft", "generator.shaft")
+    if generator_gearbox is None:
+        topology.connect("turboshaft.shaft", "generator.shaft")
+    else:
+        topology.add("generator_gearbox", generator_gearbox, port_specs_for(generator_gearbox), count=count_turbogenerators)
+        topology.connect("turboshaft.shaft", "generator_gearbox.shaft_in")
+        topology.connect("generator_gearbox.shaft_out", "generator.shaft")
     topology.connect("generator.electrical", "bus")
     topology.connect("battery.electrical", "bus")
     topology.connect("motor.electrical", "bus")
