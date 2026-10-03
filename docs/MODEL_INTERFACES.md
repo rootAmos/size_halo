@@ -9,6 +9,7 @@ Models build equations and do not enforce limits, clip outputs or resize parts.
 | Motor | speed_rad_s, torque_Nm, voltage_V | rated shaft output |
 | Generator | speed_rad_s, torque_Nm, voltage_V | rated shaft input |
 | Battery | current_A, soc, duration_s | terminal discharge/charge power |
+| EquivalentCircuitBattery | current_A, soc, duration_s, voltage_rc_start_V, temperature_C | cell voltage window and C-rate x power-density factor (Tier 17) |
 | SimpleTurboshaft | shaft_power_W | shaft output |
 | Gearbox | speed_input_rad_s, torque_input_Nm | shaft input |
 | ActuatorDiskPropulsor | axial_velocity_m_s, atmosphere, thrust_N OR shaft_power_W and induced_velocity_m_s (speed_rad_s accepted, ignored) | shaft input |
@@ -71,6 +72,7 @@ creates no variables or constraints. Unconnected ports are boundaries.
 | Motor | electrical (IN), shaft (OUT) |
 | Generator | shaft (IN), electrical (OUT) |
 | Battery | electrical (OUT; positive current discharges) |
+| EquivalentCircuitBattery | electrical (OUT; positive current discharges; sets bus voltage) |
 | SimpleTurboshaft | fuel (IN), shaft (OUT) |
 | Gearbox | shaft_in (IN), shaft_out (OUT) |
 | ActuatorDiskPropulsor | shaft (IN) |
@@ -407,3 +409,86 @@ unchanged.
 `HaloDesign.solidity` and `HaloDesign.speed_tip_m_s` become design variables
 (sigma 0.06–0.14, hover tip Mach <= 0.70 at sea level); None keeps the fixed
 assumption values.
+
+## Equivalent-circuit battery (Tier 17)
+
+**`EquivalentCircuitBattery`** (`powertrain/components/battery_ecm.py`,
+plan 021) is a distinct class. `Battery` stays the simplest model.
+
+- **Pack:** `count_series` x `count_parallel` cells (`count_parallel`
+  continuous). Voltage = n_s x cell voltage; resistance = cell resistance x
+  n_s / n_p.
+- **Mass:** cells x cell mass / `fraction_mass_cells` (0.7).
+- **Energy:** `energy_capacity_J` = Q x n_s x mean OCV(0..1) x
+  `factor_capacity_ageing`.
+- **Cell:** `LithiumIonCell`, i.e. ratings plus `ocv_model` and
+  `resistance_model`.
+  - Default: `inr21700_50g_cell()` (Samsung INR21700-50G, Paudel et al.,
+    *Batteries* 2025, 11, 313, CC BY 4.0).
+  - Data: `data/batteries/`. Loaders and fits: `powertrain/cells.py`.
+- **OCV submodels** (interchangeable):
+  - `PolynomialOcvModel`: degree 7, 30 C data, rms 9 mV.
+  - `TabulatedOcvModel`: B-spline through the nodes, holding the end values.
+- **Resistance:** R0 + two RC branches (tau 8 s and 43 s).
+  - Form: R_k(SOC, T) = R_ref exp(a x + b x^2)
+    (1 + c e^(-(s-0.2)/w_lo) + d e^((s-0.8)/w_hi)), with x = T_ref/T - 1.
+  - Fitted to all 308 discharge DCIR points: rms 4.7 %.
+  - Below SOC 0.2 the rise continues; above 0.8 the high term is held.
+- **`factor_power_density`:** divides the resistances and multiplies the
+  current rating (the user's explicit assumption). Mass is unchanged.
+- **Ageing:** `factor_resistance_ageing` and `factor_capacity_ageing`.
+
+`evaluate(current_A, soc, duration_s=0, voltage_rc_start_V=None,
+temperature_C=None)` assumes a constant current over dt:
+
+- SOC_next = SOC - I dt / Q. OCV and R are taken at the mid-interval SOC.
+- RC branch k: v_k(dt) = I R_k + (v_k0 - I R_k) e^(-dt/tau_k), exact. The
+  interval mean uses g_k = (tau_k/dt)(1 - e^(-dt/tau_k)).
+- With `voltage_rc_start_V=None`, the steady state v_k = I R_k applies.
+- `voltage_V` is the interval-mean terminal voltage (the bus voltage):
+  V = V* - I R_eff.
+  - `voltage_driving_V` V* = OCV - sum(v_k0 g_k).
+  - `resistance_effective_ohm` R_eff = R0 + sum R_k (1 - g_k).
+- `voltage_end_V`; `power_chemical_W` = OCV I; `power_loss_W` = chemical -
+  terminal; `power_max_W` = V*^2 / (4 R_eff).
+
+Limits are the voltage window `count_series` x (2.5, 4.2) V, the
+discharge/charge current `count_parallel` x (9.8, 4.9) A x F, and the SOC
+window. The compatibility envelope's power is the discharge current rating x
+nominal voltage. Operating margins cover discharge and charge current and
+min and max terminal voltage.
+
+**Flight point.**
+
+- `build_flight_point(..., duration_s=0.0, voltage_rc_start_V=None)` passes
+  the RC state to the ECM.
+- It also adds the branch constraint `voltage_V / voltage_driving_V >= 0.5`.
+  This selects the low-current root of R_eff I^2 - V* I + P = 0, with no
+  iteration, and enforces P <= P_max.
+
+**Mission.** `build_mission(..., subsegments=1, polarization_start="rest")`:
+
+- **Splitting:** each segment becomes equal-duration points (an int, or one
+  count per segment). `SegmentResult.subsegments` holds the per-point
+  results, and the top-level result aggregates them.
+- **ECM bookkeeping:** the battery's `soc_next` chains SOC. RC voltages
+  propagate from rest, or start "steady". Each point adds a margin
+  "<label>: battery end voltage_V" against the pack minimum voltage.
+- **Default:** 1 reproduces the earlier results exactly; the `Battery`
+  bookkeeping is unchanged.
+- **`HoverSegment.active_generator_count`:** models an engine-out hover.
+
+**Halo** (`examples/halo_sizing.py`):
+
+- **Selector:** `HaloAssumptions.battery_model` is "constant" (the reference)
+  or "ecm".
+- **ECM fields:** `factor_power_density_battery` 5, `count_series_battery`
+  210, end-of-life capacity 0.8 / resistance 1.5, 25 C, cell/pack 0.7.
+- **Splits:** mission (1, 1, 4, 1, 1, 1); engine-out hover 3 points, steady
+  start.
+- **Design variable:** `HaloDesign.count_parallel_battery`. Energy and power
+  are then derived from the pack.
+- **Outputs:** `battery_trace` and `engine_out_trace`.
+- **Named sets:** `assumptions_tier12b` (constant battery) and
+  `assumptions_tier17` (ECM; 900 kg at 210 kt does not close, so use
+  `objective="payload"`).

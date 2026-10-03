@@ -6,6 +6,7 @@ and gearbox/propulsor torque is positive in forward power transfer.
 """
 from aircraft_closure.core.ports import Direction, Domain, PortSpec
 from .components.battery import Battery
+from .components.battery_ecm import EquivalentCircuitBattery
 from .components.gearbox import Gearbox
 from .components.generator import Generator
 from .components.motor import Motor
@@ -19,6 +20,7 @@ _port_specs_by_type = {
     Generator: (PortSpec("shaft", Domain.MECHANICAL, Direction.IN),
                 PortSpec("electrical", Domain.ELECTRICAL, Direction.OUT)),
     Battery: (PortSpec("electrical", Domain.ELECTRICAL, Direction.OUT),),
+    EquivalentCircuitBattery: (PortSpec("electrical", Domain.ELECTRICAL, Direction.OUT),),
     SimpleTurboshaft: (PortSpec("fuel", Domain.FUEL, Direction.IN),
                        PortSpec("shaft", Domain.MECHANICAL, Direction.OUT)),
     Gearbox: (PortSpec("shaft_in", Domain.MECHANICAL, Direction.IN),

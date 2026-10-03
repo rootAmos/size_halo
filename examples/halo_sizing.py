@@ -33,6 +33,7 @@ from aircraft_closure.mission.segments import (ClimbSegment, CruiseSegment, Desc
                                                LoiterSegment, ground_distance_m)
 from aircraft_closure.performance.flight_point import FlightCondition, acceleration_gravity_m_s2, build_flight_point
 from aircraft_closure.powertrain.components.battery import Battery
+from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery
 from aircraft_closure.powertrain.components.gearbox import Gearbox
 from aircraft_closure.powertrain.components.generator import Generator
 from aircraft_closure.powertrain.components.motor import Motor, rubber_machine
@@ -131,6 +132,23 @@ class HaloAssumptions:
     # Part-power fuel curve: the user-supplied 1,120 hp GASP deck (plan 014); GeissPartPowerModel() is the
     # XV-15-validated alternative (within 1 % of it above 50 % power).
     part_power_model: Any = field(default_factory=deck_1120hp_part_power_model)
+    # ---- Tier 17 battery (plan 021) ----
+    # "ecm": EquivalentCircuitBattery, Samsung INR21700-50G OCV and resistance shape (Paudel et al. 2025);
+    # "constant": the Tier 1 constant-OCV Battery sized by energy and power (Tiers 10c-12b), still the reference:
+    # with the ECM pack the 900 kg / 210 kt requirement is infeasible on the fixed engines (plan 021).
+    battery_model: str = "constant"
+    # User decision 2026-10-02: resistance / factor and current rating x factor (more power-dense 50G-shaped cell).
+    # 5: 10C continuous; below about 5 battery power sizes the pack, above about 8 the reserve energy does (plan 021).
+    factor_power_density_battery: float = 5.0
+    count_series_battery: int = 210               # 756 V nominal; 525-882 V window inside the 400-900 V machines
+    factor_capacity_ageing_battery: float = 0.8   # end of life: 80 % of rated capacity (assumed)
+    factor_resistance_ageing_battery: float = 1.5  # end of life: +50 % resistance (assumed)
+    temperature_cell_battery_C: float = 25.0      # thermally managed pack (assumed)
+    fraction_mass_cells_battery: float = 0.7      # cell / pack mass (assumed; cylindrical-cell packs ~0.65-0.75)
+    # Points per mission segment (take-off hover, climb, cruise, loiter, descent, landing hover) so OCV and
+    # resistance follow SOC through long segments; and points in the 60 s engine-out hover (SOC 0.30 -> 0.10).
+    subsegments_mission: tuple = (1, 1, 4, 1, 1, 1)
+    subsegments_engine_out: int = 3
 
 
 @dataclass(frozen=True)
@@ -150,6 +168,27 @@ class HaloDesign:
     mass_fuel_kg: Any
     solidity: Any = None                          # None: the assumption value (fixed)
     speed_tip_m_s: Any = None                     # design (hover) tip speed; None: the assumption value
+    count_parallel_battery: Any = None            # Tier 17 "ecm": parallel strings (continuous); energy and power
+                                                  # above are then derived from the pack
+
+
+def build_halo_battery(design, assumptions=HaloAssumptions()):
+    a, d = assumptions, design
+    if a.battery_model == "ecm":
+        return EquivalentCircuitBattery(count_series=a.count_series_battery, count_parallel=d.count_parallel_battery,
+                                        factor_power_density=a.factor_power_density_battery,
+                                        temperature_cell_C=a.temperature_cell_battery_C,
+                                        factor_capacity_ageing=a.factor_capacity_ageing_battery,
+                                        factor_resistance_ageing=a.factor_resistance_ageing_battery,
+                                        fraction_mass_cells=a.fraction_mass_cells_battery,
+                                        min_soc=soc_emergency_floor, max_soc=soc_take_off)
+    if a.battery_model == "constant":
+        return Battery(energy_capacity_J=d.energy_capacity_battery_J,
+                       resistance_ohm=a.resistance_energy_product_ohm_J / d.energy_capacity_battery_J,
+                       max_discharge_power_W=d.power_max_discharge_battery_W,
+                       max_charge_power_W=0.5 * d.power_max_discharge_battery_W,
+                       mass_smoothing_kg=a.battery_mass_smoothing_kg)
+    raise ValueError(f"Unknown battery model '{a.battery_model}'.")
 
 
 def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None,
@@ -181,11 +220,7 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                                       coefficient_of_performance_airplane=a.coefficient_airplane,
                                       max_shaft_power_W=gearbox.power_rated_W * gearbox.efficiency,
                                       speed_tip_max_m_s=speed_tip_m_s)
-    battery = Battery(energy_capacity_J=d.energy_capacity_battery_J,
-                      resistance_ohm=a.resistance_energy_product_ohm_J / d.energy_capacity_battery_J,
-                      max_discharge_power_W=d.power_max_discharge_battery_W,
-                      max_charge_power_W=0.5 * d.power_max_discharge_battery_W,
-                      mass_smoothing_kg=a.battery_mass_smoothing_kg)
+    battery = build_halo_battery(design, assumptions)
     turboshaft = SimpleTurboshaft(power_rated_W=d.power_rated_turboshaft_W,
                                   mass_kg=factors.powerplant * d.mass_turboshaft_bare_kg,
                                   thermal_efficiency=thermal_efficiency_turboshaft(d.mass_turboshaft_bare_kg),
@@ -271,6 +306,10 @@ class HaloSizingResult:
     min_margin: float
     component_masses_kg: tuple
     powertrain_masses_kg: tuple
+    # Tier 17 ("ecm" battery): per mission point and per engine-out point, time_start_s, soc_start, soc_end,
+    # voltage_bus_V (interval mean), voltage_end_V, voltage_ocv_V, current_A, power_W (terminal).
+    battery_trace: tuple = ()
+    engine_out_trace: tuple = ()
 
 
 def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None, verbose=False,
@@ -296,6 +335,7 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         area_disk_m2=40.0, mass_fuel_kg=1000.0)
     mass_takeoff_kg = opti.variable(init_guess=initial.mass_takeoff_kg if initial else 6000.0, scale=1000.0,
                                     lower_bound=1000.0)
+    is_ecm = a.battery_model == "ecm"
     design = HaloDesign(
         x_le_wing_m=opti.variable(init_guess=guess.x_le_wing_m, lower_bound=3.0, upper_bound=8.5),
         area_wing_m2=opti.variable(init_guess=guess.area_wing_m2, scale=10.0, lower_bound=5.0, upper_bound=60.0),
@@ -308,9 +348,14 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
                                   else opti.variable(init_guess=guess.power_rated_turboshaft_W, scale=1e6,
                                                      lower_bound=5e4)),
         mass_turboshaft_bare_kg=opti.variable(init_guess=guess.mass_turboshaft_bare_kg, scale=100.0, lower_bound=10.0),
-        power_max_discharge_battery_W=opti.variable(init_guess=guess.power_max_discharge_battery_W, scale=1e6,
-                                                    lower_bound=1e4),
-        energy_capacity_battery_J=opti.variable(init_guess=guess.energy_capacity_battery_J, scale=1e8, lower_bound=1e6),
+        # Tier 17 "ecm": the pack (count_parallel_battery) sets energy and power; they are filled in below.
+        power_max_discharge_battery_W=None if is_ecm else opti.variable(
+            init_guess=guess.power_max_discharge_battery_W, scale=1e6, lower_bound=1e4),
+        energy_capacity_battery_J=None if is_ecm else opti.variable(
+            init_guess=guess.energy_capacity_battery_J, scale=1e8, lower_bound=1e6),
+        count_parallel_battery=opti.variable(
+            init_guess=guess.count_parallel_battery if guess.count_parallel_battery is not None else 30.0,
+            scale=10.0, lower_bound=1.0) if is_ecm else None,
         area_disk_m2=opti.variable(init_guess=guess.area_disk_m2, scale=10.0, lower_bound=5.0, upper_bound=120.0),
         mass_fuel_kg=opti.variable(init_guess=guess.mass_fuel_kg, scale=500.0, lower_bound=0.0),
     )
@@ -336,20 +381,39 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         r = replace(r, mass_payload_kg=mass_payload_kg)
     aircraft = build_halo_aircraft(design, r, a, factors, lapse_exponent)
     instances = aircraft.powertrain.topology.instances
+    battery = instances["battery"].component
+    if is_ecm:
+        design = replace(design, energy_capacity_battery_J=battery.energy_capacity_J,
+                         power_max_discharge_battery_W=battery.power_max_discharge_W)
     flown = build_mission(opti, aircraft, aerodynamics, mission, mass_takeoff_kg, soc_take_off,
                           hybridization_electric_min=a.hybridization_electric_min,
                           # The engine-out reserve is assessed from the SOC floor, so hold it at every segment.
-                          soc_floor=soc_minimum if a.soc_floor_every_segment else None)
+                          soc_floor=soc_minimum if a.soc_floor_every_segment else None,
+                          **(dict(subsegments=a.subsegments_mission) if is_ecm else {}))
     requirement_points = [build_flight_point(opti, aircraft, aerodynamics, c, mass_takeoff_kg)
                           for c in r.requirement_set().flight_conditions()]
     cruise = next(s for s in flown.segments if isinstance(s.segment, CruiseSegment))
     loiter = next(s for s in flown.segments if isinstance(s.segment, LoiterSegment))
     # Engine-out hover: one turbogenerator plus the battery, at MTOM, from the SOC floor.
-    engine_out = build_flight_point(opti, aircraft, aerodynamics, FlightCondition(
-        mode="hover", altitude_m=0.0, soc=soc_minimum, active_generator_count=a.count_turbogenerators - 1,
-        label="engine-out hover"), mass_takeoff_kg)
-    soc_after_reserve = soc_minimum - (engine_out.battery.power_chemical_W * r.duration_engine_out_hover_s
-                                       / design.energy_capacity_battery_J)
+    if is_ecm:
+        # Tier 17: sub-divided so the sag at the low-SOC end is seen; polarization already developed (steady)
+        # when the engine fails; SOC may fall to the emergency floor.
+        reserve = build_mission(opti, aircraft, aerodynamics, Mission((HoverSegment(
+            r.duration_engine_out_hover_s, 0.0, None, "engine-out hover",
+            active_generator_count=a.count_turbogenerators - 1),)), mass_takeoff_kg, soc_minimum,
+            soc_floor=soc_emergency_floor, subsegments=a.subsegments_engine_out, polarization_start="steady")
+        engine_out_points = reserve.segments[0].subsegments or reserve.segments
+        engine_out = engine_out_points[0].point
+        engine_out_margins = reserve.margins
+        soc_after_reserve = reserve.soc_end
+    else:
+        engine_out = build_flight_point(opti, aircraft, aerodynamics, FlightCondition(
+            mode="hover", altitude_m=0.0, soc=soc_minimum, active_generator_count=a.count_turbogenerators - 1,
+            label="engine-out hover"), mass_takeoff_kg)
+        engine_out_points = ()
+        engine_out_margins = engine_out.margins
+        soc_after_reserve = soc_minimum - (engine_out.battery.power_chemical_W * r.duration_engine_out_hover_s
+                                           / design.energy_capacity_battery_J)
 
     # ---- Mass closure ------------------------------------------------------------------
     condition = StructuralDesignCondition(mass_design_kg=mass_takeoff_kg, load_factor_ultimate=a.load_factor_ultimate,
@@ -377,7 +441,7 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         margin_above("stall_lift_at_120kt", lift_stall_N, weight_N),
         margin_below("rotor_radius_m", radius_m, (span_m - a.diameter_fuselage_m) / 2 - a.clearance_rotor_fuselage_m),
     )
-    all_margins = (design_margins + flown.margins + engine_out.margins
+    all_margins = (design_margins + flown.margins + engine_out_margins
                    + tuple(m for p in requirement_points for m in p.margins))
 
     opti.subject_to([
@@ -426,14 +490,34 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         component_masses_kg=tuple((f.name, value(getattr(breakdown, f.name).mass)) for f in fields(MassBreakdown)),
         powertrain_masses_kg=tuple((item.instance_name, value(item.mass_properties.mass))
                                    for item in aircraft.powertrain.get_instance_mass_properties()),
+        battery_trace=battery_trace(tuple(p for s in flown.segments for p in (s.subsegments or (s,))), value)
+        if is_ecm else (),
+        engine_out_trace=battery_trace(engine_out_points, value),
     )
+
+
+def battery_trace(points, value):
+    """Numeric battery state per mission point (Tier 17 dashboards and notebooks)."""
+    rows, time_s = [], 0.0
+    for p in points:
+        b = p.point.battery
+        rows.append(dict(label=p.point.condition.label, time_start_s=time_s, duration_s=value(p.duration_s),
+                         soc_start=value(p.soc_start), soc_end=value(p.soc_end), voltage_bus_V=value(b.voltage_V),
+                         voltage_end_V=value(b.voltage_end_V), voltage_ocv_V=value(b.voltage_open_circuit_V),
+                         current_A=value(b.current_A), power_W=value(b.power_electric_W)))
+        time_s += rows[-1]["duration_s"]
+    return tuple(rows)
 
 
 
 # Named earlier baselines, so each tier's notebook keeps reproducing its own result.
 requirements_tier10c = HaloRequirements(velocity_max_m_s=250 * u.knot)
 assumptions_tier12 = HaloAssumptions(power_rated_turboshaft_fixed_W=None, hybridization_electric_min=0.0,
-                                     soc_floor_every_segment=False)
+                                     soc_floor_every_segment=False, battery_model="constant")
+# Tier 12b reference (plan 017): fixed engines with the constant-OCV battery (14,875 lb).
+assumptions_tier12b = HaloAssumptions(battery_model="constant")
+# Tier 17 (plan 021): the equivalent-circuit 50G-shaped pack at end of life (use with objective="payload").
+assumptions_tier17 = HaloAssumptions(battery_model="ecm")
 assumptions_tier11a = replace(assumptions_tier12, rotor_speed_physics=False)
 
 if __name__ == "__main__":
