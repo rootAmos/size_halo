@@ -1,5 +1,7 @@
 # Architecture
 
+Diagrams: [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md) (layering, fidelity scaling, sizing/trajectory/6-DOF levels, coupled sizing problem).
+
 ## Purpose
 
 This project is a lightweight aircraft-closure framework for unmanned hybrid-electric VTOL aircraft.

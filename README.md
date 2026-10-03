@@ -34,6 +34,7 @@ All numbers are illustrative engineering inputs, not Archer or Halo data
 Lower layers never import higher ones; components build equations and callers
 own variables, constraints and objectives ([architecture](docs/ARCHITECTURE.md),
 [interfaces](docs/MODEL_INTERFACES.md), [implementation notes](docs/IMPLEMENTATION_NOTES.md)).
+Diagrams of the layering, fidelity scaling and sizing/trajectory/6-DOF levels are in [architecture diagrams](docs/ARCHITECTURE_DIAGRAMS.md).
 
 ## Environment and execution
 
