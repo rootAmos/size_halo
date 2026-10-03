@@ -7,8 +7,12 @@ NASA/TP-2009-215402, ch. 19 (AFDD weight models, regressions on turbine
 helicopters and tiltrotors). The published equations take lb, ft, ft/s, hp and
 rpm and return lb; each wrapper converts at its boundary and is otherwise the
 published equation with a unit technology factor. Powers are plain products,
-so every function accepts CasADi symbols.
+so every function accepts CasADi symbols. The tiltrotor wing (sec. 19-1.1) is a stiffness-based
+structural model in consistent SI rather than a regression.
 """
+from dataclasses import dataclass
+from typing import Any
+
 import aerosandbox.numpy as np
 import aerosandbox.tools.units as u
 
@@ -82,6 +86,157 @@ def mass_rotor_group_afdd82_kg(count_rotors, count_blades, radius_m, chord_m, sp
                                            frequency_flap_per_rev)
     return mass_blades_kg + mass_hub_afdd82_kg(count_rotors, count_blades, radius_m, speed_tip_m_s,
                                                frequency_flap_per_rev, mass_blades_kg)
+
+
+def _positive_part(value, smoothing_scale=0.0):
+    """max(0, value); a nonzero `smoothing_scale` (same units) gives a smooth hyperbola for gradient-based solves."""
+    if isinstance(smoothing_scale, (int, float)) and smoothing_scale == 0:
+        return np.fmax(value, 0)
+    return 0.5 * (value + np.sqrt(value**2 + smoothing_scale**2))
+
+
+def section_form_factors_tiltrotor_wing(thickness_to_chord, fraction_chord_torque_box):
+    """NDARC tiltrotor-wing section form factors (F_B, F_C, F_T, F_VH): beam bending, chord bending, torsion and
+    spar-cap vertical/horizontal bending, relating airfoil and torque-box geometry to ideal shapes."""
+    tau, w = thickness_to_chord, fraction_chord_torque_box
+    factor_beam = (0.073 * np.sin(2 * np.pi * (tau - 0.151) / 0.1365) + 0.14598 * tau
+                   + 0.610 * np.sin(2 * np.pi * (w + 0.080) / 2.1560) - (0.4126 - 1.6309 * tau) * (w - 0.131) + 0.0081)
+    factor_chord = 0.640424 * w**2 - 0.89717 * w + 0.4615 * tau + 0.655317
+    factor_torsion = ((0.27 - tau) / 0.12 * 0.12739 * (-0.96 + np.sqrt(3.32 + 94.6788 * w - (w / 0.08344)**2))
+                      - 2.7545 * w**2 + 5.1799 * w - 0.2683)
+    factor_spar_cap = 0.25 * np.sin(5.236 * w) + 0.325
+    return factor_beam, factor_chord, factor_torsion, factor_spar_cap
+
+
+@dataclass(frozen=True)
+class TiltrotorWingMasses:
+    """Result of `wing_tiltrotor_afdd_masses`. Masses in kg; stiffnesses in N m2 as realized (after the jump
+    take-off increment); mode frequencies in rad/s from NDARC's single-mode relations. Fields may be symbolic."""
+    mass_torque_box_kg: Any
+    mass_spar_stiffness_kg: Any       # spar caps for the chord and beam bending-frequency requirements
+    mass_spar_jump_kg: Any            # extra spar caps for the jump take-off bending moment
+    mass_fairing_kg: Any
+    mass_control_surfaces_kg: Any
+    mass_fittings_kg: Any
+    mass_fold_kg: Any
+    stiffness_torsion_Nm2: Any
+    stiffness_beam_Nm2: Any
+    stiffness_chord_Nm2: Any
+    frequency_torsion_rad_s: Any
+    frequency_beam_rad_s: Any
+    frequency_chord_rad_s: Any
+    moment_jump_ultimate_Nm: Any
+    area_torque_box_m2: Any
+    area_spar_m2: Any
+
+    def mass_primary_kg(self):
+        return self.mass_torque_box_kg + self.mass_spar_stiffness_kg + self.mass_spar_jump_kg
+
+    def total(self):
+        """Wing group: primary structure, fairings, control surfaces, fittings and fold/tilt."""
+        return (self.mass_primary_kg() + self.mass_fairing_kg + self.mass_control_surfaces_kg + self.mass_fittings_kg
+                + self.mass_fold_kg)
+
+
+def wing_tiltrotor_afdd_masses(span_m, chord_m, thickness_to_chord, fraction_chord_torque_box, mass_design_kg,
+                               mass_tip_kg, radius_gyration_pylon_m, speed_rotor_design_rad_s,
+                               frequency_torsion_per_rev, frequency_beam_per_rev, frequency_chord_per_rev,
+                               density_torque_box_kg_m3, density_spar_kg_m3, modulus_shear_torque_box_Pa,
+                               modulus_torque_box_Pa, modulus_spar_Pa, strain_ultimate,
+                               area_control_surfaces_m2, unit_mass_fairing_kg_m2, unit_mass_control_surfaces_kg_m2,
+                               width_fuselage_m, width_attachment_m, count_rotors=2, count_tips=2,
+                               load_factor_jump=2.0, thrust_max_rotor_N=None, fraction_fittings=0.0,
+                               fraction_fold=0.0, efficiency_torque_box=1.0, efficiency_spar=1.0,
+                               correction_spar_stiffness=1.0, correction_spar_strength=1.0,
+                               correction_moment_spar=1.0, smoothing=0.0):
+    """AFDD tiltrotor wing (NDARC Theory, NASA/TP-2009-215402, sec. 19-1.1; Chappell and Peyran, SAWE 2107, 1992).
+
+    Consistent SI, so NDARC's unit factor is 1. The torque box is sized by the torsion frequency, spar caps by the
+    chord and beam bending frequencies, then by the jump take-off root moment. Frequencies are per rev of
+    `speed_rotor_design_rad_s` (the wing weight design condition). The sequence is NDARC's single explicit pass
+    (the jump moment uses the wing mass before the jump increment); nothing iterates. `mass_tip_kg` is the mass on
+    one wing tip; its pitch inertia is `mass_tip_kg * radius_gyration_pylon_m**2`; f_tip counts `count_tips` tips.
+    NDARC's two "replace by zero if negative" steps are max(0, .); `smoothing` > 0 rounds them with a scale of
+    `smoothing` times the required stiffness or moment (for gradient-based sizing).
+    """
+    g_m_s2 = 9.80665
+    thickness_m = thickness_to_chord * chord_m
+    chord_torque_box_m = fraction_chord_torque_box * chord_m
+    factor_beam, factor_chord, factor_torsion, factor_spar_cap = section_form_factors_tiltrotor_wing(
+        thickness_to_chord, fraction_chord_torque_box)
+    fraction_tip = count_tips * mass_tip_kg / mass_design_kg
+    factor_mode = 1 - fraction_tip
+    frequency_torsion_rad_s = frequency_torsion_per_rev * speed_rotor_design_rad_s
+    frequency_beam_rad_s = frequency_beam_per_rev * speed_rotor_design_rad_s
+    frequency_chord_rad_s = frequency_chord_per_rev * speed_rotor_design_rad_s
+    bending_mass_kg_m3 = span_m**3 / 24 * 0.5 * mass_tip_kg * factor_mode
+    torsion_inertia_kg_m3 = 0.5 * span_m * 0.5 * mass_tip_kg * radius_gyration_pylon_m**2
+
+    # Torque box from the torsion frequency (ideal shape: a tube of radius t, J = F_T A t^2 / 4).
+    stiffness_torsion_Nm2 = frequency_torsion_rad_s**2 * torsion_inertia_kg_m3
+    area_torque_box_m2 = 4 * stiffness_torsion_Nm2 / (modulus_shear_torque_box_Pa * factor_torsion * thickness_m**2)
+
+    # Spar caps (beyond the torque box) for the chord and beam bending frequencies.
+    stiffness_chord_req_Nm2 = frequency_chord_rad_s**2 * bending_mass_kg_m3
+    stiffness_beam_req_Nm2 = frequency_beam_rad_s**2 * bending_mass_kg_m3
+    stiffness_chord_box_Nm2 = modulus_torque_box_Pa * factor_chord * area_torque_box_m2 * chord_torque_box_m**2 / 4
+    stiffness_chord_spar_Nm2 = _positive_part(stiffness_chord_req_Nm2 - stiffness_chord_box_Nm2,
+                                              smoothing * stiffness_chord_req_Nm2)
+    area_spar_chord_m2 = stiffness_chord_spar_Nm2 / (modulus_spar_Pa * chord_torque_box_m**2 / 4)
+    stiffness_beam_box_Nm2 = modulus_torque_box_Pa * factor_beam * area_torque_box_m2 * thickness_m**2 / 4
+    stiffness_spar_cap_beam_Nm2 = modulus_spar_Pa * factor_spar_cap * area_spar_chord_m2 * thickness_m**2 / 4
+    stiffness_beam_spar_Nm2 = _positive_part(
+        stiffness_beam_req_Nm2 - stiffness_beam_box_Nm2 - stiffness_spar_cap_beam_Nm2,
+        smoothing * stiffness_beam_req_Nm2)
+    area_spar_beam_m2 = stiffness_beam_spar_Nm2 / (modulus_spar_Pa * thickness_m**2 / 4)
+    stiffness_spar_Nm2 = stiffness_spar_cap_beam_Nm2 + stiffness_beam_spar_Nm2
+    area_spar_m2 = area_spar_chord_m2 + area_spar_beam_m2
+
+    mass_torque_box_kg = area_torque_box_m2 * density_torque_box_kg_m3 * span_m / efficiency_torque_box
+    mass_spar_stiffness_kg = (correction_spar_stiffness * area_spar_m2 * density_spar_kg_m3 * span_m
+                              / efficiency_spar)
+    area_fairing_m2 = ((span_m - width_attachment_m) * chord_m * (1 - fraction_chord_torque_box)
+                       - area_control_surfaces_m2)
+    mass_fairing_kg = area_fairing_m2 * unit_mass_fairing_kg_m2
+    mass_control_surfaces_kg = area_control_surfaces_m2 * unit_mass_control_surfaces_kg_m2
+    ratio_fittings = fraction_fittings / (1 - fraction_fittings)
+    mass_wing_kg = (1 + ratio_fittings) * (mass_torque_box_kg + mass_spar_stiffness_kg + mass_fairing_kg
+                                           + mass_control_surfaces_kg)
+
+    # Jump take-off: ultimate root bending moment against the torque-box and spar-cap capacity.
+    length_wing_m = span_m - width_fuselage_m
+    thrust_capability_N = load_factor_jump * mass_design_kg * g_m_s2 / count_rotors
+    if thrust_max_rotor_N is not None:
+        thrust_capability_N = np.fmax(thrust_capability_N, thrust_max_rotor_N)
+    moment_jump_ultimate_Nm = thrust_capability_N * length_wing_m * (
+        0.75 * (1 - fraction_tip) - 0.375 * (length_wing_m / span_m) * (mass_wing_kg / mass_design_kg))
+    moment_box_Nm = 2 * stiffness_beam_box_Nm2 * strain_ultimate / thickness_m
+    moment_spar_Nm = 2 * correction_moment_spar * stiffness_spar_Nm2 * strain_ultimate / thickness_m
+    moment_deficit_Nm = _positive_part(moment_jump_ultimate_Nm - moment_box_Nm - moment_spar_Nm,
+                                       smoothing * moment_jump_ultimate_Nm)
+    area_spar_jump_m2 = 2 * moment_deficit_Nm / (strain_ultimate * modulus_spar_Pa * thickness_m)
+    mass_spar_jump_kg = correction_spar_strength * area_spar_jump_m2 * density_spar_kg_m3 * span_m / efficiency_spar
+
+    mass_fittings_kg = ratio_fittings * (mass_torque_box_kg + mass_spar_stiffness_kg + mass_spar_jump_kg
+                                         + mass_fairing_kg + mass_control_surfaces_kg)
+    mass_fold_kg = fraction_fold * (mass_torque_box_kg + mass_spar_stiffness_kg + mass_spar_jump_kg + mass_fairing_kg
+                                    + mass_control_surfaces_kg + mass_fittings_kg + count_tips * mass_tip_kg)
+
+    # Realized stiffness (jump caps add beam stiffness) and the frequencies they give.
+    stiffness_chord_Nm2 = stiffness_chord_box_Nm2 + modulus_spar_Pa * area_spar_chord_m2 * chord_torque_box_m**2 / 4
+    stiffness_beam_Nm2 = (stiffness_beam_box_Nm2 + stiffness_spar_Nm2
+                          + modulus_spar_Pa * area_spar_jump_m2 * thickness_m**2 / 4)
+    return TiltrotorWingMasses(
+        mass_torque_box_kg=mass_torque_box_kg, mass_spar_stiffness_kg=mass_spar_stiffness_kg,
+        mass_spar_jump_kg=mass_spar_jump_kg, mass_fairing_kg=mass_fairing_kg,
+        mass_control_surfaces_kg=mass_control_surfaces_kg, mass_fittings_kg=mass_fittings_kg, mass_fold_kg=mass_fold_kg,
+        stiffness_torsion_Nm2=stiffness_torsion_Nm2, stiffness_beam_Nm2=stiffness_beam_Nm2,
+        stiffness_chord_Nm2=stiffness_chord_Nm2,
+        frequency_torsion_rad_s=np.sqrt(stiffness_torsion_Nm2 / torsion_inertia_kg_m3),
+        frequency_beam_rad_s=np.sqrt(stiffness_beam_Nm2 / bending_mass_kg_m3),
+        frequency_chord_rad_s=np.sqrt(stiffness_chord_Nm2 / bending_mass_kg_m3),
+        moment_jump_ultimate_Nm=moment_jump_ultimate_Nm, area_torque_box_m2=area_torque_box_m2,
+        area_spar_m2=area_spar_m2 + area_spar_jump_m2)
 
 
 if __name__ == "__main__":

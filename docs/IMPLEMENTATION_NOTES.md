@@ -727,11 +727,122 @@ can do to stretch the cells".
   `OMP_NUM_THREADS=1`. Several concurrent suites with threaded BLAS made
   IPOPT fail on otherwise reproducible solves.
 
+## Tier 20: tiltrotor airframe weights
+
+Plan 024. The AFDD tiltrotor wing (NDARC Theory sec. 19-1.1) sizes the wing in
+four steps:
+
+1. the torque box from the torsion frequency;
+2. spar caps from the chord and beam bending frequencies;
+3. extra caps from a 2-g jump take-off;
+4. fairings, control surfaces and fittings by unit mass or fraction.
+
+Frequencies are in per rev of a design rotor speed. The model is a `Wing.mass_model`
+submodel; the Raymer wing (None) stays the default and the simplest model.
+
+**XV-15 section calibration.** Acree et al. (1999) publish the XV-15 wing:
+
+- components: torque box 567, spars 52, control surfaces 97, fairings 108 and
+  fittings 122 lb;
+- stiffness: GJ 2.80e9, EI beam 3.70e9 and EI chord 1.12e10 lb-in2;
+- aluminium properties.
+
+With a torque-box chord ratio of 0.45 (assumed), these give NDARC's box
+efficiency 0.583 and spar-taper correction 0.526. The fairing (10.9 kg/m2) and
+control-surface (15.2 kg/m2) unit masses and the fittings fraction (0.129)
+follow, and are the model defaults.
+
+**Frequencies to stiffness.** The XV-15 inputs come from NASA/TP-2004-212262:
+
+- published symmetric modes at 458 rpm: torsion 1.09, beam 0.43 and chord
+  0.83 per rev;
+- stick-model tip mass: 2,142 lb per side;
+- pylon radius of gyration: 2.77 ft, or 0.222 R.
+
+With these, NDARC's single-mode relations give 0.57-0.62 of the published
+stiffness. The wing comes to 658 lb against the 873 lb statement, so
+`Xv15MassFactors.wing_tiltrotor` = 1.327. Raymer gives 452 lb and its factor
+stays 1.930.
+
+| XV-15 closure | Raymer wing | AFDD wing |
+|---|---|---|
+| Uncalibrated take-off (lb) | 11,315 | 11,536 |
+| Calibrated take-off (lb) | 13,000 | 13,000 |
+
+**Second calibration aircraft.** Public V-22 and AW609 group weight statements
+were not found. The calibrated model was checked with no further fitting:
+
+| Wing | Model x 1.327 (lb) | Actual (lb) | Error |
+|---|---|---|---|
+| V-22 FSD, composite (Popelka et al. 1995) | 2,023 | 2,470 | -18 % |
+| Bell D266 (1968 MIL-STD-451 design statement, Harris vol. III) | 1,840 | 1,886 | -2 % |
+
+- The V-22 tip mass is a framework model-chain estimate.
+- The V-22 wing's fold/rotate scope is not stated by the source.
+- The D266 rotor group (2,439 lb) needs solidity 0.062 with AFDD82 x the XV-15
+  factor 0.69, below typical proprotors (0.08-0.11). The calibrated rotor model
+  is therefore heavy for that design.
+- Drive groups have no public split for either aircraft.
+
+**Whirl flutter (reduced order).** In the Halo sizing the wing design rotor
+speed is a design variable. Every airplane-mode point carries margins on the
+torsion and beam frequency, in per rev of that point's rotor speed: climb,
+cruise sub-points, loiter, descent, maximum speed and ceiling. Flutter speed
+itself is not modelled.
+
+**Halo with `wing_weight_model="afdd_tiltrotor"`** (780 kg payload,
+equivalent-circuit battery):
+
+| | Raymer (reference) | AFDD wing |
+|---|---|---|
+| Take-off mass | 6,548 kg (14,436 lb) | 6,144 kg (13,546 lb) |
+| Wing | 547.5 kg | 372 kg |
+| Wing area | 22.6 m2 | 21.3 m2 |
+| Max payload | 785 kg | 959 kg |
+
+- The torsion whirl-flutter margin binds at the 210 kt maximum-speed point:
+  the wing is built for that rotor speed, 39.4 rad/s. Cruise runs at 27.7 rad/s
+  (1.55 per rev).
+- The Halo wing uses graphite epoxy. Its tips carry rotor, motor, gearbox and
+  turbogenerator.
+
+**Uncrewed equipment.** The Halo equipment is now itemised from the XV-15
+groups:
+
+- kept: electrical 396 and instrumentation 91 lb;
+- removed: crew ECS (-100), ejection seats (-230) and other furnishings
+  (-206 lb);
+- added: autonomy and mission avionics allocation (+100 lb).
+
+The total is unchanged at 587 lb. Crew items inside the fuselage and
+flight-control groups are not split out (no public breakdown).
+
+Verification: 392 unittest cases (39 new) and the Tier 20 notebook's checks.
+
+## Plan 026: AFDD tiltrotor wing as the reference
+
+The user approved the switch on 2026-10-03.
+
+- **Defaults:** `wing_weight_model="afdd_tiltrotor"`, payload back to
+  900 kg.
+- **Reference:** 6,462 kg (14,247 lb).
+  - Battery: 62.7 kWh, 426 kg.
+  - Wing: 22.2 m².
+  - Binding: whirl-flutter torsion at the 210 kt point, and the engine-out
+    end voltage.
+- **Starting point** (equivalent-circuit battery, no `initial`):
+  - first, the constant-battery solve;
+  - if that start fails, the equivalent-circuit solve at 85 % payload.
+  - The 900 kg case needs the second start.
+- **Legacy sets** pin `wing_weight_model="raymer"`.
+  `requirements_plan022` / `assumptions_plan022` keep the 780 kg plan 022
+  reference at 14,436 lb.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
 Tier 1 component physics, Tier 2 topology, Tier 3 compatibility margins, Tier 4 mass closure, Tier 5
-aerodynamics, Tier 6 stability and control, Tier 7 requirements, Tier 8 missions, Tier 9 coupled sizing and Tier 10 XV-15 mass validation. Outputs are kept so plots render
+aerodynamics, Tier 6 stability and control, Tier 7 requirements, Tier 8 missions, Tier 9 coupled sizing, Tier 10 XV-15 mass validation and Tier 20 tiltrotor wing weights. Outputs are kept so plots render
 remotely.
 
 ## Next stage
