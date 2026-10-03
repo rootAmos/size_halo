@@ -1,5 +1,7 @@
 # Halo-inspired aircraft closure
 
+[![tests](https://github.com/rootAmos/size_halo/actions/workflows/tests.yml/badge.svg)](https://github.com/rootAmos/size_halo/actions/workflows/tests.yml)
+
 AeroSandbox/CasADi framework for sizing an unmanned series-hybrid-electric
 tiltrotor together with its mission. Every discipline contributes equations to
 one `asb.Opti` problem; there are no hidden convergence loops or second
@@ -55,6 +57,14 @@ uv run python -m examples.aircraft_mass_closure   # Tier 4: mass and CG closure
 uv run python -m examples.series_hybrid_point     # Tiers 2-3: topology-coupled hover point
 uv run python -m examples.series_hybrid_point_explicit  # Tier 1: hand-coupled hover point
 ```
+
+## Continuous integration
+
+GitHub Actions runs the unit suite on every push and pull request
+(`.github/workflows/tests.yml`: `uv sync --locked`, then `unittest`). The
+notebooks workflow (`notebooks.yml`) executes every verification notebook on
+demand and uploads the executed copies as an artifact. Tests that need
+user-supplied local data in `data/` skip when it is absent.
 
 ## Verification notebooks
 

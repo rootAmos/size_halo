@@ -16,7 +16,7 @@
 | 10b | Turboshaft lapse and part-power submodels, hover download, XV-15 hover-power check | Implemented |
 | 10c | Two-rotor Halo-class series hybrid sized to XV-15-derived requirements (13,000 ft ceiling) | Implemented |
 | 11a | Turboshaft deck part-power fuel curve (user-supplied GASP deck) | Implemented |
-| 11b | Continuous integration: tests on every push; notebook execution on demand | Planned |
+| 11b | Continuous integration: tests on every push; notebook execution on demand | Implemented |
 | 12 | Rotor speed physics: induced plus profile power, propeller-mode efficiency in J and tip Mach | Next |
 | 13 | Electric machines sized by torque; machine speed and gear ratio as design variables | Planned |
 | 14 | Electrical layer: inverters, cables, protection, DC/DC; bus voltage as a discrete choice | Planned |
@@ -237,8 +237,19 @@ This is separate from sizing. It is a stand-alone optimal-control problem on
 a fixed aircraft taken from a sizing result (`HaloSizingResult.design`), not
 a new constraint inside the sizing Opti.
 
-- **Dynamics:** point-mass longitudinal dynamics using AeroSandbox's dynamics
-  and trajectory tools, by direct collocation. Nacelle tilt is a control, so
+- **Principle (user, 2026-10-02): lean on AeroSandbox.**
+  - Dynamics: `asb.DynamicsPointMass2DSpeedGamma` (longitudinal),
+    `DynamicsPointMass3DSpeedGammaTrack` for ground tracks, and
+    `DynamicsRigidBody2DBody` if pitch dynamics are needed. Each one's
+    `add_force` and `state_derivatives` define the problem.
+  - Collocation: `asb.Opti` with `opti.constrain_derivative` /
+    `derivative_of` (trapezoidal integration).
+  - Atmosphere: `asb.Atmosphere`.
+  - Aerodynamics: `asb.AeroBuildup` evaluated per node (Tier 20).
+  - This project adds only what AeroSandbox lacks: rotor and powertrain
+    forces, the tilt kinematics, and the energy states.
+- **Dynamics:** point-mass longitudinal dynamics with the AeroSandbox
+  classes above, by direct collocation. Nacelle tilt is a control, so
   hover, conversion and airplane mode form one continuous trajectory, with
   rotor thrust and wing lift blended through the tilt angle.
 - **States:** position, velocity, flight-path angle, mass, battery SOC (and
