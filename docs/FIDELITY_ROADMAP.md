@@ -26,7 +26,7 @@
 | 17 | Battery equivalent circuit with sag and ageing: OCV(SOC), R(SOC, C-rate, T), end-of-life, cycle cost | Implemented |
 | 18 | Redundancy: lanes per rotor, cross-strapped buses, battery strings, multipoint failure cases | Planned |
 | 19 | Thermal: losses to heat-exchanger mass and cooling drag; short-time ratings from thermal mass | Planned |
-| 20 | Tiltrotor airframe weights: AFDD wing with torsional stiffness and whirl flutter; second calibration aircraft | Planned |
+| 20 | Tiltrotor airframe weights: AFDD wing with torsional stiffness and whirl flutter; second calibration aircraft | Implemented |
 | 21 | Aero: compressibility drag rise, nacelle build-up, V-tail, download model, conversion segments | Planned |
 | 22 | Design-space practice: freed trades, multistart, cost objective, architecture enumeration, robustness | Planned |
 
@@ -267,6 +267,11 @@ a new constraint inside the sizing Opti.
   whirl-flutter frequency constraint.
 - **Second calibration aircraft:** V-22 or AW609 from public group weights.
 - **Uncrewed adjustments:** explicit and itemised.
+
+Implemented in plan 024. The AFDD wing is an option (`wing_weight_model`), and
+the Raymer wing remains the default. Public V-22 and AW609 group statements
+were not found, so the second aircraft is the V-22 FSD wing plus the Bell D266
+design statement.
 
 ### 21 Aerodynamics (review item 8)
 

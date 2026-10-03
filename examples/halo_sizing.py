@@ -17,6 +17,10 @@ Models carried from Tier 10:
   * hover: figure of merit 0.67 with 7 % download (XV-15 calibrated).
 Tier 16 adds an OGE hover at a hot/high destination (default 4,000 ft / 95 F)
 at the mission's end mass and SOC (`HaloRequirements.hover_hot_day`).
+Tier 20 (plan 024) adds the AFDD tiltrotor wing as an option
+(`HaloAssumptions.wing_weight_model = "afdd_tiltrotor"`) with whirl-flutter
+frequency margins at every airplane-mode point, and itemises the uncrewed
+equipment changes from the XV-15 statement.
 Assumptions specific to this case are fields of `HaloAssumptions` and are
 listed in plan 013. Illustrative study, not Archer data.
 """
@@ -51,16 +55,53 @@ from aircraft_closure.vehicle.condition import StructuralDesignCondition
 from aircraft_closure.vehicle.fuselage import Fuselage
 from aircraft_closure.vehicle.items import FixedEquipment, FuelLoad, LandingGear, Nacelles, Payload, Systems
 from aircraft_closure.vehicle.powertrain_installation import InstalledInstance, PowertrainInstallation
-from aircraft_closure.vehicle.surfaces import HorizontalTail, VerticalTail, Wing
+from aircraft_closure.vehicle.surfaces import (HorizontalTail, TiltrotorWingMassModel, VerticalTail, Wing,
+                                               aluminium_wing_material, graphite_epoxy_wing_material)
 from aircraft_closure.weights import afdd
 from examples.xv15_hot_day import temperature_from_fahrenheit_K, temperature_offset_K, xv15_lapse_model
 from examples.xv15_performance import fit_lapse_exponent
-from examples.xv15_reference import Xv15MassFactors, calibration_factors
+from examples.xv15_reference import Xv15MassFactors, Xv15Reference, calibration_factors
 
 fuel_factor = 1.1
 soc_take_off = 0.95
 soc_minimum = 0.3
 soc_emergency_floor = 0.1
+
+
+@dataclass(frozen=True)
+class EquipmentItem:
+    """One line of the fixed-equipment build-up; negative masses are removals."""
+    label: str
+    mass_kg: float
+    source: str
+
+
+# XV-15 fixed-equipment groups (TM X-62407 sec. 3.1.2), the starting point for the Halo equipment.
+xv15_equipment_items = (
+    EquipmentItem("electrical", 396 * u.lbm, "TM X-62407 sec. 3.1.2"),
+    EquipmentItem("instrumentation", 91 * u.lbm, "TM X-62407 sec. 3.1.2"),
+    EquipmentItem("heating and air conditioning", 100 * u.lbm, "TM X-62407 sec. 3.1.2"),
+    EquipmentItem("miscellaneous (furnishings, equipment)", 436 * u.lbm, "TM X-62407 sec. 3.1.2"),
+)
+# Uncrewed changes, itemised (plan 024). Until Tier 20 the same 587 lb was carried as one number, with the
+# heating group relabelled as autonomy; the total is unchanged.
+uncrewed_equipment_adjustments = (
+    EquipmentItem("remove crew environmental control (heating, ventilation, air conditioning)", -100 * u.lbm,
+                  "TM X-62407 sec. 3.1.2 (the ECS serves the crew station)"),
+    EquipmentItem("remove ejection seats", -230 * u.lbm,
+                  "Harris, NASA/SP-2015-215959 vol. III p. 312 (from the XV-15 weight statement)"),
+    EquipmentItem("remove other furnishings and miscellaneous crew equipment", -(436 - 230) * u.lbm,
+                  "TM X-62407 sec. 3.1.2 miscellaneous less ejection seats"),
+    EquipmentItem("add autonomy and mission avionics (flight computers, sensors, datalinks)", 100 * u.lbm,
+                  "assumed allocation (the XV-15 carried 144 lb of avionics as useful load, not empty weight)"),
+    # Crew items inside other groups are not split out (no public breakdown): cockpit controls in flight
+    # controls, crew-station and crash structure in the fuselage. They remain inside those calibration factors.
+)
+halo_equipment_items = xv15_equipment_items + uncrewed_equipment_adjustments
+
+
+def mass_equipment_from_items_kg(items):
+    return sum(item.mass_kg for item in items)
 
 
 @dataclass(frozen=True)
@@ -146,7 +187,7 @@ class HaloAssumptions:
     x_horizontal_tail_m: float = 11.4
     drag_area_misc_m2: float = 0.8                # assumed: tip nacelles, spinners, gear fairings
     load_factor_ultimate: float = 4.5             # XV-15
-    mass_equipment_kg: float = (396 + 91 + 100) * u.lbm  # XV-15 electrical + instrumentation + autonomy
+    mass_equipment_kg: float = mass_equipment_from_items_kg(halo_equipment_items)  # 587 lb; itemised above
     area_wetted_nacelles_m2: float = 2 * 95 * u.foot**2
     resistance_energy_product_ohm_J: float = 1.8e6
     battery_mass_smoothing_kg: float = 10.0
@@ -173,6 +214,21 @@ class HaloAssumptions:
     # resistance follow SOC through long segments; and points in the 60 s engine-out hover (SOC 0.30 -> 0.10).
     subsegments_mission: tuple = (1, 1, 4, 1, 1, 1)
     subsegments_engine_out: int = 3
+    # ---- Tier 20 wing weight (plan 024) ----
+    # "raymer": Raymer GA wing x the XV-15 wing factor (the reference); "afdd_tiltrotor": the AFDD tiltrotor wing
+    # (NDARC 19-1.1) x its own XV-15 factor, built for the wing design rotor speed (a design variable) and checked
+    # by whirl-flutter frequency margins at every airplane-mode point.
+    wing_weight_model: str = "raymer"
+    # XV-15 symmetric wing modes in per rev of its airplane-mode rotor speed (torsion 1.09, beam 0.43, chord 0.83).
+    frequency_torsion_wing_per_rev: float = Xv15Reference().frequency_torsion_wing_per_rev
+    frequency_beam_wing_per_rev: float = Xv15Reference().frequency_beam_wing_per_rev
+    frequency_chord_wing_per_rev: float = Xv15Reference().frequency_chord_wing_per_rev
+    thickness_to_chord_wing: float = 0.23                # NACA 2423 airfoil above (XV-15 64A223, V-22 23 %)
+    wing_material: str = "graphite_epoxy"                # or "aluminium" (the XV-15's)
+    ratio_radius_gyration_pylon: float = 0.222           # pylon radius of gyration / rotor radius (XV-15)
+    turbogenerators_on_wing_tips: bool = True            # tip nacelles carry the turbogenerators (as the XV-15)
+    load_factor_jump: float = 2.0
+    smoothing_wing_tiltrotor: float = 0.01               # rounds the AFDD max(0, .) steps for IPOPT
 
 
 @dataclass(frozen=True)
@@ -197,6 +253,8 @@ class HaloDesign:
     speed_peak_generator_rad_s: Any = None
     count_parallel_battery: Any = None            # Tier 17 "ecm": parallel strings (continuous); energy and power
                                                   # above are then derived from the pack
+    speed_rotor_wing_design_rad_s: Any = None     # Tier 20 "afdd_tiltrotor": rotor speed the wing frequencies are
+                                                  # placed against; None: the design (hover) rotor speed
 
 
 def build_halo_battery(design, assumptions=HaloAssumptions()):
@@ -286,8 +344,32 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
     topology = build_series_hybrid(motor, generator, battery, turboshaft, gearbox, rotor, count_rotors=a.count_rotors,
                                    count_turbogenerators=a.count_turbogenerators, generator_gearbox=generator_gearbox)
 
+    nacelles = Nacelles(mass_engines_kg=a.count_turbogenerators * d.mass_turboshaft_bare_kg,
+                        count_engines=a.count_turbogenerators, area_wetted_m2=a.area_wetted_nacelles_m2,
+                        x_m=0.0, z_m=1.2, mass_factor=factors.powerplant)
+    if a.wing_weight_model == "raymer":
+        wing_mass = dict(mass_factor=factors.wing)
+    elif a.wing_weight_model == "afdd_tiltrotor":
+        # Mass on one wing tip: rotor, motor and rotor gearbox, plus the turbogenerator and its nacelle section.
+        mass_tip_kg = mass_rotors_kg / a.count_rotors + motor.get_mass() + gearbox.get_mass()
+        if a.turbogenerators_on_wing_tips:
+            mass_tip_kg = mass_tip_kg + (a.count_turbogenerators / a.count_rotors) * (
+                factors.powerplant * d.mass_turboshaft_bare_kg + generator.get_mass()
+                + (generator_gearbox.get_mass() if generator_gearbox is not None else 0.0)) \
+                + nacelles.get_mass_properties().mass / a.count_rotors
+        materials = dict(graphite_epoxy=graphite_epoxy_wing_material, aluminium=aluminium_wing_material)
+        wing_mass = dict(mass_factor=factors.wing_tiltrotor, mass_model=TiltrotorWingMassModel(
+            mass_tip_kg=mass_tip_kg, radius_gyration_pylon_m=a.ratio_radius_gyration_pylon * radius_m,
+            speed_rotor_design_rad_s=(d.speed_rotor_wing_design_rad_s if d.speed_rotor_wing_design_rad_s is not None
+                                      else speed_rotor_design_rad_s),
+            width_fuselage_m=a.diameter_fuselage_m, frequency_torsion_per_rev=a.frequency_torsion_wing_per_rev,
+            frequency_beam_per_rev=a.frequency_beam_wing_per_rev, frequency_chord_per_rev=a.frequency_chord_wing_per_rev,
+            thickness_to_chord=a.thickness_to_chord_wing, material=materials[a.wing_material](),
+            count_rotors=a.count_rotors, load_factor_jump=a.load_factor_jump, smoothing=a.smoothing_wing_tiltrotor))
+    else:
+        raise ValueError(f"Unknown wing weight model '{a.wing_weight_model}'.")
     wing = Wing(area_m2=d.area_wing_m2, aspect_ratio=a.aspect_ratio_wing, taper_ratio=1.0, x_le_root_m=d.x_le_wing_m,
-                z_m=1.2, airfoil=asb.Airfoil("naca2423"), mass_factor=factors.wing)
+                z_m=1.2, airfoil=asb.Airfoil("naca2423"), **wing_mass)
     x_rotor_m = d.x_le_wing_m + 0.25 * wing.chord_root_m()
     z_rotor_m = wing.z_m + 1.0
     locations = (InstalledInstance("turboshaft", x_m=x_rotor_m, z_m=wing.z_m),
@@ -313,9 +395,7 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
         powertrain=PowertrainInstallation(topology, locations, installation_factor=1.0),
         payload=Payload(mass_kg=requirements.mass_payload_kg, x_m=x_rotor_m),
         fuel=FuelLoad(mass_kg=d.mass_fuel_kg, x_m=x_rotor_m, z_m=wing.z_m),
-        nacelles=Nacelles(mass_engines_kg=a.count_turbogenerators * d.mass_turboshaft_bare_kg,
-                          count_engines=a.count_turbogenerators, area_wetted_m2=a.area_wetted_nacelles_m2,
-                          x_m=x_rotor_m, z_m=wing.z_m, mass_factor=factors.powerplant),
+        nacelles=replace(nacelles, x_m=x_rotor_m, z_m=wing.z_m),
         equipment=FixedEquipment(mass_kg=a.mass_equipment_kg, x_m=3.5),
     )
 
@@ -372,6 +452,10 @@ class HaloSizingResult:
     # voltage_bus_V (interval mean), voltage_end_V, voltage_ocv_V, current_A, power_W (terminal).
     battery_trace: tuple = ()
     engine_out_trace: tuple = ()
+    # Tier 20 ("afdd_tiltrotor"): wing breakdown (name, kg) and per airplane-mode point the realized wing torsion
+    # and beam frequencies in per rev of that point's rotor speed.
+    wing_masses_kg: tuple = ()
+    whirl_flutter: tuple = ()
 
 
 def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None, verbose=False,
@@ -450,6 +534,12 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
                          speed_tip_m_s=opti.variable(
                              init_guess=guess.speed_tip_m_s if guess.speed_tip_m_s is not None else 220.0, scale=100.0,
                              lower_bound=150.0, upper_bound=a.mach_tip_hover_max * speed_sound_sea_level_m_s))
+    is_afdd_wing = a.wing_weight_model == "afdd_tiltrotor"
+    if is_afdd_wing:
+        # Tier 20: the rotor speed the wing's frequencies are placed against; airplane-mode points may not exceed it.
+        design = replace(design, speed_rotor_wing_design_rad_s=opti.variable(
+            init_guess=guess.speed_rotor_wing_design_rad_s if guess.speed_rotor_wing_design_rad_s is not None
+            else 40.0, scale=10.0, lower_bound=5.0, upper_bound=200.0))
     mission = halo_mission(r, velocity_cruise_m_s=opti.variable(
         init_guess=initial.velocity_cruise_m_s if initial else 110.0, scale=50.0, lower_bound=60.0,
         upper_bound=r.velocity_max_m_s), velocity_loiter_m_s=opti.variable(
@@ -535,6 +625,20 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     )
     all_margins = (design_margins + flown.margins + engine_out_margins
                    + tuple(m for p in requirement_points for m in p.margins))
+    whirl_points, wing_masses = [], None
+    if is_afdd_wing:
+        # Tier 20 reduced-order whirl flutter: at every airplane-mode point the realized wing torsion and beam
+        # frequencies, in per rev of that point's rotor speed, stay at or above the required placement.
+        wing_masses = aircraft.wing.mass_model.masses(aircraft.wing, condition)
+        whirl_points = [p for p in ([s.point for seg in flown.segments for s in (seg.subsegments or (seg,))]
+                                    + list(requirement_points)) if p.condition.mode == "airplane"]
+        for p in whirl_points:
+            torsion_per_rev, beam_per_rev, _ = TiltrotorWingMassModel.frequency_per_rev(wing_masses,
+                                                                                         p.speed_rotor_rad_s)
+            all_margins += (margin_above(f"whirl flutter torsion per rev ({p.condition.label})", torsion_per_rev,
+                                         a.frequency_torsion_wing_per_rev),
+                            margin_above(f"whirl flutter beam per rev ({p.condition.label})", beam_per_rev,
+                                         a.frequency_beam_wing_per_rev))
     if hover_hot is not None:
         # An alternative contingency to the engine-out reserve: from the end SOC down to the emergency floor.
         all_margins += hover_hot.margins + (
@@ -594,6 +698,12 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         battery_trace=battery_trace(tuple(p for s in flown.segments for p in (s.subsegments or (s,))), value)
         if is_ecm else (),
         engine_out_trace=battery_trace(engine_out_points, value),
+        wing_masses_kg=tuple((f.name, value(getattr(wing_masses, f.name))) for f in fields(wing_masses)
+                             if f.name.startswith("mass_")) if wing_masses is not None else (),
+        whirl_flutter=tuple(dict(label=p.condition.label, speed_rotor_rad_s=value(p.speed_rotor_rad_s),
+                                 torsion_per_rev=value(wing_masses.frequency_torsion_rad_s / p.speed_rotor_rad_s),
+                                 beam_per_rev=value(wing_masses.frequency_beam_rad_s / p.speed_rotor_rad_s))
+                            for p in whirl_points),
     )
 
 
@@ -664,6 +774,8 @@ assumptions_tier12b = HaloAssumptions(battery_model="constant", machine_mass_by_
 # Tier 17 (plan 021): the equivalent-circuit 50G-shaped pack at end of life (the default from plan 022).
 assumptions_tier17 = HaloAssumptions(battery_model="ecm")
 assumptions_tier11a = replace(assumptions_tier12, rotor_speed_physics=False)
+# Tier 20 (plan 024): the reference with the AFDD tiltrotor wing.
+assumptions_tier20 = HaloAssumptions(wing_weight_model="afdd_tiltrotor")
 
 if __name__ == "__main__":
     result = solve_halo_sizing(verbose=False)
