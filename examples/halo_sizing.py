@@ -496,7 +496,14 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     battery and used as the initial guess: IPOPT reaches local infeasibility from the generic guess (plan 022).
     If the problem then still fails, the equivalent-circuit problem at 85 % of the payload is solved (by the same
     rule) and used as the start (plan 026). These are starting points only; each coupled problem is one solve.
+
+    With the AeroBuildup model and no `initial`, the same problem is first solved with the Scholz hand-check
+    aerodynamics (fast, within about 1 % in mass) and used as the start (plan 025): from the generic guess the
+    constant-battery build-up problem can stop at a point of local infeasibility.
     """
+    if initial is None and assumptions.aerodynamics_model == "buildup":
+        initial = solve_halo_sizing(requirements, replace(assumptions, aerodynamics_model="scholz"), factors,
+                                    max_iter=max_iter, objective=objective)
     if initial is None and assumptions.battery_model == "ecm":
         constant_start = solve_halo_sizing(requirements, replace(assumptions, battery_model="constant"), factors,
                                            max_iter=max_iter)

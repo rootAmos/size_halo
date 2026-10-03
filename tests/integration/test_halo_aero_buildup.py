@@ -37,13 +37,13 @@ class HaloBuildupSizingTests(unittest.TestCase):
         r = self.sized
         self.assertGreater(r.min_margin, -1e-6)
         self.assertLess(abs(r.closure_residual_kg), 1e-5)
-        self.assertEqual(r.mass_payload_kg, 780.0)
+        self.assertEqual(r.mass_payload_kg, HaloRequirements().mass_payload_kg)
 
     def test_lighter_than_the_simple_reference(self):
-        """The guessed 0.8 m2 miscellaneous area gives way to the component build-up: about 680 lb lighter
-        than the 14,436 lb reference, with a higher cruise L/D (8.0 with SimpleAerodynamics)."""
+        """The guessed 0.8 m2 miscellaneous area gives way to the component build-up: about 610 lb lighter
+        than the 14,247 lb plan 026 reference, with a higher cruise L/D (8.0 with SimpleAerodynamics)."""
         r = self.sized
-        self.assertAlmostEqual(r.mass_takeoff_kg / u.lbm, 13753, delta=15)
+        self.assertAlmostEqual(r.mass_takeoff_kg / u.lbm, 13639, delta=15)
         self.assertGreater(r.lift_to_drag_cruise, 9.0)
 
     def test_scholz_hand_check_sizes_within_one_percent(self):

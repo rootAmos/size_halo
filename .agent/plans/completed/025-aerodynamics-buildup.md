@@ -1,6 +1,6 @@
 # Aerodynamics build-up: AeroBuildup, Scholz hand check, blown wing, download
 
-Status: ACTIVE. Tier 21 (roadmap "21 Aerodynamics", review item 8). User
+Status: COMPLETED 2026-10-03. Tier 21 (roadmap "21 Aerodynamics", review item 8). User
 direction 2026-10-02: lean heavily on AeroSandbox's built-in aerodynamics;
 Scholz's level-0 method fills only what `AeroBuildup` does not provide and is
 an independent hand check; `SimpleAerodynamics` stays as the simplest model.
@@ -85,8 +85,9 @@ an independent hand check; `SimpleAerodynamics` stays as the simplest model.
 - Whole-aircraft lift from AeroBuildup includes tail lift at zero tail
   incidence (no downwash in AeroBuildup); the stability derivatives keep the
   Tier 6 analytic isolated-surface slopes.
-- `alpha_stall_deg` for the build-up: the angle where the AeroBuildup lift
-  curve, linearized through 0 deg and 8 deg, reaches `cl_max`.
+- `alpha_stall_deg` for the build-up, given the point's `aero`: alpha +
+  (cl_max - CL)/CL_alpha, i.e. exactly CL <= cl_max (without `aero`, the
+  AeroBuildup lift curve linearized through 0 and 8 deg).
 - Halo nacelles: 9 ft x 3.3 ft bodies (consistent with the 95 ft2 wetted
   area already used for the cowling mass), centred on the wing tips;
   interference Q = 1.5 (mounted directly on the wing).
@@ -149,7 +150,31 @@ an independent hand check; `SimpleAerodynamics` stays as the simplest model.
 
 - 2026-10-03: plan written. Prototype: one AeroBuildup evaluation 30 ms
   numeric; an Opti cruise trim with symbolic wing area solves in 0.4 s.
+- Direct route kept (no surrogate). The first sizing took 370 s; the stall
+  bound used two extra AeroBuildup runs per point. Passing the point's `aero`
+  to `alpha_stall_deg` (interface change, also in `SimpleAerodynamics` and the
+  trajectory) cut it to about 140 s. `expand=True` was slower (490 s);
+  NeuralFoil "xxsmall" saved under 10 %.
+- Swirl recovery: the first form (blown lift tilted forward by the swirl
+  angle) gave 8x the swirl energy flux; replaced by an energy-bounded
+  recovery with efficiency 0.5.
+- AeroBuildup's Oswald already includes the Nita-Scholz mean k_e,D0 and
+  NeuralFoil's viscous polar; only k_e,F and k_e,M are added.
+- Main merged mid-plan (Tier 20 AFDD wing, plan 026: 900 kg, 14,247 lb). From
+  the generic guess, the build-up constant-battery start then stopped at local
+  infeasibility; `solve_halo_sizing` now starts a build-up solve from the
+  Scholz solution when `initial` is None.
+- Results (plan 026 requirements): buildup 13,639 lb, L/D 9.84; Scholz
+  13,702 lb; no blowing 13,646 lb; simple 14,247 lb. Max payload at 210 kt
+  with the build-up 1,842 kg (959 kg simple). 230 kt closes at 900 kg (13,766
+  lb); 250 kt did not solve. XV-15 components 4.94 ft2 (buildup), 5.34 ft2
+  (Scholz) against NDARC 6.25 ft2.
+- Acceptance: 431 unittest cases pass; Tier 21 notebook 26/26 checks and the
+  full suite inside it pass.
 
 ## Deferred
 
 - V-tail, conversion segments, blown wing in conversion, trim drag.
+- Calibrating transition location and the fittings area against XV-15 flight
+  data (the build-up is 15–20 % low on the clean XV-15 components).
+- Whether the build-up becomes the Halo default (user decision at merge).

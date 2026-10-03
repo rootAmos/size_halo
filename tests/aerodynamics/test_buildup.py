@@ -9,7 +9,7 @@ import aerosandbox.tools.units as u
 from aircraft_closure.aerodynamics.buildup import BuildupAerodynamics
 from aircraft_closure.aerodynamics.scholz import InterferenceFactors, ScholzAerodynamics
 from aircraft_closure.aerodynamics.slipstream import BlownWing, RotorState
-from examples.halo_sizing import HaloDesign, build_halo_aircraft
+from examples.halo_sizing import HaloDesign, assumptions_plan022, build_halo_aircraft, requirements_plan022
 from examples.xv15_reference import Xv15Reference, build_xv15_aircraft
 
 
@@ -17,14 +17,14 @@ def scalar(x):
     return float(np.asarray(x).ravel()[0])
 
 
-# The plan 022 reference design (780 kg, 14,436 lb), numeric.
+# The plan 022 reference design (780 kg, 14,436 lb, Raymer wing), numeric; pinned to its assumption set.
 halo_design = HaloDesign(
     x_le_wing_m=4.0354, area_wing_m2=22.5451, area_horizontal_tail_m2=3.8451, area_vertical_tail_m2=1.7021,
     torque_peak_motor_Nm=425.34, torque_peak_generator_Nm=461.28, power_rated_turboshaft_W=835183.7,
     mass_turboshaft_bare_kg=184.21, power_max_discharge_battery_W=None, energy_capacity_battery_J=None,
     area_disk_m2=69.976, mass_fuel_kg=989.6, solidity=0.06, speed_tip_m_s=238.2, speed_peak_motor_rad_s=1373.0,
     reduction_ratio=35.02, speed_peak_generator_rad_s=1405.0, count_parallel_battery=21.28)
-halo = build_halo_aircraft(halo_design)
+halo = build_halo_aircraft(halo_design, requirements_plan022, assumptions_plan022)
 clean = BuildupAerodynamics(interference=InterferenceFactors(1.0, 1.0, 1.0, 1.0, 1.0), xtr_upper=1.0, xtr_lower=1.0)
 altitude_m = 10000 * u.foot
 
@@ -131,7 +131,8 @@ class BlownWingIntegrationTests(unittest.TestCase):
         area_wing_m2 = opti.variable(init_guess=22.0, lower_bound=12.0, upper_bound=40.0)
         alpha_deg = opti.variable(init_guess=4.0, lower_bound=-4.0, upper_bound=12.0)
         thrust_per_rotor_N = opti.variable(init_guess=5000.0, scale=5000.0, lower_bound=0.0)
-        aircraft = build_halo_aircraft(replace(halo_design, area_wing_m2=area_wing_m2))
+        aircraft = build_halo_aircraft(replace(halo_design, area_wing_m2=area_wing_m2), requirements_plan022,
+                                       assumptions_plan022)
         result = self.aero.evaluate(aircraft, 100.0, altitude_m, alpha_deg,
                                     rotor_state=RotorState(thrust_per_rotor_N, 30.0))
         weight_N = 6500 * 9.80665

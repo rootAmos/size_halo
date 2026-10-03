@@ -838,11 +838,103 @@ The user approved the switch on 2026-10-03.
   `requirements_plan022` / `assumptions_plan022` keep the 780 kg plan 022
   reference at 14,436 lb.
 
+## Tier 21: aerodynamics
+
+Plan 025. User direction: lean on AeroSandbox; Scholz fills the gaps and is
+the hand check; `SimpleAerodynamics` stays (and stays the Halo default,
+`HaloAssumptions.aerodynamics_model = "simple"`).
+
+- **`BuildupAerodynamics`:** `asb.AeroBuildup` on `Aircraft.to_asb()`, which
+  now includes the tip nacelles as two bodies of revolution (9 ft x 3.3 ft,
+  spinner as the nose). Added on top: Scholz Table 13.4 interference
+  (nacelles 1.5, tails 1.04), the Nita-Scholz fuselage factor k_e,F and Mach
+  factor k_e,M on AeroBuildup's span efficiency (AeroBuildup takes d_F = 0),
+  a fittings drag area (XV-15 "fittings and fixtures" 3.00 ft2 from NDARC,
+  Johnson 2010, Table 1) replacing the guessed 0.8 m2, fixed landing gear when
+  not retractable, and boundary-layer transition at 10 % chord (AeroBuildup
+  does not pass `xtr` to NeuralFoil; `TransitionAirfoil` does).
+- **`ScholzAerodynamics`:** Scholz ch. 13 component method with Torenbeek
+  wetted areas, Cf with the Mach term, Raymer nacelle FF, Korn-Lock wave drag
+  (AeroSandbox `Cd_wave_Korn`, kappa 0.87) and Nita-Scholz e with the
+  turboprop k_e,D0 0.804 (AeroSandbox's `oswalds_efficiency` uses the mean of
+  four classes). The 23 % NACA 2423 wing at CL 0.6 has M_crit 0.47, above the
+  210 kt cruise Mach 0.33: no drag rise anywhere in the Halo envelope.
+- **Cruise polar** (reference geometry, 150 kt, 10,000 ft, CL 0.6):
+
+  | Model | CD0 | e | CD | L/D |
+  |---|---|---|---|---|
+  | Simple (0.8 m2 misc.) | 0.0559 | 0.765 | 0.0804 | 7.46 |
+  | AeroBuildup | 0.0351 | 0.765 | 0.0597 | 10.05 |
+  | Scholz | 0.0358 | 0.735 | 0.0614 | 9.77 |
+
+  D/q breakdown (buildup / Scholz, ft2): wing 2.32 / 2.42, tails 0.51 / 0.59,
+  fuselage 1.41 / 1.62, nacelles 1.14 / 0.94, fittings 3.00; total 8.4 / 8.6
+  against 12.0 ft2 (0.0559 x S) for Simple. The guessed 0.8 m2 (8.6 ft2) was
+  nearly the XV-15's whole drag area (9.25 ft2).
+- **XV-15 check (NDARC):** modelled components 4.94 ft2 (buildup) and 5.34 ft2
+  (Scholz) against 6.25 ft2; with the 3.00 ft2 fittings 7.9 / 8.3 against
+  9.25 ft2. The build-up is 15–20 % low on the clean components (NeuralFoil
+  wing with transition at 10 %: 1.60 against 2.18 ft2).
+- **Blown wing** (`slipstream.py`): momentum-theory slipstream at the wing
+  (x = 0.4 R), contracted radius, ideal swirl; half of each tip rotor's
+  slipstream is on the wing (17.8 of 22.2 m2 on the Halo, the rotors nearly
+  span the wing). Dynamic-pressure ratio on lift and profile drag; swirl raises
+  the local angle (inboard-up) and the wing recovers half of the swirl energy
+  flux. At the 150 kt cruise thrust (1.7 kN per rotor): q ratio 1.006, swirl
+  0.23 deg, delta CL +0.018, net delta CD about zero. In sizing it is worth
+  7 lb. A first form (lift tilted forward by the swirl angle) gave a swirl
+  thrust eight times the swirl energy flux and was replaced by the
+  energy-bounded form.
+- **Coupling:** with a blown wing, each airplane-mode flight point gets a rotor
+  thrust variable and the equality n T = D + W sin(gamma) (thrust depends on
+  drag, drag on thrust), not an iteration.
+- **Stall:** the flight point and trajectory pass the point's `aero` to
+  `alpha_stall_deg`, which for the build-up is alpha + (cl_max - CL)/CL_alpha:
+  the bound is exactly CL <= cl_max with no extra AeroBuildup runs (the first
+  version linearized AeroBuildup through two extra runs per point; that tripled
+  the graph and the solve time).
+- **Download** (`download.py`): NDARC form DL/T = C_D,v S_immersed / A with
+  the flap-projected chord; C_D,v = 0.846 reproduces the XV-15's 7 %. Halo
+  reference geometry: 6.8 %. In sizing it couples wing chord and rotor radius.
+- **Halo, plan 026 requirements (900 kg, 210 kt):**
+
+  | Aerodynamics | MTOM | L/D cruise | cruise | wing | fuel | battery | solve |
+  |---|---|---|---|---|---|---|---|
+  | simple (reference) | 14,247 lb | 7.99 | 148 kt | 22.2 m2 | 984 kg | 62.7 kWh | 43 s |
+  | buildup | 13,639 lb | 9.84 | 163 kt | 21.4 m2 | 846 kg | 55.8 kWh | 112–164 s |
+  | buildup, no blowing | 13,646 lb | 9.82 | 163 kt | 21.4 m2 | 847 kg | 55.9 kWh | |
+  | scholz | 13,702 lb | 9.55 | 161 kt | 21.5 m2 | 862 kg | 56.5 kWh | 8 s |
+
+  The engine-out end voltage, whirl-flutter torsion at the 210 kt point and
+  the hover motor power still bind; the 210 kt turbine power no longer does.
+  - **Max payload at 210 kt (buildup):** 1,842 kg at 19,845 lb (959 kg with
+    `SimpleAerodynamics`, plan 026). The 210 kt drag was what limited payload;
+    with it relaxed, the climb and take-off-hover turbine power, the hover
+    motor and whirl flutter bind instead. This large swing comes from the
+    drag estimate (the 0.8 m2 guess against the 3.00 ft2 XV-15 value), so the
+    drag allowance is now the most important aerodynamic input.
+  - **Max speed at 900 kg (buildup):** 230 kt closes at 13,766 lb; 250 kt does
+    not solve (IPOPT failure from the 230 kt start; not proven infeasible).
+- **Solve time:** one AeroBuildup point is about 45 ms numerically; the Halo
+  sizing grows from about 11–45 s per coupled solve to about 110–160 s
+  (hessian evaluations dominate; `expand=True` and the smaller NeuralFoil
+  models did not help). Without `initial`, the build-up first solves the
+  Scholz problem as its starting point (from the generic guess the
+  constant-battery build-up problem stopped at local infeasibility). A fitted
+  surrogate was not needed.
+- **Trajectories:** the Tier 14 problems solve with the build-up (unblown
+  polar, vectorized over nodes): minimum-energy transition 21.5 s and
+  8.5 kWh, time to climb 222 s, in 20–75 s instead of about 1 s.
+- **Verification:** 431 unittest cases (37 new), Tier 21 notebook 26/26
+  checks.
+- **Deferred:** V-tail, conversion segments and the blown wing in conversion,
+  trim drag, transition location as a calibration against XV-15 data.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
 Tier 1 component physics, Tier 2 topology, Tier 3 compatibility margins, Tier 4 mass closure, Tier 5
-aerodynamics, Tier 6 stability and control, Tier 7 requirements, Tier 8 missions, Tier 9 coupled sizing, Tier 10 XV-15 mass validation and Tier 20 tiltrotor wing weights. Outputs are kept so plots render
+aerodynamics, Tier 6 stability and control, Tier 7 requirements, Tier 8 missions, Tier 9 coupled sizing, Tier 10 XV-15 mass validation, Tier 20 tiltrotor wing weights and Tier 21 aerodynamics. Outputs are kept so plots render
 remotely.
 
 ## Next stage
