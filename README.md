@@ -9,7 +9,8 @@ optimizes its mission and allocates battery versus turbogenerator energy per
 segment. Tiers 10a and 10b check the mass models and the engine and hover models against
 the Bell XV-15. Tier 10c uses them to size a Halo-class two-rotor series
 hybrid: 18,740 lb take-off for 900 kg payload, 445 nm, 250 kt and a 13,000 ft
-ceiling.
+ceiling (18,506 lb with the user-supplied turboshaft deck's part-power fuel curve,
+Tier 11a).
 
 All numbers are illustrative engineering inputs, not Archer or Halo data
 (see [reference assumptions](docs/HALO_REFERENCE.md)).

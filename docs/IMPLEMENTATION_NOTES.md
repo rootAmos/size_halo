@@ -310,6 +310,41 @@ warm-started, so `initial=` exists.
 Verification: 230 unittest cases (13 new) and the Tier 10c notebook's
 14 checks.
 
+## Tier 11a: turboshaft deck part-power curve
+
+The user supplied a GASP_TS 1,120 hp turboshaft deck: a full 13 Mach x
+10 altitude x 16 throttle grid.
+
+**The deck's altitude scaling is not physical.** Under the usual
+correction, maximum power falls 20 % by 1,500 ft and stays flat at about
+900 hp to 10,000 ft. It reads 953 hp at 15,000 ft and 612 hp at 17,500 ft.
+This was reported to the user, so the XV-15-fitted lapse stays.
+
+**The normalised part-power curve is sound.** sfc / sfc_max against power
+fraction does not depend on the correction convention:
+
+| Power fraction | 0.3 | 0.5 | 0.7 | 0.9 |
+|---|---|---|---|---|
+| Deck median sfc ratio | 1.54 | 1.22 | 1.09 | 1.02 |
+| Geiss | 1.61 | 1.23 | 1.09 | 1.03 |
+
+The deck's row-to-row spread is about +/-10-15 %. The deck also matches the
+XV-15 ratings within 3 %.
+
+**Why a cubic.** A B-spline through the table stalled IPOPT in the coupled
+sizing (3,000 iterations, about 0.1 s each), because the low-power end is
+steep. A cubic fit in Geiss's form fits the table within 1.1 % above 20 %
+power and keeps the problem smooth and cheap.
+
+**Result.** The Halo-class sizing with the deck curve closes at 8,394 kg
+(18,506 lb), against 18,740 lb with Geiss.
+
+**Data handling.** The raw deck stays local and gitignored at
+`data/engines/`. A test re-derives the embedded table from it when it is
+present.
+
+Verification: 242 unittest cases (12 new) and Tier 0's 296 checks.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,

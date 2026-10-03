@@ -5,7 +5,10 @@ from aerosandbox.library.propulsion_propeller import propeller_shaft_power_from_
 from aircraft_closure.powertrain.components.motor import Motor, SimpleMotorLossModel
 from aircraft_closure.powertrain.components.generator import Generator
 from aircraft_closure.powertrain.components.battery import Battery
-from aircraft_closure.powertrain.components.turboshaft import SimpleTurboshaft
+from aircraft_closure.powertrain.components.turboshaft import (GeissPartPowerModel, SimpleTurboshaft,
+                                                               TabulatedPartPowerModel, CubicPartPowerModel,
+                                                               deck_1120hp_part_power_model,
+                                                               deck_1120hp_power_fraction, deck_1120hp_sfc_ratio)
 from aircraft_closure.powertrain.components.gearbox import Gearbox
 from aircraft_closure.powertrain.components.propulsor import ActuatorDiskPropulsor
 
@@ -245,7 +248,7 @@ class TurboshaftSubmodelTests(unittest.TestCase):
 
     def test_knockdown_is_aerosandbox_ratio(self):
         from aerosandbox.library.power_turboshaft import thermal_efficiency_turboshaft
-        engine = SimpleTurboshaft(power_rated_W=1e6, part_power_knockdown=True)
+        engine = SimpleTurboshaft(power_rated_W=1e6, part_power_model=GeissPartPowerModel())
         for throttle in (0.3, 0.7, 1.0):
             expected = (thermal_efficiency_turboshaft(250.0, throttle_setting=throttle)
                         / thermal_efficiency_turboshaft(250.0, throttle_setting=1.0))
@@ -254,12 +257,12 @@ class TurboshaftSubmodelTests(unittest.TestCase):
         self.assertAlmostEqual(float(engine.thermal_efficiency_at(1e6)), engine.thermal_efficiency, places=12)
 
     def test_part_power_costs_fuel_per_watt(self):
-        engine = SimpleTurboshaft(power_rated_W=1e6, part_power_knockdown=True)
+        engine = SimpleTurboshaft(power_rated_W=1e6, part_power_model=GeissPartPowerModel())
         specific = lambda power_W: float(engine.evaluate(power_W).fuel_flow_kg_s) / power_W
         self.assertGreater(specific(4e5), specific(8e5))
 
     def test_throttle_uses_power_available_at_altitude(self):
-        engine = SimpleTurboshaft(power_rated_W=1e6, lapse_exponent=1.0, part_power_knockdown=True)
+        engine = SimpleTurboshaft(power_rated_W=1e6, lapse_exponent=1.0, part_power_model=GeissPartPowerModel())
         high = asb.Atmosphere(altitude=4000)
         self.assertAlmostEqual(float(engine.thermal_efficiency_at(engine.power_available_W(high), high)),
                                engine.thermal_efficiency, places=12)
@@ -271,9 +274,48 @@ class TurboshaftSubmodelTests(unittest.TestCase):
         opti = asb.Opti()
         altitude_m = opti.variable(init_guess=1000.0)
         power_W = opti.variable(init_guess=5e5)
-        engine = SimpleTurboshaft(power_rated_W=1e6, lapse_exponent=0.8, part_power_knockdown=True)
+        engine = SimpleTurboshaft(power_rated_W=1e6, lapse_exponent=0.8, part_power_model=GeissPartPowerModel())
         fuel = engine.evaluate(power_W, asb.Atmosphere(altitude=altitude_m)).fuel_flow_kg_s
         opti.subject_to([altitude_m == 3000.0, power_W == 5e5])
         solution = opti.solve(verbose=False)
         self.assertAlmostEqual(float(solution.value(fuel)),
                                float(engine.evaluate(5e5, asb.Atmosphere(altitude=3000.0)).fuel_flow_kg_s), places=10)
+
+
+class PartPowerModelTests(unittest.TestCase):
+    table = TabulatedPartPowerModel(deck_1120hp_power_fraction, deck_1120hp_sfc_ratio)
+
+    def test_table_recovers_grid_nodes(self):
+        for fraction, sfc_ratio in zip(deck_1120hp_power_fraction, deck_1120hp_sfc_ratio):
+            self.assertAlmostEqual(float(self.table.efficiency_ratio(fraction)), 1 / sfc_ratio, places=9)
+
+    def test_table_interpolates_monotonically(self):
+        fractions = np.linspace(0.1, 1.0, 91)
+        ratios = [float(self.table.efficiency_ratio(f)) for f in fractions]
+        self.assertTrue(all(b > a for a, b in zip(ratios, ratios[1:])))
+
+    def test_table_holds_end_values_outside_the_grid(self):
+        self.assertAlmostEqual(float(self.table.efficiency_ratio(0.02)), 1 / deck_1120hp_sfc_ratio[0], places=9)
+        self.assertAlmostEqual(float(self.table.efficiency_ratio(1.2)), 1.0, places=9)
+
+    def test_cubic_is_one_at_full_power_and_fits_the_deck(self):
+        cubic = deck_1120hp_part_power_model()
+        self.assertEqual(cubic.efficiency_ratio(1.0), 1.0)
+        for fraction, sfc_ratio in zip(deck_1120hp_power_fraction, deck_1120hp_sfc_ratio):
+            tolerance = 0.015 if fraction < 0.15 else 0.011
+            self.assertLess(abs(1 / cubic.efficiency_ratio(fraction) / sfc_ratio - 1), tolerance, msg=fraction)
+
+    def test_deck_and_geiss_agree_above_half_power(self):
+        cubic, geiss = deck_1120hp_part_power_model(), GeissPartPowerModel()
+        for fraction in (0.5, 0.7, 0.9):
+            self.assertLess(abs(cubic.efficiency_ratio(fraction) / float(geiss.efficiency_ratio(fraction)) - 1), 0.02)
+
+    def test_symbolic_throttle(self):
+        opti = asb.Opti()
+        throttle = opti.variable(init_guess=0.6)
+        expressions = [self.table.efficiency_ratio(throttle), deck_1120hp_part_power_model().efficiency_ratio(throttle)]
+        opti.subject_to(throttle == 0.55)
+        solution = opti.solve(verbose=False)
+        self.assertAlmostEqual(float(solution.value(expressions[0])), float(self.table.efficiency_ratio(0.55)), places=9)
+        self.assertAlmostEqual(float(solution.value(expressions[1])),
+                               deck_1120hp_part_power_model().efficiency_ratio(0.55), places=12)

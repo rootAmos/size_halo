@@ -22,7 +22,8 @@ import aerosandbox.numpy as np
 import aerosandbox.tools.units as u
 
 from aircraft_closure.powertrain.components.propulsor import ActuatorDiskPropulsor
-from aircraft_closure.powertrain.components.turboshaft import SimpleTurboshaft, density_sea_level_kg_m3
+from aircraft_closure.powertrain.components.turboshaft import (GeissPartPowerModel, SimpleTurboshaft,
+                                                               density_sea_level_kg_m3)
 from examples.xv15_reference import Xv15Reference
 
 acceleration_gravity_m_s2 = 9.80665
@@ -96,9 +97,9 @@ def hover_ceiling_m(mass_kg, figure_of_merit, lapse_exponent, data=Xv15PowerData
     return float(opti.solve(verbose=False).value(altitude_m))
 
 
-def part_power_sfc_ratios(data=Xv15PowerData()):
+def part_power_sfc_ratios(data=Xv15PowerData(), part_power_model=GeissPartPowerModel()):
     """(throttle, published sfc / sfc at max, model) with contingency as the knockdown's 100 % point."""
-    engine = SimpleTurboshaft(power_rated_W=data.power_ratings_engine_W[0], part_power_knockdown=True)
+    engine = SimpleTurboshaft(power_rated_W=data.power_ratings_engine_W[0], part_power_model=part_power_model)
     rows = []
     for power_W, sfc in zip(data.power_ratings_engine_W, data.sfc_ratings_lb_hp_h):
         # sfc is inverse to thermal efficiency at fixed fuel heating value.

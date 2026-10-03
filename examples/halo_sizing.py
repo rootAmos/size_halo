@@ -17,7 +17,7 @@ Models carried from Tier 10:
 Assumptions specific to this case are fields of `HaloAssumptions` and are
 listed in plan 013. Illustrative study, not Archer data.
 """
-from dataclasses import dataclass, fields, replace
+from dataclasses import dataclass, field, fields, replace
 from typing import Any
 
 import aerosandbox as asb
@@ -37,7 +37,7 @@ from aircraft_closure.powertrain.components.gearbox import Gearbox
 from aircraft_closure.powertrain.components.generator import Generator
 from aircraft_closure.powertrain.components.motor import Motor, rubber_machine
 from aircraft_closure.powertrain.components.propulsor import ActuatorDiskPropulsor
-from aircraft_closure.powertrain.components.turboshaft import SimpleTurboshaft
+from aircraft_closure.powertrain.components.turboshaft import SimpleTurboshaft, deck_1120hp_part_power_model
 from aircraft_closure.powertrain.topologies import build_series_hybrid
 from aircraft_closure.requirements.capability import (CeilingRequirement, ClimbRequirement, HoverRequirement,
                                                       RequirementSet, SpeedRequirement)
@@ -112,6 +112,9 @@ class HaloAssumptions:
     area_wetted_nacelles_m2: float = 2 * 95 * u.foot**2
     resistance_energy_product_ohm_J: float = 1.8e6
     battery_mass_smoothing_kg: float = 10.0
+    # Part-power fuel curve: the user-supplied 1,120 hp GASP deck (plan 014); GeissPartPowerModel() is the
+    # XV-15-validated alternative (within 1 % of it above 50 % power).
+    part_power_model: Any = field(default_factory=deck_1120hp_part_power_model)
 
 
 @dataclass(frozen=True)
@@ -161,7 +164,7 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
     turboshaft = SimpleTurboshaft(power_rated_W=d.power_rated_turboshaft_W,
                                   mass_kg=factors.powerplant * d.mass_turboshaft_bare_kg,
                                   thermal_efficiency=thermal_efficiency_turboshaft(d.mass_turboshaft_bare_kg),
-                                  lapse_exponent=lapse_exponent, part_power_knockdown=True)
+                                  lapse_exponent=lapse_exponent, part_power_model=a.part_power_model)
     topology = build_series_hybrid(motor, generator, battery, turboshaft, gearbox, rotor, count_rotors=a.count_rotors,
                                    count_turbogenerators=a.count_turbogenerators)
 

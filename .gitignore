@@ -8,3 +8,7 @@ dist/
 .uv-cache/
 .mpl-cache/
 .codex/
+
+# User-supplied engine and propeller data (not committed; see plan 014)
+data/engines/
+data/propellers/

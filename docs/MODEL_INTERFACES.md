@@ -284,7 +284,7 @@ interconnect is airframe mass, not a port connection.
 | Field | Effect | Default |
 |---|---|---|
 | `lapse_exponent` | power available = rated x sigma^n | 0 |
-| `part_power_knockdown` | multiplies efficiency by AeroSandbox's Geiss knockdown, as a ratio | False |
+| `part_power_model` | multiplies efficiency by a part-power ratio (Tier 11a submodels) | None |
 | `mass_kg` | explicit mass, overriding specific power | None |
 
 For the knockdown, throttle is shaft power over power available.
@@ -345,3 +345,29 @@ Library changes, each with a default that reproduces earlier tiers:
 - `solve_halo_sizing(requirements, assumptions, factors, initial=None)`,
   which returns `HaloSizingResult`. `initial` warm-starts from an earlier
   result, which sensitivity studies need.
+
+## Turboshaft deck and part-power submodels (Tier 11a)
+
+`SimpleTurboshaft.part_power_model` replaces the boolean
+`part_power_knockdown`. It multiplies the full-power efficiency by
+`efficiency_ratio(throttle)`, where throttle = shaft power / power available.
+
+| Submodel | Behaviour |
+|---|---|
+| None | constant efficiency |
+| `GeissPartPowerModel()` | AeroSandbox knockdown (the previous `True`) |
+| `CubicPartPowerModel(coefficients)` | 1 + a x + b x^2 + c x^3 with x = t - 1; exactly 1 at full power |
+| `TabulatedPartPowerModel(power_fraction, sfc_ratio)` | B-spline through the table, end values held outside it |
+
+`deck_1120hp_part_power_model()` is the cubic fitted to the embedded
+`deck_1120hp_power_fraction` / `deck_1120hp_sfc_ratio` table.
+
+`powertrain/decks.py` provides:
+
+- `load_gasp_turboshaft_deck(path)`, which returns `TurboshaftDeck` (SI
+  arrays plus header metadata);
+- `part_power_curve(deck, fractions)`, which returns the median, minimum and
+  maximum of sfc / sfc_max over all Mach and altitude rows;
+- `fit_cubic_part_power(fractions, sfc_ratio)`.
+
+`HaloAssumptions.part_power_model` defaults to the deck cubic.
