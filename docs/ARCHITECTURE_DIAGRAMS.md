@@ -43,12 +43,12 @@ flowchart TB
             coreports["core/: typed ports,<br/>topology, margins"]
         end
         subgraph L5["5 Components: powertrain/components/"]
-            comps["Motor, Generator, Battery,<br/>SimpleTurboshaft, Gearbox,<br/>ActuatorDiskPropulsor,<br/>MomentumProfileRotor"]
+            comps["Motor, Generator, Battery,<br/>EquivalentCircuitBattery,<br/>SimpleTurboshaft, Gearbox,<br/>ActuatorDiskPropulsor,<br/>MomentumProfileRotor"]
         end
         subgraph L6["6 Maps, decks, empirical data"]
             afdd["weights/afdd.py"]
             decks["powertrain/decks.py"]
-            rotordata["data/rotors/<br/>JVX test data"]
+            rotordata["data/rotors/, data/batteries/<br/>JVX tests, 50G cell curves"]
         end
         L1 --> L2 --> L3 --> L4 --> L5 --> L6
     end
@@ -88,7 +88,7 @@ flowchart LR
         jvx["JVX proprotor tests<br/>NASA TM-2016-219070"]
         xv15["XV-15 group weights,<br/>lapse and hover data"]
         gasp["GASP turboshaft deck<br/>user-supplied"]
-        cell["Samsung 50G cell data<br/>for Tier 17"]:::planned
+        cell["Samsung 50G cell data<br/>Paudel et al. 2025"]
     end
 
     subgraph MODELS["Models: simplest kept, fidelity added behind the interface"]
@@ -101,7 +101,7 @@ flowchart LR
         subgraph TURB["Turboshaft: submodels"]
             direction LR
             t0["Constant efficiency<br/>Tier 1"] --> t1["Density lapse, Geiss,<br/>deck cubic, table<br/>Tiers 10b and 11a"]
-            t1 -.-> t2["Temperature lapse<br/>Tier 16"]:::planned
+            t1 --> t2["Temperature lapse,<br/>ISA + offset<br/>Tier 16"]
         end
         subgraph MACH["Motor and generator: mass_model"]
             direction LR
@@ -109,7 +109,7 @@ flowchart LR
         end
         subgraph BATT["Battery"]
             direction LR
-            b0["Energy and power<br/>capacity<br/>Tier 1"] -.-> b1["Equivalent circuit,<br/>sag and ageing<br/>Tier 17"]:::planned
+            b0["Energy and power<br/>capacity<br/>Tier 1"] -- "new class,<br/>needs current" --> b1["Equivalent circuit,<br/>sag and ageing<br/>Tier 17"]
         end
         subgraph AERO["Aerodynamics"]
             direction LR
@@ -201,7 +201,7 @@ models only return expressions; the example adds every constraint and the
 objective, and IPOPT solves everything at once. Operating variables (rotor
 speed, battery current, generator torque, electric power fraction) are
 created per flight point by `build_flight_point`. The hot-day hover at the
-destination belongs to Tier 16 and is shown as planned.
+destination (Tier 16) is solved in the same problem.
 
 ```mermaid
 flowchart LR
@@ -232,7 +232,7 @@ flowchart LR
         c5["Stability: static margin,<br/>Cn_beta, hover trim"]
         c6["Operating margins: speed,<br/>torque, voltage, current"]
         c7["Rotor clearance, stall"]
-        c8["Hot-day hover<br/>Tier 16"]:::planned
+        c8["Hot-day hover at<br/>destination"]
     end
 
     obj(["Objective: minimum take-off<br/>mass or maximum payload"])
