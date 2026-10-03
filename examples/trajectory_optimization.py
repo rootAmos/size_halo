@@ -20,11 +20,11 @@ import aerosandbox as asb
 import aerosandbox.numpy as np
 import aerosandbox.tools.units as u
 
-from aircraft_closure.aerodynamics.simple import SimpleAerodynamics
 from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery
 from aircraft_closure.trajectory.tiltrotor import (ConversionCorridor, TiltrotorPointMass, TrajectoryGuess,
                                                    TrajectoryLimits, build_tiltrotor_trajectory)
-from examples.halo_sizing import HaloAssumptions, HaloRequirements, build_halo_aircraft, soc_take_off, solve_halo_sizing
+from examples.halo_sizing import (HaloAssumptions, HaloRequirements, build_halo_aerodynamics, build_halo_aircraft,
+                                  soc_take_off, solve_halo_sizing)
 
 altitude_transition_m = 500 * u.foot
 altitude_band_transition_m = 30.0
@@ -44,8 +44,7 @@ def halo_trajectory_case(sizing=None, requirements=HaloRequirements(), assumptio
     """The sized Halo aircraft as a trajectory model (numeric design, no sizing variables)."""
     r, a = requirements, assumptions
     sizing = sizing if sizing is not None else solve_halo_sizing(r, a)
-    aerodynamics = SimpleAerodynamics(drag_area_misc_m2=a.drag_area_misc_m2,
-                                      download_fraction_hover=a.download_fraction_hover, cl_max=r.cl_max)
+    aerodynamics = build_halo_aerodynamics(r, a)   # the trajectory uses the unblown polar (no rotor state)
     model = TiltrotorPointMass(build_halo_aircraft(sizing.design, r, a), aerodynamics)
     mass_kg = sizing.mass_takeoff_kg
     corridor = ConversionCorridor(velocity_stall_m_s=float(model.velocity_stall_m_s(mass_kg, 0.0)))

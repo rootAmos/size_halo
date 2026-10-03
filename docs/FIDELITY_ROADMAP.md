@@ -27,7 +27,7 @@
 | 18 | Redundancy: lanes per rotor, cross-strapped buses, battery strings, multipoint failure cases | Planned |
 | 19 | Thermal: losses to heat-exchanger mass and cooling drag; short-time ratings from thermal mass | Planned |
 | 20 | Tiltrotor airframe weights: AFDD wing with torsional stiffness and whirl flutter; second calibration aircraft | Implemented |
-| 21 | Aero: compressibility drag rise, nacelle build-up, V-tail, download model, conversion segments | Planned |
+| 21 | Aero: compressibility drag rise, nacelle build-up, V-tail, download model, conversion segments | Implemented (partial): AeroBuildup model, Scholz hand check, blown wing, geometric download; V-tail and conversion deferred |
 | 22 | Design-space practice: freed trades, multistart, cost objective, architecture enumeration, robustness | Planned |
 
 Keep simple implementations when higher fidelity is introduced. Use AeroSandbox
@@ -306,6 +306,14 @@ hand check. `SimpleAerodynamics` stays as the simplest model.
 - **Download:** a function of wing and rotor geometry.
 - **Conversion:** conversion segments with their power profile and the
   conversion corridor.
+
+**Status (plan 025, 2026-10-03): implemented in part.** `BuildupAerodynamics`
+(AeroBuildup plus Scholz interference, fittings drag area, fuselage Oswald
+factor, transition, blown wing, geometric download), `ScholzAerodynamics`
+(level-0 hand check with Korn-Lock wave drag and Nita-Scholz e) and
+`HaloAssumptions.aerodynamics_model` ("simple" stays the default). Deferred:
+V-tail, conversion segments, the blown wing in conversion (trajectories use
+the unblown polar), trim drag. See IMPLEMENTATION_NOTES "Tier 21".
 
 ### 22 Design-space practice (review items 9 and 10)
 

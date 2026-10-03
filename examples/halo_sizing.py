@@ -32,7 +32,10 @@ import aerosandbox.numpy as np
 import aerosandbox.tools.units as u
 from aerosandbox.library.power_turboshaft import power_turboshaft, thermal_efficiency_turboshaft
 
+from aircraft_closure.aerodynamics.buildup import BuildupAerodynamics
+from aircraft_closure.aerodynamics.scholz import ScholzAerodynamics
 from aircraft_closure.aerodynamics.simple import SimpleAerodynamics
+from aircraft_closure.aerodynamics.slipstream import BlownWing
 from aircraft_closure.controls.stability import DirectionalStability, LongitudinalStability
 from aircraft_closure.core.margins import margin_above, margin_below, margin_report
 from aircraft_closure.mission.mission import Mission, build_mission
@@ -230,6 +233,15 @@ class HaloAssumptions:
     turbogenerators_on_wing_tips: bool = True            # tip nacelles carry the turbogenerators (as the XV-15)
     load_factor_jump: float = 2.0
     smoothing_wing_tiltrotor: float = 0.01               # rounds the AFDD max(0, .) steps for IPOPT
+    # ---- Tier 21 aerodynamics (plan 025) ----
+    # "simple": SimpleAerodynamics with `drag_area_misc_m2` and the constant download (the reference);
+    # "buildup": AeroSandbox AeroBuildup plus Scholz interference, the misc. drag area below, blown wing and the
+    # geometric hover download; "scholz": the Scholz level-0 hand check (linear lift, no blown wing).
+    aerodynamics_model: str = "simple"
+    length_nacelle_m: float = 9.0 * u.foot        # assumed; with the diameter, ~95 ft2 wetted (cowling mass)
+    diameter_nacelle_m: float = 3.3 * u.foot
+    drag_area_misc_buildup_m2: float = 3.00 * u.foot**2  # XV-15 "fuselage fittings & fixtures" (NDARC, Johnson 2010)
+    blown_wing: bool = True                       # "buildup": rotor slipstream increments in airplane mode
 
 
 @dataclass(frozen=True)
@@ -275,6 +287,19 @@ def build_halo_battery(design, assumptions=HaloAssumptions()):
                        max_charge_power_W=0.5 * d.power_max_discharge_battery_W,
                        mass_smoothing_kg=a.battery_mass_smoothing_kg)
     raise ValueError(f"Unknown battery model '{a.battery_model}'.")
+
+
+def build_halo_aerodynamics(requirements=HaloRequirements(), assumptions=HaloAssumptions()):
+    a, r = assumptions, requirements
+    if a.aerodynamics_model == "simple":
+        return SimpleAerodynamics(drag_area_misc_m2=a.drag_area_misc_m2,
+                                  download_fraction_hover=a.download_fraction_hover, cl_max=r.cl_max)
+    if a.aerodynamics_model == "buildup":
+        return BuildupAerodynamics(cl_max=r.cl_max, drag_area_misc_m2=a.drag_area_misc_buildup_m2,
+                                   blown_wing=BlownWing() if a.blown_wing else None)
+    if a.aerodynamics_model == "scholz":
+        return ScholzAerodynamics(cl_max=r.cl_max, drag_area_misc_m2=a.drag_area_misc_buildup_m2)
+    raise ValueError(f"Unknown aerodynamics model '{a.aerodynamics_model}'.")
 
 
 def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None,
@@ -396,7 +421,8 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
         powertrain=PowertrainInstallation(topology, locations, installation_factor=1.0),
         payload=Payload(mass_kg=requirements.mass_payload_kg, x_m=x_rotor_m),
         fuel=FuelLoad(mass_kg=d.mass_fuel_kg, x_m=x_rotor_m, z_m=wing.z_m),
-        nacelles=replace(nacelles, x_m=x_rotor_m, z_m=wing.z_m),
+        nacelles=replace(nacelles, x_m=x_rotor_m, z_m=wing.z_m, length_m=a.length_nacelle_m,
+                         diameter_m=a.diameter_nacelle_m, y_m=wing.span_m() / 2),
         equipment=FixedEquipment(mass_kg=a.mass_equipment_kg, x_m=3.5),
     )
 
@@ -470,7 +496,14 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     battery and used as the initial guess: IPOPT reaches local infeasibility from the generic guess (plan 022).
     If the problem then still fails, the equivalent-circuit problem at 85 % of the payload is solved (by the same
     rule) and used as the start (plan 026). These are starting points only; each coupled problem is one solve.
+
+    With the AeroBuildup model and no `initial`, the same problem is first solved with the Scholz hand-check
+    aerodynamics (fast, within about 1 % in mass) and used as the start (plan 025): from the generic guess the
+    constant-battery build-up problem can stop at a point of local infeasibility.
     """
+    if initial is None and assumptions.aerodynamics_model == "buildup":
+        initial = solve_halo_sizing(requirements, replace(assumptions, aerodynamics_model="scholz"), factors,
+                                    max_iter=max_iter, objective=objective)
     if initial is None and assumptions.battery_model == "ecm":
         constant_start = solve_halo_sizing(requirements, replace(assumptions, battery_model="constant"), factors,
                                            max_iter=max_iter)
@@ -485,8 +518,7 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     factors = factors if factors is not None else calibration_factors()
     lapse_exponent = fit_lapse_exponent()
     a, r = assumptions, requirements
-    aerodynamics = SimpleAerodynamics(drag_area_misc_m2=a.drag_area_misc_m2,
-                                      download_fraction_hover=a.download_fraction_hover, cl_max=r.cl_max)
+    aerodynamics = build_halo_aerodynamics(r, a)
     longitudinal, directional = LongitudinalStability(), DirectionalStability()
     opti = asb.Opti()
 

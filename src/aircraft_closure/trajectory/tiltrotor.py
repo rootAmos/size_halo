@@ -144,7 +144,8 @@ class TiltrotorPointMass:
         force_scale_N = 0.5 * density_kg_m3 * velocity_m_s ** 2 * self.aircraft.wing.area_m2
         lift_N = force_scale_N * aero.cl
         drag_N = force_scale_N * aero.cd
-        alpha_stall_deg = self.aerodynamics.alpha_stall_deg(self.aircraft, velocity_coefficient_m_s, altitude_m)
+        alpha_stall_deg = self.aerodynamics.alpha_stall_deg(self.aircraft, velocity_coefficient_m_s, altitude_m,
+                                                            aero=aero)
 
         # Rotor: axial-flow model on the velocity component along the rotor axis.
         angle_thrust_velocity_deg = alpha_deg + tilt_deg
@@ -163,7 +164,7 @@ class TiltrotorPointMass:
 
         # Download on the wing under the rotor wake, faded with tilt and wake skew.
         velocity_induced_hover_sq_m2_s2 = thrust_per_rotor_N / (2 * density_kg_m3 * rotor_base.area_disk_m2)
-        download_fraction = (self.aerodynamics.download_fraction_hover * np.sind(tilt_clipped_deg) ** 2
+        download_fraction = (self.aerodynamics.hover_download_fraction(self.aircraft) * np.sind(tilt_clipped_deg) ** 2
                              * velocity_induced_hover_sq_m2_s2 / (velocity_induced_hover_sq_m2_s2 + velocity_m_s ** 2))
         thrust_net_N = count_rotors * thrust_per_rotor_N * (1 - download_fraction)
         force_x_wind_N = thrust_net_N * np.cosd(angle_thrust_velocity_deg) - drag_N

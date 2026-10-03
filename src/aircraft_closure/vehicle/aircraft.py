@@ -85,4 +85,5 @@ class Aircraft:
     def to_asb(self):
         return asb.Airplane(name="aircraft",
                             wings=[self.wing.to_asb(), self.horizontal_tail.to_asb(), self.vertical_tail.to_asb()],
-                            fuselages=[self.fuselage.to_asb()])
+                            fuselages=[self.fuselage.to_asb()]
+                            + (self.nacelles.to_asb() if self.nacelles is not None else []))

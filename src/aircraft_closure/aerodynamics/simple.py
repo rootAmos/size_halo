@@ -66,6 +66,10 @@ class SimpleAerodynamics:
     # rotor wake); XV-15: 0.07 with flaps deflected (NASA TM X-62407 sec. 5.1).
     download_fraction_hover: Any = 0.0
 
+    def hover_download_fraction(self, aircraft):
+        """A constant fraction (Tier 10b); `BuildupAerodynamics` and `ScholzAerodynamics` can use geometry."""
+        return self.download_fraction_hover
+
     # `temperature_offset_K` (Tier 16): ambient minus ISA temperature at the pressure altitude; 0 = standard day.
     def _flow(self, velocity_m_s, altitude_m, temperature_offset_K=0.0):
         atmosphere = asb.Atmosphere(altitude=altitude_m, temperature_deviation=temperature_offset_K)
@@ -112,12 +116,15 @@ class SimpleAerodynamics:
         return oswalds_efficiency(wing.taper_ratio, wing.aspect_ratio,
                                   fuselage_diameter_to_span_ratio=aircraft.fuselage.diameter_m / wing.span_m())
 
-    def alpha_stall_deg(self, aircraft, velocity_m_s, altitude_m, temperature_offset_K=0.0):
-        """Linear-lift angle at CLmax; a caller-side upper bound on alpha."""
+    def alpha_stall_deg(self, aircraft, velocity_m_s, altitude_m, temperature_offset_K=0.0, aero=None):
+        """Linear-lift angle at CLmax; a caller-side upper bound on alpha. `aero` (the point's `AeroResult`) is
+        accepted for interchangeability with `BuildupAerodynamics`; linear lift does not need it."""
         return self.alpha_zero_lift_deg + np.degrees(
             self.cl_max / self.lift_curve_slope_per_rad(aircraft, velocity_m_s, altitude_m, temperature_offset_K))
 
-    def evaluate(self, aircraft, velocity_m_s, altitude_m, alpha_deg, drag_increments=(), temperature_offset_K=0.0):
+    def evaluate(self, aircraft, velocity_m_s, altitude_m, alpha_deg, drag_increments=(), temperature_offset_K=0.0,
+                 rotor_state=None):
+        """`rotor_state` is accepted for interchangeability with `BuildupAerodynamics`; it is not used."""
         _, _, mach, dynamic_pressure_Pa = self._flow(velocity_m_s, altitude_m, temperature_offset_K)
         cl_alpha_per_rad = self.lift_curve_slope_per_rad(aircraft, velocity_m_s, altitude_m, temperature_offset_K)
         cl = cl_alpha_per_rad * np.radians(alpha_deg - self.alpha_zero_lift_deg)

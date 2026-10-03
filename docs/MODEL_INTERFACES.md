@@ -665,3 +665,68 @@ min and max terminal voltage.
   - the motors see the terminal voltage;
   - with the ECM pack, SOC is coulomb-counted with current and voltage
     limits.
+
+## Aerodynamics build-up (Tier 21)
+
+Plan 025. Three interchangeable models share the operating interface
+`evaluate(aircraft, velocity_m_s, altitude_m, alpha_deg, drag_increments=(),
+temperature_offset_K=0.0, rotor_state=None) -> AeroResult`,
+`alpha_stall_deg(aircraft, velocity_m_s, altitude_m, temperature_offset_K=0.0,
+aero=None)`, `lift_curve_slope_per_rad`, `surface_lift_curve_slope_per_rad`,
+`cl_max` and `hover_download_fraction(aircraft)`.
+
+- **`SimpleAerodynamics`** (Tier 5): unchanged physics; it accepts and ignores
+  `rotor_state` and `aero`; `hover_download_fraction` returns the constant
+  `download_fraction_hover`.
+- **`BuildupAerodynamics`** (`aerodynamics/buildup.py`): `asb.AeroBuildup`
+  on `aircraft.to_asb()` (wings, fuselage, nacelle bodies) with the airfoils
+  wrapped in `TransitionAirfoil` (NeuralFoil `xtr_upper`, `xtr_lower`,
+  `n_crit`). Fields: `cl_max`, `interference` (`InterferenceFactors`),
+  `drag_area_misc_m2`, `drag_area_landing_gear_fixed_m2`, `xtr_upper`,
+  `xtr_lower`, `n_crit`, `model_size`, `blown_wing` (`BlownWing` or None),
+  `download_fraction_hover` (None: geometry), `download` (`HoverDownload`).
+  - CD = sum_c Q_c D_c / (q S) + CDA_misc / S [+ CDA_gear / S if the gear is
+    fixed] + CL^2 / (pi AR e) + blown increments + `drag_increments`.
+  - e = AeroBuildup span efficiency (s_eff / b)^2 x k_e,F x k_e,M.
+  - `cd0` is the parasite drag at the operating point (NeuralFoil profile drag
+    varies with alpha), not a zero-lift value.
+  - Lift is the whole aircraft's (tails at zero incidence, no downwash). The
+    slope methods stay the Tier 6 analytic isolated-surface slopes, which
+    `cl_alpha_per_rad` also reports.
+  - `alpha_stall_deg(..., aero=point)` = alpha + (cl_max - CL)/CL_alpha, so
+    alpha <= alpha_stall is exactly CL <= cl_max at the point; without `aero`
+    it linearizes AeroBuildup through 0 and 8 deg (two extra runs).
+  - `evaluate_buildup(...)` returns `BuildupResult(aero, breakdown,
+    cl_aerobuildup, oswald_span, blown)` for reports.
+- **`ScholzAerodynamics`** (`aerodynamics/scholz.py`, extends
+  `SimpleAerodynamics`): the hand check. Functions
+  `skin_friction_turbulent(Re, M)`, `form_factor_surface`,
+  `form_factor_fuselage`, `form_factor_nacelle`, `area_wetted_fuselage_m2`,
+  `area_wetted_surface_m2`, `oswald_nita_scholz(...)`; `wave_drag_coefficient`
+  uses AeroSandbox `Cd_wave_Korn` (kappa_A 0.87).
+- **Blown wing** (`aerodynamics/slipstream.py`): `RotorState(thrust_per_rotor_N,
+  speed_rotor_rad_s)`; `BlownWing(fraction_slipstream_on_wing=0.5,
+  ratio_distance_disk_to_radius=0.4, sign_swirl=+1, factor_swirl=1,
+  efficiency_swirl_recovery=0.5).evaluate(...) -> BlownWingIncrement`
+  (velocity_induced_m_s, velocity_increment_wing_m_s, ratio_dynamic_pressure,
+  angle_swirl_deg, area_immersed_m2, delta_cl, delta_cd_profile,
+  delta_cd_swirl). All increments vanish at zero thrust.
+- **Download** (`aerodynamics/download.py`): `HoverDownload(
+  drag_coefficient_vertical=0.846, chord_fraction_flap=0.25,
+  deflection_flap_hover_deg=60, interference=1)`;
+  `download_fraction(chord_wing_m, radius_rotor_m, count_rotors, download)`;
+  `hover_download_fraction(aircraft, download)` reads the mean wing chord and
+  the propulsor instance.
+- **Flight point:** hover uses `aerodynamics.hover_download_fraction(aircraft)`.
+  In airplane mode, a model with a `blown_wing` gets a rotor-thrust Opti
+  variable per point and the equality n T = D + W sin(gamma); the stall bound
+  passes the point's `aero`.
+- **Trajectory:** download via `hover_download_fraction`; the stall bound
+  passes `aero`; no rotor state (unblown polar).
+- **Vehicle:** `Nacelles(length_m=None, diameter_m=None, y_m=0.0)`,
+  `Nacelles.to_asb()` (two bodies of revolution, spinner as the nose);
+  `Aircraft.to_asb()` appends them.
+- **Halo:** `HaloAssumptions.aerodynamics_model` ("simple" default, "buildup",
+  "scholz"), `length_nacelle_m` (9 ft), `diameter_nacelle_m` (3.3 ft),
+  `drag_area_misc_buildup_m2` (3.00 ft2), `blown_wing` (True);
+  `build_halo_aerodynamics(requirements, assumptions)`.
