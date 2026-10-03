@@ -427,3 +427,35 @@ assumption values.
 - **`HaloDesign`:** `speed_peak_motor_rad_s`, `reduction_ratio`,
   `speed_peak_generator_rad_s`.
 - **Legacy set:** `assumptions_tier12b` reproduces Tier 12b.
+
+## Trajectory optimization (Tier 14)
+
+`aircraft_closure.trajectory.tiltrotor` flies a **fixed, already-sized** aircraft through a
+direct-collocation trajectory. It is separate from sizing: each trajectory is its own `asb.Opti`
+over states, controls and the final time (plan 019).
+
+AeroSandbox supplies the dynamics (`DynamicsPointMass2DSpeedGamma`), the trapezoidal collocation
+(`constrain_derivatives`, `Opti.constrain_derivative`) and `Atmosphere`.
+
+| Class / function | Role | Inputs | Outputs |
+|---|---|---|---|
+| `TiltrotorPointMass` | Equation-only tiltrotor force and power model (series-hybrid topology, `MomentumProfileRotor`) | node arrays: `velocity_m_s`, `altitude_m`, `alpha_deg`, `tilt_deg`, `thrust_per_rotor_N`, `speed_rotor_rad_s` | `TiltrotorForces`: wind-axis forces without gravity, lift, drag, rotor result, motor speed, torque and power, `power_electric_motors_W` (bus) |
+| `TiltrotorPointMass.evaluate_supply` | Battery plus turbogenerators feeding the bus | `altitude_m`, `current_battery_A`, `torque_generator_Nm`, `soc` | `PowerSupply`: battery, generator and engine results, generator shaft power, lapsed turboshaft power available, bus supply, fuel flow |
+| `ConversionCorridor` | Airspeed band against nacelle tilt (XV-15 fig. 5.4.1 shape) | `velocity_stall_m_s`, high-speed boundary at 90 and 0 deg | `velocity_min_m_s(tilt_deg)`, `velocity_max_m_s(tilt_deg)` |
+| `build_tiltrotor_trajectory` | Orchestration: node variables, AeroSandbox dynamics, mass/SOC/energy states, operating limits | `opti`, model, initial mass and SOC, node count, duration bounds, `TrajectoryGuess`, `TrajectoryLimits`, corridor | `TiltrotorTrajectory` (node arrays, `acceleration_m_s2`, `rate_gamma_rad_s`, `tilt_rate_deg_s`) |
+
+**Conventions.**
+
+- Tilt is 90 deg in hover and 0 deg in airplane mode, measured from the fuselage axis.
+- The rotor-axis angle to the flight path is alpha + tilt.
+- Wind-axis z points down (AeroSandbox).
+- The rotor's axial velocity is V cos(alpha + tilt). This is an axial-flow approximation; edgewise
+  physics are deferred.
+- The airplane-mode rotor coefficients and the hover download are blended with tilt.
+
+**Caller's responsibilities.** The caller adds boundary conditions and the objective. The
+examples are `examples/trajectory_optimization.py`:
+
+- `solve_min_energy_transition`;
+- `solve_prescribed_transition`;
+- `solve_min_time_climb`.

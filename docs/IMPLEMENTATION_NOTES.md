@@ -464,6 +464,72 @@ at high power, sets peak motor torque (568 N.m, against 414 N.m in hover).
 Verification: 276 unittest cases (12 new) and the Tier 13 notebook's
 8 checks.
 
+## Tier 14: trajectory optimization
+
+A stand-alone optimal-control problem on the sized Halo reference
+(`solve_halo_sizing()` -> `build_halo_aircraft(design)`). It is not part of
+the sizing Opti (plan 019).
+
+**What AeroSandbox supplies.**
+
+- Dynamics: `asb.DynamicsPointMass2DSpeedGamma`.
+- Collocation: trapezoidal `constrain_derivatives`.
+- Atmosphere: `asb.Atmosphere`.
+
+**What this project adds** (`aircraft_closure.trajectory.tiltrotor`): the
+tilting rotor thrust, wing forces from `SimpleAerodynamics`, the rotor ->
+gearbox -> motor -> bus chain, the battery/turbogenerator supply and the
+mass, SOC and bus-energy states.
+
+**Controls per node:** alpha, nacelle tilt (|rate| <= 8 deg/s), thrust and
+speed per rotor, battery current and generator torque; also the final time.
+
+**Constraints:**
+
+- the Tier 12 rotor bounds;
+- the motor and generator ratings;
+- the lapsed turboshafts;
+- the battery discharge rating and SOC >= 0.30;
+- stall alpha and pitch attitude;
+- the conversion corridor: V_stall cos(tilt) to an XV-15 fit, 115 kt at
+  90 deg and 180 kt at 0 deg.
+
+In-flight recharge is off.
+
+**Validation.**
+
+- Hover at tilt 90 deg recovers `build_flight_point` hover power to 2e-6.
+- Airplane mode with thrust along the path is an exact identity.
+- A collocated steady trajectory is within 1e-4.
+- Tilt frozen at 0 deg is 1.4 % lower, because of the thrust's lift
+  component.
+
+**Results (Halo, 6,748 kg).**
+
+| Problem | Time | Bus energy | Fuel | SOC |
+|---|---|---|---|---|
+| Minimum-energy transition, hover at 500 ft to 1.3 V_stall (144 kt) | 22 s | 10.4 kWh | 2.9 kg | 0.95 -> 0.92 |
+| Prescribed transition (level, constant acceleration, 60 s) | 60 s | 20.4 kWh | 6.9 kg | 0.95 -> 0.94 |
+| Minimum time, hover at sea level to 10,000 ft at 153 kt | 212 s | 101 kWh | 26.5 kg | 0.95 -> 0.62 |
+
+**Transition.** The optimum:
+
+- pitches nose-down to the -10 deg attitude limit;
+- follows the corridor's low-speed boundary;
+- trades about 30 m of altitude band for speed;
+- finishes at the 8 deg/s nacelle rate.
+
+The motor ratings bind (about 1.7 MW bus), not the engines.
+
+**Climb.** It runs at about 125-130 kt with the nacelles at about 46 deg
+and pitch at its 20 deg limit, and converts at the top.
+
+- The generator rating caps the turbines, and above about 7,000 ft the
+  turbine lapse does; the battery fills to the motor rating.
+- **The conversion-mode climb is probably flattered** by the axial-only
+  rotor model, which has no edgewise profile or hub-load penalty. Re-check
+  it when edgewise rotor physics lands.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
