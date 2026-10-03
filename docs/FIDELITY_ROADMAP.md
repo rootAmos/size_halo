@@ -19,21 +19,21 @@
 | 11b | Continuous integration: tests on every push; notebook execution on demand | Implemented |
 | 12 | Rotor speed physics: induced plus profile power, propeller-mode efficiency in J and tip Mach | Implemented |
 | 13 | Electric machines sized by torque; machine speed and gear ratio as design variables | Next |
-| 14 | Electrical layer: inverters, cables, protection, DC/DC; bus voltage as a discrete choice | Planned |
-| 15 | Hot and high: ISA + delta-T atmosphere, temperature lapse, hover at destination after the mission | Planned |
-| 16 | Battery equivalent circuit with sag and ageing: OCV(SOC), R(SOC, C-rate, T), end-of-life, cycle cost | Planned |
-| 17 | Redundancy: lanes per rotor, cross-strapped buses, battery strings, multipoint failure cases | Planned |
-| 18 | Thermal: losses to heat-exchanger mass and cooling drag; short-time ratings from thermal mass | Planned |
-| 19 | Tiltrotor airframe weights: AFDD wing with torsional stiffness and whirl flutter; second calibration aircraft | Planned |
-| 20 | Aero: compressibility drag rise, nacelle build-up, V-tail, download model, conversion segments | Planned |
-| 21 | Design-space practice: freed trades, multistart, cost objective, architecture enumeration, robustness | Planned |
-| 22 | Trajectory optimization on a sized aircraft (separate from sizing): dynamics, conversion, energy management | Planned |
+| 14 | Trajectory optimization (AeroSandbox) on a sized aircraft: minimum-energy transition, time to climb | Planned |
+| 15 | Electrical layer: inverters, cables, protection, DC/DC; bus voltage as a discrete choice | Planned |
+| 16 | Hot and high: ISA + delta-T atmosphere, temperature lapse, hover at destination after the mission | Planned |
+| 17 | Battery equivalent circuit with sag and ageing: OCV(SOC), R(SOC, C-rate, T), end-of-life, cycle cost | Planned |
+| 18 | Redundancy: lanes per rotor, cross-strapped buses, battery strings, multipoint failure cases | Planned |
+| 19 | Thermal: losses to heat-exchanger mass and cooling drag; short-time ratings from thermal mass | Planned |
+| 20 | Tiltrotor airframe weights: AFDD wing with torsional stiffness and whirl flutter; second calibration aircraft | Planned |
+| 21 | Aero: compressibility drag rise, nacelle build-up, V-tail, download model, conversion segments | Planned |
+| 22 | Design-space practice: freed trades, multistart, cost objective, architecture enumeration, robustness | Planned |
 
 Keep simple implementations when higher fidelity is introduced. Use AeroSandbox
 geometry, aero, weights and dynamics wherever suitable. Do not jump to a full
 trajectory optimization before independent segment verification.
 
-## Tiers 11b–21 (from the 2026-10-02 external review)
+## Tiers 11b–22 (from the 2026-10-02 external review; reordered 2026-10-03)
 
 An external review of the Tier 10c Halo-class result found the framework
 architecture sound. It ranked these gaps by how much they move the answer:
@@ -104,7 +104,68 @@ predecessor available.
 - **Result:** the cruise-torque trap and the direct-drive decision appear in
   the solution.
 
-### 14 Electrical layer (review item 3)
+### 14 Trajectory optimization (user-requested 2026-10-02; moved up to Tier 14 on 2026-10-03)
+
+**First problems:**
+
+1. **Minimum-energy transition.** Hover to airplane mode (and back) at
+   fixed altitude bands, with nacelle tilt as a control, through the
+   conversion corridor.
+2. **Time to climb.** Minimum time from take-off to a given altitude and
+   speed.
+
+Both run on the sized Tier 12/13 aircraft. Aerodynamics uses AeroSandbox's
+`AeroBuildup` where it stays symbolic-friendly, and `SimpleAerodynamics`
+otherwise; the full aero tier is 21. Battery and hot-day limits enter as
+Tiers 16–17 land.
+
+This is separate from sizing. It is a stand-alone optimal-control problem on
+a fixed aircraft taken from a sizing result (`HaloSizingResult.design`), not
+a new constraint inside the sizing Opti.
+
+- **Principle (user, 2026-10-02): lean on AeroSandbox.**
+  - Dynamics: `asb.DynamicsPointMass2DSpeedGamma` (longitudinal),
+    `DynamicsPointMass3DSpeedGammaTrack` for ground tracks, and
+    `DynamicsRigidBody2DBody` if pitch dynamics are needed. Each one's
+    `add_force` and `state_derivatives` define the problem.
+  - Collocation: `asb.Opti` with `opti.constrain_derivative` /
+    `derivative_of` (trapezoidal integration).
+  - Atmosphere: `asb.Atmosphere`.
+  - Aerodynamics: `asb.AeroBuildup` evaluated per node (Tier 21).
+  - This project adds only what AeroSandbox lacks: rotor and powertrain
+    forces, the tilt kinematics, and the energy states.
+- **Dynamics:** point-mass longitudinal dynamics with the AeroSandbox
+  classes above, by direct collocation. Nacelle tilt is a control, so
+  hover, conversion and airplane mode form one continuous trajectory, with
+  rotor thrust and wing lift blended through the tilt angle.
+- **States:** position, velocity, flight-path angle, mass, battery SOC (and
+  battery temperature once Tier 19 exists).
+- **Controls:**
+  - nacelle tilt;
+  - rotor thrust or collective;
+  - rotor speed (Tier 12);
+  - the electric power fraction;
+  - pitch attitude.
+- **Constraints:**
+  - the conversion corridor;
+  - power available against altitude and temperature (Tier 16);
+  - battery current and voltage limits (Tier 17);
+  - SOC reserves;
+  - load factor and airspeed limits;
+  - obstacle and terminal conditions.
+- **Objectives:** minimum fuel, minimum time, or minimum energy cost, for a
+  given mission or ground track.
+- **Coupling to sizing:** one-way. Trajectory optimization checks and refines
+  a sized design (for example the optimal climb, conversion and descent
+  profiles, and the real energy split). Its results can feed back as better
+  segment definitions or margins, but sizing stays on quasi-steady segments
+  (the existing roadmap rule: no full trajectory optimization inside sizing).
+- **Validation:** with tilt and speed frozen, it recovers the quasi-steady
+  segment results; conversion power is checked against the XV-15 conversion
+  corridor and power-against-airspeed data (TM X-62407 figs. 5.4.1 and
+  A-12).
+
+### 15 Electrical layer (review item 3)
 
 - **Inverters:** mass and efficiency maps.
 - **Cables:** mass and loss from layout length and current at the bus
@@ -115,7 +176,7 @@ predecessor available.
 - **Installation factor:** replaced by explicit items; the installation
   factor of 1.0 goes away.
 
-### 15 Hot and high (review item 6)
+### 16 Hot and high (review item 6)
 
 - **Atmosphere:** ISA plus a temperature offset.
 - **Engine:** lapse in both density and temperature, fitted to the XV-15
@@ -126,7 +187,7 @@ predecessor available.
 - **Result:** exercises the hybrid's main advantage, the battery covering
   turbine lapse.
 
-### 16 Battery with sag and ageing (review item 5)
+### 17 Battery with sag and ageing (review item 5)
 
 - **Cell model:** an equivalent circuit, with OCV(SOC) and
   R(SOC, T, pulse duration), and series/parallel pack scaling.
@@ -156,8 +217,21 @@ predecessor available.
 - **Ageing:** end-of-life capacity and resistance, and a cycle-life cost.
 - **Reserves:** defined in both power and energy.
 - **Mission:** segments sub-divided so OCV can vary within a long segment.
+- **Algebraic loop (power demanded = power supplied):**
+  - No iteration is needed. Battery current is already an Opti variable per
+    flight point, and V = V* - I R0 with P = V I are equalities solved
+    simultaneously with everything else. Here V* = OCV(SOC) - V_RC1 - V_RC2,
+    so the loop is R0 I^2 - V* I + P = 0.
+  - The physical low-current root (the closed form
+    I = (V* - sqrt(V*^2 - 4 R0 P)) / (2 R0)) is selected explicitly with a
+    branch constraint V >= V*/2. That also enforces the power ceiling
+    P <= V*^2 / (4 R0).
+  - Before this tier, the initial guess and the tiny pack resistance (under
+    1 % sag) kept solutions on the low root, but nothing guaranteed it.
+  - The RC states are propagated per sub-segment (the 2-RC ECM of
+    Paudel et al.).
 
-### 17 Redundancy and failure cases (review item 4)
+### 18 Redundancy and failure cases (review item 4)
 
 - **Architecture:** N lanes per rotor (dual-wound machines, split
   inverters), cross-strapped buses and battery strings.
@@ -170,14 +244,14 @@ predecessor available.
 - **Removed:** the fixed-wing failed-propulsor yaw helper is dropped for
   tiltrotors.
 
-### 18 Thermal (review item 3)
+### 19 Thermal (review item 3)
 
 - **Losses to heat:** each source's losses go to a heat-exchanger mass and a
   cooling drag (Meredith-style), sized on the hot-day hover.
 - **Short-time ratings:** set by the thermal mass of the machines and the
   battery.
 
-### 19 Tiltrotor airframe weights (review item 7)
+### 20 Tiltrotor airframe weights (review item 7)
 
 - **Wing:** the AFDD tiltrotor wing (NDARC sec. 19-1.1): torque box and
   spars sized by torsional and bending stiffness, plus a reduced-order
@@ -185,7 +259,7 @@ predecessor available.
 - **Second calibration aircraft:** V-22 or AW609 from public group weights.
 - **Uncrewed adjustments:** explicit and itemised.
 
-### 20 Aerodynamics (review item 8)
+### 21 Aerodynamics (review item 8)
 
 **Principle (user, 2026-10-02): lean heavily on AeroSandbox's built-in
 aerodynamics.** `asb.AeroBuildup` on the `Aircraft.to_asb()` geometry is the
@@ -219,7 +293,7 @@ hand check. `SimpleAerodynamics` stays as the simplest model.
 - **Conversion:** conversion segments with their power profile and the
   conversion corridor.
 
-### 21 Design-space practice (review items 9 and 10)
+### 22 Design-space practice (review items 9 and 10)
 
 - **Freed trades:** aspect ratio, fuselage size, solidity, tip speed, gear
   ratio, bus voltage and lane count, as variables or enumerated.
@@ -231,50 +305,3 @@ hand check. `SimpleAerodynamics` stays as the simplest model.
   merit, cruise efficiency, battery specific energy, machine specific
   power).
 
-### 22 Trajectory optimization (user-requested, 2026-10-02)
-
-This is separate from sizing. It is a stand-alone optimal-control problem on
-a fixed aircraft taken from a sizing result (`HaloSizingResult.design`), not
-a new constraint inside the sizing Opti.
-
-- **Principle (user, 2026-10-02): lean on AeroSandbox.**
-  - Dynamics: `asb.DynamicsPointMass2DSpeedGamma` (longitudinal),
-    `DynamicsPointMass3DSpeedGammaTrack` for ground tracks, and
-    `DynamicsRigidBody2DBody` if pitch dynamics are needed. Each one's
-    `add_force` and `state_derivatives` define the problem.
-  - Collocation: `asb.Opti` with `opti.constrain_derivative` /
-    `derivative_of` (trapezoidal integration).
-  - Atmosphere: `asb.Atmosphere`.
-  - Aerodynamics: `asb.AeroBuildup` evaluated per node (Tier 20).
-  - This project adds only what AeroSandbox lacks: rotor and powertrain
-    forces, the tilt kinematics, and the energy states.
-- **Dynamics:** point-mass longitudinal dynamics with the AeroSandbox
-  classes above, by direct collocation. Nacelle tilt is a control, so
-  hover, conversion and airplane mode form one continuous trajectory, with
-  rotor thrust and wing lift blended through the tilt angle.
-- **States:** position, velocity, flight-path angle, mass, battery SOC (and
-  battery temperature once Tier 18 exists).
-- **Controls:**
-  - nacelle tilt;
-  - rotor thrust or collective;
-  - rotor speed (Tier 12);
-  - the electric power fraction;
-  - pitch attitude.
-- **Constraints:**
-  - the conversion corridor;
-  - power available against altitude and temperature (Tier 15);
-  - battery current and voltage limits (Tier 16);
-  - SOC reserves;
-  - load factor and airspeed limits;
-  - obstacle and terminal conditions.
-- **Objectives:** minimum fuel, minimum time, or minimum energy cost, for a
-  given mission or ground track.
-- **Coupling to sizing:** one-way. Trajectory optimization checks and refines
-  a sized design (for example the optimal climb, conversion and descent
-  profiles, and the real energy split). Its results can feed back as better
-  segment definitions or margins, but sizing stays on quasi-steady segments
-  (the existing roadmap rule: no full trajectory optimization inside sizing).
-- **Validation:** with tilt and speed frozen, it recovers the quasi-steady
-  segment results; conversion power is checked against the XV-15 conversion
-  corridor and power-against-airspeed data (TM X-62407 figs. 5.4.1 and
-  A-12).
