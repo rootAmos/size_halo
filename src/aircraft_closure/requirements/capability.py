@@ -19,11 +19,13 @@ class HoverRequirement:
     thrust_to_weight: Any = 1.1
     active_rotor_count: Any = None
     hybridization_electric: Any = None
+    temperature_offset_K: Any = 0.0            # Tier 16: ISA + offset at the altitude
 
     def flight_condition(self):
         return FlightCondition(mode="hover", velocity_m_s=0.0, altitude_m=self.altitude_m,
                                thrust_to_weight=self.thrust_to_weight, active_rotor_count=self.active_rotor_count,
-                               hybridization_electric=self.hybridization_electric, label="hover")
+                               hybridization_electric=self.hybridization_electric, label="hover",
+                               temperature_offset_K=self.temperature_offset_K)
 
 
 @dataclass(frozen=True)
@@ -32,11 +34,13 @@ class ClimbRequirement:
     velocity_m_s: Any = 50.0
     altitude_m: Any = 1000.0
     hybridization_electric: Any = 0.0
+    temperature_offset_K: Any = 0.0            # Tier 16: ISA + offset at the altitude
 
     def flight_condition(self):
         return FlightCondition(velocity_m_s=self.velocity_m_s, altitude_m=self.altitude_m,
                                climb_rate_m_s=self.climb_rate_m_s,
-                               hybridization_electric=self.hybridization_electric, label="climb")
+                               hybridization_electric=self.hybridization_electric, label="climb",
+                               temperature_offset_K=self.temperature_offset_K)
 
 
 @dataclass(frozen=True)
@@ -44,10 +48,12 @@ class SpeedRequirement:
     velocity_m_s: Any = 80.0
     altitude_m: Any = 1000.0
     hybridization_electric: Any = 0.0
+    temperature_offset_K: Any = 0.0            # Tier 16: ISA + offset at the altitude
 
     def flight_condition(self):
         return FlightCondition(velocity_m_s=self.velocity_m_s, altitude_m=self.altitude_m,
-                               hybridization_electric=self.hybridization_electric, label="max_speed")
+                               hybridization_electric=self.hybridization_electric, label="max_speed",
+                               temperature_offset_K=self.temperature_offset_K)
 
 
 @dataclass(frozen=True)
@@ -57,11 +63,13 @@ class CeilingRequirement:
     climb_rate_m_s: Any = 0.5
     velocity_m_s: Any = 55.0
     hybridization_electric: Any = 0.0
+    temperature_offset_K: Any = 0.0            # Tier 16: ISA + offset at the altitude
 
     def flight_condition(self):
         return FlightCondition(velocity_m_s=self.velocity_m_s, altitude_m=self.altitude_m,
                                climb_rate_m_s=self.climb_rate_m_s,
-                               hybridization_electric=self.hybridization_electric, label="ceiling")
+                               hybridization_electric=self.hybridization_electric, label="ceiling",
+                               temperature_offset_K=self.temperature_offset_K)
 
 
 @dataclass(frozen=True)

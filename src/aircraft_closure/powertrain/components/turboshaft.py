@@ -5,6 +5,9 @@ every altitude, mass from specific power. Each refinement is a submodel that
 keeps the operating input (shaft power) and adds only the point's atmosphere:
 
 * `lapse_exponent` n: power available = rated x (rho / rho_SL)^n.
+* `lapse_model` (Tier 16): None keeps the sigma^n above. `DensityTemperatureLapse`
+  multiplies it by (T / T_ISA(h))^-m, exactly 1 on a standard day, so off-standard
+  days lapse in temperature as well as density.
 * `part_power_model`: efficiency x ratio(throttle), throttle = shaft power /
   power available. None keeps efficiency constant; `GeissPartPowerModel` is
   AeroSandbox's knockdown (Geiss 2020); `CubicPartPowerModel` is the same
@@ -82,6 +85,26 @@ def deck_1120hp_part_power_model():
 
 
 @dataclass(frozen=True)
+class DensityTemperatureLapse:
+    """Power available / rated = sigma^n (T / T_ISA(h))^-m at pressure altitude h (Tier 16).
+
+    sigma = rho / rho_SL at the point and T_ISA(h) = T - temperature deviation, so the temperature factor is
+    exactly 1 on a standard day and the model is then the density lapse sigma^n. At fixed pressure altitude a
+    temperature rise lowers power as (T / T_ISA)^-(n + m): n through density, m directly. m = 0 recovers the
+    density-only lapse on any day.
+    """
+    lapse_exponent: Any = 0.0
+    lapse_exponent_temperature: Any = 0.0
+    source: str = ""
+
+    def power_ratio(self, atmosphere):
+        temperature_K = atmosphere.temperature()
+        temperature_ratio = temperature_K / (temperature_K - atmosphere.temperature_deviation)
+        return ((atmosphere.density() / density_sea_level_kg_m3)**self.lapse_exponent
+                * temperature_ratio**(-self.lapse_exponent_temperature))
+
+
+@dataclass(frozen=True)
 class TurboshaftResult:
     power_shaft_W: Any
     fuel_flow_kg_s: Any
@@ -102,6 +125,7 @@ class SimpleTurboshaft:
     lapse_exponent: Any = 0.0
     part_power_model: Any = None
     mass_kg: Any = None
+    lapse_model: Any = None          # None: sigma^lapse_exponent; else lapse_model.power_ratio (lapse_exponent unused)
 
     def get_mass(self):
         return self.mass_kg if self.mass_kg is not None else self.power_rated_W / self.specific_power_W_kg
@@ -110,6 +134,8 @@ class SimpleTurboshaft:
         """Maximum shaft power at the point; sea level (rated) when no atmosphere is given."""
         if atmosphere is None:
             return self.power_rated_W
+        if self.lapse_model is not None:
+            return self.power_rated_W * self.lapse_model.power_ratio(atmosphere)
         return self.power_rated_W * (atmosphere.density() / density_sea_level_kg_m3)**self.lapse_exponent
 
     def get_limits(self, atmosphere=None):

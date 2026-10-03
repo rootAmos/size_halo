@@ -8,19 +8,20 @@ from aircraft_closure.vehicle.condition import StructuralDesignCondition
 import aerosandbox.tools.units as u
 
 from examples.halo_sizing import (HaloAssumptions, HaloRequirements, assumptions_tier11a, assumptions_tier12,
-                                  assumptions_tier12b,
-                                  build_halo_aircraft, requirements_tier10c, solve_halo_sizing, soc_emergency_floor,
-                                  soc_minimum)
+                                  assumptions_tier12b, build_halo_aircraft, requirements_tier10c, requirements_tier12b,
+                                  solve_halo_sizing, soc_emergency_floor, soc_minimum)
 
 
 class HaloSizingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.base = solve_halo_sizing()   # plan 017: fixed 2 x 1,120 hp, 900 kg at 210 kt
+        # Plan 017 (Tier 12b): fixed 2 x 1,120 hp, 900 kg at 210 kt, without the Tier 16 hot-day hover (tested in
+        # test_halo_hot_day; its free hover splits are degenerate, so the landing-hover share is not unique there).
+        cls.base = solve_halo_sizing(requirements=requirements_tier12b)
         # The figure-of-merit assumption only drives the actuator-disk rotor (Tier 11a baseline).
         cls.better_rotor = solve_halo_sizing(requirements=requirements_tier10c,
                                              assumptions=replace(assumptions_tier11a, figure_of_merit=0.75))
-        cls.light_payload = solve_halo_sizing(requirements=replace(HaloRequirements(), mass_payload_kg=800.0),
+        cls.light_payload = solve_halo_sizing(requirements=replace(requirements_tier12b, mass_payload_kg=800.0),
                                               initial=cls.base)
 
     def test_constraints_satisfied(self):
@@ -84,7 +85,8 @@ class HaloSizingTests(unittest.TestCase):
         self.assertAlmostEqual(tier12.mass_takeoff_kg / u.lbm, 17228, delta=5)
 
     def test_tier12b_baseline_reproduces(self):
-        self.assertAlmostEqual(solve_halo_sizing(assumptions=assumptions_tier12b).mass_takeoff_kg / u.lbm, 14877, delta=5)
+        self.assertAlmostEqual(solve_halo_sizing(requirements=requirements_tier12b,
+                                                 assumptions=assumptions_tier12b).mass_takeoff_kg / u.lbm, 14877, delta=5)
 
     def test_torque_sized_machines_and_drive_choices(self):
         """Tier 13: fast geared machines; a step-up gearbox beats a generator on the engine's 1,210 rpm shaft."""
@@ -93,8 +95,9 @@ class HaloSizingTests(unittest.TestCase):
         self.assertGreater(d.speed_peak_generator_rad_s, HaloAssumptions().speed_output_turboshaft_rad_s)
         masses = dict(self.base.powertrain_masses_kg)
         self.assertIn("generator_gearbox", masses)
-        on_shaft = solve_halo_sizing(assumptions=replace(HaloAssumptions(), generator_step_up=False), objective="payload")
-        stepped = solve_halo_sizing(objective="payload", initial=self.base)
+        on_shaft = solve_halo_sizing(requirements=requirements_tier12b,
+                                     assumptions=replace(HaloAssumptions(), generator_step_up=False), objective="payload")
+        stepped = solve_halo_sizing(requirements=requirements_tier12b, objective="payload", initial=self.base)
         self.assertLess(on_shaft.mass_payload_kg, 0.25 * stepped.mass_payload_kg)
 
     def test_turboshafts_are_the_fixed_deck_engine(self):
@@ -109,9 +112,9 @@ class HaloSizingTests(unittest.TestCase):
         self.assertTrue(all(soc_minimum - 1e-6 <= s["soc_end"] <= 0.95 + 1e-6 for s in self.base.segments))
 
     def test_payload_objective_around_fixed_engines(self):
-        best = solve_halo_sizing(objective="payload", initial=self.base)
+        best = solve_halo_sizing(requirements=requirements_tier12b, objective="payload", initial=self.base)
         self.assertGreaterEqual(best.mass_payload_kg, 900.0 - 1e-3)
-        faster = solve_halo_sizing(requirements=replace(HaloRequirements(), velocity_max_m_s=215 * u.knot),
+        faster = solve_halo_sizing(requirements=replace(requirements_tier12b, velocity_max_m_s=215 * u.knot),
                                    objective="payload", initial=best)
         self.assertLess(faster.mass_payload_kg, best.mass_payload_kg)
 

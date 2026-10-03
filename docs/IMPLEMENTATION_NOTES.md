@@ -530,6 +530,98 @@ and pitch at its 20 deg limit, and converts at the top.
   rotor model, which has no edgewise profile or hub-load penalty. Re-check
   it when edgewise rotor physics lands.
 
+## Tier 16: hot and high
+
+**Data.** These XV-15 curves were digitized from NASA TM X-62407 by pixel
+analysis of the 200 dpi scan:
+
+- fig. 6.2.2, take-off power, T = 95 F (dashed);
+- fig. 5.1.2, twin-engine OGE hover, 95 F.
+
+Axes were calibrated on gridlines found from pixel sums, and the
+zero-altitude row was checked against the axis line. The same procedure
+re-reads the Tier 10b standard-day data within 7 shp and 100 lb.
+
+| Altitude (ft) | 0 | 2,000 | 4,000 | 6,000 | 8,000 | 10,000 | 12,000 |
+|---|---|---|---|---|---|---|---|
+| 95 F rotor shaft power per engine (shp, +/- 10) | 1,103 | 1,021 | 941 | 864 | 791 | 720 | 647 |
+| ISA offset at 95 F (K) | 20.0 | 23.8 | 27.7 | 31.5 | 35.3 | 39.3 | 43.3 |
+| 95 F OGE hover weight (lb, +/- 100) | 13,339 (229 ft) | 12,445 | 11,442 | 10,458 | 9,546 | 8,708 | 7,902 |
+
+The hover line continues at 7,046 / 6,248 / 5,572 lb at 14,000 / 16,000 /
+18,000 ft.
+
+**Model.** `DensityTemperatureLapse` gives P/P_rated = sigma^n
+(T/T_ISA)^-m.
+
+- At a fixed pressure altitude, P_95F / P_std = (T/T_ISA)^-(n+m).
+- A data-to-data fit of the paired curves at 0 / 4,000 / 8,000 / 12,000 ft
+  gives n + m = 3.28, so m = 2.49 with Tier 10b's n = 0.797. The ratio
+  residuals are within 0.3 %.
+- Density accounts for only a quarter of the hot-day loss. The rest is the
+  turbine's temperature limit, about 1.1 % per kelvin.
+- Absolute 95 F power available is within 4.4 %. That error is the Tier 10b
+  standard-day lapse error, which is flatter low down and steeper high up.
+
+**Validation (prediction, not fit).** The model uses the Tier 10b figure of
+merit (0.67, standard-day sea-level calibration), the hot density and the
+hot-day lapse:
+
+- the fig. 5.1.2 hover weights are predicted within -2.6 % to -1.5 % up to
+  12,000 ft, the end of the 95 F power data;
+- they are within +0.5 % to +4.4 % to 18,000 ft, where the lapse is
+  extrapolated.
+
+At 4,000 ft the 95 F day costs the XV-15 21 % of hover weight.
+
+**Halo.** The hot-day hover is at 4,000 ft / 95 F (ISA + 27.66 K), T/W 1.05,
+for 60 s, at the mission's end mass (5,820 kg) and SOC (0.30), down to the
+0.10 floor. It is on by default.
+
+- The two 1,120 hp turboshafts give 1,115 kW there, against 1,518 kW at
+  4,000 ft on a standard day.
+- The battery must carry at least 25 % of the hover, against 14 % in the
+  standard-day 4,000 ft hover at take-off mass.
+- It is not binding. The engine-out hover already sizes battery power, and
+  the heavier standard-day hover sizes the motors.
+- The reference stays at 6,747 kg (14,874 lb, against 14,877 lb without the
+  hot hover). SOC is 0.16 after the hot hover.
+- The hybrid covers the turbines' hot-day lapse at no mass cost.
+
+**Hotter and higher destinations.** These were found by continuation in
+altitude at 95 F:
+
+| Hot-hover altitude (ft) | 4,000–5,250 | 5,500 | 5,750 | 5,900 | 6,000 |
+|---|---|---|---|---|---|
+| Take-off mass (kg) | 6,748 | 6,755 | 6,795 | 6,834 | no closed design |
+| Hot-hover battery share (min) | 0.25–0.31 | 0.32 | 0.35 | 0.37 | – |
+
+The limit is the rotor, not the battery:
+
+- the hot hover's blade loading (CT/sigma = 0.14 at the Mach-limited design
+  tip speed) binds;
+- the optimizer adds solidity;
+- the extra blade area costs cruise power against the fixed engines at
+  210 kt.
+
+**Defaults changed.** These two defaults change:
+
+- `HaloRequirements()` now includes the hot-day hover;
+- `HaloAssumptions()` uses the density-temperature lapse, which is identical
+  on standard days.
+
+Effects:
+
+- `requirements_tier10c` sets `hover_hot_day=False`, so the Tier 10c / 11a /
+  12 baselines reproduce exactly (18,506 / 17,228 lb).
+- The new `requirements_tier12b` reproduces Tier 12b. The Tier 12b unit tests
+  and notebook source now use it, because the landing-hover battery share is
+  a free, non-binding split and is not unique once the hot point is added.
+  The notebook's outputs are unchanged.
+
+Verification: 285 unittest cases (21 new) and the Tier 16 notebook's 18
+checks.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,

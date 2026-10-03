@@ -36,6 +36,8 @@ class FlightCondition:
     soc: Any = 0.8
     hybridization_electric: Any = None
     label: str = "point"
+    # Tier 16: ambient temperature minus ISA at the (pressure) altitude; 0 is a standard day.
+    temperature_offset_K: Any = 0.0
 
     def __post_init__(self):
         if self.mode not in ("hover", "airplane"):
@@ -76,7 +78,8 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     active_rotor_count = condition.active_rotor_count or instances["propulsor"].count
     active_generator_count = condition.active_generator_count or instances["generator"].count
     weight_N = mass_kg * acceleration_gravity_m_s2
-    atmosphere = asb.Atmosphere(altitude=condition.altitude_m)
+    temperature_offset_K = condition.temperature_offset_K
+    atmosphere = asb.Atmosphere(altitude=condition.altitude_m, temperature_deviation=temperature_offset_K)
 
     if condition.mode == "hover":
         alpha_deg, aero = None, None
@@ -85,12 +88,14 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     else:
         velocity_m_s = condition.velocity_m_s
         alpha_deg = opti.variable(init_guess=4.0, lower_bound=-5.0, upper_bound=20.0)
-        aero = aerodynamics.evaluate(aircraft, velocity_m_s, condition.altitude_m, alpha_deg, drag_increments)
+        aero = aerodynamics.evaluate(aircraft, velocity_m_s, condition.altitude_m, alpha_deg, drag_increments,
+                                     temperature_offset_K=temperature_offset_K)
         sin_gamma = condition.climb_rate_m_s / velocity_m_s
         # Equalities are normalized (lift by weight, powers by installed motor
         # rating) so IPOPT sees O(1) residuals in large coupled problems.
         opti.subject_to([aero.lift_N / weight_N == np.sqrt(1 - sin_gamma**2),
-                         alpha_deg <= aerodynamics.alpha_stall_deg(aircraft, velocity_m_s, condition.altitude_m)])
+                         alpha_deg <= aerodynamics.alpha_stall_deg(aircraft, velocity_m_s, condition.altitude_m,
+                                                                   temperature_offset_K=temperature_offset_K)])
         thrust_total_N = aero.drag_N + weight_N * sin_gamma
 
     thrust_per_rotor_N = thrust_total_N / active_rotor_count
