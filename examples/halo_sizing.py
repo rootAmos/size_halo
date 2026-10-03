@@ -596,8 +596,10 @@ class HaloSizingResult:
 
 
 def count_parallel_guess(guess, assumptions):
-    """Initial parallel-string count: energy-matched to the guess when it has a battery energy (so a start
-    from a constant-battery design or from a pack with another series count keeps its energy), else 30."""
+    """Initial parallel-string count: the guess's own count; from a constant-battery design, energy-matched
+    (so packs with any series count start with the guess's energy); else 30."""
+    if guess.count_parallel_battery is not None:
+        return guess.count_parallel_battery
     if guess.energy_capacity_battery_J is None:
         return 30.0
     string = build_halo_battery(replace(guess, count_parallel_battery=1.0), replace(assumptions, battery_model="ecm"))
@@ -953,12 +955,20 @@ standard_blocking_voltages_V = (650.0, 1200.0, 1700.0, 3300.0)
 
 
 def solve_halo_max_payload(requirements=HaloRequirements(), assumptions=HaloAssumptions(), initial=None, **kwargs):
-    """Maximum payload. With the equivalent-circuit pack it starts from the constant-battery maximum payload of
-    the same assumptions (itself started from `initial`): the plan 022 practice, a starting point only."""
-    if assumptions.battery_model == "ecm":
-        initial = solve_halo_sizing(requirements, replace(assumptions, battery_model="constant"), objective="payload",
-                                    initial=initial, **kwargs)
-    return solve_halo_sizing(requirements, assumptions, objective="payload", initial=initial, **kwargs)
+    """Maximum payload from `initial` (with the equivalent-circuit pack, a constant-battery design: plan 022).
+
+    If that start fails and the pack is the equivalent circuit, the constant-battery maximum payload of the same
+    assumptions (itself from `initial`) is tried as a second starting point. Starting points only: each attempt
+    is one complete coupled solve.
+    """
+    try:
+        return solve_halo_sizing(requirements, assumptions, objective="payload", initial=initial, **kwargs)
+    except RuntimeError:
+        if assumptions.battery_model != "ecm":
+            raise
+    start = solve_halo_sizing(requirements, replace(assumptions, battery_model="constant"), objective="payload",
+                              initial=initial, **kwargs)
+    return solve_halo_sizing(requirements, assumptions, objective="payload", initial=start, **kwargs)
 
 
 def assumptions_for_bus_voltage(assumptions, voltage_nominal_V, dcdc=False):
@@ -986,8 +996,9 @@ def enumerate_bus_voltage(voltages_nominal_V=(540.0, 756.0, 800.0, 1000.0), requ
     an option that failed to solve.
 
     Every option starts from the same `initial` design; None uses the constant-battery aircraft without the
-    electrical layer (the max-payload solve needs a constant-battery start, plan 022). An option that fails
-    from it is retried once from the previous option's solution (a different starting point only).
+    electrical layer (the max-payload solve needs a constant-battery start, plan 022; see
+    `solve_halo_max_payload`). An option that fails from it is retried from the previous option's solution and
+    then from the nearest option that solved (different starting points only; each is one coupled solve).
     """
     if initial is None:
         initial = solve_halo_sizing(requirements, replace(assumptions, battery_model="constant", electrical_layer=False))
@@ -1006,6 +1017,16 @@ def enumerate_bus_voltage(voltages_nominal_V=(540.0, 756.0, 800.0, 1000.0), requ
                 pass
         previous = result or previous
         rows.append((option, result))
+    # Options that failed from both are retried once from the nearest option that solved.
+    for index, (option, result) in enumerate(rows):
+        solved = [(abs(j - index), r) for j, (_, r) in enumerate(rows) if r is not None]
+        if result is None and solved:
+            try:
+                start = min(solved, key=lambda item: item[0])[1]
+                rows[index] = (option, solve_halo_max_payload(requirements, option, initial=start)
+                               if objective == "payload" else solve_halo_sizing(requirements, option, initial=start))
+            except RuntimeError:
+                pass
     return tuple(rows)
 # Tier 20 (plan 024): the AFDD tiltrotor wing (the default from plan 026).
 assumptions_tier20 = HaloAssumptions(wing_weight_model="afdd_tiltrotor")

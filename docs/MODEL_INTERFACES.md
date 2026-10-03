@@ -14,6 +14,10 @@ Models build equations and do not enforce limits, clip outputs or resize parts.
 | Gearbox | speed_input_rad_s, torque_input_Nm | shaft input |
 | ActuatorDiskPropulsor | axial_velocity_m_s, atmosphere, thrust_N OR shaft_power_W and induced_velocity_m_s (speed_rad_s accepted, ignored) | shaft input |
 | MomentumProfileRotor | axial_velocity_m_s, atmosphere, thrust_N, speed_rad_s | shaft input; limits blade_loading_max, mach_tip_helical_max, advance_ratio_max |
+| Inverter | power_ac_W (positive DC to AC; negative as a rectifier), voltage_dc_V | rated AC power; DC link <= blocking voltage x derating (Tier 15) |
+| DcDcConverter | power_input_W (positive battery to bus), voltage_input_V | rated power; regulated output voltage (Tier 15) |
+| Cable | current_A | design current (sets the conductor area); peak voltage (sets the insulation) (Tier 15) |
+| ProtectionUnit | current_A | rated current per pole (Tier 15) |
 
 Motor/generator default losses follow McDonald, AIAA 2015-1676 (plan 005):
 P_L = C0 + C1 w + C2 w^3 + C3 Q^2 with coefficients from the peak-efficiency
@@ -77,6 +81,8 @@ creates no variables or constraints. Unconnected ports are boundaries.
 | Gearbox | shaft_in (IN), shaft_out (OUT) |
 | ActuatorDiskPropulsor | shaft (IN) |
 | MomentumProfileRotor | shaft (IN) |
+| Inverter | dc (IN), ac (OUT); as a generator rectifier `rectifier_port_specs()`: ac (IN), dc (OUT) |
+| Cable, ProtectionUnit, DcDcConverter | input (IN), output (OUT), in the nominal power-flow direction |
 
 Declarations live in `powertrain/ports.py` (`port_specs_for`), not on the
 component classes. `powertrain/topologies.py` provides
@@ -665,3 +671,34 @@ min and max terminal voltage.
   - the motors see the terminal voltage;
   - with the ECM pack, SOC is coulomb-counted with current and voltage
     limits.
+
+## Electrical layer (Tier 15)
+
+Plan 023. Components in `powertrain/components/converters.py`, `cable.py` and `protection.py`; the
+whole layer is optional (`build_series_hybrid(..., electrical=None)`; Halo
+`HaloAssumptions.electrical_layer`, default False).
+
+| Class | Mass | Losses | Limits |
+|---|---|---|---|
+| `Inverter` | rated power / specific power (20 kW/kg) | `ConverterLossModel` | rated AC power, DC window (min, blocking x derating) |
+| `DcDcConverter` | rated power / specific power (12 kW/kg) | `ConverterLossModel` (98 %) | rated power, input window, output voltage |
+| `Cable` | conductor + PD-sized insulation, x (1 + accessories) | R I^2, drop R I | design current, peak voltage, PDIV at the design altitude |
+| `ProtectionUnit` | poles x (0.2 kg + 1.3 g/A x rated current) | poles x rated drop x I^2 / I_rated | rated current and voltage |
+
+- **`ConverterLossModel(efficiency_rated, fraction_loss_conduction, fraction_loss_switching, voltage_rated_V)`:**
+  P_loss = L_r [f_0 + f_s |P|/P_r + f_c (P/P_r)^2 (V_r/V)^2], L_r = P_r (1 - eta_r)/eta_r; |P| smoothed.
+- **`PartialDischargeModel`:** PDIV = 163 (t/eps_r)^0.46 V (t in micrometres; Dakin) x (p/p0)^0.5;
+  `thickness_required_m` inverts it for PDIV = 1.5 x peak voltage. `Cable.thickness_insulation_m()` is the
+  smooth maximum of that and the minimum wall.
+- **Materials:** `aluminium_conductor()` (default) and `copper_conductor()`; `InsulationMaterial`.
+- **`ElectricalLayer`** (`topologies.py`): one component per feeder type; per feeder bus - protection -
+  cable - inverter - motor, generator - rectifier - cable - protection - bus, battery - protection - cable -
+  [DC/DC] - bus.
+- **Flight point:** `FlightPoint.electrical` (`ElectricalLayerResult`: bus and battery voltages, per-instance
+  results, bus-side powers and loss totals). The hybridization share is on the bus side.
+- **Operating margins:** inverter AC power and DC window; cable and protection current (squared, either
+  sign); cable partial discharge at the point's pressure; DC/DC power and input window.
+- **Halo:** `electrical_layer`, bare-machine figures (17.6 N.m/kg, 20 kW/kg cap), inverter (20 kW/kg,
+  98.5 %, 1,200 V x 0.75), feeders (1.25 x half span, battery 3 m, 125 % current rating), optional DC/DC.
+  `bus_voltage_window`, `build_halo_electrical`, `assumptions_for_bus_voltage(assumptions, V, dcdc=False)`,
+  `enumerate_bus_voltage(...)`, `solve_halo_max_payload(...)`, `assumptions_tier15`.
