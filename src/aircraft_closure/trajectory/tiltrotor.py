@@ -28,6 +28,10 @@ Approximations (plan 019):
 * Wing lift and drag: the aerodynamics model's coefficients evaluated at max(V, a floor) for the
   Reynolds and Mach numbers only; the dynamic pressure uses the true speed, so forces vanish at V = 0.
   Attached flow only: alpha is bounded by the model's stall angle at every node.
+* Battery (plan 022): the motors and generators see the battery terminal voltage. With the
+  equivalent-circuit battery, SOC is coulomb-counted and the limits are current, voltage and the
+  low-current root. The RC polarization is at its steady value at each node; there are no RC states.
+  That is conservative for manoeuvres shorter than the 43 s time constant.
 """
 from dataclasses import dataclass, replace
 from typing import Any
@@ -37,6 +41,7 @@ import aerosandbox.numpy as np
 import aerosandbox.tools.units as u
 
 from aircraft_closure.performance.flight_point import acceleration_gravity_m_s2
+from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery
 from aircraft_closure.powertrain.components.rotor import MomentumProfileRotor
 
 
@@ -167,7 +172,10 @@ class TiltrotorPointMass:
         # Drive chain: gearbox loss on torque (as the flight point), motor losses from its own model.
         speed_motor_rad_s = gearbox.reduction_ratio * speed_rotor_rad_s
         torque_motor_Nm = rotor.shaft_power_W / (gearbox.efficiency * speed_motor_rad_s)
-        voltage_bus_V = voltage_bus_V if voltage_bus_V is not None else self.instance("battery").voltage_open_circuit_V
+        if voltage_bus_V is None:
+            battery = self.instance("battery")
+            voltage_bus_V = (battery.voltage_open_circuit_V(battery.max_soc)
+                             if isinstance(battery, EquivalentCircuitBattery) else battery.voltage_open_circuit_V)
         motor_result = motor.evaluate(speed_motor_rad_s, torque_motor_Nm, voltage_bus_V)
         return TiltrotorForces(
             thrust_per_rotor_N=thrust_per_rotor_N, angle_thrust_velocity_deg=angle_thrust_velocity_deg,
@@ -306,10 +314,11 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
     # alternate.)
     tilt_rate_deg_s = np.diff(tilt_deg) / np.diff(time_s)
 
-    forces = model.evaluate(velocity_m_s, altitude_m, alpha_deg, tilt_deg, thrust_per_rotor_N=thrust_per_rotor_N,
-                            speed_rotor_rad_s=speed_rotor_rad_s)
     supply = model.evaluate_supply(altitude_m, current_battery_A=current_battery_A,
                                    torque_generator_Nm=torque_generator_Nm, soc=soc)
+    # The motors see the battery terminal (bus) voltage.
+    forces = model.evaluate(velocity_m_s, altitude_m, alpha_deg, tilt_deg, thrust_per_rotor_N=thrust_per_rotor_N,
+                            speed_rotor_rad_s=speed_rotor_rad_s, voltage_bus_V=supply.battery.voltage_V)
 
     dynamics = asb.DynamicsPointMass2DSpeedGamma(mass_props=asb.MassProperties(mass=mass_kg), x_e=x_m, z_e=-altitude_m,
                                                  speed=velocity_m_s, gamma=gamma_rad, alpha=alpha_deg)
@@ -318,7 +327,25 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
     dynamics.constrain_derivatives(opti, time_s)
     derivatives = dynamics.state_derivatives()
     opti.constrain_derivative(-supply.fuel_flow_kg_s, mass_kg, time_s)
-    opti.constrain_derivative(-supply.battery.power_chemical_W / battery_model.energy_capacity_J, soc, time_s)
+    is_ecm = isinstance(battery_model, EquivalentCircuitBattery)
+    if is_ecm:
+        # Coulomb counting; polarization at its steady value at each node (no RC states, plan 022).
+        opti.constrain_derivative(-current_battery_A / battery_model.capacity_As, soc, time_s)
+        battery_limits = battery_model.get_limits()
+        opti.subject_to([
+            current_battery_A <= battery_limits.max_discharge_current_A,
+            current_battery_A >= -battery_limits.max_charge_current_A,
+            supply.battery.voltage_V >= battery_limits.min_voltage_V,
+            supply.battery.voltage_V <= battery_limits.max_voltage_V,
+            # Low-current root of R_eff I^2 - V* I + P = 0 (as the flight point).
+            supply.battery.voltage_V / supply.battery.voltage_driving_V >= 0.5,
+        ])
+    else:
+        opti.constrain_derivative(-supply.battery.power_chemical_W / battery_model.energy_capacity_J, soc, time_s)
+        opti.subject_to([
+            supply.battery.power_electric_W / scale_power_W <= battery_model.max_discharge_power_W / scale_power_W,
+            supply.battery.power_electric_W / scale_power_W >= -battery_model.max_charge_power_W / scale_power_W,
+        ])
     opti.constrain_derivative(forces.power_electric_motors_W, energy_bus_J, time_s)
 
     pitch_deg = np.degrees(gamma_rad) + alpha_deg
@@ -330,8 +357,6 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
         supply.power_shaft_generator_W <= supply.power_available_turboshaft_W,
         supply.power_shaft_generator_W <= generator_model.power_rated_W,
         torque_generator_Nm <= generator_model.max_torque_Nm,
-        supply.battery.power_electric_W / scale_power_W <= battery_model.max_discharge_power_W / scale_power_W,
-        supply.battery.power_electric_W / scale_power_W >= -battery_model.max_charge_power_W / scale_power_W,
         # Rotor (Tier 12 validity and hardware bounds) and drive.
         forces.rotor.blade_loading <= rotor.blade_loading_max,
         forces.rotor.mach_tip_helical <= rotor.mach_tip_helical_max,

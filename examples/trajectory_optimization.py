@@ -1,7 +1,8 @@
 """Tier 14 trajectory optimization on the sized Halo reference aircraft (plan 019).
 
-The aircraft is fixed: `solve_halo_sizing()` (900 kg payload, 210 kt, fixed 2 x 1,120 hp
-turboshafts) is sized first, then `build_halo_aircraft(result.design)` gives the numeric aircraft
+The aircraft is fixed: `solve_halo_sizing()` (the reference: 780 kg payload, 210 kt, fixed 2 x 1,120 hp
+turboshafts, equivalent-circuit battery since plan 022; Tier 14 itself used the 900 kg constant-battery
+aircraft, `requirements_tier16` / `assumptions_tier16`) is sized first, then `build_halo_aircraft(result.design)` gives the numeric aircraft
 that every trajectory flies. Each problem is its own `asb.Opti`, separate from sizing.
 
 Problems:
@@ -20,6 +21,7 @@ import aerosandbox.numpy as np
 import aerosandbox.tools.units as u
 
 from aircraft_closure.aerodynamics.simple import SimpleAerodynamics
+from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery
 from aircraft_closure.trajectory.tiltrotor import (ConversionCorridor, TiltrotorPointMass, TrajectoryGuess,
                                                    TrajectoryLimits, build_tiltrotor_trajectory)
 from examples.halo_sizing import HaloAssumptions, HaloRequirements, build_halo_aircraft, soc_take_off, solve_halo_sizing
@@ -38,10 +40,10 @@ class HaloTrajectoryCase:
     corridor: Any
 
 
-def halo_trajectory_case(sizing=None):
-    """The sized Halo reference aircraft as a trajectory model (numeric design, no sizing variables)."""
-    sizing = sizing if sizing is not None else solve_halo_sizing()
-    a, r = HaloAssumptions(), HaloRequirements()
+def halo_trajectory_case(sizing=None, requirements=HaloRequirements(), assumptions=HaloAssumptions()):
+    """The sized Halo aircraft as a trajectory model (numeric design, no sizing variables)."""
+    r, a = requirements, assumptions
+    sizing = sizing if sizing is not None else solve_halo_sizing(r, a)
     aerodynamics = SimpleAerodynamics(drag_area_misc_m2=a.drag_area_misc_m2,
                                       download_fraction_hover=a.download_fraction_hover, cl_max=r.cl_max)
     model = TiltrotorPointMass(build_halo_aircraft(sizing.design, r, a), aerodynamics)
@@ -88,6 +90,7 @@ class TrajectoryResult:
     mass_fuel_burnt_kg: float
     acceleration_m_s2: Any
     rate_gamma_rad_s: Any
+    voltage_bus_V: Any = None             # battery terminal voltage (plan 022)
 
 
 def power_available_bus_W(model, altitude_m):
@@ -97,9 +100,12 @@ def power_available_bus_W(model, altitude_m):
     power_shaft_W = np.fmin(model.instance("turboshaft").power_available_W(asb.Atmosphere(altitude=altitude_m)),
                             generator.power_rated_W)
     battery = model.instance("battery")
+    if isinstance(battery, EquivalentCircuitBattery):
+        voltage_V, power_battery_W = battery.voltage_open_circuit_V(soc_take_off), battery.power_max_discharge_W
+    else:
+        voltage_V, power_battery_W = battery.voltage_open_circuit_V, battery.max_discharge_power_W
     return (model.count("generator") * generator.evaluate(speed_rad_s, power_shaft_W / speed_rad_s,
-                                                          battery.voltage_open_circuit_V).power_electric_W
-            + battery.max_discharge_power_W)
+                                                          voltage_V).power_electric_W + power_battery_W)
 
 
 def _result(label, solution, model, trajectory):
@@ -126,7 +132,7 @@ def _result(label, solution, model, trajectory):
         velocity_corridor_max_m_s=v(t.corridor.velocity_max_m_s(v(t.tilt_deg))),
         alpha_stall_deg=v(t.forces.alpha_stall_deg), soc=v(t.soc), mass_kg=mass_kg, energy_bus_J=v(t.energy_bus_J),
         mass_fuel_burnt_kg=mass_kg[0] - mass_kg[-1], acceleration_m_s2=v(t.acceleration_m_s2),
-        rate_gamma_rad_s=v(t.rate_gamma_rad_s))
+        rate_gamma_rad_s=v(t.rate_gamma_rad_s), voltage_bus_V=v(t.supply.battery.voltage_V))
 
 
 def _trimmed(opti, trajectory, index):

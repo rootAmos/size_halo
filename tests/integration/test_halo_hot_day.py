@@ -4,15 +4,16 @@ from dataclasses import replace
 
 import aerosandbox.tools.units as u
 
-from examples.halo_sizing import (HaloRequirements, requirements_tier12b, soc_emergency_floor, soc_minimum,
-                                  solve_halo_sizing)
+from examples.halo_sizing import (assumptions_tier16, requirements_tier12b, requirements_tier16, soc_emergency_floor,
+                                  soc_minimum, solve_halo_sizing)
 
 
 class HaloHotDayTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.hot = solve_halo_sizing()                                   # default: 4,000 ft / 95 F after the mission
-        cls.standard = solve_halo_sizing(requirements=requirements_tier12b, initial=cls.hot)
+        # The Tier 16 reference (plan 020): 900 kg, constant battery; 4,000 ft / 95 F after the mission.
+        cls.hot = solve_halo_sizing(requirements_tier16, assumptions_tier16)
+        cls.standard = solve_halo_sizing(requirements_tier12b, assumptions_tier16, initial=cls.hot)
         cls.hovers = {h.label: h for h in cls.hot.hovers}
 
     def test_hot_hover_point_is_built_at_the_mission_end_state(self):
@@ -47,8 +48,8 @@ class HaloHotDayTests(unittest.TestCase):
         no closed design is found at 8,000 ft / 95 F."""
         previous = self.hot
         for altitude_ft in (5000, 6000, 6500, 7000):
-            previous = solve_halo_sizing(requirements=replace(HaloRequirements(), altitude_hover_hot_m=altitude_ft
-                                                              * u.foot), initial=previous)
+            previous = solve_halo_sizing(requirements=replace(requirements_tier16, altitude_hover_hot_m=altitude_ft
+                                                              * u.foot), assumptions=assumptions_tier16, initial=previous)
         self.assertGreater(previous.mass_takeoff_kg, self.hot.mass_takeoff_kg + 20.0)
 
 

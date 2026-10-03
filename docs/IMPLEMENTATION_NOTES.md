@@ -681,8 +681,51 @@ the ECM pack (`assumptions_tier17`, F = 5, end of life, 25 C), 900 kg at
   At F = 5 the engine-out end voltage still binds; from F = 8 the reserve
   SOC binds. The table above and the Tier 17 notebook stay pinned to the
   Tier 12b aircraft.
-- **User decision needed:** payload or speed, the reserve definition, or the
-  cell (plan 021).
+- **User decision (2026-10-03):** take the lower payload. Plan 022 makes
+  this pack the reference.
+
+## Plan 022: equivalent-circuit battery as the reference
+
+The user chose "take a lower payload", noting there is "not much more we
+can do to stretch the cells".
+
+- **Defaults:** `battery_model="ecm"` and `mass_payload_kg=780` (the maximum
+  is 785 kg).
+- **Reference result:** 6,548 kg (14,436 lb).
+  - Battery: 440 kg, 64.9 kWh, 210s x 21.3p (about 4,470 cells).
+  - Binding constraints:
+    - the 210 kt turbine power;
+    - the engine-out end voltage (525 V cutoff);
+    - the hover motor, gearbox and rotor power;
+    - static margin and Cn_beta;
+    - mission end SOC.
+  - This is 676 lb heavier than the 900 kg constant-battery aircraft
+    (13,760 lb), even with 120 kg less payload.
+- **Starting point:** with no `initial`, `solve_halo_sizing` first solves the
+  constant-battery problem as the initial guess. From the generic guess,
+  IPOPT reaches local infeasibility.
+  - The max-payload solve likewise starts from a constant-battery design.
+    From the equivalent-circuit minimum-mass design it reaches local
+    infeasibility.
+  - Multistart is Tier 22.
+- **Legacy sets:**
+  - `requirements_tier16` and `assumptions_tier16` keep the Tiers 13–16
+    aircraft (900 kg, constant battery, 13,760 lb).
+  - Every earlier named set pins `mass_payload_kg=900` and
+    `battery_model="constant"`.
+  - The Tier 10–16 notebooks pin their own sets in their first cell.
+- **Trajectory:**
+  - The motors and generators see the battery terminal voltage. Previously
+    they saw the constant OCV, which moves Tier 14 results by less than
+    0.1 %.
+  - With the equivalent-circuit pack, SOC is coulomb-counted, and the limits
+    are current, voltage and the low-current root.
+  - RC polarization is steady at each node; there are no RC states.
+  - On the reference, the minimum-energy transition takes 22.1 s and the
+    climb to 10,000 ft takes 227 s (SOC 0.95 to 0.85).
+- **Parallel runs:** run notebooks and test suites concurrently with
+  `OMP_NUM_THREADS=1`. Several concurrent suites with threaded BLAS made
+  IPOPT fail on otherwise reproducible solves.
 
 ## Verification notebooks
 

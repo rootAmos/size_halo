@@ -4,8 +4,8 @@ The Tier 9 formulation, re-baselined on the Bell XV-15 (plans 011-013):
 two tip-mounted rotors, two turbogenerators on one bus with a battery, and the
 validated Tier 10 models.
 
-Requirements (user-approved 2026-10-02): 900 kg payload, 445 nm mission,
-250 kt at 10,000 ft, 13,000 ft ceiling, OGE hover at 4,000 ft, engine-out
+Requirements (user-approved 2026-10-02, revised 2026-10-03): 780 kg payload (plan 022; 900 kg until
+then), 445 nm mission, 210 kt at 10,000 ft, 13,000 ft ceiling, OGE hover at 4,000 ft, engine-out
 hover on one turbogenerator plus battery, stall at most 120 kt.
 
 Models carried from Tier 10:
@@ -65,7 +65,9 @@ soc_emergency_floor = 0.1
 
 @dataclass(frozen=True)
 class HaloRequirements:
-    mass_payload_kg: float = 900.0
+    # 780 kg (plan 022, user decision 2026-10-03 "take a lower payload"): the equivalent-circuit pack allows at
+    # most 785 kg at 210 kt on the fixed engines; 900 kg until then (requirements_tier16).
+    mass_payload_kg: float = 780.0
     range_m: float = 445 * 1852.0
     altitude_cruise_m: float = 10000 * u.foot
     # 210 kt (plan 017): the most the fixed 2 x 1,120 hp turboshafts sustain with 900 kg over 445 nm (max
@@ -156,9 +158,9 @@ class HaloAssumptions:
     temperature_lapse: bool = True
     # ---- Tier 17 battery (plan 021) ----
     # "ecm": EquivalentCircuitBattery, Samsung INR21700-50G OCV and resistance shape (Paudel et al. 2025);
-    # "constant": the Tier 1 constant-OCV Battery sized by energy and power (Tiers 10c-12b), still the reference:
-    # with the ECM pack the 900 kg / 210 kt requirement is infeasible on the fixed engines (plan 021).
-    battery_model: str = "constant"
+    # "constant": the Tier 1 constant-OCV Battery sized by energy and power (the reference for Tiers 10c-16).
+    # The ECM pack is the reference from plan 022 (it cannot carry 900 kg at 210 kt on the fixed engines).
+    battery_model: str = "ecm"
     # User decision 2026-10-02: resistance / factor and current rating x factor (more power-dense 50G-shaped cell).
     # 5: 10C continuous; below about 5 battery power sizes the pack, above about 8 the reserve energy does (plan 021).
     factor_power_density_battery: float = 5.0
@@ -378,7 +380,14 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
 
     objective "mass_takeoff" minimizes take-off mass at the required payload; "payload" makes payload a
     variable and maximizes it (the aircraft is sized around fixed engines, plan 017).
+
+    With the equivalent-circuit battery and no `initial`, the same problem is first solved with the constant
+    battery and used as the initial guess: IPOPT reaches local infeasibility from the generic guess (plan 022).
+    This is a starting point only; the coupled problem is still one solve.
     """
+    if initial is None and assumptions.battery_model == "ecm":
+        initial = solve_halo_sizing(requirements, replace(assumptions, battery_model="constant"), factors,
+                                    max_iter=max_iter)
     factors = factors if factors is not None else calibration_factors()
     lapse_exponent = fit_lapse_exponent()
     a, r = assumptions, requirements
@@ -642,14 +651,17 @@ def battery_trace(points, value):
 
 
 # Named earlier baselines, so each tier's notebook keeps reproducing its own result.
-requirements_tier10c = HaloRequirements(velocity_max_m_s=250 * u.knot, hover_hot_day=False)
-requirements_tier12b = HaloRequirements(hover_hot_day=False)
-assumptions_tier12 = HaloAssumptions(power_rated_turboshaft_fixed_W=None, hybridization_electric_min=0.0,
-                                     soc_floor_every_segment=False, machine_mass_by_torque=False)
+requirements_tier10c = HaloRequirements(mass_payload_kg=900.0, velocity_max_m_s=250 * u.knot, hover_hot_day=False)
+requirements_tier12b = HaloRequirements(mass_payload_kg=900.0, hover_hot_day=False)
+# Tiers 13-16 reference (plans 018-020): 900 kg with the constant-OCV battery (13,760 lb).
+requirements_tier16 = HaloRequirements(mass_payload_kg=900.0)
+assumptions_tier16 = HaloAssumptions(battery_model="constant")
+assumptions_tier12 = HaloAssumptions(battery_model="constant", power_rated_turboshaft_fixed_W=None,
+                                     hybridization_electric_min=0.0, soc_floor_every_segment=False,
+                                     machine_mass_by_torque=False)
 # Tier 12b reference (plan 017): fixed engines with the constant-OCV battery and Tier 12b machines.
-assumptions_tier12b = HaloAssumptions(machine_mass_by_torque=False)
-# Tier 17 (plan 021): the equivalent-circuit 50G-shaped pack at end of life on the current aircraft
-# (use with objective="payload").
+assumptions_tier12b = HaloAssumptions(battery_model="constant", machine_mass_by_torque=False)
+# Tier 17 (plan 021): the equivalent-circuit 50G-shaped pack at end of life (the default from plan 022).
 assumptions_tier17 = HaloAssumptions(battery_model="ecm")
 assumptions_tier11a = replace(assumptions_tier12, rotor_speed_physics=False)
 

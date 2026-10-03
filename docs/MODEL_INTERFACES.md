@@ -600,6 +600,14 @@ min and max terminal voltage.
 - **Design variable:** `HaloDesign.count_parallel_battery`. Energy and power
   are then derived from the pack.
 - **Outputs:** `battery_trace` and `engine_out_trace`.
-- **Named sets:** `assumptions_tier12b` (constant battery) and
-  `assumptions_tier17` (ECM; 900 kg at 210 kt does not close, so use
-  `objective="payload"`).
+- **Named sets:**
+  - `assumptions_tier12b` (constant battery);
+  - `assumptions_tier17` (ECM);
+  - `requirements_tier16` with `assumptions_tier16` (the 900 kg
+    constant-battery aircraft of Tiers 13–16).
+  - Since plan 022 the defaults are the ECM pack at 780 kg.
+- **Trajectory** (`build_tiltrotor_trajectory`):
+  - accepts either battery;
+  - the motors see the terminal voltage;
+  - with the ECM pack, SOC is coulomb-counted with current and voltage
+    limits.

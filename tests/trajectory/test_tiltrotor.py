@@ -12,15 +12,16 @@ from aircraft_closure.trajectory.tiltrotor import (ConversionCorridor, Trajector
 from examples.trajectory_optimization import (altitude_band_transition_m, altitude_transition_m, halo_trajectory_case,
                                               ratio_transition_end_stall, solve_min_energy_transition,
                                               solve_min_time_climb, solve_prescribed_transition)
+from examples.halo_sizing import assumptions_tier16, requirements_tier16
 
 g_m_s2 = acceleration_gravity_m_s2
 _cases = {}
 
 
 def halo_case():
-    """The sized Halo reference, sized once per test run."""
+    """The Tier 14 aircraft (900 kg, constant battery; plan 019), sized once per test run."""
     if "halo" not in _cases:
-        _cases["halo"] = halo_trajectory_case()
+        _cases["halo"] = halo_trajectory_case(None, requirements_tier16, assumptions_tier16)
     return _cases["halo"]
 
 
@@ -228,6 +229,33 @@ class HaloTrajectoryProblemTests(unittest.TestCase):
         # Faster than the sizing mission's prescribed 6 m/s quasi-steady climb.
         self.assertLess(r.duration_s, 10000 * u.foot / 6.0)
         self.assertTrue(np.all(r.altitude_m >= -1e-6))
+
+
+class EquivalentCircuitTrajectoryTests(unittest.TestCase):
+    """Plan 022: the trajectory problems on the reference aircraft with the equivalent-circuit battery."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.case = halo_trajectory_case()
+        cls.climb = solve_min_time_climb(cls.case)
+
+    def test_reference_uses_the_equivalent_circuit_battery(self):
+        self.assertEqual(type(self.case.model.instance("battery")).__name__, "EquivalentCircuitBattery")
+
+    def test_climb_respects_the_cell_window_and_coulomb_counting(self):
+        r, battery = self.climb, self.case.model.instance("battery")
+        limits = battery.get_limits()
+        self.assertTrue(np.all(r.voltage_bus_V >= limits.min_voltage_V - 1e-6))
+        self.assertTrue(np.all(r.voltage_bus_V <= limits.max_voltage_V + 1e-6))
+        # The battery helps the climb, so SOC falls; SOC follows the integral of current / capacity.
+        self.assertLess(r.soc[-1], r.soc[0] - 0.01)
+        current_A = r.power_battery_W / r.voltage_bus_V
+        np.testing.assert_allclose(r.soc, r.soc[0] - trapezoid(current_A, r.time_s) / battery.capacity_As, atol=1e-6)
+        # Sag: the bus sits below the open-circuit voltage while discharging.
+        discharging = r.power_battery_W > 1e3
+        ocv_V = battery.voltage_open_circuit_V(r.soc)
+        self.assertTrue(np.all(r.voltage_bus_V[discharging] < ocv_V[discharging]))
+        self.assertLess(r.duration_s, 10000 * u.foot / 6.0)
 
 
 if __name__ == "__main__":

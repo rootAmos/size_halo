@@ -1,25 +1,39 @@
-"""Tier 17: Halo-class sizing with the equivalent-circuit battery (option; the reference keeps the Tier 1 battery)."""
+"""Tier 17 / plan 022: Halo-class sizing with the equivalent-circuit battery (the reference from plan 022)."""
 import unittest
 from dataclasses import replace
 
 import aerosandbox.tools.units as u
 
-from examples.halo_sizing import (HaloAssumptions, assumptions_tier12b, assumptions_tier17, requirements_tier12b,
-                                  solve_halo_sizing, soc_emergency_floor, soc_minimum)
+from examples.halo_sizing import (HaloAssumptions, HaloRequirements, assumptions_tier12b, assumptions_tier16,
+                                  assumptions_tier17, requirements_tier12b, requirements_tier16, solve_halo_sizing,
+                                  soc_emergency_floor, soc_minimum)
 
 
 class HaloEquivalentCircuitBatteryTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.base = solve_halo_sizing()
+        cls.reference = solve_halo_sizing()
+        # Max payload: warm-started from the constant-battery Tier 16 design (from the equivalent-circuit
+        # minimum-mass design IPOPT reaches local infeasibility; plan 022).
+        cls.base = solve_halo_sizing(requirements_tier16, assumptions_tier16)
         cls.ecm = solve_halo_sizing(assumptions=assumptions_tier17, objective="payload", initial=cls.base)
         cls.denser = solve_halo_sizing(assumptions=replace(assumptions_tier17, factor_power_density_battery=8.0),
                                        objective="payload", initial=cls.ecm)
 
-    def test_reference_keeps_the_constant_battery(self):
-        self.assertEqual(HaloAssumptions().battery_model, "constant")
+    def test_reference_is_the_equivalent_circuit_battery_at_780_kg(self):
+        """Plan 022 (user decision 2026-10-03: take a lower payload)."""
+        self.assertEqual(HaloAssumptions().battery_model, "ecm")
+        self.assertEqual(HaloRequirements().mass_payload_kg, 780.0)
+        r = self.reference
+        self.assertGreater(r.min_margin, -1e-6)
+        self.assertLess(abs(r.closure_residual_kg), 1e-5)
+        self.assertEqual(len(r.battery_trace), sum(HaloAssumptions().subsegments_mission))
+        self.assertAlmostEqual(r.mass_takeoff_kg / u.lbm, 14436, delta=5)
+        self.assertLess(r.mass_payload_kg, self.ecm.mass_payload_kg)
+
+    def test_legacy_constant_battery_references_reproduce(self):
         self.assertEqual(self.base.battery_trace, ())
-        self.assertAlmostEqual(self.base.mass_takeoff_kg / u.lbm, 13760, delta=5)   # Tier 13 + 16 reference
+        self.assertAlmostEqual(self.base.mass_takeoff_kg / u.lbm, 13760, delta=5)   # Tiers 13-16 reference
         tier12b = solve_halo_sizing(requirements_tier12b, assumptions_tier12b, initial=self.base)
         self.assertAlmostEqual(tier12b.mass_takeoff_kg / u.lbm, 14875, delta=5)
 
@@ -34,7 +48,7 @@ class HaloEquivalentCircuitBatteryTests(unittest.TestCase):
         """Plan 021 finding: with the 50G-shaped pack at end of life, 900 kg at 210 kt does not close."""
         self.assertLess(self.ecm.mass_payload_kg, 900.0)
         # 785 kg on the Tier 13 torque-sized machines (638 kg on the Tier 12b machines, plan 021).
-        self.assertTrue(700.0 < self.ecm.mass_payload_kg < 850.0)
+        self.assertAlmostEqual(self.ecm.mass_payload_kg, 785.0, delta=5.0)
         self.assertGreater(self.denser.mass_payload_kg, self.ecm.mass_payload_kg)
 
     def test_low_soc_minimum_voltage_case(self):
