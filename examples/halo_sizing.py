@@ -13,7 +13,10 @@ Models carried from Tier 10:
     and AFDD83 gearboxes; AFDD82 engine section; AeroSandbox turboshaft
     mass-power regression as an explicit Opti equality;
   * engine: lapse sigma^0.797 and part-power knockdown (XV-15 validated);
+    Tier 16 adds the 95 F temperature lapse (T / T_ISA)^-2.49 (XV-15 fit);
   * hover: figure of merit 0.67 with 7 % download (XV-15 calibrated).
+Tier 16 adds an OGE hover at a hot/high destination (default 4,000 ft / 95 F)
+at the mission's end mass and SOC (`HaloRequirements.hover_hot_day`).
 Assumptions specific to this case are fields of `HaloAssumptions` and are
 listed in plan 013. Illustrative study, not Archer data.
 """
@@ -49,6 +52,7 @@ from aircraft_closure.vehicle.items import FixedEquipment, FuelLoad, LandingGear
 from aircraft_closure.vehicle.powertrain_installation import InstalledInstance, PowertrainInstallation
 from aircraft_closure.vehicle.surfaces import HorizontalTail, VerticalTail, Wing
 from aircraft_closure.weights import afdd
+from examples.xv15_hot_day import temperature_from_fahrenheit_K, temperature_offset_K, xv15_lapse_model
 from examples.xv15_performance import fit_lapse_exponent
 from examples.xv15_reference import Xv15MassFactors, calibration_factors
 
@@ -77,6 +81,13 @@ class HaloRequirements:
     duration_loiter_s: float = 1200.0
     duration_hover_s: float = 60.0
     duration_engine_out_hover_s: float = 60.0
+    # Tier 16: OGE hover at a hot/high destination after the mission, at its end mass and end SOC, for
+    # `duration_hover_hot_s` down to the emergency SOC floor. Default 4,000 ft / 95 F ("4k/95", ISA + 27.7 K).
+    hover_hot_day: bool = True
+    altitude_hover_hot_m: float = 4000 * u.foot
+    temperature_hover_hot_K: float = temperature_from_fahrenheit_K(95.0)
+    thrust_to_weight_hover_hot: float = 1.05
+    duration_hover_hot_s: float = 60.0
 
     def requirement_set(self):
         return RequirementSet(
@@ -131,6 +142,9 @@ class HaloAssumptions:
     # Part-power fuel curve: the user-supplied 1,120 hp GASP deck (plan 014); GeissPartPowerModel() is the
     # XV-15-validated alternative (within 1 % of it above 50 % power).
     part_power_model: Any = field(default_factory=deck_1120hp_part_power_model)
+    # Tier 16: turboshaft lapse in density and temperature (XV-15 95 F fit); identical to sigma^n on a standard
+    # day. False keeps the density-only lapse at any temperature.
+    temperature_lapse: bool = True
 
 
 @dataclass(frozen=True)
@@ -189,7 +203,8 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
     turboshaft = SimpleTurboshaft(power_rated_W=d.power_rated_turboshaft_W,
                                   mass_kg=factors.powerplant * d.mass_turboshaft_bare_kg,
                                   thermal_efficiency=thermal_efficiency_turboshaft(d.mass_turboshaft_bare_kg),
-                                  lapse_exponent=lapse_exponent, part_power_model=a.part_power_model)
+                                  lapse_exponent=lapse_exponent, part_power_model=a.part_power_model,
+                                  lapse_model=xv15_lapse_model(lapse_exponent) if a.temperature_lapse else None)
     topology = build_series_hybrid(motor, generator, battery, turboshaft, gearbox, rotor, count_rotors=a.count_rotors,
                                    count_turbogenerators=a.count_turbogenerators)
 
@@ -271,6 +286,8 @@ class HaloSizingResult:
     min_margin: float
     component_masses_kg: tuple
     powertrain_masses_kg: tuple
+    hovers: tuple = ()                    # HoverSummary per hover point (requirement, mission, hot day)
+    soc_after_hover_hot: Any = None
 
 
 def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None, verbose=False,
@@ -350,6 +367,16 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         label="engine-out hover"), mass_takeoff_kg)
     soc_after_reserve = soc_minimum - (engine_out.battery.power_chemical_W * r.duration_engine_out_hover_s
                                        / design.energy_capacity_battery_J)
+    # Tier 16: hot/high OGE hover at the destination, at the mission's end mass and end SOC.
+    hover_hot = None
+    if r.hover_hot_day:
+        hover_hot = build_flight_point(opti, aircraft, aerodynamics, FlightCondition(
+            mode="hover", altitude_m=r.altitude_hover_hot_m, thrust_to_weight=r.thrust_to_weight_hover_hot,
+            soc=flown.soc_end, temperature_offset_K=temperature_offset_K(r.altitude_hover_hot_m,
+                                                                         r.temperature_hover_hot_K),
+            label="hot-day hover"), flown.mass_end_kg)
+        soc_after_hover_hot = flown.soc_end - (hover_hot.battery.power_chemical_W * r.duration_hover_hot_s
+                                               / design.energy_capacity_battery_J)
 
     # ---- Mass closure ------------------------------------------------------------------
     condition = StructuralDesignCondition(mass_design_kg=mass_takeoff_kg, load_factor_ultimate=a.load_factor_ultimate,
@@ -379,6 +406,10 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     )
     all_margins = (design_margins + flown.margins + engine_out.margins
                    + tuple(m for p in requirement_points for m in p.margins))
+    if hover_hot is not None:
+        # An alternative contingency to the engine-out reserve: from the end SOC down to the emergency floor.
+        all_margins += hover_hot.margins + (
+            margin_above("soc_after_hot_day_hover", soc_after_hover_hot, soc_emergency_floor),)
 
     opti.subject_to([
         mass_takeoff_kg / total.mass == 1,                                           # mass closure
@@ -426,12 +457,57 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         component_masses_kg=tuple((f.name, value(getattr(breakdown, f.name).mass)) for f in fields(MassBreakdown)),
         powertrain_masses_kg=tuple((item.instance_name, value(item.mass_properties.mass))
                                    for item in aircraft.powertrain.get_instance_mass_properties()),
+        hovers=tuple(hover_summary(point, value, instances, a) for point in
+                     [p for p in requirement_points if p.condition.mode == "hover"]
+                     + [s.point for s in flown.segments if isinstance(s.segment, HoverSegment)]
+                     + ([hover_hot] if hover_hot is not None else [])),
+        soc_after_hover_hot=value(soc_after_hover_hot) if hover_hot is not None else None,
     )
+
+
+@dataclass(frozen=True)
+class HoverSummary:
+    """A solved hover point. `battery_share_min` is the battery share needed with the turbines at full power
+    available (the turbine-limited share, generators at the point's efficiency); the solved `hybridization` may
+    be higher wherever the split is free and not binding."""
+    label: str
+    altitude_m: float
+    temperature_offset_K: float
+    mass_kg: float
+    soc: float
+    hybridization: float
+    battery_share_min: float
+    power_rotors_W: float
+    power_available_turboshafts_W: float
+    power_battery_W: float
+    blade_loading: Any = None             # CT / sigma (momentum + profile rotor only)
+
+
+def hover_summary(point, value, instances, assumptions):
+    c = point.condition
+    atmosphere = asb.Atmosphere(altitude=c.altitude_m, temperature_deviation=c.temperature_offset_K)
+    count_generators = c.active_generator_count or assumptions.count_turbogenerators
+    available_W = count_generators * instances["turboshaft"].component.power_available_W(atmosphere)
+    efficiency_generator = point.generator.power_electric_W / point.engine.power_shaft_W
+    rotor = instances["propulsor"].component
+    blade_loading = None
+    if getattr(rotor, "solidity", None) is not None:
+        blade_loading = value(point.thrust_per_rotor_N / (atmosphere.density() * rotor.area_disk_m2 * rotor.solidity
+                                                          * (point.speed_rotor_rad_s * rotor.radius_m())**2))
+    return HoverSummary(
+        label=c.label, altitude_m=value(c.altitude_m), temperature_offset_K=value(c.temperature_offset_K),
+        mass_kg=value(point.weight_N / acceleration_gravity_m_s2), soc=value(c.soc),
+        hybridization=value(point.hybridization_electric),
+        battery_share_min=value(1 - available_W * efficiency_generator / point.power_electric_motors_W),
+        power_rotors_W=value(assumptions.count_rotors * point.power_shaft_rotor_W),
+        power_available_turboshafts_W=value(available_W), power_battery_W=value(point.power_battery_W),
+        blade_loading=blade_loading)
 
 
 
 # Named earlier baselines, so each tier's notebook keeps reproducing its own result.
-requirements_tier10c = HaloRequirements(velocity_max_m_s=250 * u.knot)
+requirements_tier10c = HaloRequirements(velocity_max_m_s=250 * u.knot, hover_hot_day=False)
+requirements_tier12b = HaloRequirements(hover_hot_day=False)
 assumptions_tier12 = HaloAssumptions(power_rated_turboshaft_fixed_W=None, hybridization_electric_min=0.0,
                                      soc_floor_every_segment=False)
 assumptions_tier11a = replace(assumptions_tier12, rotor_speed_physics=False)
@@ -453,3 +529,7 @@ if __name__ == "__main__":
     for s in result.segments:
         print(f"  {s['label']:<15}{s['duration_s']:7.0f} s {s['fuel_kg']:7.1f} kg SOC {s['soc_end']:.3f} "
               f"h_e {s['hybridization']:.2f} {s['power_rotors_W'] / 1e3:7.0f} kW")
+    for h in result.hovers:
+        print(f"  {h.label:<15}{h.altitude_m / u.foot:6.0f} ft ISA{h.temperature_offset_K:+5.1f} K "
+              f"rotors {h.power_rotors_W / 1e3:5.0f} kW, turbines available {h.power_available_turboshafts_W / 1e3:5.0f} kW, "
+              f"battery share >= {h.battery_share_min:+.2f}")

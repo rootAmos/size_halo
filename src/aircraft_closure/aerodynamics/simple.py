@@ -66,14 +66,15 @@ class SimpleAerodynamics:
     # rotor wake); XV-15: 0.07 with flaps deflected (NASA TM X-62407 sec. 5.1).
     download_fraction_hover: Any = 0.0
 
-    def _flow(self, velocity_m_s, altitude_m):
-        atmosphere = asb.Atmosphere(altitude=altitude_m)
+    # `temperature_offset_K` (Tier 16): ambient minus ISA temperature at the pressure altitude; 0 = standard day.
+    def _flow(self, velocity_m_s, altitude_m, temperature_offset_K=0.0):
+        atmosphere = asb.Atmosphere(altitude=altitude_m, temperature_deviation=temperature_offset_K)
         density_kg_m3 = atmosphere.density()
         return (density_kg_m3, atmosphere.dynamic_viscosity(), velocity_m_s / atmosphere.speed_of_sound(),
                 0.5 * density_kg_m3 * velocity_m_s**2)
 
-    def parasite_drag_breakdown(self, aircraft, velocity_m_s, altitude_m):
-        density_kg_m3, viscosity_Pa_s, mach, _ = self._flow(velocity_m_s, altitude_m)
+    def parasite_drag_breakdown(self, aircraft, velocity_m_s, altitude_m, temperature_offset_K=0.0):
+        density_kg_m3, viscosity_Pa_s, mach, _ = self._flow(velocity_m_s, altitude_m, temperature_offset_K)
         wing = aircraft.wing.to_asb()
         area_ref_m2 = wing.area()
 
@@ -97,30 +98,32 @@ class SimpleAerodynamics:
             ParasiteDragItem("miscellaneous", self.drag_area_misc_m2 / area_ref_m2),
         )
 
-    def surface_lift_curve_slope_per_rad(self, aspect_ratio, velocity_m_s, altitude_m):
+    def surface_lift_curve_slope_per_rad(self, aspect_ratio, velocity_m_s, altitude_m, temperature_offset_K=0.0):
         """Finite-surface slope 2 pi CL_over_Cl(AR, M); also used for the tails (Tier 6)."""
-        _, _, mach, _ = self._flow(velocity_m_s, altitude_m)
+        _, _, mach, _ = self._flow(velocity_m_s, altitude_m, temperature_offset_K)
         return 2 * np.pi * CL_over_Cl(aspect_ratio, mach=mach)
 
-    def lift_curve_slope_per_rad(self, aircraft, velocity_m_s, altitude_m):
-        return self.surface_lift_curve_slope_per_rad(aircraft.wing.aspect_ratio, velocity_m_s, altitude_m)
+    def lift_curve_slope_per_rad(self, aircraft, velocity_m_s, altitude_m, temperature_offset_K=0.0):
+        return self.surface_lift_curve_slope_per_rad(aircraft.wing.aspect_ratio, velocity_m_s, altitude_m,
+                                                     temperature_offset_K)
 
     def oswald_efficiency(self, aircraft):
         wing = aircraft.wing
         return oswalds_efficiency(wing.taper_ratio, wing.aspect_ratio,
                                   fuselage_diameter_to_span_ratio=aircraft.fuselage.diameter_m / wing.span_m())
 
-    def alpha_stall_deg(self, aircraft, velocity_m_s, altitude_m):
+    def alpha_stall_deg(self, aircraft, velocity_m_s, altitude_m, temperature_offset_K=0.0):
         """Linear-lift angle at CLmax; a caller-side upper bound on alpha."""
         return self.alpha_zero_lift_deg + np.degrees(
-            self.cl_max / self.lift_curve_slope_per_rad(aircraft, velocity_m_s, altitude_m))
+            self.cl_max / self.lift_curve_slope_per_rad(aircraft, velocity_m_s, altitude_m, temperature_offset_K))
 
-    def evaluate(self, aircraft, velocity_m_s, altitude_m, alpha_deg, drag_increments=()):
-        _, _, mach, dynamic_pressure_Pa = self._flow(velocity_m_s, altitude_m)
-        cl_alpha_per_rad = self.lift_curve_slope_per_rad(aircraft, velocity_m_s, altitude_m)
+    def evaluate(self, aircraft, velocity_m_s, altitude_m, alpha_deg, drag_increments=(), temperature_offset_K=0.0):
+        _, _, mach, dynamic_pressure_Pa = self._flow(velocity_m_s, altitude_m, temperature_offset_K)
+        cl_alpha_per_rad = self.lift_curve_slope_per_rad(aircraft, velocity_m_s, altitude_m, temperature_offset_K)
         cl = cl_alpha_per_rad * np.radians(alpha_deg - self.alpha_zero_lift_deg)
         oswald = self.oswald_efficiency(aircraft)
-        cd0 = sum(item.cd0 for item in self.parasite_drag_breakdown(aircraft, velocity_m_s, altitude_m))
+        cd0 = sum(item.cd0 for item in self.parasite_drag_breakdown(aircraft, velocity_m_s, altitude_m,
+                                                                    temperature_offset_K))
         cdi = cl**2 / (np.pi * oswald * aircraft.wing.aspect_ratio)
         cd = cd0 + cdi + sum(increment.cd for increment in drag_increments)
         area_ref_m2 = aircraft.wing.area_m2

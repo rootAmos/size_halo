@@ -407,3 +407,62 @@ unchanged.
 `HaloDesign.solidity` and `HaloDesign.speed_tip_m_s` become design variables
 (sigma 0.06–0.14, hover tip Mach <= 0.70 at sea level); None keeps the fixed
 assumption values.
+
+## Hot and high (Tier 16)
+
+**Atmosphere.**
+
+- `FlightCondition.temperature_offset_K` (default 0) is the ambient
+  temperature minus ISA at the pressure altitude.
+- `build_flight_point` builds one
+  `asb.Atmosphere(altitude=..., temperature_deviation=...)`. The rotor, the
+  turboshaft limits and the operating margins all use it. Pressure follows
+  the ISA, so a hot day is less dense.
+- These `SimpleAerodynamics` methods take the keyword
+  `temperature_offset_K=0.0`: `evaluate`, `alpha_stall_deg`,
+  `parasite_drag_breakdown`, `lift_curve_slope_per_rad` and
+  `surface_lift_curve_slope_per_rad`.
+- The four capability requirements and the five mission segments end with a
+  `temperature_offset_K = 0.0` field, passed to their flight condition.
+  Positional construction is unchanged.
+
+**Turboshaft lapse submodel.**
+
+| `SimpleTurboshaft.lapse_model` | Power available / rated |
+|---|---|
+| None | sigma^`lapse_exponent` (Tier 10b) |
+| `DensityTemperatureLapse(lapse_exponent, lapse_exponent_temperature)` | sigma^n (T / T_ISA(h))^-m; exactly sigma^n on a standard day |
+
+T_ISA(h) = T - `atmosphere.temperature_deviation`. When `lapse_model` is set,
+`lapse_exponent` on the turboshaft is unused.
+
+**XV-15 hot day (`examples/xv15_hot_day.py`).**
+
+- `Xv15HotDayData`: digitized 95 F power available and hover weights.
+- `temperature_from_fahrenheit_K` and `temperature_offset_K(altitude_m,
+  temperature_K)`. The offset is taken from AeroSandbox's standard
+  atmosphere.
+- `hot_atmosphere`.
+- `fit_temperature_lapse_exponent(n)`, `xv15_lapse_model(n)` and
+  `xv15_engine_hot`.
+- `hover_mass_kg(atmosphere, figure_of_merit, lapse_model)`.
+
+**Halo sizing.**
+
+- `HaloRequirements` fields: `hover_hot_day` (default True),
+  `altitude_hover_hot_m` (4,000 ft), `temperature_hover_hot_K` (95 F),
+  `thrust_to_weight_hover_hot` (1.05) and `duration_hover_hot_s` (60 s).
+- The point is flown at the mission's end mass and end SOC. Margin
+  `soc_after_hot_day_hover` >= the emergency floor.
+- `HaloAssumptions.temperature_lapse` (default True) selects the XV-15
+  density-temperature lapse.
+- `HaloSizingResult.hovers` is a tuple of `HoverSummary`, one per hover point.
+  Each holds:
+  - mass, SOC and offset;
+  - the solved battery share and the turbine-limited `battery_share_min`;
+  - rotor power, turbine power available and battery power;
+  - blade loading.
+
+  It also gives `soc_after_hover_hot`.
+- `requirements_tier12b` is the Tier 12b reference without the hot-day
+  hover.

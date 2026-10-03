@@ -22,7 +22,7 @@
 | 13 | Electric machines sized by torque; machine speed and gear ratio as design variables | Next |
 | 14 | Trajectory optimization (AeroSandbox) on a sized aircraft: minimum-energy transition, time to climb | Planned |
 | 15 | Electrical layer: inverters, cables, protection, DC/DC; bus voltage as a discrete choice | Planned |
-| 16 | Hot and high: ISA + delta-T atmosphere, temperature lapse, hover at destination after the mission | Planned |
+| 16 | Hot and high: ISA + delta-T atmosphere, temperature lapse, hover at destination after the mission | Implemented |
 | 17 | Battery equivalent circuit with sag and ageing: OCV(SOC), R(SOC, C-rate, T), end-of-life, cycle cost | Planned |
 | 18 | Redundancy: lanes per rotor, cross-strapped buses, battery strings, multipoint failure cases | Planned |
 | 19 | Thermal: losses to heat-exchanger mass and cooling drag; short-time ratings from thermal mass | Planned |

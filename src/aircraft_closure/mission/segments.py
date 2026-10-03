@@ -20,13 +20,15 @@ class HoverSegment:
     altitude_m: Any = 0.0
     hybridization_electric: Any = None
     label: str = "hover"
+    temperature_offset_K: Any = 0.0            # Tier 16: ISA + offset at the altitude
 
     def duration_s(self):
         return self.duration_s_given
 
     def flight_condition(self, soc):
         return FlightCondition(mode="hover", velocity_m_s=0.0, altitude_m=self.altitude_m, thrust_to_weight=1.0,
-                               soc=soc, hybridization_electric=self.hybridization_electric, label=self.label)
+                               soc=soc, hybridization_electric=self.hybridization_electric, label=self.label,
+                               temperature_offset_K=self.temperature_offset_K)
 
 
 @dataclass(frozen=True)
@@ -37,6 +39,7 @@ class ClimbSegment:
     velocity_m_s: Any = 50.0
     hybridization_electric: Any = None
     label: str = "climb"
+    temperature_offset_K: Any = 0.0            # Tier 16: ISA + offset at the altitude
 
     def duration_s(self):
         return (self.altitude_end_m - self.altitude_start_m) / self.climb_rate_m_s
@@ -44,7 +47,8 @@ class ClimbSegment:
     def flight_condition(self, soc):
         return FlightCondition(velocity_m_s=self.velocity_m_s, altitude_m=(self.altitude_start_m + self.altitude_end_m) / 2,
                                climb_rate_m_s=self.climb_rate_m_s, soc=soc,
-                               hybridization_electric=self.hybridization_electric, label=self.label)
+                               hybridization_electric=self.hybridization_electric, label=self.label,
+                               temperature_offset_K=self.temperature_offset_K)
 
 
 @dataclass(frozen=True)
@@ -54,13 +58,15 @@ class CruiseSegment:
     velocity_m_s: Any = 60.0
     hybridization_electric: Any = None
     label: str = "cruise"
+    temperature_offset_K: Any = 0.0            # Tier 16: ISA + offset at the altitude
 
     def duration_s(self):
         return self.distance_m / self.velocity_m_s
 
     def flight_condition(self, soc):
         return FlightCondition(velocity_m_s=self.velocity_m_s, altitude_m=self.altitude_m, soc=soc,
-                               hybridization_electric=self.hybridization_electric, label=self.label)
+                               hybridization_electric=self.hybridization_electric, label=self.label,
+                               temperature_offset_K=self.temperature_offset_K)
 
 
 @dataclass(frozen=True)
@@ -70,13 +76,15 @@ class LoiterSegment:
     velocity_m_s: Any = 45.0
     hybridization_electric: Any = None
     label: str = "loiter"
+    temperature_offset_K: Any = 0.0            # Tier 16: ISA + offset at the altitude
 
     def duration_s(self):
         return self.duration_s_given
 
     def flight_condition(self, soc):
         return FlightCondition(velocity_m_s=self.velocity_m_s, altitude_m=self.altitude_m, soc=soc,
-                               hybridization_electric=self.hybridization_electric, label=self.label)
+                               hybridization_electric=self.hybridization_electric, label=self.label,
+                               temperature_offset_K=self.temperature_offset_K)
 
 
 @dataclass(frozen=True)
@@ -87,6 +95,7 @@ class DescentSegment:
     velocity_m_s: Any = 50.0
     hybridization_electric: Any = None
     label: str = "descent"
+    temperature_offset_K: Any = 0.0            # Tier 16: ISA + offset at the altitude
 
     def duration_s(self):
         return (self.altitude_start_m - self.altitude_end_m) / self.descent_rate_m_s
@@ -94,7 +103,8 @@ class DescentSegment:
     def flight_condition(self, soc):
         return FlightCondition(velocity_m_s=self.velocity_m_s, altitude_m=(self.altitude_start_m + self.altitude_end_m) / 2,
                                climb_rate_m_s=-self.descent_rate_m_s, soc=soc,
-                               hybridization_electric=self.hybridization_electric, label=self.label)
+                               hybridization_electric=self.hybridization_electric, label=self.label,
+                               temperature_offset_K=self.temperature_offset_K)
 
 
 def ground_distance_m(segment):
