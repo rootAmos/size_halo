@@ -14,9 +14,12 @@ from aircraft_closure.core.margins import margin_above, margin_below
 from aircraft_closure.core.ports import Direction
 from .components.battery import Battery
 from .components.battery_ecm import EquivalentCircuitBattery
+from .components.cable import Cable
+from .components.converters import DcDcConverter, Inverter
 from .components.gearbox import Gearbox
 from .components.generator import Generator
 from .components.motor import Motor
+from .components.protection import ProtectionUnit
 from .components.propulsor import ActuatorDiskPropulsor
 from .components.rotor import MomentumProfileRotor
 from .components.turboshaft import SimpleTurboshaft
@@ -81,6 +84,18 @@ def port_envelope(component, port_name):
             return MechanicalEnvelope(max_power_W=component.power_rated_W * component.efficiency)
     elif isinstance(component, (ActuatorDiskPropulsor, MomentumProfileRotor)) and port_name == "shaft":
         return MechanicalEnvelope(max_power_W=component.max_shaft_power_W)
+    elif isinstance(component, Inverter) and port_name in ("dc", "ac"):
+        limits = component.get_limits()
+        return ElectricalEnvelope(limits.min_voltage_V, limits.max_voltage_V, limits.power_rated_W)
+    elif isinstance(component, (Cable, ProtectionUnit)) and port_name in ("input", "output"):
+        return ElectricalEnvelope(0.0, component.max_voltage_V, component.max_current_A * component.max_voltage_V)
+    elif isinstance(component, DcDcConverter):
+        limits = component.get_limits()
+        if port_name == "input":
+            return ElectricalEnvelope(limits.min_voltage_input_V, limits.max_voltage_input_V, limits.power_rated_W)
+        if port_name == "output":
+            return ElectricalEnvelope(limits.voltage_output_V, limits.voltage_output_V, limits.power_rated_W,
+                                      sets_voltage=True)
     raise KeyError(f"No envelope for port '{port_name}' of {type(component).__name__}.")
 
 
@@ -138,6 +153,38 @@ def operating_margins(topology, port_values, atmosphere=None):
             shaft = value("shaft")
             margins.append(margin_below(f"{name} power_shaft_W", shaft.speed_rad_s * shaft.torque_Nm,
                                         component.max_shaft_power_W))
+        elif isinstance(component, Inverter):
+            # Tier 15: AC power against the rating (either direction: port currents are positive in the
+            # instance's working direction) and the DC link inside the derated blocking voltage.
+            ac, dc = value("ac"), value("dc")
+            limits = component.get_limits()
+            margins += [
+                margin_below(f"{name} power_ac_W", ac.voltage_V * ac.current_A, limits.power_rated_W),
+                margin_above(f"{name} min_voltage_V", dc.voltage_V, limits.min_voltage_V),
+                margin_below(f"{name} max_voltage_V", dc.voltage_V, limits.max_voltage_V),
+            ]
+        elif isinstance(component, (Cable, ProtectionUnit)):
+            # Thermal current rating for either current sign (squared, so smooth through zero).
+            electrical = value("input")
+            margins.append(margin_below(f"{name} current_A (squared)", electrical.current_A**2,
+                                        component.max_current_A**2))
+            if isinstance(component, Cable):
+                # Partial discharge at the point's pressure: PDIV >= factor_safety x operating voltage.
+                ratio = None
+                if atmosphere is not None:
+                    ratio = atmosphere.pressure() / 101325.0
+                margins.append(margin_below(f"{name} partial_discharge_V",
+                                            component.partial_discharge.factor_safety * electrical.voltage_V,
+                                            component.voltage_inception_V(ratio)))
+        elif isinstance(component, DcDcConverter):
+            electrical = value("input")
+            limits = component.get_limits()
+            margins += [
+                margin_below(f"{name} power_input_W (squared)", (electrical.voltage_V * electrical.current_A)**2,
+                             limits.power_rated_W**2),
+                margin_above(f"{name} min_voltage_input_V", electrical.voltage_V, limits.min_voltage_input_V),
+                margin_below(f"{name} max_voltage_input_V", electrical.voltage_V, limits.max_voltage_input_V),
+            ]
         else:
             raise TypeError(f"No operating margins for {type(component).__name__}.")
     return tuple(margins)
@@ -153,6 +200,11 @@ def design_margins(topology):
             continue
         upstream = _envelope(topology, connection.source)
         downstream = _envelope(topology, connection.target)
+        if isinstance(upstream, ElectricalEnvelope):
+            # Tier 15 direct electrical connections (feeders): downstream tolerates the upstream power.
+            margins.append(margin_below(f"{connection.source}->{connection.target} max_power_W",
+                                        upstream.max_power_W, downstream.max_power_W))
+            continue
         for field in fields(MechanicalEnvelope):
             upstream_max = getattr(upstream, field.name)
             downstream_max = getattr(downstream, field.name)
