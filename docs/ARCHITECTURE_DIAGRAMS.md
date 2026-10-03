@@ -117,7 +117,7 @@ flowchart LR
         end
         subgraph WTS["Weights"]
             direction LR
-            w0["Raymer GA and<br/>AFDD rotorcraft<br/>Tiers 4 and 10a"] -.-> w1["Tiltrotor wing,<br/>whirl flutter<br/>Tier 20"]:::planned
+            w0["Raymer GA and<br/>AFDD rotorcraft<br/>Tiers 4 and 10a"] -.-> w1["Tiltrotor wing,<br/>whirl flutter<br/>Tier 20"]
         end
         subgraph NEW["New disciplines, same pattern"]
             direction LR

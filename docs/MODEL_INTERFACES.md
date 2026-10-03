@@ -121,7 +121,7 @@ times a dimensionless `mass_factor` (default 1).
 
 | Component | Geometry inputs | Mass source | CG |
 |---|---|---|---|
-| Wing, HorizontalTail | area_m2, aspect_ratio, taper_ratio, x_le_root_m, z_m, airfoil | raymer mass_wing / mass_hstab | 40 % MAC |
+| Wing, HorizontalTail | area_m2, aspect_ratio, taper_ratio, x_le_root_m, z_m, airfoil | raymer mass_wing / mass_hstab (Wing: or `mass_model`, Tier 20) | 40 % MAC |
 | VerticalTail | area_m2, aspect_ratio (h^2/S), taper_ratio, x_le_root_m, z_root_m | raymer mass_vstab | 40 % MAC, 40 % height |
 | Fuselage | length_m, diameter_m, nose/tail fractions, x_nose_m | raymer mass_fuselage (needs wing-to-tail arm) | 45 % length |
 | LandingGear | gear lengths, x_main_m, x_nose_m | raymer main + nose, fixed | mass-weighted |
@@ -280,6 +280,57 @@ interconnect is airframe mass, not a port connection.
 - `solve_xv15_closure`;
 - `mass_turboshaft_from_power_kg`, which inverts AeroSandbox's
   `power_turboshaft` with one explicit Opti equality.
+
+## Tiltrotor wing weights (Tier 20)
+
+**`weights/afdd.py`:**
+
+- `section_form_factors_tiltrotor_wing(thickness_to_chord,
+  fraction_chord_torque_box)` returns (F_B, F_C, F_T, F_VH).
+- `wing_tiltrotor_afdd_masses(...)` is NDARC sec. 19-1.1 in consistent SI. It
+  returns `TiltrotorWingMasses`:
+  - masses: torque box, stiffness spar caps, jump spar caps, fairings,
+    control surfaces, fittings and fold;
+  - realized stiffness and mode frequencies (rad/s) and the jump moment;
+  - `mass_primary_kg()` and `total()`.
+- Optional `smoothing` rounds the two max(0, .) steps. Nothing iterates.
+
+**`vehicle/surfaces.py`:**
+
+- `Wing.mass_model` selects the wing mass submodel; the default None is
+  Raymer. `Wing.mass_factor` multiplies either model.
+- `Wing.chord_mean_m()`.
+- `TiltrotorWingMassModel(mass_tip_kg, radius_gyration_pylon_m,
+  speed_rotor_design_rad_s, width_fuselage_m, ...)`:
+  - methods `masses(wing, condition)`, `mass_kg(wing, condition)` and
+    `frequency_per_rev(masses, speed_rotor_rad_s)` (for whirl-flutter
+    margins);
+  - frequencies are per rev of `speed_rotor_design_rad_s`;
+  - defaults are XV-15-calibrated (plan 024).
+- `WingMaterial`, `aluminium_wing_material()` and
+  `graphite_epoxy_wing_material()`.
+
+**`examples/xv15_reference.py`:**
+
+- `Xv15MassFactors.wing_tiltrotor` (default 1);
+- `xv15_wing_mass_model()`;
+- `wing_weight_model="raymer" | "afdd_tiltrotor"` on `build_xv15_aircraft`,
+  `compare_groups` and `solve_xv15_closure`;
+- `calibration_factors()` also returns `wing_tiltrotor`.
+
+**`examples/tiltrotor_wing_calibration.py`:** the XV-15 section calibration,
+plus the V-22 and Bell D266 cross-checks, using `data/weights/`.
+
+**`examples/halo_sizing.py`:**
+
+- `HaloAssumptions.wing_weight_model` (default "raymer") and the wing
+  frequency, material, pylon, tip and jump fields;
+- `HaloDesign.speed_rotor_wing_design_rad_s` (an Opti variable with the
+  AFDD wing);
+- whirl-flutter margins at airplane-mode points;
+- `HaloSizingResult.wing_masses_kg` and `whirl_flutter`;
+- itemised equipment: `EquipmentItem` and `halo_equipment_items`;
+- the named set `assumptions_tier20`.
 
 ## Engine lapse, part power and hover download (Tier 10b)
 

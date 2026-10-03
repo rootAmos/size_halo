@@ -12,6 +12,8 @@ Sources (accessed 2026-10-02):
   https://ntrs.nasa.gov/citations/19750016648
   NASA SP-4517 (2000), appendix A, XV-15 characteristics (length, cruise).
   W. Johnson, NDARC Theory, NASA/TP-2009-215402, ch. 19 (AFDD equations).
+  Tier 20 (plan 024) wing modes, tip masses and wing breakdown: Acree, Peyran and
+  Johnson, NASA/TP-2004-212262 (appendices C, D) and AHS 1999 (table 5).
 Values marked "assumed" are not published; plan 011 lists the reasoning.
 """
 from dataclasses import dataclass, fields, replace
@@ -31,7 +33,7 @@ from aircraft_closure.vehicle.fuselage import Fuselage
 from aircraft_closure.vehicle.items import (FixedEquipment, FuelLoad, InterconnectShaft, LandingGear, Nacelles,
                                             Payload, Systems)
 from aircraft_closure.vehicle.powertrain_installation import InstalledInstance, PowertrainInstallation
-from aircraft_closure.vehicle.surfaces import HorizontalTail, VerticalTail, Wing
+from aircraft_closure.vehicle.surfaces import HorizontalTail, TiltrotorWingMassModel, VerticalTail, Wing
 from aircraft_closure.weights import afdd
 
 
@@ -98,6 +100,17 @@ class Xv15Reference:
     length_interconnect_m: float = 32.17 * u.foot        # rotor centreline spacing
     area_wetted_nacelles_m2: float = 2 * 95 * u.foot**2  # assumed: ~9 ft x 3.3 ft cylinders
     mass_fixed_equipment_kg: float = 1023 * u.lbm
+    # ---- Tier 20 tiltrotor wing (plan 024) ----
+    # Stick model of NASA/TP-2004-212262: nacelles 3,166 lb and rotors 1,118 lb (both sides); the rotor point mass
+    # sits 47.3 in ahead of the wing elastic axis and the nacelle is a uniform 91.9 in beam centred 1.35 in aft.
+    mass_tip_wing_kg: float = (3166 + 1118) / 2 * u.lbm
+    radius_gyration_pylon_m: float = 2.770 * u.foot      # from that pitch inertia, 0.222 x rotor radius
+    width_attachment_wing_m: float = 56 * u.inch          # wing mounts at butt lines +/-28 in
+    speed_rotor_airplane_rad_s: float = 458 * u.rpm       # airplane-mode rotor speed of the published modes
+    # Symmetric wing modes of the 0.23 t/c stick model (fig. C3): torsion 8.3 Hz, beam 3.3 Hz, chord 6.3 Hz.
+    frequency_torsion_wing_per_rev: float = 8.3 * 2 * np.pi / (458 * u.rpm)
+    frequency_beam_wing_per_rev: float = 3.3 * 2 * np.pi / (458 * u.rpm)
+    frequency_chord_wing_per_rev: float = 6.3 * 2 * np.pi / (458 * u.rpm)
 
 
 @dataclass(frozen=True)
@@ -111,6 +124,19 @@ class Xv15MassFactors:
     flight_controls: float = 1.0
     powerplant: float = 1.0
     transmission: float = 1.0
+    # Tier 20: the AFDD tiltrotor wing has its own factor (the Raymer one above is unchanged).
+    wing_tiltrotor: float = 1.0
+
+
+def xv15_wing_mass_model(reference=Xv15Reference()):
+    """AFDD tiltrotor wing for the XV-15: published modes, tip masses and aluminium (plan 024)."""
+    r = reference
+    return TiltrotorWingMassModel(
+        mass_tip_kg=r.mass_tip_wing_kg, radius_gyration_pylon_m=r.radius_gyration_pylon_m,
+        speed_rotor_design_rad_s=r.speed_rotor_airplane_rad_s, width_fuselage_m=r.diameter_fuselage_m,
+        width_attachment_m=r.width_attachment_wing_m, frequency_torsion_per_rev=r.frequency_torsion_wing_per_rev,
+        frequency_beam_per_rev=r.frequency_beam_wing_per_rev, frequency_chord_per_rev=r.frequency_chord_wing_per_rev,
+        count_rotors=r.count_rotors)
 
 
 def mass_turboshaft_from_power_kg(power_W):
@@ -121,8 +147,13 @@ def mass_turboshaft_from_power_kg(power_W):
     return float(opti.solve(verbose=False).value(mass_kg))
 
 
-def build_xv15_aircraft(reference=Xv15Reference(), factors=Xv15MassFactors(), mass_engine_kg=None):
-    """XV-15 geometry from framework components; CG stations are approximate (not validated here)."""
+def build_xv15_aircraft(reference=Xv15Reference(), factors=Xv15MassFactors(), mass_engine_kg=None,
+                        wing_weight_model="raymer"):
+    """XV-15 geometry from framework components; CG stations are approximate (not validated here).
+
+    `wing_weight_model`: "raymer" (Raymer GA x `factors.wing`) or "afdd_tiltrotor" (Tier 20 AFDD tiltrotor wing x
+    `factors.wing_tiltrotor`).
+    """
     r = reference
     mass_engine_kg = mass_engine_kg if mass_engine_kg is not None else mass_turboshaft_from_power_kg(
         r.power_takeoff_engine_W)
@@ -143,8 +174,14 @@ def build_xv15_aircraft(reference=Xv15Reference(), factors=Xv15MassFactors(), ma
                                   max_shaft_power_W=r.power_takeoff_engine_W)
     topology = build_mechanical_tiltrotor(turboshaft, gearbox, rotor, r.count_rotors)
 
+    if wing_weight_model == "raymer":
+        wing_mass = dict(mass_factor=factors.wing)
+    elif wing_weight_model == "afdd_tiltrotor":
+        wing_mass = dict(mass_factor=factors.wing_tiltrotor, mass_model=xv15_wing_mass_model(r))
+    else:
+        raise ValueError(f"Unknown wing weight model '{wing_weight_model}'.")
     wing = Wing(area_m2=r.area_wing_m2, aspect_ratio=r.aspect_ratio_wing, taper_ratio=1.0, x_le_root_m=5.6,
-                z_m=1.2, airfoil=asb.Airfoil("naca2423"), mass_factor=factors.wing)
+                z_m=1.2, airfoil=asb.Airfoil("naca2423"), **wing_mass)
     x_quarter_chord_wing_m = wing.x_le_root_m + 0.25 * wing.chord_root_m()
     horizontal_tail = HorizontalTail(area_m2=r.area_horizontal_tail_m2, aspect_ratio=r.aspect_ratio_horizontal_tail,
                                      taper_ratio=1.0, x_le_root_m=0.0, z_m=0.8, airfoil=asb.Airfoil("naca0015"),
@@ -205,18 +242,28 @@ def group_masses(aircraft, condition):
     )
 
 
-def compare_groups(reference=Xv15Reference(), factors=Xv15MassFactors(), mass_engine_kg=None):
+def compare_groups(reference=Xv15Reference(), factors=Xv15MassFactors(), mass_engine_kg=None,
+                   wing_weight_model="raymer"):
     """Predicted group masses at the published design gross weight."""
-    aircraft = build_xv15_aircraft(reference, factors, mass_engine_kg)
+    aircraft = build_xv15_aircraft(reference, factors, mass_engine_kg, wing_weight_model)
     predicted = group_masses(aircraft, design_condition(reference.mass_design_kg, reference))
     return Xv15GroupMasses(**{f.name: float(getattr(predicted, f.name)) for f in fields(Xv15GroupMasses)})
 
 
 def calibration_factors(reference=Xv15Reference(), mass_engine_kg=None):
-    """actual / predicted per group, so the calibrated model reproduces the statement at design weight."""
+    """actual / predicted per group, so the calibrated model reproduces the statement at design weight.
+
+    `wing_tiltrotor` is the same ratio for the AFDD tiltrotor wing (Tier 20); the other factors do not depend on
+    the wing model.
+    """
+    mass_engine_kg = mass_engine_kg if mass_engine_kg is not None else mass_turboshaft_from_power_kg(
+        reference.power_takeoff_engine_W)
     predicted = compare_groups(reference, Xv15MassFactors(), mass_engine_kg)
+    wing = build_xv15_aircraft(reference, Xv15MassFactors(), mass_engine_kg, "afdd_tiltrotor").wing
+    mass_wing_tiltrotor_kg = float(wing.get_mass_properties(design_condition(reference.mass_design_kg, reference)).mass)
     return Xv15MassFactors(**{f.name: getattr(published_groups, f.name) / getattr(predicted, f.name)
-                              for f in fields(Xv15MassFactors)})
+                              for f in fields(Xv15MassFactors) if f.name != "wing_tiltrotor"},
+                           wing_tiltrotor=published_groups.wing / mass_wing_tiltrotor_kg)
 
 
 @dataclass(frozen=True)
@@ -227,13 +274,14 @@ class Xv15ClosureResult:
     groups: Xv15GroupMasses
 
 
-def solve_xv15_closure(reference=Xv15Reference(), factors=Xv15MassFactors(), mass_engine_kg=None):
+def solve_xv15_closure(reference=Xv15Reference(), factors=Xv15MassFactors(), mass_engine_kg=None,
+                       wing_weight_model="raymer"):
     """Take-off mass that closes the XV-15 useful load on the framework's mass models.
 
     Geometry, engines and rotors stay at their published sizes (an analysis,
     not a sizing): only the take-off mass feeding the correlations is solved.
     """
-    aircraft = build_xv15_aircraft(reference, factors, mass_engine_kg)
+    aircraft = build_xv15_aircraft(reference, factors, mass_engine_kg, wing_weight_model)
     opti = asb.Opti()
     mass_takeoff_kg = opti.variable(init_guess=reference.mass_design_kg, scale=1000, lower_bound=1000)
     condition = design_condition(mass_takeoff_kg, reference)

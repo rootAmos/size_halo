@@ -1,0 +1,56 @@
+aircraft,item,value,unit,source,note
+xv15,wing_group,873,lb,TMX62407,Nov 1974 group weight statement sec. 3.1.2 (the Tier 10a calibration target)
+xv15,wing_total_breakdown,946,lb,ACREE99,Table 5 wing structural comparison (Chappell-Peyran methodology level)
+xv15,wing_torque_box,567,lb,ACREE99,Table 5
+xv15,wing_spars,52,lb,ACREE99,Table 5
+xv15,wing_control_surfaces,97,lb,ACREE99,Table 5
+xv15,wing_fairings,108,lb,ACREE99,Table 5
+xv15,wing_fittings_other,122,lb,ACREE99,Table 5
+xv15,stiffness_beam,3.70e9,lb-in2,ACREE99,Table 5 (also TP-2004-212262 table 1)
+xv15,stiffness_chord,1.12e10,lb-in2,ACREE99,Table 5
+xv15,stiffness_torsion,2.80e9,lb-in2,ACREE99,Table 5
+xv15,modulus_torque_box,10.0e6,psi,ACREE99,Table 5 aluminium
+xv15,modulus_spar,10.0e6,psi,ACREE99,Table 5 aluminium
+xv15,modulus_shear_torque_box,3.8e6,psi,ACREE99,Table 5 aluminium
+xv15,density,0.1,lb/in3,ACREE99,Table 5 aluminium
+xv15,strain_limit,0.0068,in/in,ACREE99,Table 5 (used as the NDARC strain allowable)
+xv15,thickness_to_chord,0.23,-,TMX62407,NACA 64A223
+xv15,span_torque_box,32.17,ft,TMX62407,rotor centreline spacing
+xv15,area_wing,169.0,ft2,TMX62407,
+xv15,area_flaps,11.0,ft2,TMX62407,sec. 3.4 both panels
+xv15,area_flaperons,20.2,ft2,TMX62407,sec. 3.4 both panels
+xv15,width_attachment,56,in,TP2004212262,wing mounts at butt lines +/-28 in (appendix C)
+xv15,mass_nacelles_both,3166,lb,TP2004212262,table C1 stick model (rigid nacelle beam 91.9 in long)
+xv15,mass_rotors_both,1118,lb,TP2004212262,table C1 (point masses 47.3 in ahead of the wing elastic axis; appendix D)
+xv15,frequency_symmetric_beam,3.3,Hz,TP2004212262,fig. C3 stick model (0.23 t/c)
+xv15,frequency_symmetric_chord,6.3,Hz,TP2004212262,fig. C3
+xv15,frequency_symmetric_torsion,8.3,Hz,TP2004212262,fig. C3
+xv15,frequency_antisymmetric_torsion,7.1,Hz,TP2004212262,fig. C3
+xv15,speed_rotor_airplane,458,rpm,TP2004212262,airplane-mode trim rotor speed
+v22,wing_overall,2470,lb,POPELKA95,FSD 23% t/c composite wing: 2500 lb tailored wing is +29 lb (1.2%); scope (fold/rotate items) not stated
+v22,mass_design,47500,lb,HARRIS2015,FSD V-22 design gross weight (vol. III p. 312)
+v22,mass_empty,32340,lb,HARRIS2015,FSD V-22 weight empty including wing/blade fold
+v22,thickness_to_chord,0.23,-,POPELKA95,baseline 23% t/c wing
+v22,span_wing,45.8,ft,CHUNG2011,CTR30 table 2-6 (V-22 wing retained)
+v22,area_wing,382.0,ft2,CHUNG2011,CTR30 table 2-6 (V-22 wing retained)
+v22,radius_rotor,19.0,ft,CHUNG2011,CTR30 table 2-6
+v22,speed_rotor_airplane,333,rpm,ACREE02,84% rpm airplane mode; airframe modes 2.9-8.6 Hz
+v22,speed_tip_hover,788,ft/s,ACREE02,derived: 100% rpm = 333 rpm / 0.84 = 396 rpm on a 19 ft radius
+d266,wing_group,1886,lb,HARRIS2015,Bell D266 CRA MIL-STD-451 statement (table 2-21); 1968 preliminary design not built
+d266,rotor_group,2439,lb,HARRIS2015,table 2-21
+d266,tail_group,444,lb,HARRIS2015,table 2-21
+d266,body_group,2048,lb,HARRIS2015,table 2-21
+d266,alighting_gear_group,776,lb,HARRIS2015,table 2-21
+d266,flight_controls_group,865,lb,HARRIS2015,table 2-21
+d266,nacelle_group,353,lb,HARRIS2015,table 2-21 (engines fixed inboard; rotors tilt)
+d266,propulsion_group,4633,lb,HARRIS2015,table 2-21 (engines + drive + fuel system)
+d266,mass_empty,15994,lb,HARRIS2015,table 2-19
+d266,mass_design,23000,lb,HARRIS2015,table 2-19
+d266,area_wing,330.5,ft2,HARRIS2015,table 2-20
+d266,span_wing,46.8,ft,HARRIS2015,table 2-20
+d266,radius_rotor,19.25,ft,HARRIS2015,38.5 ft diameter 3 blades
+d266,speed_rotor_hover,372,rpm,HARRIS2015,
+d266,speed_rotor_airplane_max,297,rpm,HARRIS2015,airplane mode 198-297 rpm
+d266,power_engine,3435,hp,HARRIS2015,T64-GE-12 uninstalled military rating x2
+v22,power_engine,6150,shp,WIKIT406,Rolls-Royce AE 1107C (T406) take-off rating x2
+v22,solidity,0.105,-,TM2016219070,JVX/V-22-class proprotor (Tier 12 data)
