@@ -14,10 +14,12 @@ buildup = replace(HaloAssumptions(), aerodynamics_model="buildup")
 
 
 class HaloAerodynamicsSwitchTests(unittest.TestCase):
-    def test_default_stays_simple(self):
-        self.assertEqual(HaloAssumptions().aerodynamics_model, "simple")
+    def test_default_is_buildup(self):
+        """Plan 027 (user, 2026-10-04)."""
+        self.assertEqual(HaloAssumptions().aerodynamics_model, "buildup")
         r = HaloRequirements()
-        self.assertIsInstance(build_halo_aerodynamics(r, HaloAssumptions()), SimpleAerodynamics)
+        self.assertIsInstance(build_halo_aerodynamics(r, replace(buildup, aerodynamics_model="simple")),
+                              SimpleAerodynamics)
         self.assertIsInstance(build_halo_aerodynamics(r, buildup), BuildupAerodynamics)
         self.assertIsNotNone(build_halo_aerodynamics(r, buildup).blown_wing)
         self.assertIsNone(build_halo_aerodynamics(r, replace(buildup, blown_wing=False)).blown_wing)
@@ -30,7 +32,7 @@ class HaloAerodynamicsSwitchTests(unittest.TestCase):
 class HaloBuildupSizingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.sized = solve_halo_sizing(assumptions=buildup)
+        cls.sized = solve_halo_sizing()                     # plan 027: the defaults are the buildup reference
         cls.scholz = solve_halo_sizing(assumptions=replace(buildup, aerodynamics_model="scholz"))
 
     def test_closes_with_all_margins(self):

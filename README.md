@@ -12,10 +12,11 @@ segment. Tiers 10a and 10b check the mass models and the engine and hover models
 the Bell XV-15. Tier 10c uses them to size a Halo-class two-rotor series
 hybrid: 18,740 lb take-off for 900 kg payload, 445 nm, 250 kt and a 13,000 ft
 ceiling (18,506 lb with the user-supplied turboshaft deck's part-power fuel curve,
-Tier 11a). The current reference (plan 026) fixes the engines at 2 x 1,120 hp
+Tier 11a). The current reference (plan 027) fixes the engines at 2 x 1,120 hp
 and flies 210 kt with 900 kg of payload. It uses a Samsung 50G-shaped
-equivalent-circuit battery and the NDARC tiltrotor wing with whirl-flutter
-margins, and weighs 14,247 lb at take-off.
+equivalent-circuit battery, the NDARC tiltrotor wing with whirl-flutter
+margins, and AeroSandbox AeroBuildup aerodynamics with Scholz
+miscellaneous items. It weighs 13,639 lb at take-off.
 
 All numbers are illustrative engineering inputs, not Archer or Halo data
 (see [reference assumptions](docs/HALO_REFERENCE.md)).

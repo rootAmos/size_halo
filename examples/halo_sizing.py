@@ -234,10 +234,10 @@ class HaloAssumptions:
     load_factor_jump: float = 2.0
     smoothing_wing_tiltrotor: float = 0.01               # rounds the AFDD max(0, .) steps for IPOPT
     # ---- Tier 21 aerodynamics (plan 025) ----
-    # "simple": SimpleAerodynamics with `drag_area_misc_m2` and the constant download (the reference);
+    # "simple": SimpleAerodynamics with `drag_area_misc_m2` and the constant download (the reference until plan 027);
     # "buildup": AeroSandbox AeroBuildup plus Scholz interference, the misc. drag area below, blown wing and the
     # geometric hover download; "scholz": the Scholz level-0 hand check (linear lift, no blown wing).
-    aerodynamics_model: str = "simple"
+    aerodynamics_model: str = "buildup"   # plan 027 (user, 2026-10-04); "simple" until then
     length_nacelle_m: float = 9.0 * u.foot        # assumed; with the diameter, ~95 ft2 wetted (cowling mass)
     diameter_nacelle_m: float = 3.3 * u.foot
     drag_area_misc_buildup_m2: float = 3.00 * u.foot**2  # XV-15 "fuselage fittings & fixtures" (NDARC, Johnson 2010)
@@ -807,22 +807,25 @@ requirements_tier10c = HaloRequirements(mass_payload_kg=900.0, velocity_max_m_s=
 requirements_tier12b = HaloRequirements(mass_payload_kg=900.0, hover_hot_day=False)
 # Tiers 13-16 reference (plans 018-020): 900 kg with the constant-OCV battery (13,760 lb).
 requirements_tier16 = HaloRequirements(mass_payload_kg=900.0)
-assumptions_tier16 = HaloAssumptions(battery_model="constant", wing_weight_model="raymer")
+assumptions_tier16 = HaloAssumptions(battery_model="constant", wing_weight_model="raymer", aerodynamics_model="simple")
 # Plan 022 reference: 780 kg with the equivalent-circuit battery and the Raymer wing (14,436 lb).
 requirements_plan022 = HaloRequirements(mass_payload_kg=780.0)
-assumptions_plan022 = HaloAssumptions(wing_weight_model="raymer")
-assumptions_tier12 = HaloAssumptions(battery_model="constant", wing_weight_model="raymer",
+assumptions_plan022 = HaloAssumptions(wing_weight_model="raymer", aerodynamics_model="simple")
+# Plan 026 reference: 900 kg, AFDD wing, SimpleAerodynamics (14,247 lb).
+requirements_plan026 = HaloRequirements(mass_payload_kg=900.0)
+assumptions_plan026 = HaloAssumptions(aerodynamics_model="simple")
+assumptions_tier12 = HaloAssumptions(battery_model="constant", wing_weight_model="raymer", aerodynamics_model="simple",
                                      power_rated_turboshaft_fixed_W=None,
                                      hybridization_electric_min=0.0, soc_floor_every_segment=False,
                                      machine_mass_by_torque=False)
 # Tier 12b reference (plan 017): fixed engines with the constant-OCV battery and Tier 12b machines.
-assumptions_tier12b = HaloAssumptions(battery_model="constant", wing_weight_model="raymer",
+assumptions_tier12b = HaloAssumptions(battery_model="constant", wing_weight_model="raymer", aerodynamics_model="simple",
                                       machine_mass_by_torque=False)
 # Tier 17 (plan 021): the equivalent-circuit 50G-shaped pack at end of life, on the Raymer-wing aircraft.
-assumptions_tier17 = HaloAssumptions(battery_model="ecm", wing_weight_model="raymer")
+assumptions_tier17 = HaloAssumptions(battery_model="ecm", wing_weight_model="raymer", aerodynamics_model="simple")
 assumptions_tier11a = replace(assumptions_tier12, rotor_speed_physics=False)
 # Tier 20 (plan 024): the AFDD tiltrotor wing (the default from plan 026).
-assumptions_tier20 = HaloAssumptions(wing_weight_model="afdd_tiltrotor")
+assumptions_tier20 = HaloAssumptions(wing_weight_model="afdd_tiltrotor", aerodynamics_model="simple")
 
 if __name__ == "__main__":
     result = solve_halo_sizing(verbose=False)
