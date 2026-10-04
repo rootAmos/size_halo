@@ -94,6 +94,9 @@ class ScholzAerodynamics(SimpleAerodynamics):
     `drag_area_misc_m2`: C_D,misc + C_D,L+P as a drag area (fittings, antennas, leakage).
     `drag_area_landing_gear_fixed_m2`: added when the aircraft's gear is not retractable.
     `download_fraction_hover` None: the hover download comes from wing and rotor geometry (`download`).
+    `factor_excrescence` (plan 034): (factor - 1) x the component drag as a separate excrescence item, for leakage,
+    protuberances and installation; 1.17 matches the XV-15 components to NDARC's 6.25 ft2 (Johnson 2010).
+    `fraction_trim_drag` (plan 034): trim drag / (parasite + induced), added to CD.
     """
     interference: Any = InterferenceFactors()
     drag_area_misc_m2: Any = 0.0
@@ -103,6 +106,8 @@ class ScholzAerodynamics(SimpleAerodynamics):
     kappa_korn: Any = 0.87                   # Korn technology factor, conventional (NACA 6-series) sections
     download_fraction_hover: Any = None
     download: Any = HoverDownload()
+    factor_excrescence: Any = 1.0
+    fraction_trim_drag: Any = 0.0
 
     def hover_download_fraction(self, aircraft):
         if self.download_fraction_hover is not None:
@@ -140,6 +145,8 @@ class ScholzAerodynamics(SimpleAerodynamics):
             items.append(ParasiteDragItem("nacelles", friction(nacelles.length_m)
                                           * form_factor_nacelle(nacelles.length_m / nacelles.diameter_m)
                                           * q.nacelle * nacelles.area_wetted_m2 / area_ref_m2))
+        if not (isinstance(self.factor_excrescence, (int, float)) and self.factor_excrescence == 1.0):
+            items.append(ParasiteDragItem("excrescence", (self.factor_excrescence - 1) * sum(i.cd0 for i in items)))
         items.append(ParasiteDragItem("miscellaneous", self.drag_area_misc_m2 / area_ref_m2))
         if not aircraft.landing_gear.is_retractable:
             items.append(ParasiteDragItem("landing_gear", self.drag_area_landing_gear_fixed_m2 / area_ref_m2))
@@ -165,6 +172,8 @@ class ScholzAerodynamics(SimpleAerodynamics):
         cdi = cl**2 / (np.pi * oswald * aircraft.wing.aspect_ratio)
         cd = (cd0 + cdi + self.wave_drag_coefficient(aircraft, cl, mach)
               + sum(increment.cd for increment in drag_increments))
+        if not (isinstance(self.fraction_trim_drag, (int, float)) and self.fraction_trim_drag == 0.0):
+            cd = cd + self.fraction_trim_drag * (cd0 + cdi)
         area_ref_m2 = aircraft.wing.area_m2
         return AeroResult(alpha_deg=alpha_deg, cl=cl, cd=cd, cd0=cd0, cdi=cdi, cl_alpha_per_rad=cl_alpha_per_rad,
                           oswald_efficiency=oswald, dynamic_pressure_Pa=dynamic_pressure_Pa, mach=mach,
