@@ -386,3 +386,28 @@ Each new margin is added to the Halo report. The new margins become constraints 
     - Map the AFDD wing-box masses to gauges.
     - Note on `timeout`: on Windows it kills only the `.venv` launcher, so the child python keeps running. Kill the
       children by command line after each timeout.
+- 2026-10-04: user: "ideally we can back check our weight build up methods against the layout and thicknesses
+  ... for the primary structure of the wing, tail, and fuselage".
+  - **Code:** `export/openvsp/structure_check.py` (8 analytic tests), `examples/halo_structure_reference.py` (solves
+    the current reference and writes loads and weights to `output/structure/reference.json`), and
+    `examples/halo_structure_check.py`. Gauges come from simple ultimate loads and the AFDD stiffness requirements,
+    not from the weight models, so the check is independent.
+  - **Reference:** plan 030 thermal, 6,367 kg (14,037 lb), n_ult 4.5, jump n 2.0, tip mass 998 kg.
+  - **Wing, layout vs AFDD primary** (torque box 89.8 + stiffness caps 4.1 + jump caps 26.7 = 120.5 kg):
+    - As sized (constant chord): 129.3 kg (1.07x). Skins 1.37 mm from the torsion GJ; caps at the root 24.2 cm2
+      from beam stiffness; ribs 19.2 kg. Without ribs, 110 kg (0.92x).
+    - As drawn (taper 0.6): 138.5 kg (1.15x). The uniform GJ requirement thickens the small tip box to 3.2 mm.
+    - Root jump moment: 318 kN m in the layout vs AFDD's 310 kN m.
+  - **V-tail:** 12.0 kg of layout primary structure, all minimum gauge (1 mm skins, caps 0.5 cm2 at a 45.7 kN panel
+    ultimate), against 56.2 kg for the Raymer horizontal plus vertical tail group.
+  - **Fuselage:** 310 kg of layout primary structure against the 636 kg Raymer group.
+    - Skin is minimum gauge: 1.0 mm used, 0.41 mm needed for the 387 kN m bending at the rear spar.
+    - Breakdown: skin 164, stringers 49, 17 ring frames 48, bulkheads 22, floor 27.
+    - Layout areas are from the drawn 11 m boxy fuselage; Raymer uses the 12.8 m round tube.
+  - **Reading:**
+    - The AFDD wing agrees with an explicit layout within about 10 %.
+    - The Raymer tails and fuselage are whole-group correlations; their primary structure is minimum-gauge
+      dominated at this size. A like-for-like check needs secondary-structure allowances (control surfaces,
+      fittings, doors and cut-outs, fairings) or a layout-based secondary estimate.
+- 2026-10-04: frames switched to ring frames (I-section beams, 75 x 30 x 1.6 mm) at 0.6 m pitch, with full-plate
+  bulkheads only. The fuselage mesh with ring frames is still running.

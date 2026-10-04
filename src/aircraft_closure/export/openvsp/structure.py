@@ -8,7 +8,7 @@ Layout (first pass, placeholder gauges):
 - Wing (right half; the left is its mirror): front and rear spars, a rib
   array, attach ribs at the dorsal-fairing sides and a nacelle rib at the
   spindle, upper and lower skins.
-- Fuselage: a 1.0 m frame array, bulkheads at the nose bay, both wing-spar stations
+- Fuselage: 0.6 m ring frames (I-section beams along the skin), bulkheads at the nose bay, both wing-spar stations
   and the cabin end, a cabin floor, skin.
 - V-tail (one panel): two spars and a rib array, skin.
 """
@@ -26,7 +26,7 @@ class StructureLayout:
     fraction_chord_front_spar: float = 0.15
     fraction_chord_rear_spar: float = 0.60
     pitch_rib_wing_m: float = 0.5
-    pitch_frame_m: float = 1.0          # meshing cost grows with each frame (about 10-60 s each in OpenVSP 3.53.1)
+    pitch_frame_m: float = 0.6
     height_floor_above_bottom_m: float = 0.35
     x_bulkhead_nose_m: float = 1.6
     x_cabin_end_m: float = 5.06          # end of the constant cabin (0.46 of the 11 m fuselage)
@@ -34,8 +34,11 @@ class StructureLayout:
     thickness_skin_m: float = 0.002      # placeholder gauges until the AFDD wing masses are mapped
     thickness_spar_web_m: float = 0.004
     thickness_rib_m: float = 0.002
-    thickness_frame_m: float = 0.0015
+    thickness_bulkhead_m: float = 0.0015
     thickness_floor_m: float = 0.003
+    depth_frame_m: float = 0.075         # ring frames: I-section beams along the skin
+    width_flange_frame_m: float = 0.03
+    thickness_frame_m: float = 0.0016
 
 
 def _parm(container_id, name, group, value):
@@ -50,7 +53,6 @@ def _material(name, density_kg_m3, modulus_Pa, poisson):
     vsp.SetParmVal(vsp.FindParm(material_id, "MassDensity", "FeaMaterial"), density_kg_m3)
     vsp.SetParmVal(vsp.FindParm(material_id, "ElasticModulus", "FeaMaterial"), modulus_Pa)
     vsp.SetParmVal(vsp.FindParm(material_id, "PoissonRatio", "FeaMaterial"), poisson)
-    vsp.SetParmContainerName(material_id, name) if hasattr(vsp, "SetParmContainerName") else None
     return len(vsp.GetFeaMaterialIDVec()) - 1
 
 
@@ -58,6 +60,17 @@ def _property(name, index_material, thickness_m):
     property_id = vsp.AddFeaProperty()
     vsp.SetParmVal(vsp.FindParm(property_id, "FeaMaterialIndex", "FeaProperty"), index_material)
     vsp.SetParmVal(vsp.FindParm(property_id, "Thickness", "FeaProperty"), thickness_m)
+    return len(vsp.GetFeaPropertyIDVec()) - 1
+
+
+def _beam_property_i_section(index_material, depth_m, width_flange_m, thickness_m):
+    """I-section beam (Nastran PBARL I dimensions: depth, two flange widths, web and two flange thicknesses)."""
+    property_id = vsp.AddFeaProperty(vsp.FEA_BEAM)
+    vsp.SetParmVal(vsp.FindParm(property_id, "FeaMaterialIndex", "FeaProperty"), index_material)
+    vsp.SetParmVal(vsp.FindParm(property_id, "CrossSectType", "FeaProperty"), vsp.FEA_XSEC_I)
+    for index, value in enumerate((depth_m, width_flange_m, width_flange_m, thickness_m, thickness_m, thickness_m),
+                                  start=1):
+        vsp.SetParmVal(vsp.FindParm(property_id, f"Dim{index}", "FeaProperty"), value)
     return len(vsp.GetFeaPropertyIDVec()) - 1
 
 
@@ -91,7 +104,9 @@ def build_structure(snapshot, layout=StructureLayout()):
     web = _property("SparWeb", carbon, layout.thickness_spar_web_m)
     rib = _property("Rib", carbon, layout.thickness_rib_m)
     skin_aluminium = _property("SkinAluminium", aluminium, layout.thickness_skin_m)
-    frame = _property("Frame", aluminium, layout.thickness_frame_m)
+    bulkhead = _property("Bulkhead", aluminium, layout.thickness_bulkhead_m)
+    frame = _beam_property_i_section(aluminium, layout.depth_frame_m, layout.width_flange_frame_m,
+                                     layout.thickness_frame_m)
     floor = _property("Floor", aluminium, layout.thickness_floor_m)
     structures = {}
 
@@ -120,15 +135,17 @@ def build_structure(snapshot, layout=StructureLayout()):
     vsp.SetFeaStructName(fuselage_id, index, "Fuselage")
     _skin(fuselage_id, index, skin_aluminium)
     length_m = snapshot.fuselage.stations[-1].x_m - snapshot.fuselage.stations[0].x_m
-    _part(fuselage_id, index, vsp.FEA_SLICE_ARRAY, "Frames", frame, FeaSliceArray__OrientationPlane=vsp.YZ_BODY,
+    # Ring frames: beams where each slice meets the skin, no shell across the section.
+    _part(fuselage_id, index, vsp.FEA_SLICE_ARRAY, "Frames", bulkhead, FeaSliceArray__OrientationPlane=vsp.YZ_BODY,
           FeaPart__AbsRelParmFlag=vsp.ABS, FeaSliceArray__SliceAbsSpacing=layout.pitch_frame_m,
-          FeaSliceArray__AbsStartLocation=layout.pitch_frame_m, FeaSliceArray__AbsEndLocation=length_m - 0.3)
+          FeaSliceArray__AbsStartLocation=layout.pitch_frame_m, FeaSliceArray__AbsEndLocation=length_m - 0.3,
+          FeaPart__IncludedElements=vsp.FEA_BEAM, FeaPart__CapFeaPropertyIndex=frame)
     wing = snapshot.wing
     x_root_spars_m = [wing.x_le_root_m + fraction * wing.chord_root_m
                       for fraction in (layout.fraction_chord_front_spar, layout.fraction_chord_rear_spar)]
     for name, x_m in (("NoseBulkhead", layout.x_bulkhead_nose_m), ("FrontSparBulkhead", x_root_spars_m[0]),
                       ("RearSparBulkhead", x_root_spars_m[1]), ("CabinEndBulkhead", layout.x_cabin_end_m)):
-        _part(fuselage_id, index, vsp.FEA_SLICE, name, frame, FeaSlice__OrientationPlane=vsp.YZ_BODY,
+        _part(fuselage_id, index, vsp.FEA_SLICE, name, bulkhead, FeaSlice__OrientationPlane=vsp.YZ_BODY,
               FeaPart__AbsRelParmFlag=vsp.ABS, FeaPart__AbsCenterLocation=x_m)
     _part(fuselage_id, index, vsp.FEA_SLICE, "Floor", floor, FeaSlice__OrientationPlane=vsp.XY_BODY,
           FeaPart__AbsRelParmFlag=vsp.ABS, FeaPart__AbsCenterLocation=layout.height_floor_above_bottom_m)
