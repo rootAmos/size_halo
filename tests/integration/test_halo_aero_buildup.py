@@ -7,10 +7,11 @@ import aerosandbox.tools.units as u
 from aircraft_closure.aerodynamics.buildup import BuildupAerodynamics
 from aircraft_closure.aerodynamics.scholz import ScholzAerodynamics
 from aircraft_closure.aerodynamics.simple import SimpleAerodynamics
-from examples.halo_sizing import HaloAssumptions, HaloRequirements, build_halo_aerodynamics, solve_halo_sizing
+from examples.halo_sizing import (HaloAssumptions, HaloRequirements, assumptions_plan027, build_halo_aerodynamics,
+                                  requirements_plan027, solve_halo_sizing)
 from examples.trajectory_optimization import halo_trajectory_case, solve_min_energy_transition
 
-buildup = replace(HaloAssumptions(), aerodynamics_model="buildup")
+buildup = replace(assumptions_plan027, aerodynamics_model="buildup")    # thermal off (plan 027)
 
 
 class HaloAerodynamicsSwitchTests(unittest.TestCase):
@@ -32,7 +33,7 @@ class HaloAerodynamicsSwitchTests(unittest.TestCase):
 class HaloBuildupSizingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.sized = solve_halo_sizing()                     # plan 027: the defaults are the buildup reference
+        cls.sized = solve_halo_sizing(requirements_plan027, assumptions_plan027)    # the plan 027 reference
         cls.scholz = solve_halo_sizing(assumptions=replace(buildup, aerodynamics_model="scholz"))
 
     def test_closes_with_all_margins(self):
