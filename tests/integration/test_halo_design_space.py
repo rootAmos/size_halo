@@ -9,18 +9,23 @@ from examples.halo_sizing import (HaloAssumptions, HaloRequirements, StartRecord
                                   default_starts, perturbed_start, requirements_plan026, solve_halo_sizing,
                                   solve_halo_sizing_multistart)
 
-scholz = replace(HaloAssumptions(), aerodynamics_model="scholz")
+# Thermal model pinned off: these cases are the plan 027 (thermal-off) aircraft whatever the default is.
+reference = replace(HaloAssumptions(), thermal_model=False)
+scholz = replace(reference, aerodynamics_model="scholz")
 
 
 class StartListTests(unittest.TestCase):
     def test_default_order(self):
         r = HaloRequirements()
-        self.assertEqual(default_starts(r, HaloAssumptions(), "mass_takeoff"),
+        self.assertEqual(default_starts(r, reference, "mass_takeoff"),
                          ("scholz_aero", "constant_battery", "payload_continuation", "perturbed_low",
                           "perturbed_high", "generic"))
         self.assertEqual(default_starts(r, scholz, "payload"),
                          ("constant_battery", "perturbed_low", "perturbed_high", "generic"))
         self.assertEqual(default_starts(r, replace(scholz, battery_model="constant"), "mass_takeoff"), ("generic",))
+        # Thermal model on (plan 028): the thermal-off problem is the first start.
+        self.assertEqual(default_starts(r, replace(reference, thermal_model=True), "cost")[:3],
+                         ("thermal_off", "mass_objective", "scholz_aero"))
         self.assertEqual(default_starts(replace(r, mass_payload_kg=200.0), scholz, "cost"),
                          ("mass_objective", "constant_battery", "perturbed_low", "perturbed_high", "generic"))
 
@@ -159,11 +164,12 @@ class EnumerationAndSensitivityTests(unittest.TestCase):
 
 
 class ReferenceStartTests(unittest.TestCase):
-    """The reference (AeroBuildup, ECM, AFDD wing) from cold: the Scholz-aero start, unchanged at 13,639 lb."""
+    """The plan 027 reference (AeroBuildup, ECM, AFDD wing, no thermal model) from cold: the Scholz-aero start,
+    unchanged at 13,639 lb."""
 
     @classmethod
     def setUpClass(cls):
-        cls.reference = solve_halo_sizing()
+        cls.reference = solve_halo_sizing(assumptions=reference)
 
     def test_reference_unchanged_and_recorded(self):
         self.assertAlmostEqual(self.reference.mass_takeoff_kg / u.lbm, 13639, delta=15)
