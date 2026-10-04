@@ -277,6 +277,13 @@ class HaloAssumptions:
     diameter_nacelle_m: float = 3.3 * u.foot
     drag_area_misc_buildup_m2: float = 3.00 * u.foot**2  # XV-15 "fuselage fittings & fixtures" (NDARC, Johnson 2010)
     blown_wing: bool = True                       # "buildup": rotor slipstream increments in airplane mode
+    # Plan 034: drag AeroBuildup and the Scholz build-up leave out. Excrescence, leakage and protuberance as a factor
+    # on component drag, calibrated so the XV-15 components match NDARC's 6.25 ft2 (Johnson 2010, Table 1); trim
+    # drag as a fraction of parasite + induced drag (assumed 2 %, within the 1-5 % usual for an aft tail at cruise).
+    drag_corrections: bool = False
+    factor_excrescence_buildup: float = 1.27
+    factor_excrescence_scholz: float = 1.17
+    fraction_trim_drag: float = 0.02
     # ---- Tier 19 thermal (plan 028) ----
     # True: heat loads from every loss go to a ram-air heat exchanger (mass from its rating, a design variable;
     # cooling drag in airplane mode, fan power in hover), and lumped motor and generator temperatures replace
@@ -443,10 +450,14 @@ def build_halo_aerodynamics(requirements=HaloRequirements(), assumptions=HaloAss
         return SimpleAerodynamics(drag_area_misc_m2=a.drag_area_misc_m2,
                                   download_fraction_hover=a.download_fraction_hover, cl_max=r.cl_max)
     if a.aerodynamics_model == "buildup":
+        corrections = (dict(factor_excrescence=a.factor_excrescence_buildup, fraction_trim_drag=a.fraction_trim_drag)
+                       if a.drag_corrections else {})
         return BuildupAerodynamics(cl_max=r.cl_max, drag_area_misc_m2=a.drag_area_misc_buildup_m2,
-                                   blown_wing=BlownWing() if a.blown_wing else None)
+                                   blown_wing=BlownWing() if a.blown_wing else None, **corrections)
     if a.aerodynamics_model == "scholz":
-        return ScholzAerodynamics(cl_max=r.cl_max, drag_area_misc_m2=a.drag_area_misc_buildup_m2)
+        corrections = (dict(factor_excrescence=a.factor_excrescence_scholz, fraction_trim_drag=a.fraction_trim_drag)
+                       if a.drag_corrections else {})
+        return ScholzAerodynamics(cl_max=r.cl_max, drag_area_misc_m2=a.drag_area_misc_buildup_m2, **corrections)
     raise ValueError(f"Unknown aerodynamics model '{a.aerodynamics_model}'.")
 
 

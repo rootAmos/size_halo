@@ -194,11 +194,16 @@ Section 6 for why.
 
 ## 6. Limits and open items, roughly by impact
 
-1. **Drag calibration.** AeroBuildup reads 15–20 % below NDARC's XV-15
-   drag. Max payload at 210 kt is about 1,650 kg with the current drag and
-   about 960 kg with the old drag guess. The boundary-layer transition
-   location and the fittings drag area need calibration against XV-15
-   flight data. Treat payload headroom as a sensitivity.
+1. **Drag corrections.** AeroBuildup models clean components only. It
+   leaves out excrescence, leakage, protuberance and trim drag, which is
+   why it reads 15–20 % below NDARC's XV-15 drag. Plan 034 adds them
+   explicitly:
+   - a component-drag factor calibrated to NDARC's XV-15 components (1.27
+     for AeroBuildup, 1.17 for Scholz);
+   - trim drag at 2 %.
+   They are an option at the time of writing; see the implementation notes
+   for their effect. Max payload at 210 kt is about 1,650 kg with uncorrected
+   drag, so treat payload headroom as a sensitivity.
 2. **Electrical layer (Tier 15) is implemented but not the default.**
    Inverters, cables, protection and partial-discharge insulation add
    about 330 kg of hardware and 3 % losses; with growth, about 685 kg
@@ -206,23 +211,28 @@ Section 6 for why.
    realistic battery, electrical layer), IPOPT has not yet converged
    reliably.
 3. **Weight calibration rests on one complete aircraft.** The XV-15 is the
-   only complete statement. Factors for the fuselage (about 2×) and flight
-   controls (about 4×) are large.
-4. **Battery power density is scaled 5× above the 50G datasheet** (about
-   2,560 W/kg continuous). The user approved this to capture the discharge
-   shape. It is optimistic: real power cells give up about 15–20 % of
-   energy density.
-5. **Rotor reduction ratio of about 36:1** implies several gear stages.
-   The stage count and its mass are not modelled.
-6. **The trajectory model is point-mass.** It has no thermal or
+   only complete weight statement. Two groups need large factors because
+   the light-aircraft equations underpredict them: fuselage about 2×,
+   flight controls about 4×. These are group factors, not aircraft mass;
+   the Halo at 14,037 lb is about 8 % heavier than the 13,000 lb XV-15.
+4. **Rotor reduction ratio of about 36:1** is a modelling artifact, being
+   addressed in plan 033 (in progress):
+   - a single motor torque density (15 N·m/kg) makes slow, high-torque
+     machines look heavy;
+   - the drive-system weight barely depends on ratio.
+   Real machines span the trade: stackable axial-flux motors such as
+   Evolito's (about 35 N·m/kg at up to 2,500 rpm) against fast radial
+   machines such as Helix and H3X (17,000–20,000 rpm). Plan 033 adds a
+   supplier database for machine mass and an explicit gearbox stage count.
+5. **The trajectory model is point-mass.** It has no thermal or
    electrical-layer states, so it flies the thermal-off aircraft. 6-DOF is
    planned, not built (see the architecture diagrams).
-7. **Thermal simplifications.** The battery chiller's power is not
+6. **Thermal simplifications.** The battery chiller's power is not
    modelled. Gearbox heat is assumed to go to the gearboxes' own oil
    coolers. Losses do not depend on temperature.
-8. **Deferred aero items:** V-tail, conversion-segment aerodynamics and
+7. **Deferred aero items:** V-tail, conversion-segment aerodynamics and
    trim drag.
-9. **In progress at the time of writing:**
+8. **In progress at the time of writing:**
    - Tier 18, redundancy: motor lanes, cross-strapped buses, battery
      strings, failure cases;
    - Tier 22, design-space practice: multistart, cost objective,
