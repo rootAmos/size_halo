@@ -432,3 +432,10 @@ Each new margin is added to the Halo report. The new margins become constraints 
   - **User decision:** "drop the 2.07 calibration factor for the fuselage". The layout total suggests about 1.7
     rather than 1.0; confirmation was asked before the reference is changed. That change belongs to plan 032
     (sizing reference changes), not to this export plan.
+- 2026-10-04: ring frames.
+  - **Meshing works:** a single beam-only frame meshes in 16 s into proper CalculiX B32R cap beams.
+  - **Full fuselage is slow:** the whole fuselage with 17 beam frames did not finish within 15 min while two sizing
+    solves were running, and earlier long fuselage runs ended with exit code 127 (python died mid-mesh; the venv is
+    intact). The full fuselage deck is therefore an unattended job.
+  - **Render:** draws the rings by slicing the fuselage skin at the frame stations (the beams' path), and hides the
+    old shell-disc frames.

@@ -9,12 +9,13 @@ to mesh. Needs OpenVSP and the `geometry` group.
 import time
 from pathlib import Path
 
+import numpy as np
 import openvsp as vsp
 
 from aircraft_closure.export.openvsp.model import export_outer_mold_line
 from aircraft_closure.export.openvsp.render import render_structure
 from aircraft_closure.export.openvsp.snapshot import halo_plan027_snapshot
-from aircraft_closure.export.openvsp.structure import build_structure, export_structure_meshes
+from aircraft_closure.export.openvsp.structure import StructureLayout, build_structure, export_structure_meshes
 
 directory_output = Path("output/structure")
 
@@ -30,7 +31,10 @@ if __name__ == "__main__":
         time_start_s = time.time()
         paths.update(export_structure_meshes({name: struct_id}, directory_output))
         print(f"{name:<10} meshed in {time.time() - time_start_s:5.1f} s")
+    layout = StructureLayout()
+    length_m = snapshot.fuselage.stations[-1].x_m
     render_structure([paths[(name, "stl")] for name in structures],
-                     paths_outer_mold_line[("stl_airframe", 0.0)], directory_output / "halo_structure.png")
+                     paths_outer_mold_line[("stl_airframe", 0.0)], directory_output / "halo_structure.png",
+                     x_ring_frames_m=np.arange(layout.pitch_frame_m, length_m - 0.3 + 1e-9, layout.pitch_frame_m))
     for name in structures:
         print(Path(paths[(name, "mass")]).read_text().split("FeaStruct_Name")[-1].strip())

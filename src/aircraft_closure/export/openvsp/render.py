@@ -81,8 +81,25 @@ colours_structure = (("Bulkhead", "#4a3aa7"), ("Spar", "#2a78d6"), ("Rib", "#eb6
                      ("Floor", "#eda100"))
 
 
-def render_structure(paths_structure_stl, path_airframe_stl, path_png, window_size=(2400, 1500)):
+def _ring_frames(solids, x_frames_m, radius_tube_m=0.025):
+    """Ring frames as tubes along the fuselage skin at the frame stations (the beams' path)."""
+    skins = [mesh for key, mesh in solids.items() if key.startswith("Fuselage:Skin")]
+    if not skins or not len(x_frames_m):
+        return []
+    skin = pv.merge(skins)
+    rings = []
+    for x_m in x_frames_m:
+        section = skin.slice(normal=(1.0, 0.0, 0.0), origin=(x_m, 0.0, 0.0))
+        if section.n_points:
+            rings.append(section.tube(radius=radius_tube_m))
+    return rings
+
+
+def render_structure(paths_structure_stl, path_airframe_stl, path_png, window_size=(2400, 1500), x_ring_frames_m=()):
     """Internal structure under a faint outer mold line: skins hidden, part families coloured.
+
+    `x_ring_frames_m`: ring-frame stations drawn as tubes along the fuselage skin (beam elements are not in the
+    STL); any shell "Frames" solids in the STL are then not drawn.
 
     Left: from ahead, left and above. Right: from behind, right and above (webs are edge-on in plan view).
     """
@@ -96,9 +113,11 @@ def render_structure(paths_structure_stl, path_airframe_stl, path_png, window_si
                                                          ("rear right", (1.0, 1.0, 0.8), (0.0, 0.0, 1.0)))):
         plotter.subplot(0, index)
         plotter.add_mesh(_read_mesh(path_airframe_stl), color=colour_airframe, opacity=0.12, smooth_shading=True)
+        for ring in _ring_frames(solids, x_ring_frames_m):
+            plotter.add_mesh(ring, color=dict(colours_structure)["Frame"], smooth_shading=True)
         for key, mesh in solids.items():
             part = key.split(":", 1)[1]
-            if part.startswith("Skin"):
+            if part.startswith("Skin") or (len(x_ring_frames_m) and part.startswith("Frames")):
                 continue
             colour = next((c for family, c in colours_structure if family in part), "#7a7a75")
             plotter.add_mesh(mesh, color=colour, smooth_shading=False, show_edges=False)
