@@ -1150,11 +1150,118 @@ The user approved it on 2026-10-04 ("yes").
 - **Solve time:** about 4 minutes from cold. The solve starts from the
   thermal-off solve, which starts from Scholz aero and the constant battery.
 
+## Plan 033: machine database and gearbox stages
+
+This refines Tier 13 at the user's direction (2026-10-04). The reference picked a 36:1 rotor reduction with motors
+at about 12,900 rpm, and the question was whether that was a modelling artefact.
+
+### The two options
+
+- **Data:** `data/machines/aerospace_motors.csv` has 21 machines:
+  - Evolito D1500 (1x3 and 2x3), D250 and E800;
+  - the Helix SPX242 demonstrator and its -50, -94, -175 and -175D variants;
+  - the H3X HPDM-250;
+  - magniX magni350 and magni650 (both the 2021 EPU pages and the current pages) and magniAIR;
+  - Siemens SP260D and SP200D;
+  - Safran ENGINeUS 45;
+  - EMRAX 228, 268 and 348.
+
+  Each row gives peak and continuous ratings where published, the inverter status (y, n or unknown), whether the
+  machine is stackable, and a source URL. Derived values are marked in the notes.
+- **`DatabaseMassModel`** (an interchangeable `mass_model`):
+  - continuous torque density tau = 11.79 N m/kg x (w / 500 rad/s)^-0.271, at base speed w = P_cont / T_cont;
+  - fitted by least squares in log space on the 15 bare or unknown-inverter rows with continuous ratings;
+  - RMS log residual 0.375 (a factor of 1.45);
+  - model mass / database mass per machine: D250 2.56, SP200D 1.79, SP260D 1.42, SPX242 demonstrator 1.05,
+    SPX242-50 0.73, -94 0.95, -175 0.95, -175D 0.99, magni350 0.52, magni650 1.03, magniAIR 0.78, ENGINeUS 45 1.02,
+    EMRAX 228 0.85, 268 0.83, 348 0.75;
+  - specific-power cap 20 kW/kg (the Tier 15 bare assumption, which the data do not constrain);
+  - for the Halo rubber machine, continuous torque = 0.5 x peak, so w is the peak-efficiency speed;
+  - the inverter: none when the Tier 15 layer is on (it is a separate component), else plus P / 20 kW/kg;
+  - stacks: a relaxed stack count with an optional per-stack overhead. The fit is linear in torque at fixed speed,
+    so stacking does not change the mass at the fitted level.
+
+  `TorqueDensityMassModel` is unchanged. In continuous terms it is 7.5 N m/kg integrated, which makes it heavier
+  than the database (with its inverter) below about 7,000 rpm base speed and lighter above (its cap is 10 kW/kg
+  integrated).
+- **`GearStageModel`:**
+  - stages = smooth ceil(ln r / ln 5), or the relaxed softplus max(1, x);
+  - efficiency 0.99 x 0.99^n;
+  - mass factor 1 + 0.3 (n - 1).
+
+  The AFDD00 drive is evaluated at the XV-15 ratio (35.4:1, three stages), where the transmission factor is
+  calibrated, and scaled by mass_factor(r) / mass_factor(35.4). The same model applies to the generator step-up
+  gearbox.
+
+### Switches and solve rule
+
+- **Switches:** `HaloAssumptions.machine_mass_model` (`"torque_density"` by default) and `gearbox_stages` (False by
+  default). `reduction_ratio_max` (40) bounds the ratio. The defaults leave the reference unchanged at 14,037 lb.
+- **Halo stage form:** Halo uses the relaxed (softplus) stage count by default (`gear_stage_model`). With the
+  database machines, the staircase does not solve through the AeroBuildup and thermal warm starts: it fails from
+  the Scholz solution and from the relaxed solution, even with step widths of 0.05 and 0.1.
+  - The database machines alone fail the AeroBuildup warm start from Scholz in the same way.
+  - The relaxed chain solves.
+- **Solve rule (staircase only):** the staircase has a local optimum per stage count. With no `initial`, the
+  innermost solve runs from two starting points, the generic guess and the relaxed-stage solution, and keeps the
+  lighter result.
+
+### Results
+
+**Reference with both options on** (thermal, AeroBuildup, AFDD wing, ECM battery; 900 kg, 210 kt; relaxed
+stages): 14,382 lb, 345 lb above 14,037.
+
+| | Both options on | Plan 030 reference |
+|---|---|---|
+| Motor speed at peak efficiency | 12,073 rpm (14,270 in take-off hover) | 12,935 rpm |
+| Rotor ratio | 32.1:1 (2.16 relaxed stages, 3 as built) | 36.3:1 |
+| Generators | 23,190 rpm, 19.2:1 step-up (1.83 relaxed, 2 as built) | |
+| Motors, both sides (with inverters) | 163 kg | 116 kg |
+| Rotor gearboxes | 373 kg | 357 kg |
+| Generators | 131 kg | |
+| Step-ups | 180 kg | |
+| Battery | 436 kg | |
+
+**Fast set** (`assumptions_plan027` with Scholz aerodynamics; 13,702 lb with both options off):
+
+| Case | MTOM | Motor | Rotor ratio | Generator | Masses, both sides |
+|---|---|---|---|---|---|
+| database only | 13,976 lb | 18,400 rpm | 40:1 (the bound) | 23,900 rpm (the bound) | |
+| stages only (staircase) | 14,058 lb | 12,800 rpm | 24.4:1 | 6,500 rpm, a one-stage step-up local optimum | |
+| both, relaxed | 13,978 lb | 19,100 rpm (the bound) | 36.4:1 | | |
+| both, staircase | 13,603 lb | 14,000 rpm | 24.6:1, 2 stages, at the 5^2 boundary | 23,900 rpm, 19.7:1 step-up, 2 stages | motors 175 kg, rotor gearboxes 290 kg |
+
+**Slow motors** (ratio cap, both on, staircase):
+
+| Cap | MTOM | Motor |
+|---|---|---|
+| 4.9:1 (1 stage) | 14,991 lb | 3,960 rpm |
+| 8:1 | 14,359 lb | 5,740 rpm |
+| 12:1 | 14,011 lb | 7,860 rpm |
+
+The notebook repeats this with relaxed stages and a 10 kW/kg cap.
+
+**What the data say:**
+
+- The optimizer does not pick a slow axial-flux motor at 7–10:1. With the database, one costs about 400–750 lb on
+  the fast set.
+- The data alone favour speed: the mass falls as w^-0.73 at fixed power.
+- The best low-speed machines (SP200D at 30 N m/kg, the Evolito D1500 at about 37 N m/kg peak) sit 1.5–1.8 times
+  above the fleet fit. A slow motor wins only with that technology level, or with a lower high-speed cap.
+- Machine speeds often reach the design-variable bounds (motor 2,000 rad/s, generator 2,500 rad/s). The 20 kW/kg
+  cap only binds near 2,600 rad/s base speed, beyond the data (the H3X runs at 2,100 rad/s).
+
+### Known issues
+
+- The staircase stage count is multimodal. On the fast set, the 24.9:1 ratio cap failed from both starts.
+- The generator step-up can sit on a one-stage step near 6,300 rpm.
+- With the database machines, the full reference solves only with relaxed stages.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
 Tier 1 component physics, Tier 2 topology, Tier 3 compatibility margins, Tier 4 mass closure, Tier 5
-aerodynamics, Tier 6 stability and control, Tier 7 requirements, Tier 8 missions, Tier 9 coupled sizing, Tier 10 XV-15 mass validation, Tier 19 thermal, Tier 20 tiltrotor wing weights and Tier 21 aerodynamics. Outputs are kept so plots render
+aerodynamics, Tier 6 stability and control, Tier 7 requirements, Tier 8 missions, Tier 9 coupled sizing, Tier 10 XV-15 mass validation, Tier 13b machine database and gearbox stages, Tier 19 thermal, Tier 20 tiltrotor wing weights and Tier 21 aerodynamics. Outputs are kept so plots render
 remotely.
 
 ## Next stage

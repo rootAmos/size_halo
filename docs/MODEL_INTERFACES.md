@@ -488,6 +488,48 @@ assumption values.
   `speed_peak_generator_rad_s`.
 - **Legacy set:** `assumptions_tier12b` reproduces Tier 12b.
 
+### Machine database and gearbox stages (plan 033)
+
+- **`motor.DatabaseMassModel(...)`:** an interchangeable `mass_model` for
+  `Motor` and `Generator`.
+  - Parameters: `torque_density_ref_Nm_kg=11.79`, `speed_ref_rad_s=500`,
+    `exponent_speed=0.271`, `specific_power_max_W_kg=2e4`,
+    `ratio_torque_continuous_peak=0.5`, `specific_power_inverter_W_kg=None`,
+    `torque_continuous_max_stack_Nm=None`, `mass_overhead_stack_kg=0`,
+    `smoothing_kg=2`.
+  - The machine's continuous torque is T = ratio x `max_torque_Nm`. Its base
+    speed is w = `power_rated_W` / T.
+  - `mass_kg(machine)` = softmax(T / tau(w), P / p_max)
+    + overhead x `count_stacks(machine)` + P / p_inverter (if set), with
+    tau(w) = tau_ref (w / w_ref)^-a.
+  - None for `specific_power_inverter_W_kg` gives a bare machine.
+  - Also: `torque_density_Nm_kg(w)`, `count_stacks(machine)` (relaxed
+    T / T_stack_max), `mass_bare_kg` and `mass_inverter_kg`.
+- **`powertrain.machine_database`:**
+  - `MachineRecord`;
+  - `load_machine_database(path=data/machines/aerospace_motors.csv)`;
+  - `fit_torque_density(records, speed_ref_rad_s=500)`, which returns a
+    `TorqueDensityFit` (tau_ref, exponent, per-machine residuals and the RMS
+    log residual).
+- **`gearbox.GearStageModel(...)`:**
+  - Parameters: `ratio_max_stage=5`, `loss_stage=0.01`,
+    `efficiency_fixed=0.99`, `fraction_mass_stage=0.3`, `staircase=True`,
+    `width_step=0.02`, `width_relaxed=0.05`, `count_stages_max=6`.
+  - `count_stages(ratio)`, `efficiency(ratio)` and `mass_factor(ratio)`. The
+    ratio is fast / slow, at least 1.
+- **`HaloAssumptions`:**
+  - `machine_mass_model` (`"torque_density"` default, or `"database"`);
+  - `torque_density_database_Nm_kg`, `speed_ref_database_rad_s` and
+    `exponent_speed_database`;
+  - `gearbox_stages` (default False) and `gear_stage_model` (default `GearStageModel(staircase=False)`, the
+    relaxed count);
+  - `reduction_ratio_max` (40, the upper bound of the rotor gear ratio).
+- **`examples.halo_sizing`:**
+  - `ratio_reference_gear_stages()`: the XV-15 ratio, 35.4;
+  - `stage_mass_ratio(model, ratio)`;
+  - `solve_halo_sizing(..., stage_fallback=True)`: with a staircase stage model and no `initial`, it tries two
+    starting points (generic and relaxed) and keeps the lighter result.
+
 ## Trajectory optimization (Tier 14)
 
 `aircraft_closure.trajectory.tiltrotor` flies a **fixed, already-sized** aircraft through a
