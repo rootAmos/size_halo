@@ -5,7 +5,8 @@ from dataclasses import replace
 import aerosandbox.tools.units as u
 
 from examples.halo_sizing import (HaloAssumptions, HaloRequirements, assumptions_tier20, halo_equipment_items,
-                                  mass_equipment_from_items_kg, requirements_plan022, solve_halo_sizing,
+                                  mass_equipment_from_items_kg, requirements_plan022, assumptions_plan026,
+                                  requirements_plan026, solve_halo_sizing,
                                   uncrewed_equipment_adjustments)
 
 
@@ -63,11 +64,11 @@ class HaloAfddWingTests(unittest.TestCase):
 
 
 class Plan026ReferenceTests(unittest.TestCase):
-    """The reference from plan 026: 900 kg, AFDD wing, equivalent-circuit battery, solved from the defaults."""
+    """The plan 026 reference: 900 kg, AFDD wing, equivalent-circuit battery, SimpleAerodynamics."""
 
     @classmethod
     def setUpClass(cls):
-        cls.result = solve_halo_sizing()
+        cls.result = solve_halo_sizing(requirements_plan026, assumptions_plan026)
 
     def test_reference_closes_at_900_kg(self):
         r = self.result

@@ -27,7 +27,7 @@
 | 18 | Redundancy: lanes per rotor, cross-strapped buses, battery strings, multipoint failure cases | Planned |
 | 19 | Thermal: losses to heat-exchanger mass and cooling drag; short-time ratings from thermal mass | Planned |
 | 20 | Tiltrotor airframe weights: AFDD wing with torsional stiffness and whirl flutter; second calibration aircraft | Implemented |
-| 21 | Aero: compressibility drag rise, nacelle build-up, V-tail, download model, conversion segments | Implemented (partial): AeroBuildup model, Scholz hand check, blown wing, geometric download; V-tail and conversion deferred |
+| 21 | Aero: AeroBuildup model, Scholz hand check, compressibility, nacelle build-up, blown wing, download model (V-tail and conversion segments deferred) | Implemented |
 | 22 | Design-space practice: freed trades, multistart, cost objective, architecture enumeration, robustness | Planned |
 
 Keep simple implementations when higher fidelity is introduced. Use AeroSandbox

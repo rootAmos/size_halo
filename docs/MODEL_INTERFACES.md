@@ -664,8 +664,10 @@ min and max terminal voltage.
     constant-battery aircraft of Tiers 13–16).
   - `requirements_plan022` with `assumptions_plan022` (the 780 kg ECM
     aircraft with the Raymer wing).
-  - Since plan 026 the defaults are the ECM pack with the AFDD tiltrotor
-    wing at 900 kg.
+  - `requirements_plan026` with `assumptions_plan026` (SimpleAerodynamics,
+    AFDD wing, 900 kg).
+  - Since plan 027 the defaults are the ECM pack, the AFDD tiltrotor wing
+    and AeroBuildup aerodynamics, at 900 kg.
 - **Trajectory** (`build_tiltrotor_trajectory`):
   - accepts either battery;
   - the motors see the terminal voltage;

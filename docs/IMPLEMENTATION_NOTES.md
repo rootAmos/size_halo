@@ -1007,6 +1007,21 @@ of their sources also keep the cable and contactor current limits from
 duplicating the source's own limit (degenerate active constraints made
 IPOPT report local infeasibility).
 
+## Plan 027: AeroBuildup aerodynamics as the reference
+
+The user decided on 2026-10-04: "aerobuild up as default".
+
+- **Default:** `aerodynamics_model="buildup"`. Requirements stay at 900 kg
+  and 210 kt.
+- **Reference:** 13,639 lb at cruise L/D 9.8.
+  - The 1,842 kg maximum payload at 210 kt is a sensitivity, pending drag
+    calibration against XV-15 data (transition location, fittings area).
+- **Legacy sets** pin `aerodynamics_model="simple"`.
+  `requirements_plan026` / `assumptions_plan026` keep the 14,247 lb plan 026
+  reference.
+- **Solve time:** sizing takes 110–160 s with AeroBuildup. With no
+  `initial`, it starts from a Scholz solve.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
