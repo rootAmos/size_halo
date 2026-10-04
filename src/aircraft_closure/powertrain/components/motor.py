@@ -110,6 +110,9 @@ class Motor:
     max_voltage_V: Any = 900.0
     loss_model: Any = field(default_factory=McDonaldMotorLossModel)
     mass_model: Any = None
+    # Tier 19: LumpedThermalModel or None. With one, the power rating is a continuous (thermal) rating that
+    # short peaks may exceed; callers then constrain temperature instead of rated power (plan 028).
+    thermal_model: Any = None
 
     def get_mass(self):
         if self.mass_model is not None:

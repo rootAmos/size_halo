@@ -103,8 +103,11 @@ def operating_margins(topology, port_values, atmosphere=None):
         if isinstance(component, (Motor, Generator)):
             shaft = value("shaft")
             electrical = value("electrical")
+            if component.thermal_model is None:
+                # Tier 19: with a thermal model the rating is continuous; the caller limits temperature instead.
+                margins.append(margin_below(f"{name} power_shaft_W", shaft.speed_rad_s * shaft.torque_Nm,
+                                            component.power_rated_W))
             margins += [
-                margin_below(f"{name} power_shaft_W", shaft.speed_rad_s * shaft.torque_Nm, component.power_rated_W),
                 margin_below(f"{name} torque_Nm", shaft.torque_Nm, component.max_torque_Nm),
                 margin_below(f"{name} speed_rad_s", shaft.speed_rad_s, component.max_speed_rad_s),
                 margin_above(f"{name} min_voltage_V", electrical.voltage_V, component.min_voltage_V),

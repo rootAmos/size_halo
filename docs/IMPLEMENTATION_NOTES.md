@@ -945,11 +945,105 @@ The user decided on 2026-10-04: "aerobuild up as default".
 - **Solve time:** sizing takes 110–160 s with AeroBuildup. With no
   `initial`, it starts from a Scholz solve.
 
+## Tier 19: thermal
+
+Plan 028. A Halo option, `HaloAssumptions.thermal_model`, **off by
+default**: the reference stays at 13,639 lb.
+
+- **Heat loads:** every flight point returns named `HeatLoad(source,
+  power_W, count)` entries from the losses the models already compute
+  (motor, rotor gearbox, generator, step-up gearbox, battery chemical minus
+  terminal power). Tier 15's inverter and cable losses plug in by adding a
+  load with their instance name; the exchanger rejects every source except
+  those listed in `sources_excluded`.
+- **Ram-air heat exchanger** (`RamAirHeatExchanger`): 1.0 kW/kg at a 40 K
+  coolant-to-air difference (between Kellermann et al. 2021, about
+  0.6 kW/kg for a wet air-to-liquid exchanger, and Potamiti et al. 2024,
+  about 1.6 kW/kg for a whole centralised TMS); coolant 60 C, air-side
+  effectiveness 0.8, 1,000 Pa at the rated flow. Pumping power
+  m dp / rho = ram drag x V in airplane mode (Meredith; no heat-addition
+  recovery credited) or fan power / 0.6 in hover. The rating is a design
+  variable; each point's end-of-interval heat x 40 K / dT must stay below
+  it (one margin per point, no loop).
+- **Thermal coupling without iteration:** cooling drag depends on heat, heat
+  on thrust: an Opti variable per airplane-mode point and one equality.
+  Fan power joins the bus demand in the existing balance equalities.
+- **Lumped temperatures** (`LumpedThermalModel` on `Motor`, `Generator`,
+  `EquivalentCircuitBattery` and `Battery`): exact constant-heat response
+  per interval, the RC-polarization pattern. R is set by the continuous
+  rating (its steady state is the limit), C = c x mass (500 J/(kg K) for
+  machines, 1,000 for the pack). Machines 150 C over 60 C coolant (tau about
+  107 s); the pack 60 C over 25 C (tau about 114 s). The heat each
+  component passes to the coolant is (T - T_c) / R, so thermal mass absorbs
+  short peaks before the exchanger sees them. With a thermal model a
+  machine's power margin is replaced by its temperature margin (torque and
+  speed limits stay); the rotor gearbox gets its own rating
+  (`HaloDesign.power_rated_gearbox_W`).
+- **Thermal history (Halo):** the mission starts at the coolant
+  temperatures; the engine-out hover continues from the end of the take-off
+  hover; the hot-day hover from the end of the mission; the 4,000 ft hover
+  requirement is 60 s from cold; airplane-mode requirement points are
+  steady.
+- **Gearbox heat** (about 40 % of the losses) goes to the gearboxes' own oil
+  coolers, assumed inside the XV-15-calibrated AFDD drive weights; it is
+  reported, not rejected by the exchanger.
+
+**Result (900 kg, 210 kt, AeroBuildup, ECM, AFDD wing):** 14,037 lb with
+thermal on, +398 lb on the 13,639 lb reference. The same optimum is reached
+from the thermal-off design and from the thermal Scholz design.
+
+| Item (kg) | Off | On |
+|---|---|---|
+| Heat exchanger | – | 133 |
+| Motors (2) | 139 | 116 |
+| Generators (2) | 163 | 122 |
+| Rotor gearboxes (2) | 345 | 357 |
+| Battery | 379 | 412 |
+| Fuel | 846 | 862 |
+
+| Point | Loss, all sources (kW) | To the cooler, mean (kW) | Required rating (kW) | Cooling drag / fan |
+|---|---|---|---|---|
+| Take-off hover (60 s from cold) | 182 | 25 | 41 | fan 0.03 kW |
+| Cruise (210 kt max speed point) | 132 | 76 | 47 | 2.6 N |
+| Cruise (mission, 162 kt) | 96 | 58 | 35 | 1.5 N |
+| Engine-out hover, last 20 s | 318 (battery 164) | 103 | 103 | fan 1.8 kW |
+| Hot-day hover (4,000 ft, 95 F) | 187 | 72 | 133 (sizes it) | fan 5.6 kW |
+
+- **What binds:** the hot-day hover sizes the exchanger (dT only 25 K);
+  motor and generator temperatures bind at the steady climb requirement
+  point (and the mission climb is at 149 C). The engine-out end voltage,
+  the hover drive power, the turboshaft and whirl flutter still bind.
+- **Short-time ratings:** the hover requirement runs the motors at
+  1.24 x their continuous rating (708 against 570 kW per motor), the
+  take-off and engine-out hovers at 1.09 x. Machine mass falls by 63 kg
+  (motors 23, generators 41) against the reference, where hover motor power
+  and engine-out generator power bound the ratings.
+- **The cost:** the 133 kg exchanger, plus the knock-on growth (battery
+  +34 kg, gearboxes +11 kg, fuel +16 kg, structure). Cooling drag is small
+  (1–10 N against about 6.3 kN of cruise drag); hover fan power is at most 5.6 kW.
+- **Battery heat:** the engine-out hover dissipates up to 164 kW in the pack
+  (at the 525 V cutoff); without the pack's thermal mass it would size the
+  exchanger at about 230 kg (a first version without the battery state gave
+  14,645 lb). The pack warms from 25 to 41 C.
+- **Maximum payload at 210 kt (thermal on):** 1,651 kg at 19,790 lb,
+  against 1,842 kg with thermal off (plan 025). The hot-day exchanger
+  rating, machine temperatures in the climb, and the climb and take-off
+  turbine power bind.
+- **Solver note:** with cooling installed the per-point battery-current
+  start is 0 A instead of 50 A: 50 A through the cruise drove the
+  coulomb-counted SOC far outside the cell data, where the battery loss,
+  through the cubic pumping law, made the initial infeasibility about 1e5
+  and IPOPT stalled in restoration. The thermal problem starts from the
+  thermal-off solution.
+- **Verification:** 470 unittest cases (39 new); Tier 19 notebook 17/17
+  checks. Thermal-on sizing takes about 4 min (the thermal-off solve as the
+  start, then about 90 s).
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
 Tier 1 component physics, Tier 2 topology, Tier 3 compatibility margins, Tier 4 mass closure, Tier 5
-aerodynamics, Tier 6 stability and control, Tier 7 requirements, Tier 8 missions, Tier 9 coupled sizing, Tier 10 XV-15 mass validation, Tier 20 tiltrotor wing weights and Tier 21 aerodynamics. Outputs are kept so plots render
+aerodynamics, Tier 6 stability and control, Tier 7 requirements, Tier 8 missions, Tier 9 coupled sizing, Tier 10 XV-15 mass validation, Tier 19 thermal, Tier 20 tiltrotor wing weights and Tier 21 aerodynamics. Outputs are kept so plots render
 remotely.
 
 ## Next stage
