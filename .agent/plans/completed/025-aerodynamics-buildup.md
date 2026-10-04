@@ -176,5 +176,5 @@ an independent hand check; `SimpleAerodynamics` stays as the simplest model.
 
 - V-tail, conversion segments, blown wing in conversion, trim drag.
 - Calibrating transition location and the fittings area against XV-15 flight
-  data (the build-up is 15–20 % low on the clean XV-15 components).
+  data (the build-up is 15â€“20 % low on the clean XV-15 components).
 - Whether the build-up becomes the Halo default (user decision at merge).
