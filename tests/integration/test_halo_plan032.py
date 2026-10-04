@@ -25,11 +25,11 @@ class Plan032ReferenceTests(unittest.TestCase):
     def test_closes_with_all_margins(self):
         self.assertGreater(self.sized.min_margin, -1e-6)
         self.assertLess(abs(self.sized.closure_residual_kg), 1e-3)
-        self.assertAlmostEqual(self.sized.mass_takeoff_kg / u.lbm, 13307, delta=10)
+        self.assertAlmostEqual(self.sized.mass_takeoff_kg / u.lbm, 12821, delta=10)
 
     def test_fuselage_is_lighter_than_the_xv15_calibrated_one(self):
         masses = dict(self.sized.component_masses_kg)
-        self.assertAlmostEqual(masses["fuselage"], 521.8, delta=2.0)
+        self.assertAlmostEqual(masses["fuselage"], 536.8, delta=2.0)
 
 
 if __name__ == "__main__":

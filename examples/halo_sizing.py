@@ -195,14 +195,16 @@ class HaloAssumptions:
     speed_peak_motor_rad_s: float = 400.0
     speed_peak_generator_rad_s: float = 400.0
     aspect_ratio_wing: float = 6.12               # XV-15
-    length_fuselage_m: float = 42.1 * u.foot      # XV-15
+    # Plan 032 (user, 2026-10-04: "11 m, as drawn"): the Halo drawing's length; with the boxy section it has the
+    # wetted area of the round XV-15 tube (42.1 ft), on which the 1.70 fuselage factor was anchored.
+    length_fuselage_m: float = 11.0
     diameter_fuselage_m: float = 5.5 * u.foot     # XV-15 (Tier 10a assumption); the width of a boxy section
     # Plan 032 (user: "archer halo is not pressurized. that's why it's so boxy"): a super-ellipse section this deep
     # and with this exponent (plan 031 drawing). None: the round XV-15 section, the reference until plan 032.
     height_fuselage_m: Any = 2.0
     shape_fuselage: float = 3.2
     clearance_rotor_fuselage_m: float = 0.3       # XV-15 ~1 ft
-    x_horizontal_tail_m: float = 11.4
+    x_horizontal_tail_m: float = 9.8              # tail root leading edge; ends inside the 11 m fuselage (11.4 before plan 032)
     drag_area_misc_m2: float = 0.8                # assumed: tip nacelles, spinners, gear fairings
     load_factor_ultimate: float = 4.5             # XV-15
     mass_equipment_kg: float = mass_equipment_from_items_kg(halo_equipment_items)  # 587 lb; itemised above
@@ -1149,27 +1151,34 @@ requirements_tier10c = HaloRequirements(mass_payload_kg=900.0, velocity_max_m_s=
 requirements_tier12b = HaloRequirements(mass_payload_kg=900.0, hover_hot_day=False)
 # Tiers 13-16 reference (plans 018-020): 900 kg with the constant-OCV battery (13,760 lb).
 requirements_tier16 = HaloRequirements(mass_payload_kg=900.0)
-assumptions_tier16 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None, thermal_model=False, battery_model="constant", wing_weight_model="raymer",
+assumptions_tier16 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None,
+    length_fuselage_m=42.1 * u.foot, x_horizontal_tail_m=11.4, thermal_model=False, battery_model="constant", wing_weight_model="raymer",
                                      aerodynamics_model="simple")
 # Plan 022 reference: 780 kg with the equivalent-circuit battery and the Raymer wing (14,436 lb).
 requirements_plan022 = HaloRequirements(mass_payload_kg=780.0)
-assumptions_plan022 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None, thermal_model=False, wing_weight_model="raymer", aerodynamics_model="simple")
+assumptions_plan022 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None,
+    length_fuselage_m=42.1 * u.foot, x_horizontal_tail_m=11.4, thermal_model=False, wing_weight_model="raymer", aerodynamics_model="simple")
 # Plan 026 reference: 900 kg, AFDD wing, SimpleAerodynamics (14,247 lb).
 requirements_plan026 = HaloRequirements(mass_payload_kg=900.0)
-assumptions_plan026 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None, thermal_model=False, aerodynamics_model="simple")
-assumptions_tier12 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None, thermal_model=False, battery_model="constant", wing_weight_model="raymer",
+assumptions_plan026 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None,
+    length_fuselage_m=42.1 * u.foot, x_horizontal_tail_m=11.4, thermal_model=False, aerodynamics_model="simple")
+assumptions_tier12 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None,
+    length_fuselage_m=42.1 * u.foot, x_horizontal_tail_m=11.4, thermal_model=False, battery_model="constant", wing_weight_model="raymer",
                                      aerodynamics_model="simple", power_rated_turboshaft_fixed_W=None,
                                      hybridization_electric_min=0.0, soc_floor_every_segment=False,
                                      machine_mass_by_torque=False)
 # Tier 12b reference (plan 017): fixed engines with the constant-OCV battery and Tier 12b machines.
-assumptions_tier12b = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None, thermal_model=False, battery_model="constant", wing_weight_model="raymer",
+assumptions_tier12b = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None,
+    length_fuselage_m=42.1 * u.foot, x_horizontal_tail_m=11.4, thermal_model=False, battery_model="constant", wing_weight_model="raymer",
                                       aerodynamics_model="simple", machine_mass_by_torque=False)
 # Tier 17 (plan 021): the equivalent-circuit 50G-shaped pack at end of life, on the Raymer-wing aircraft.
-assumptions_tier17 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None, thermal_model=False, battery_model="ecm", wing_weight_model="raymer",
+assumptions_tier17 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None,
+    length_fuselage_m=42.1 * u.foot, x_horizontal_tail_m=11.4, thermal_model=False, battery_model="ecm", wing_weight_model="raymer",
                                      aerodynamics_model="simple")
 assumptions_tier11a = replace(assumptions_tier12, rotor_speed_physics=False)
 # Tier 15 (plan 023): the reference with the electrical layer (756 V nominal pack, 1,200 V inverters).
-assumptions_tier15 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None, electrical_layer=True, thermal_model=False)
+assumptions_tier15 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None,
+    length_fuselage_m=42.1 * u.foot, x_horizontal_tail_m=11.4, electrical_layer=True, thermal_model=False)
 standard_blocking_voltages_V = (650.0, 1200.0, 1700.0, 3300.0)
 
 
@@ -1248,14 +1257,16 @@ def enumerate_bus_voltage(voltages_nominal_V=(540.0, 756.0, 800.0, 1000.0), requ
                 pass
     return tuple(rows)
 # Tier 20 (plan 024): the AFDD tiltrotor wing (the default from plan 026).
-assumptions_tier20 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None, thermal_model=False, wing_weight_model="afdd_tiltrotor", aerodynamics_model="simple")
+assumptions_tier20 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None,
+    length_fuselage_m=42.1 * u.foot, x_horizontal_tail_m=11.4, thermal_model=False, wing_weight_model="afdd_tiltrotor", aerodynamics_model="simple")
 # Plan 027 reference: 900 kg, AFDD wing, AeroBuildup, no thermal model (13,639 lb).
 requirements_plan027 = HaloRequirements(mass_payload_kg=900.0)
-assumptions_plan027 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None, thermal_model=False)
+assumptions_plan027 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None,
+    length_fuselage_m=42.1 * u.foot, x_horizontal_tail_m=11.4, thermal_model=False)
 # Plan 030 reference: the thermal model, XV-15 fuselage calibration, turbogenerators at the tips (14,037 lb).
 requirements_plan030 = HaloRequirements(mass_payload_kg=900.0)
 assumptions_plan030 = HaloAssumptions(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True,
-                                      height_fuselage_m=None)
+                                      height_fuselage_m=None, length_fuselage_m=42.1 * u.foot, x_horizontal_tail_m=11.4)
 
 
 if __name__ == "__main__":

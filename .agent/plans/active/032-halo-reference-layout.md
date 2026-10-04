@@ -77,3 +77,16 @@ one item at a time. Each item is solved and reported before the next.
     engine. Open.
   - Turbogenerators sit 1.0 m behind the wing quarter chord, at z = 0.5 m (assumed).
 - 2026-10-04: item 3 (boxy section, 2.0 m deep, exponent 3.2) implemented and being solved.
+- 2026-10-04: **item 3** (boxy section).
+  - At the XV-15 length of 12.8 m: 13,952 lb (+782 lb), because the wetted area is 59.9 vs 50.3 m2.
+  - The user chose "11 m, as drawn", with the tail root leading edge at 9.8 m.
+  - **Final plan 032 reference: 5,815.5 kg (12,821 lb).**
+    - L/D 9.60, span 11.16 m, R 4.44 m.
+    - Tails 4.66 / 2.49 m2 (item 2: 4.02 / 1.79) for the 1.6 m shorter arm.
+    - Fuselage 536.8 kg, wetted area 51.3 m2.
+  - **To check:** systems mass fell 451 -> 347 kg. The Raymer systems correlations depend on fuselage length, so
+    verify that this is physical.
+  - **Not yet done:**
+    - the full integration and notebook re-run on the final defaults;
+    - IMPLEMENTATION_NOTES, MODEL_INTERFACES, roadmap and README updates;
+    - merging to `main`.
