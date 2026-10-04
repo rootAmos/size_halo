@@ -25,6 +25,10 @@ Tier 19 (plan 028) adds a thermal option (`HaloAssumptions.thermal_model`): heat
 loads from every loss, a ram-air heat exchanger (mass, cooling drag, hover fan
 power) sized by a design-variable rating, and lumped motor and generator
 temperatures that let hover and engine-out peaks exceed the continuous rating.
+Tier 18 (plan 032) adds a redundancy option (`HaloAssumptions.redundancy`): lane motors
+per rotor, cross-strapped buses with bus ties, isolated battery strings, and failure
+hovers (lane out, bus out, string out; optional double failures with an engine out)
+as extra points of the one sizing problem.
 Assumptions specific to this case are fields of `HaloAssumptions` and are
 listed in plan 013. Illustrative study, not Archer data.
 """
@@ -61,7 +65,7 @@ from aircraft_closure.powertrain.components.propulsor import ActuatorDiskPropuls
 from aircraft_closure.powertrain.components.rotor import MomentumProfileRotor
 from aircraft_closure.powertrain.components.thermal import LumpedThermalModel
 from aircraft_closure.powertrain.components.turboshaft import SimpleTurboshaft, deck_1120hp_part_power_model
-from aircraft_closure.powertrain.topologies import ElectricalLayer, build_series_hybrid
+from aircraft_closure.powertrain.topologies import ElectricalLayer, RedundancyLayer, build_series_hybrid
 from aircraft_closure.requirements.capability import (CeilingRequirement, ClimbRequirement, HoverRequirement,
                                                       RequirementSet, SpeedRequirement)
 from aircraft_closure.vehicle.aircraft import Aircraft, MassBreakdown
@@ -294,6 +298,13 @@ class HaloAssumptions:
     bounds_soc_reserve: tuple = (0.20, 0.90)
     # Cost per mission for objective="cost" and for every result's `cost` (src/aircraft_closure/mission/cost.py).
     cost_model: Any = field(default_factory=CostModel)
+    # Plan 034: drag AeroBuildup and the Scholz build-up leave out. Excrescence, leakage and protuberance as a factor
+    # on component drag, calibrated so the XV-15 components match NDARC's 6.25 ft2 (Johnson 2010, Table 1); trim
+    # drag as a fraction of parasite + induced drag (assumed 2 %, within the 1-5 % usual for an aft tail at cruise).
+    drag_corrections: bool = False
+    factor_excrescence_buildup: float = 1.27
+    factor_excrescence_scholz: float = 1.17
+    fraction_trim_drag: float = 0.02
     # ---- Tier 19 thermal (plan 028) ----
     # True: heat loads from every loss go to a ram-air heat exchanger (mass from its rating, a design variable;
     # cooling drag in airplane mode, fan power in hover), and lumped motor and generator temperatures replace
@@ -316,6 +327,24 @@ class HaloAssumptions:
     # Heat loads cooled elsewhere: the gearboxes' own oil coolers, assumed inside the XV-15-calibrated AFDD drive
     # system weights (they include the lubrication systems). Their heat is still reported.
     sources_excluded_heat_exchanger: tuple = ("gearbox", "generator_gearbox")
+    # ---- Tier 18 redundancy (plan 032) ----
+    # True: `count_lanes_motor` lane motors per rotor (each 1/N of the torque, on a combining gearbox input),
+    # `count_buses` cross-strapped buses joined by normally open ties (contactor + cable), `count_strings_battery`
+    # isolated pack strings (a contactor each), and the failure hovers below as extra points of the sizing problem.
+    # False (default): the single-lane aircraft, unchanged. With True, all counts 1 and no failure cases the
+    # problem is the same as with False.
+    redundancy: bool = False
+    count_lanes_motor: int = 2
+    count_buses: int = 2
+    count_strings_battery: int = 2
+    length_cable_bus_tie_m: float = 2.0              # bus to bus in the fuselage (assumed)
+    # Failure hovers: 60 s at MTOM from the SOC floor down to the emergency floor, thermal history from the end of
+    # the take-off hover (as the engine-out hover). A lane out is applied to both rotors (conservative).
+    failure_lane_out: bool = True                    # one lane per rotor lost, all engines
+    failure_bus_out: bool = True                     # one bus lost: its lanes lost, its sources through a tie
+    failure_string_out: bool = True                  # one battery string isolated, all engines
+    failure_string_out_engine_out: bool = False      # double failure: a string and an engine
+    failure_lane_out_engine_out: bool = False        # double failure: a lane per rotor and an engine
 
 
 @dataclass(frozen=True)
@@ -457,16 +486,58 @@ def build_halo_electrical(motor, generator, battery, span_m, requirements=HaloRe
                            protection_battery=protection_battery, dcdc=dcdc)
 
 
+def count_lanes_motor(assumptions):
+    """Tier 18: lane motors per rotor (1 without the redundancy option)."""
+    return assumptions.count_lanes_motor if assumptions.redundancy else 1
+
+
+def build_halo_redundancy(generator, battery, requirements=HaloRequirements(), assumptions=HaloAssumptions()):
+    """Tier 18 architecture: string contactors at 125 % of a string's discharge current rating; each bus tie
+    (contactor + cable) at 125 % of the rated current of one bus's sources (its share of the generators'
+    electrical rating and of the pack's discharge rating) at the lowest bus voltage. None without the option."""
+    a = assumptions
+    if not a.redundancy:
+        return None
+    window = bus_voltage_window(a)
+    cell = inr21700_50g_cell()
+    pack_max_V = a.count_series_battery * cell.voltage_max_V
+    if isinstance(battery, EquivalentCircuitBattery):
+        current_battery_max_A = battery.get_limits().max_discharge_current_A
+        power_battery_max_W = battery.power_max_discharge_W
+    else:
+        current_battery_max_A = battery.max_discharge_power_W / (a.count_series_battery * cell.voltage_min_V)
+        power_battery_max_W = battery.max_discharge_power_W
+    protection_string = None
+    if a.count_strings_battery > 1:
+        protection_string = ProtectionUnit(max_current_A=a.factor_rating_feeder * current_battery_max_A
+                                           / a.count_strings_battery, max_voltage_V=pack_max_V)
+    protection_bus_tie = cable_bus_tie = None
+    if a.count_buses > 1:
+        current_tie_A = a.factor_rating_feeder * (a.count_turbogenerators * power_electric_rated_W(generator)
+                                                  + power_battery_max_W) / (a.count_buses * window.voltage_min_V)
+        protection_bus_tie = ProtectionUnit(max_current_A=current_tie_A, max_voltage_V=window.voltage_max_V)
+        cable_bus_tie = Cable(length_m=a.length_cable_bus_tie_m, max_current_A=current_tie_A,
+                              max_voltage_V=window.voltage_max_V, altitude_design_m=requirements.altitude_ceiling_m,
+                              conductor=a.conductor_cable)
+    return RedundancyLayer(count_lanes=a.count_lanes_motor, count_buses=a.count_buses,
+                           count_strings_battery=a.count_strings_battery, protection_string=protection_string,
+                           protection_bus_tie=protection_bus_tie, cable_bus_tie=cable_bus_tie)
+
+
 def build_halo_aerodynamics(requirements=HaloRequirements(), assumptions=HaloAssumptions()):
     a, r = assumptions, requirements
     if a.aerodynamics_model == "simple":
         return SimpleAerodynamics(drag_area_misc_m2=a.drag_area_misc_m2,
                                   download_fraction_hover=a.download_fraction_hover, cl_max=r.cl_max)
     if a.aerodynamics_model == "buildup":
+        corrections = (dict(factor_excrescence=a.factor_excrescence_buildup, fraction_trim_drag=a.fraction_trim_drag)
+                       if a.drag_corrections else {})
         return BuildupAerodynamics(cl_max=r.cl_max, drag_area_misc_m2=a.drag_area_misc_buildup_m2,
-                                   blown_wing=BlownWing() if a.blown_wing else None)
+                                   blown_wing=BlownWing() if a.blown_wing else None, **corrections)
     if a.aerodynamics_model == "scholz":
-        return ScholzAerodynamics(cl_max=r.cl_max, drag_area_misc_m2=a.drag_area_misc_buildup_m2)
+        corrections = (dict(factor_excrescence=a.factor_excrescence_scholz, fraction_trim_drag=a.fraction_trim_drag)
+                       if a.drag_corrections else {})
+        return ScholzAerodynamics(cl_max=r.cl_max, drag_area_misc_m2=a.drag_area_misc_buildup_m2, **corrections)
     raise ValueError(f"Unknown aerodynamics model '{a.aerodynamics_model}'.")
 
 
@@ -502,8 +573,10 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
     generator = rubber_machine(Generator, speed_peak_generator_rad_s, d.torque_peak_generator_Nm, **ratios,
                                mass_model=mass_model, **thermal)
     # Tier 19: with thermal machines the drive is rated on its own (the motor's rating is continuous).
+    # Tier 18: `motor` is one lane motor; the drive takes all of a rotor's lanes.
+    lanes = count_lanes_motor(a)
     power_rated_gearbox_W = (d.power_rated_gearbox_W if a.thermal_model and d.power_rated_gearbox_W is not None
-                             else motor.power_rated_W)
+                             else (motor.power_rated_W if lanes == 1 else lanes * motor.power_rated_W))
     radius_m = np.sqrt(d.area_disk_m2 / np.pi)
     solidity = d.solidity if d.solidity is not None else a.solidity
     speed_tip_m_s = d.speed_tip_m_s if d.speed_tip_m_s is not None else a.speed_tip_m_s
@@ -552,9 +625,10 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                                   lapse_model=xv15_lapse_model(lapse_exponent) if a.temperature_lapse else None)
     electrical = (build_halo_electrical(motor, generator, battery, np.sqrt(d.area_wing_m2 * a.aspect_ratio_wing),
                                         requirements, a) if a.electrical_layer else None)
+    redundancy = build_halo_redundancy(generator, battery, requirements, a)
     topology = build_series_hybrid(motor, generator, battery, turboshaft, gearbox, rotor, count_rotors=a.count_rotors,
                                    count_turbogenerators=a.count_turbogenerators, generator_gearbox=generator_gearbox,
-                                   electrical=electrical)
+                                   electrical=electrical, redundancy=redundancy)
 
     nacelles = Nacelles(mass_engines_kg=a.count_turbogenerators * d.mass_turboshaft_bare_kg,
                         count_engines=a.count_turbogenerators, area_wetted_m2=a.area_wetted_nacelles_m2,
@@ -563,9 +637,12 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
         wing_mass = dict(mass_factor=factors.wing)
     elif a.wing_weight_model == "afdd_tiltrotor":
         # Mass on one wing tip: rotor, motor and rotor gearbox, plus the turbogenerator and its nacelle section.
-        mass_tip_kg = mass_rotors_kg / a.count_rotors + motor.get_mass() + gearbox.get_mass()
+        mass_motors_tip_kg = motor.get_mass() if lanes == 1 else lanes * motor.get_mass()    # Tier 18 lanes
+        mass_tip_kg = mass_rotors_kg / a.count_rotors + mass_motors_tip_kg + gearbox.get_mass()
         if electrical is not None:
-            mass_tip_kg = mass_tip_kg + electrical.inverter_motor.get_mass()    # Tier 15: inverters in the nacelle
+            # Tier 15: inverters in the nacelle (one per lane with Tier 18 lanes).
+            mass_tip_kg = mass_tip_kg + (electrical.inverter_motor.get_mass() if lanes == 1
+                                         else lanes * electrical.inverter_motor.get_mass())
         if a.turbogenerators_on_wing_tips:
             mass_tip_kg = mass_tip_kg + (a.count_turbogenerators / a.count_rotors) * (
                 factors.powerplant * d.mass_turboshaft_bare_kg + generator.get_mass()
@@ -611,6 +688,14 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
             InstalledInstance("protection_battery", x_m=x_bus_m, z_m=z_bus_m))
         if electrical.dcdc is not None:
             locations = locations + (InstalledInstance("dcdc", x_m=x_bus_m, z_m=z_bus_m),)
+    if redundancy is not None:
+        # Tier 18: string contactors with the pack; bus ties between the buses next to it.
+        x_bus_m, z_bus_m = x_rotor_m - 0.8, -0.2
+        if redundancy.protection_string is not None:
+            locations = locations + (InstalledInstance("protection_string", x_m=x_bus_m, z_m=z_bus_m),)
+        if redundancy.protection_bus_tie is not None:
+            locations = locations + (InstalledInstance("protection_bus_tie", x_m=x_bus_m, z_m=z_bus_m),
+                                     InstalledInstance("cable_bus_tie", x_m=x_bus_m, z_m=z_bus_m))
     cooling = None
     if a.thermal_model:
         # One ram-air cooler for every heat load, in the fuselage at the wing (the loop runs to the tips).
@@ -707,6 +792,11 @@ class HaloSizingResult:
     # and the exchanger (rating, mass) plus the continuous machine losses and thermal time constants.
     thermal_trace: tuple = ()
     heat_exchanger: Any = None
+    # Tier 18 (`redundancy`): lane motors per rotor (the motor figures above are per lane) and, per failure hover,
+    # its label, SOC at the end, worst per-lane torque / max torque, motor end temperature, battery current, tie
+    # current, its smallest margin and its binding margins.
+    count_lanes_motor: int = 1
+    failure_cases: tuple = ()
 
 
 def count_parallel_guess(guess, assumptions):
@@ -722,11 +812,11 @@ def count_parallel_guess(guess, assumptions):
 
 
 def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None, verbose=False,
-                      max_iter=3000, initial=None, objective="mass_takeoff"):
+                      max_iter=3000, initial=None, objective="mass_takeoff", staged_start=True):
     """Size the Halo: one coupled AeroSandbox solve from `initial`, or the Tier 22 starting-point strategy.
 
     `initial`: an earlier `HaloSizingResult` used as the initial guess (sensitivity studies); the problem is then
-    solved once from it.
+    solved once from it. `staged_start` (Tier 18): False drops the "strings_off" start for redundant aircraft.
 
     objective "mass_takeoff" minimizes take-off mass at the required payload; "payload" makes payload a
     variable and maximizes it (the aircraft is sized around fixed engines, plan 017); "cost" minimizes the
@@ -738,8 +828,13 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     the thermal model, plan 028; Scholz-aero start for the AeroBuildup model, plan 025; constant-battery start for the equivalent-circuit pack, plan 022; payload
     continuation, plan 026), then perturbed designs, then the generic guess.
     """
+    if assumptions.redundancy:
+        failure_hover_cases(assumptions)              # Tier 18: reject impossible failure cases before any solve
     if initial is None:
-        return solve_halo_sizing_multistart(requirements, assumptions, factors, verbose, max_iter, objective)
+        starts = None
+        if assumptions.redundancy and not staged_start:
+            starts = tuple(s for s in default_starts(requirements, assumptions, objective) if s != "strings_off")
+        return solve_halo_sizing_multistart(requirements, assumptions, factors, verbose, max_iter, objective, starts)
     return solve_halo_sizing_once(requirements, assumptions, factors, verbose, max_iter, initial, objective)
 
 
@@ -763,6 +858,10 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         area_disk_m2=40.0, mass_fuel_kg=1000.0)
     mass_takeoff_kg = opti.variable(init_guess=initial.mass_takeoff_kg if initial else 6000.0, scale=1000.0,
                                     lower_bound=1000.0)
+    lanes = count_lanes_motor(assumptions)
+    if initial is not None and initial.count_lanes_motor != lanes:
+        # Tier 18: a start with a different lane count keeps its total motor torque per rotor.
+        guess = replace(guess, torque_peak_motor_Nm=guess.torque_peak_motor_Nm * initial.count_lanes_motor / lanes)
     is_ecm = a.battery_model == "ecm"
     design = HaloDesign(
         x_le_wing_m=opti.variable(init_guess=guess.x_le_wing_m, lower_bound=3.0, upper_bound=8.5),
@@ -910,6 +1009,9 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
                else {}))
         soc_after_hover_hot = flown.soc_end - (hover_hot.battery.power_chemical_W * r.duration_hover_hot_s
                                                / design.energy_capacity_battery_J)
+    # Tier 18: failure hovers, each a degraded state of the same aircraft (one more coupled point, no loop).
+    failures = halo_failure_hovers(opti, aircraft, aerodynamics, mass_takeoff_kg, r, a,
+                                   take_off_end_C if thermal else None) if a.redundancy else ()
 
     # ---- Mass closure ------------------------------------------------------------------
     condition = StructuralDesignCondition(mass_design_kg=mass_takeoff_kg, load_factor_ultimate=a.load_factor_ultimate,
@@ -938,7 +1040,8 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         margin_below("rotor_radius_m", radius_m, (span_m - a.diameter_fuselage_m) / 2 - a.clearance_rotor_fuselage_m),
     )
     all_margins = (design_margins + flown.margins + engine_out_margins
-                   + tuple(m for p in requirement_points for m in p.margins))
+                   + tuple(m for p in requirement_points for m in p.margins)
+                   + tuple(m for _, failure in failures for m in failure.margins))
     whirl_points, wing_masses = [], None
     if is_afdd_wing:
         # Tier 20 reduced-order whirl flutter: at every airplane-mode point the realized wing torsion and beam
@@ -1046,11 +1149,85 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
                             for p in whirl_points),
         cost=CostBreakdown(**{f.name: value(getattr(cost, f.name)) for f in fields(CostBreakdown)}),
         thermal_trace=thermal_trace(
-            tuple(p for s in flown.segments for p in (s.subsegments or (s,))) + tuple(engine_out_points),
+            tuple(p for s in flown.segments for p in (s.subsegments or (s,))) + tuple(engine_out_points)
+            + tuple(p for _, failure in failures for s in failure.segments for p in (s.subsegments or (s,))),
             requirement_points + ([] if is_ecm else [engine_out]) + ([hover_hot] if hover_hot is not None else []),
             value) if thermal else (),
         heat_exchanger=heat_exchanger_summary(aircraft.powertrain, value) if thermal else None,
+        count_lanes_motor=lanes,
+        failure_cases=tuple(failure_summary(label, failure, instances, value) for label, failure in failures),
     )
+
+
+def failure_hover_cases(assumptions):
+    """Tier 18: ((label, HoverSegment counts), ...) for the failure hovers switched on; a case with nothing to
+    fail onto (e.g. a lane out with one lane per rotor) raises."""
+    a = assumptions
+    lanes, engines = a.count_lanes_motor, a.count_turbogenerators
+    cases = []
+    # With one lane per rotor on each bus, a bus out is the lane-out state plus the tie (more demand, more heat), so
+    # it covers the lane out; the duplicate point would only repeat its binding constraints (degenerate for IPOPT).
+    lane_out_covered = a.failure_bus_out and a.count_buses > 1 and lanes // a.count_buses == 1
+    if a.failure_lane_out and not (lane_out_covered and lanes > 1):
+        cases.append(("lane-out hover", dict(active_lane_count=lanes - 1)))
+    if a.failure_bus_out:
+        cases.append(("bus-out hover", dict(count_buses_failed=1)))
+    if a.failure_string_out:
+        cases.append(("string-out hover", dict(active_battery_string_count=a.count_strings_battery - 1)))
+    if a.failure_string_out_engine_out:
+        cases.append(("string-out engine-out hover", dict(active_battery_string_count=a.count_strings_battery - 1,
+                                                          active_generator_count=engines - 1)))
+    if a.failure_lane_out_engine_out:
+        cases.append(("lane-out engine-out hover", dict(active_lane_count=lanes - 1,
+                                                        active_generator_count=engines - 1)))
+    needs = {"lane-out": lanes > 1, "bus-out": a.count_buses > 1, "string-out": a.count_strings_battery > 1}
+    for label, _ in cases:
+        for prefix, available in needs.items():
+            if label.startswith(prefix) and not available:
+                raise ValueError(f"The '{label}' case needs more than one unit to fail onto; set it False or raise "
+                                 f"the count.")
+    return tuple(cases)
+
+
+def halo_failure_hovers(opti, aircraft, aerodynamics, mass_takeoff_kg, requirements, assumptions,
+                        temperature_start_C=None):
+    """Tier 18 failure hovers: ((label, MissionResult), ...), each a 60 s hover at MTOM from the SOC floor to the
+    emergency floor in a degraded state (fewer lanes, a bus out, a string isolated, optionally an engine out too).
+    The thermal history starts at `temperature_start_C` (the end of the take-off hover) when given."""
+    r, a = requirements, assumptions
+    cases = failure_hover_cases(a)
+    is_ecm = a.battery_model == "ecm"
+    failures = []
+    for label, counts in cases:
+        failure = build_mission(opti, aircraft, aerodynamics, Mission((HoverSegment(
+            r.duration_engine_out_hover_s, 0.0, None, label, **counts),)), mass_takeoff_kg, soc_minimum,
+            soc_floor=soc_emergency_floor, polarization_start="steady",
+            **(dict(subsegments=a.subsegments_engine_out) if is_ecm else {}),
+            **(dict(thermal_start=temperature_start_C) if temperature_start_C is not None else {}))
+        failures.append((label, failure))
+    return tuple(failures)
+
+
+def failure_summary(label, failure, instances, value):
+    """Numeric summary of one Tier 18 failure hover (see `HaloSizingResult.failure_cases`)."""
+    points = [s.point for seg in failure.segments for s in (seg.subsegments or (seg,))]
+    motor = instances["motor"].component
+    margins = [(m.label, value(m.value)) for m in failure.margins]
+    temperatures = [p.thermal.temperatures_end_C.get("motor") for p in points if p.thermal is not None]
+    return dict(
+        label=label, soc_end=value(failure.soc_end),
+        count_lanes_active=points[0].redundancy.count_lanes_active,
+        count_strings_active=points[0].redundancy.count_strings_active,
+        count_buses_failed=points[0].redundancy.count_buses_failed,
+        count_generators_active=points[0].condition.active_generator_count or instances["generator"].count,
+        torque_lane_to_max=max(value(p.torque_motor_Nm / motor.max_torque_Nm) for p in points),
+        temperature_end_motor_C=(max(value(t) for t in temperatures) if temperatures and temperatures[0] is not None
+                                 else None),
+        current_battery_max_A=max(value(p.battery.current_A) for p in points),
+        current_tie_A=max(value(p.redundancy.current_tie_A) for p in points),
+        power_loss_tie_W=max(value(p.redundancy.power_loss_tie_W) for p in points),
+        min_margin=min(v for _, v in margins),
+        binding=tuple(name for name, v in margins if abs(v) < 1e-4))
 
 
 @dataclass(frozen=True)
@@ -1161,7 +1338,7 @@ def battery_trace(points, value):
 # Every candidate start is one independent coupled solve of the target problem from an initial guess; a candidate
 # may first solve a simpler precursor problem (other aerodynamics, other battery, lower payload) to obtain that
 # guess. Nothing iterates to a fixed point: the list is finite and ordered, and the record says what happened.
-start_labels = ("caller", "electrical_off", "thermal_off", "mass_objective", "scholz_aero", "constant_battery",
+start_labels = ("caller", "redundancy_off", "strings_off", "electrical_off", "thermal_off", "mass_objective", "scholz_aero", "constant_battery",
                 "payload_continuation", "perturbed_low", "perturbed_high", "generic")
 fraction_payload_continuation = 0.85      # plan 026
 factor_perturbation_low = 0.85
@@ -1208,6 +1385,8 @@ def objective_value(result, objective):
 def default_starts(requirements, assumptions, objective):
     """The ordered candidate starts that apply to this problem (plan 029).
 
+    0. "redundancy_off" / "strings_off" (Tier 18 redundancy): the same aircraft without redundancy, then (with
+       battery strings) without the strings and their failure cases (plan 032).
     1. "electrical_off" (Tier 15 electrical layer with the thermal model): the same problem without the layer
        (plan 023: from the layer design without the thermal model IPOPT reaches local infeasibility). Without
        the thermal model it is a later fallback, after payload continuation.
@@ -1224,6 +1403,12 @@ def default_starts(requirements, assumptions, objective):
     """
     a, is_ecm = assumptions, assumptions.battery_model == "ecm"
     starts = []
+    if a.redundancy:
+        # Tier 18 (plan 032): the same aircraft without redundancy; with battery strings, then the redundant
+        # aircraft without the strings and their failure cases (which itself starts from "redundancy_off").
+        starts.append("redundancy_off")
+        if a.count_strings_battery > 1:
+            starts.append("strings_off")
     if a.thermal_model:
         starts.append("electrical_off" if a.electrical_layer else "thermal_off")
     if objective == "cost":
@@ -1243,6 +1428,11 @@ def default_starts(requirements, assumptions, objective):
 
 def _precursor_problem(label, requirements, assumptions, objective):
     """The simpler problem a start label solves first, as (requirements, assumptions, objective); None: none."""
+    if label == "redundancy_off":
+        return requirements, replace(assumptions, redundancy=False), objective
+    if label == "strings_off":
+        return requirements, replace(assumptions, count_strings_battery=1, failure_string_out=False,
+                                     failure_string_out_engine_out=False), objective
     if label == "electrical_off":
         return requirements, replace(assumptions, electrical_layer=False), objective
     if label == "thermal_off":
@@ -1469,6 +1659,9 @@ assumptions_tier20 = HaloAssumptions(thermal_model=False, wing_weight_model="afd
 # Plan 027 reference: 900 kg, AFDD wing, AeroBuildup, no thermal model (13,639 lb).
 requirements_plan027 = HaloRequirements(mass_payload_kg=900.0)
 assumptions_plan027 = HaloAssumptions(thermal_model=False)
+# Tier 18 (plan 032): the reference with the sensible redundancy set (2 lanes per rotor, 2 cross-strapped buses,
+# 2 battery strings; lane-out, bus-out and string-out hovers).
+assumptions_tier18 = HaloAssumptions(redundancy=True)
 
 
 if __name__ == "__main__":

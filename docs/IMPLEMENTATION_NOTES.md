@@ -1225,11 +1225,121 @@ in mass from AeroBuildup).
   depth of discharge; a cost-mass Pareto front (the time-cost sweep stands in);
   a cheaper start order (or an iteration cap per start) for slow failures.
 
+## Tier 18: redundancy
+
+Plan 032. A Halo option, `HaloAssumptions.redundancy`, **off by default**:
+the reference (900 kg, 210 kt, AeroBuildup, thermal on) stays at 14,037 lb.
+
+- **Architecture as multiplicity** (`RedundancyLayer` in
+  `build_series_hybrid`):
+  - N lane motors per rotor (rubber machines at 1/N of the torque) on a
+    combining gearbox input. The topology now has combiners and splitters
+    (`connect(..., combine=True)`: efforts equal, total flow conserved);
+  - B cross-strapped buses (`add_bus(..., count=B)`, lumped under symmetric
+    operation) with B - 1 normally open ties, each a Tier 15
+    `ProtectionUnit` plus a 2 m `Cable` rated at 125 % of one bus's
+    sources (its generators' electrical rating and its strings' discharge
+    rating) at the minimum bus voltage;
+  - S pack strings, each behind a `ProtectionUnit` at 125 % of a string's
+    discharge rating, in series with the pack (exact drop).
+  - With the linear torque-density mass model, N lanes at 1/N of the torque
+    weigh one machine and draw exactly one machine's losses in normal
+    operation; lanes cost mass through the failure cases (and, with the
+    Tier 15 layer, per-lane feeder overheads).
+- **Failure cases** are degraded flight points of the one problem, set by
+  `FlightCondition.active_lane_count`, `active_battery_string_count` and
+  `count_buses_failed` (also on `HoverSegment`). No loops:
+  - lane out: the active lanes share the gearbox torque; applied to both
+    rotors at once (symmetric multiplicity: conservative for power and heat,
+    no roll trim);
+  - bus out: its N/B lanes per rotor are lost; the tie carries the failed
+    bus's share of the motor demand at the bus voltage (first order); its
+    loss joins the bus demand and is a heat load; ties have margins only
+    when they carry current;
+  - string out: `battery_with_strings` scales the parallel count (capacity,
+    current rating, conductance and thermal mass; the thermal time constant
+    is unchanged). Margins and the thermal state use the degraded pack
+    (component overrides in `operating_margins` and
+    `evaluate_point_thermal`); the mission's SOC uses its capacity.
+- **Halo failure hovers:** 60 s at MTOM from the SOC floor (0.30) to the
+  emergency floor (0.10), thermal history from the end of the take-off
+  hover, polarization developed; lane out, bus out and string out (all
+  engines) by default; string out with an engine out and lane out with an
+  engine out as options. With one lane per rotor on each bus the bus out
+  covers the lane out (same lanes lost, plus the tie), so the lane-out
+  point is not repeated: the duplicate binding constraints made IPOPT fail
+  in restoration.
+- **Starting points:** the redundant problem starts from the non-redundant
+  solution (lane torque scaled by the lane ratio). With strings, a failed
+  solve is restarted from the same problem without the strings
+  (`staged_start`): bus out and string out together reached local
+  infeasibility from the single-lane design.
+
+**Result (sensible set 2 lanes / 2 buses / 2 strings, AeroBuildup, thermal
+on, 900 kg, 210 kt):** 6,506 kg = 14,342 lb, +139 kg (+305 lb) on the
+reference. AeroBuildup converged (no Scholz fallback needed).
+
+| Item (kg) | Reference | 2/2/2 |
+|---|---|---|
+| Motors (all lanes) | 116 | 157 |
+| Rotor gearboxes | 356 | 359 |
+| Battery | 412 | 434 |
+| Rotors | 611 | 628 |
+| String contactors | – | 4 |
+| Bus tie (contactor + cable) | – | 17 |
+| Heat exchanger | 133 | 133 |
+
+| Failure case | Lanes / strings / engines | SOC end | Lane torque / max | Motor end temperature | Binds |
+|---|---|---|---|---|---|
+| Bus out (covers lane out; tie 964 A, 0.27 kW loss) | 1 / 2 / 2 | 0.262 | 0.75 | 150 C | motor temperature |
+| String out | 2 / 1 / 2 | 0.215 | 0.39 | 113 C | no (margin 0.12) |
+
+- **What binds:** the surviving lane's temperature over the 60 s hover
+  (bus out, which is the lane out plus the tie): each lane needs about 0.68
+  of the old single-machine torque (motors +41 kg), and the growth carries
+  the battery, rotor and structure along. The string out does not bind (the
+  engine-out hover, with both strings, still sets the pack). The same
+  14,342 lb was reached with the lane-out point included (before the
+  coverage rule) and from the 2-lane/2-bus solution.
+- **Limiting case:** redundancy on with every count 1 and no cases gives
+  14,037 lb (identical problem).
+
+**Mass by architecture** (AeroBuildup, thermal on, 900 kg, 210 kt; each from
+the reference solution):
+
+| Architecture | Cases | Take-off mass | Change | Per-lane motor rating | Motors (all) |
+|---|---|---|---|---|---|
+| Reference (1 lane) | engine out | 6,367 kg (14,037 lb) | – | 570 kW | 116 kg |
+| 1 lane, option on, no cases | engine out | 6,367 kg (14,037 lb) | 0 | 570 kW | 116 kg |
+| 2 lanes | + lane out | 6,441 kg (14,201 lb) | +75 kg | 333 kW | 156 kg |
+| 3 lanes | + lane out | 6,380 kg (14,066 lb) | +13 kg | 190 kW | 120 kg |
+| 4 lanes | + lane out | 6,401 kg (14,112 lb) | +34 kg | 145 kW | 138 kg |
+| 2 lanes, 2 buses | + bus out (covers lane out) | 6,493 kg (14,314 lb) | +126 kg | 335 kW | 157 kg |
+| 2 strings | + string out | 6,379 kg (14,063 lb) | +12 kg | 571 kW | 116 kg |
+| 2 / 2 / 2 | + bus out, string out | 6,506 kg (14,342 lb) | +139 kg | 336 kW | 157 kg |
+| 2 / 2 / 2 + double failures | + string out & engine out, lane out & engine out | no converged solution | – | – | – |
+
+- More lanes: lower per-lane rating; 3 lanes (each surviving lane at
+  1.5x) costs far less than 2 (2x). The 4-lane result is heavier than 3
+  lanes (a local optimum or the high-speed power cap of the small lanes;
+  not investigated).
+- A failed lane is assumed declutched (a freewheel per lane): its spinning
+  losses vanish, so the active lanes' total loss can fall slightly while
+  their copper loss rises by N/(N-1).
+- The bus tie (17 kg) is rated for one bus's full source capability
+  (2.8 kA at 525 V); at the bus-out point it carries 964 A.
+- Double failures with an engine out did not converge from the 2/2/2
+  solution (IPOPT: infeasible). With the fixed engines the engine-out hover
+  already binds the battery end voltage; whether these cases are physically
+  infeasible is open.
+- **Solve time:** about 2-4 min from the reference; with the staged start
+  (strings) up to 9 min. The integration tests take about 17 min.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
 Tier 1 component physics, Tier 2 topology, Tier 3 compatibility margins, Tier 4 mass closure, Tier 5
-aerodynamics, Tier 6 stability and control, Tier 7 requirements, Tier 8 missions, Tier 9 coupled sizing, Tier 10 XV-15 mass validation, Tier 19 thermal, Tier 20 tiltrotor wing weights and Tier 21 aerodynamics. Outputs are kept so plots render
+aerodynamics, Tier 6 stability and control, Tier 7 requirements, Tier 8 missions, Tier 9 coupled sizing, Tier 10 XV-15 mass validation, Tier 18 redundancy, Tier 19 thermal, Tier 20 tiltrotor wing weights and Tier 21 aerodynamics. Outputs are kept so plots render
 remotely.
 
 ## Next stage

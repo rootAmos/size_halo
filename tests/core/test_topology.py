@@ -197,5 +197,61 @@ class ConnectionResidualTests(unittest.TestCase):
         self.assertAlmostEqual(float(solution.value(voltage_storage_V)), 800, places=6)
 
 
+class CombinerSplitterTests(unittest.TestCase):
+    """Tier 18: direct connections between counts (lane motors on one gearbox input, pack into strings)."""
+
+    def lanes(self, count_lanes=2, count_rotors=2):
+        topology = Topology()
+        topology.add("motor", object(), (shaft_out,), count=count_rotors * count_lanes)
+        topology.add("gearbox", object(), (shaft_in,), count=count_rotors)
+        topology.connect("motor.shaft", "gearbox.shaft", combine=True)
+        return topology
+
+    def test_combiner_needs_flag_and_a_multiple(self):
+        topology = Topology()
+        topology.add("a", object(), (shaft_out,), count=3)
+        topology.add("b", object(), (shaft_in,), count=2)
+        with self.assertRaisesRegex(ValueError, "multiple"):
+            topology.connect("a.shaft", "b.shaft", combine=True)
+        self.assertTrue(self.lanes().connections[0].combine)
+
+    def test_combiner_sums_torque_at_equal_speed(self):
+        residuals = residual_map(connection_residuals(self.lanes(count_lanes=2), {
+            "motor.shaft": MechanicalPortValue(400, 150), "gearbox.shaft": MechanicalPortValue(400, 300)}))
+        self.assertEqual(residuals, {"motor.shaft->gearbox.shaft speed_rad_s": 0,
+                                     "motor.shaft->gearbox.shaft torque_Nm (total)": 0})
+        residuals = residual_map(connection_residuals(self.lanes(count_lanes=3), {
+            "motor.shaft": MechanicalPortValue(400, 100), "gearbox.shaft": MechanicalPortValue(390, 290)}))
+        self.assertEqual(residuals["motor.shaft->gearbox.shaft speed_rad_s"], 10)
+        self.assertEqual(residuals["motor.shaft->gearbox.shaft torque_Nm (total)"], 6 * 100 - 2 * 290)
+
+    def test_splitter_conserves_current(self):
+        topology = Topology()
+        topology.add("battery", object(), (electrical_out,))
+        topology.add("string", object(), (electrical_in,), count=4)
+        topology.connect("battery.electrical", "string.electrical", combine=True)
+        residuals = residual_map(connection_residuals(topology, {
+            "battery.electrical": ElectricalPortValue(700, 200), "string.electrical": ElectricalPortValue(700, 50)}))
+        self.assertEqual(residuals["battery.electrical->string.electrical current_A (total)"], 0)
+        self.assertEqual(residuals["battery.electrical->string.electrical voltage_V"], 0)
+
+    def test_bus_count(self):
+        topology = Topology()
+        topology.add_bus("bus", count=2)
+        self.assertEqual(topology.buses["bus"].count, 2)
+        with self.assertRaisesRegex(ValueError, "positive integer"):
+            topology.add_bus("other", count=0)
+        self.assertEqual(Topology().add_bus("bus") and 1, 1)
+
+    def test_combiner_residual_symbolic(self):
+        opti = asb.Opti()
+        torque_lane_Nm = opti.variable(init_guess=10.0)
+        residuals = connection_residuals(self.lanes(count_lanes=2), {
+            "motor.shaft": MechanicalPortValue(400, torque_lane_Nm), "gearbox.shaft": MechanicalPortValue(400, 300)})
+        opti.subject_to([r.value == 0 for r in residuals if isinstance(r.value, cas.MX)])
+        solution = opti.solve(verbose=False)
+        self.assertAlmostEqual(float(solution.value(torque_lane_Nm)), 150.0, places=6)
+
+
 if __name__ == "__main__":
     unittest.main()

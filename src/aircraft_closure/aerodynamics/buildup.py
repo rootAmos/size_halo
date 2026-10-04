@@ -12,6 +12,10 @@ methods, `cl_max` and hover download). Added on top, because AeroBuildup does no
 * the Nita-Scholz fuselage factor k_e,F = 1 - 2 (d_F / b)^2 and compressibility factor k_e,M on the Oswald
   factor (AeroBuildup takes the fuselage diameter as zero and k_e,M as 1);
 * a miscellaneous drag area and fixed landing gear;
+* excrescence, leakage and protuberance drag (plan 034): (`factor_excrescence` - 1) x the component profile and
+  interference drag, a separate breakdown item; AeroBuildup models clean components only. Calibrated so the
+  XV-15 components match NDARC's 6.25 ft2 (Johnson 2010, Table 1): 1.27 for this model, 1.17 for Scholz;
+* trim drag (plan 034): `fraction_trim_drag` x (parasite + induced) drag, added to CD (not CD0);
 * blown-wing increments (`BlownWing`) when the caller gives the rotor state (airplane mode);
 * hover download from wing and rotor geometry (`HoverDownload`) unless a constant fraction is given.
 
@@ -71,6 +75,8 @@ class BuildupAerodynamics:
     download_fraction_hover: Any = None          # None: from geometry (`download`)
     download: Any = field(default_factory=HoverDownload)
     alpha_reference_stall_deg: tuple = (0.0, 8.0)
+    factor_excrescence: Any = 1.0                # 1: clean components (plan 025); 1.27: XV-15/NDARC (plan 034)
+    fraction_trim_drag: Any = 0.0                # trim drag / (parasite + induced)
 
     def hover_download_fraction(self, aircraft):
         if self.download_fraction_hover is not None:
@@ -134,6 +140,9 @@ class BuildupAerodynamics:
         for (label, interference), component in zip(labels_q, components):
             breakdown.append(ParasiteDragItem(label, interference * component.D / force_scale_N))
         breakdown = _merge(breakdown)
+        if not _is_value(self.factor_excrescence, 1.0):     # numeric settings only; keeps the plan 025 graph
+            breakdown.append(ParasiteDragItem("excrescence", (self.factor_excrescence - 1)
+                                              * sum(item.cd0 for item in breakdown)))
         breakdown.append(ParasiteDragItem("miscellaneous", self.drag_area_misc_m2 / area_ref_m2))
         if not aircraft.landing_gear.is_retractable:
             breakdown.append(ParasiteDragItem("landing_gear", self.drag_area_landing_gear_fixed_m2 / area_ref_m2))
@@ -163,6 +172,8 @@ class BuildupAerodynamics:
         cd0 = sum(item.cd0 for item in breakdown)
         cdi = cl**2 / (np.pi * aspect_ratio_ref * oswald)
         cd = cd0 + cdi + sum(increment.cd for increment in drag_increments)
+        if not _is_value(self.fraction_trim_drag, 0.0):
+            cd = cd + self.fraction_trim_drag * (cd0 + cdi)
         aero = AeroResult(alpha_deg=alpha_deg, cl=cl, cd=cd, cd0=cd0, cdi=cdi,
                           cl_alpha_per_rad=self.lift_curve_slope_per_rad(aircraft, velocity_m_s, altitude_m,
                                                                          temperature_offset_K),
@@ -175,6 +186,11 @@ class BuildupAerodynamics:
                  rotor_state=None):
         return self.evaluate_buildup(aircraft, velocity_m_s, altitude_m, alpha_deg, drag_increments,
                                      temperature_offset_K, rotor_state).aero
+
+
+def _is_value(setting, value):
+    """True when a model setting is the plain number `value` (settings are numbers, never Opti variables)."""
+    return isinstance(setting, (int, float)) and setting == value
 
 
 def _merge(items):
