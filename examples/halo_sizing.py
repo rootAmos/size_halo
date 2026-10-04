@@ -56,10 +56,11 @@ from aircraft_closure.powertrain.components.battery import Battery
 from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery, inr21700_50g_cell
 from aircraft_closure.powertrain.components.cable import Cable, aluminium_conductor
 from aircraft_closure.powertrain.components.converters import ConverterLossModel, DcDcConverter, Inverter
-from aircraft_closure.powertrain.components.gearbox import Gearbox
+from aircraft_closure.powertrain.components.gearbox import Gearbox, GearStageModel
 from aircraft_closure.powertrain.components.generator import Generator
 from aircraft_closure.powertrain.components.heat_exchanger import RamAirHeatExchanger
-from aircraft_closure.powertrain.components.motor import Motor, TorqueDensityMassModel, rubber_machine
+from aircraft_closure.powertrain.components.motor import (DatabaseMassModel, Motor, TorqueDensityMassModel,
+                                                          rubber_machine)
 from aircraft_closure.powertrain.components.protection import ProtectionUnit
 from aircraft_closure.powertrain.components.propulsor import ActuatorDiskPropulsor
 from aircraft_closure.powertrain.components.rotor import MomentumProfileRotor
@@ -345,6 +346,25 @@ class HaloAssumptions:
     failure_string_out: bool = True                  # one battery string isolated, all engines
     failure_string_out_engine_out: bool = False      # double failure: a string and an engine
     failure_lane_out_engine_out: bool = False        # double failure: a lane per rotor and an engine
+    # ---- Plan 033 machine database and gearbox stages (refines Tier 13) ----
+    # Machine mass: "torque_density" (TorqueDensityMassModel above, the reference) or "database"
+    # (DatabaseMassModel: continuous torque density falling with base speed, fitted to
+    # data/machines/aerospace_motors.csv). The database model is a bare-machine fit: with the electrical layer
+    # the inverter is the separate component; without it the model adds rated power / specific_power_inverter_W_kg.
+    # The cap is specific_power_max_machine_bare_W_kg in both modes.
+    machine_mass_model: str = "torque_density"
+    torque_density_database_Nm_kg: float = 11.79       # at speed_ref_database_rad_s (fit, plan 033)
+    speed_ref_database_rad_s: float = 500.0
+    exponent_speed_database: float = 0.271
+    # True: rotor and generator step-up gearboxes get an explicit stage count from their ratio, with mass factor
+    # and efficiency per stage (GearStageModel). The AFDD drive mass is evaluated at the XV-15 calibration ratio
+    # (20,000 / 565 rpm) and scaled by mass_factor(ratio) / mass_factor(XV-15 ratio). False: AFDD with its own
+    # mild ratio exponent and a constant 0.97 efficiency (the reference).
+    gearbox_stages: bool = False
+    # Relaxed (softplus) stage count: the smooth staircase (GearStageModel(staircase=True)) solves on the fast set
+    # but not through the AeroBuildup and thermal starts with the database machines (plan 033).
+    gear_stage_model: Any = field(default_factory=lambda: GearStageModel(staircase=False))
+    reduction_ratio_max: float = 40.0                  # upper bound on the rotor gear ratio (slow-motor trades)
 
 
 @dataclass(frozen=True)
@@ -541,6 +561,17 @@ def build_halo_aerodynamics(requirements=HaloRequirements(), assumptions=HaloAss
     raise ValueError(f"Unknown aerodynamics model '{a.aerodynamics_model}'.")
 
 
+def ratio_reference_gear_stages():
+    """The XV-15 engine-to-rotor ratio (20,000 / 565 rpm, 35.4:1), where the AFDD transmission factor is calibrated."""
+    reference = Xv15Reference()
+    return reference.speed_engine_rad_s / reference.speed_rotor_hover_rad_s
+
+
+def stage_mass_ratio(stage_model, ratio):
+    """Plan 033: drive mass relative to the AFDD drive at the XV-15 calibration ratio; `ratio` is fast/slow (>= 1)."""
+    return stage_model.mass_factor(ratio) / stage_model.mass_factor(ratio_reference_gear_stages())
+
+
 def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None,
                         lapse_exponent=None):
     a, d = assumptions, design
@@ -548,6 +579,11 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
     lapse_exponent = lapse_exponent if lapse_exponent is not None else fit_lapse_exponent()
     ratios = dict(torque_ratio=2.5, power_ratio=1.25, speed_ratio=2.5)
     by_torque = a.machine_mass_by_torque
+    if a.machine_mass_model not in ("torque_density", "database"):
+        raise ValueError(f"Unknown machine mass model '{a.machine_mass_model}'.")
+    is_database = a.machine_mass_model == "database"
+    if is_database and not (by_torque or a.electrical_layer):
+        raise ValueError("The database machine mass model needs machine_mass_by_torque (speed design variables).")
     if a.electrical_layer:
         # Tier 15: the inverter is a separate component, so the machines are bare machines wound for the bus.
         mass_model = TorqueDensityMassModel(a.torque_density_machine_bare_Nm_kg, a.specific_power_max_machine_bare_W_kg)
@@ -557,6 +593,12 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
     else:
         mass_model = (TorqueDensityMassModel(a.torque_density_Nm_kg, a.specific_power_max_machine_W_kg)
                       if by_torque else None)
+    if is_database:
+        # Plan 033: bare machines from the database fit; the inverter is added unless it is a Tier 15 component.
+        mass_model = DatabaseMassModel(
+            torque_density_ref_Nm_kg=a.torque_density_database_Nm_kg, speed_ref_rad_s=a.speed_ref_database_rad_s,
+            exponent_speed=a.exponent_speed_database, specific_power_max_W_kg=a.specific_power_max_machine_bare_W_kg,
+            specific_power_inverter_W_kg=None if a.electrical_layer else a.specific_power_inverter_W_kg)
     speed_peak_motor_rad_s = d.speed_peak_motor_rad_s if d.speed_peak_motor_rad_s is not None else a.speed_peak_motor_rad_s
     if d.speed_peak_generator_rad_s is not None:
         speed_peak_generator_rad_s = d.speed_peak_generator_rad_s
@@ -589,24 +631,42 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
         gearbox = Gearbox(reduction_ratio=1.0, efficiency=1.0, power_rated_W=power_rated_gearbox_W,
                           specific_power_W_kg=1e12)
     else:
+        stages = a.gear_stage_model if a.gearbox_stages else None
+        # Plan 033: with explicit stages the AFDD input speed is held at the XV-15 calibration ratio, so its own
+        # ratio exponent is not counted twice; the stage mass factor carries the ratio dependence.
+        speed_input_rad_s = (speed_rotor_design_rad_s * ratio_reference_gear_stages() if stages is not None
+                             else (speed_peak_motor_rad_s if by_torque else a.speed_peak_motor_rad_s))
         if by_torque:
             # AFDD00: mild penalty for higher reduction ratio (input-speed exponent 0.099).
             mass_gearboxes_kg = factors.transmission * afdd.mass_gearbox_rotor_shaft_afdd00_kg(
-                a.count_rotors, a.count_rotors * power_rated_gearbox_W, speed_peak_motor_rad_s, speed_rotor_design_rad_s)
+                a.count_rotors, a.count_rotors * power_rated_gearbox_W, speed_input_rad_s, speed_rotor_design_rad_s)
         else:
             mass_gearboxes_kg = factors.transmission * afdd.mass_gearbox_rotor_shaft_afdd83_kg(
-                a.count_rotors * power_rated_gearbox_W, speed_rotor_design_rad_s, a.speed_peak_motor_rad_s, a.count_rotors,
+                a.count_rotors * power_rated_gearbox_W, speed_rotor_design_rad_s, speed_input_rad_s, a.count_rotors,
                 0.6)
+        efficiency = {}
+        if stages is not None:
+            mass_gearboxes_kg = mass_gearboxes_kg * stage_mass_ratio(stages, reduction_ratio)
+            efficiency = dict(efficiency=stages.efficiency(reduction_ratio))
         gearbox = Gearbox(reduction_ratio=reduction_ratio, power_rated_W=power_rated_gearbox_W,
-                          specific_power_W_kg=power_rated_gearbox_W / (mass_gearboxes_kg / a.count_rotors))
+                          specific_power_W_kg=power_rated_gearbox_W / (mass_gearboxes_kg / a.count_rotors), **efficiency)
     generator_gearbox = None
     if by_torque and a.generator_step_up and d.speed_peak_generator_rad_s is not None:
         # Step-up from the engine's output shaft; AFDD00 with the slow (engine) side as the "rotor" speed.
-        mass_generator_gearbox_kg = factors.transmission * afdd.mass_gearbox_rotor_shaft_afdd00_kg(
-            1, d.power_rated_turboshaft_W, speed_peak_generator_rad_s, a.speed_output_turboshaft_rad_s)
+        ratio_step_up = speed_peak_generator_rad_s / a.speed_output_turboshaft_rad_s
+        efficiency = {}
+        if a.gearbox_stages:
+            mass_generator_gearbox_kg = factors.transmission * afdd.mass_gearbox_rotor_shaft_afdd00_kg(
+                1, d.power_rated_turboshaft_W, a.speed_output_turboshaft_rad_s * ratio_reference_gear_stages(),
+                a.speed_output_turboshaft_rad_s) * stage_mass_ratio(a.gear_stage_model, ratio_step_up)
+            efficiency = dict(efficiency=a.gear_stage_model.efficiency(ratio_step_up))
+        else:
+            mass_generator_gearbox_kg = factors.transmission * afdd.mass_gearbox_rotor_shaft_afdd00_kg(
+                1, d.power_rated_turboshaft_W, speed_peak_generator_rad_s, a.speed_output_turboshaft_rad_s)
         generator_gearbox = Gearbox(reduction_ratio=a.speed_output_turboshaft_rad_s / speed_peak_generator_rad_s,
                                     power_rated_W=d.power_rated_turboshaft_W,
-                                    specific_power_W_kg=d.power_rated_turboshaft_W / mass_generator_gearbox_kg)
+                                    specific_power_W_kg=d.power_rated_turboshaft_W / mass_generator_gearbox_kg,
+                                    **efficiency)
     if a.rotor_speed_physics:
         rotor = MomentumProfileRotor(area_disk_m2=d.area_disk_m2, solidity=solidity, mass_kg=mass_rotors_kg / a.count_rotors,
                                      max_shaft_power_W=gearbox.power_rated_W * gearbox.efficiency,
@@ -812,7 +872,7 @@ def count_parallel_guess(guess, assumptions):
 
 
 def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None, verbose=False,
-                      max_iter=3000, initial=None, objective="mass_takeoff", staged_start=True):
+                      max_iter=3000, initial=None, objective="mass_takeoff", staged_start=True, stage_fallback=True):
     """Size the Halo: one coupled AeroSandbox solve from `initial`, or the Tier 22 starting-point strategy.
 
     `initial`: an earlier `HaloSizingResult` used as the initial guess (sensitivity studies); the problem is then
@@ -830,6 +890,27 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     """
     if assumptions.redundancy:
         failure_hover_cases(assumptions)              # Tier 18: reject impossible failure cases before any solve
+    stages = assumptions.gear_stage_model
+    if initial is None and stage_fallback and assumptions.gearbox_stages and stages.staircase:
+        # Plan 033: the staircase stage count is a landscape of plateaus and steep steps, with a local optimum per
+        # stage count. Two starting points, the strategy's own and the relaxed (softplus) stage-count solution,
+        # each one complete solve; the better result is kept.
+        candidates = []
+        try:
+            candidates.append(solve_halo_sizing(requirements, assumptions, factors, verbose, max_iter, None,
+                                                objective, staged_start, stage_fallback=False))
+        except RuntimeError:
+            pass
+        try:
+            relaxed = solve_halo_sizing(requirements, replace(assumptions, gear_stage_model=replace(
+                stages, staircase=False)), factors, max_iter=max_iter, objective=objective)
+            candidates.append(solve_halo_sizing_once(requirements, assumptions, factors, verbose, max_iter, relaxed,
+                                                     objective))
+        except RuntimeError:
+            pass
+        if not candidates:
+            raise RuntimeError("Halo sizing with gearbox stages failed from both starting points.")
+        return min(candidates, key=lambda c: objective_value(c, objective))
     if initial is None:
         starts = None
         if assumptions.redundancy and not staged_start:
@@ -900,8 +981,9 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
             else (60.0 if a.direct_drive_rotor else 400.0), scale=100.0, lower_bound=20.0, upper_bound=2000.0))
         if not a.direct_drive_rotor:
             design = replace(design, reduction_ratio=opti.variable(
-                init_guess=guess.reduction_ratio if guess.reduction_ratio is not None else 7.0,
-                lower_bound=1.5, upper_bound=40.0))
+                init_guess=min(guess.reduction_ratio if guess.reduction_ratio is not None else 7.0,
+                               a.reduction_ratio_max),
+                lower_bound=1.5, upper_bound=a.reduction_ratio_max))
         if a.generator_step_up:
             design = replace(design, speed_peak_generator_rad_s=opti.variable(
                 init_guess=guess.speed_peak_generator_rad_s if guess.speed_peak_generator_rad_s is not None else 600.0,
