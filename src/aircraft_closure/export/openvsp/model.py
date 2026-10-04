@@ -18,7 +18,7 @@ import math
 
 import openvsp as vsp
 
-from aircraft_closure.export.openvsp.snapshot import BodySnapshot, BodyStation
+from aircraft_closure.export.openvsp.snapshot import BodySnapshot
 
 # Propeller blade curve indices (OpenVSP 3.53.1): chord c/R and twist in degrees over r/R.
 _pcurve_chord = 0
@@ -154,14 +154,7 @@ def _add_nacelle_group(snapshot, wing_id, angle_nacelle_deg):
         _set(hinge_id, name_parm, "Hinge", value)
     _set(hinge_id, "JointRotate", "Hinge", angle_nacelle_deg)
 
-    # Airplane-mode nacelle along +x from the spinner tip: spinner, flat-sided cowling, tapering tail.
-    w_m, h_m, length_m = n.width_m, n.height_m, n.length_m
-    rows = ((0.00, 0.05, 0.05, 2.0), (0.05, 0.6 * w_m, 0.6 * w_m, 2.0), (0.14, 0.95 * w_m, 0.85 * h_m, 2.4),
-            (0.40, w_m, h_m, 2.8), (0.80, 0.85 * w_m, 0.9 * h_m, 2.8), (1.00, 0.45 * w_m, 0.55 * h_m, 2.4))
-    nacelle = BodySnapshot(stations=tuple(
-        BodyStation(x_m=fraction_x * length_m, z_m=0.0, width_m=width_m, height_m=height_m, exponent=exponent)
-        for fraction_x, width_m, height_m, exponent in rows))
-    nacelle_id = _add_body("Nacelle", nacelle, hinge_id)
+    nacelle_id = _add_body("Nacelle", BodySnapshot(stations=n.stations()), hinge_id)
     _attach_to_parent(nacelle_id, x_rel_m=-n.length_mast_m - n.offset_nose_m)
 
     rotor_id = vsp.AddGeom("PROP", nacelle_id)

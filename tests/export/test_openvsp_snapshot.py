@@ -55,6 +55,25 @@ class HaloSnapshotTests(unittest.TestCase):
             self.assertEqual(x_m, sorted(x_m))
             self.assertTrue(all(station.width_m > 0 and station.height_m > 0 for station in body.stations))
 
+    def test_aerosandbox_airplane_matches_the_snapshot(self):
+        airplane = self.snapshot.to_asb()
+        wing, v_tail = airplane.wings
+        self.assertAlmostEqual(float(wing.area()), 21.388, places=6)
+        self.assertAlmostEqual(airplane.s_ref, 21.388, places=9)
+        self.assertAlmostEqual(airplane.c_ref, float(wing.mean_aerodynamic_chord()), places=6)
+        area_v_tail_m2 = float(v_tail.area())
+        dihedral_rad = math.radians(self.snapshot.v_tail.dihedral_deg)
+        self.assertAlmostEqual(area_v_tail_m2 * math.cos(dihedral_rad) ** 2, 3.732, places=6)
+        self.assertAlmostEqual(area_v_tail_m2 * math.sin(dihedral_rad) ** 2, 1.658, places=6)
+        names = [fuselage.name for fuselage in airplane.fuselages]
+        self.assertEqual(names, ["fuselage", "wing_fairing", "nacelle_right", "nacelle_left"])
+        x_spindle_m, y_spindle_m, z_spindle_m = self.snapshot.spindle_xyz_m()
+        nose = airplane.fuselages[2].xsecs[0].xyz_c
+        nacelle = self.snapshot.nacelle
+        self.assertAlmostEqual(nose[0], x_spindle_m - nacelle.length_mast_m - nacelle.offset_nose_m, places=9)
+        self.assertAlmostEqual(nose[1], y_spindle_m, places=9)
+        self.assertAlmostEqual(nose[2], z_spindle_m, places=9)
+
 
 if __name__ == "__main__":
     unittest.main()

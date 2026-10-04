@@ -48,6 +48,15 @@ class OpenvspModelTests(unittest.TestCase):
         self.assertAlmostEqual(vsp.GetParmVal(geoms["Rotor"], "Diameter", "Design"), 2 * self.snapshot.rotor.radius_m)
         self.assertEqual(int(vsp.GetParmVal(geoms["Rotor"], "NumBlade", "Design")), self.snapshot.rotor.count_blades)
 
+    def test_aerosandbox_export_matches_the_openvsp_surfaces(self):
+        """Sweep and span conventions agree: trailing-edge extremes of wing and V-tail within 1 cm."""
+        geoms = self.build(0.0)
+        wing, v_tail = self.snapshot.to_asb().wings
+        x_max_wing_m = vsp.GetGeomBBoxMax(geoms["Wing"], 0, True).x()
+        self.assertAlmostEqual(x_max_wing_m, wing.xsecs[0].xyz_le[0] + wing.xsecs[0].chord, delta=0.01)
+        x_max_v_tail_m = vsp.GetGeomBBoxMax(geoms["VTail"], 0, True).x()
+        self.assertAlmostEqual(x_max_v_tail_m, v_tail.xsecs[-1].xyz_le[0] + v_tail.xsecs[-1].chord, delta=0.01)
+
     def test_exports_are_written_and_mirrored(self):
         from aircraft_closure.export.openvsp.model import export_outer_mold_line
         with tempfile.TemporaryDirectory() as directory:

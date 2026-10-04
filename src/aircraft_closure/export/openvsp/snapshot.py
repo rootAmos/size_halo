@@ -11,6 +11,7 @@ Nacelle angle follows the XV-15/NDARC convention: 90 deg is helicopter mode,
 import math
 from dataclasses import dataclass
 
+import aerosandbox as asb
 import aerosandbox.tools.units as u
 
 
@@ -36,6 +37,14 @@ class BodySnapshot:
     stations: tuple
     x_nose_m: float = 0.0
 
+    def to_asb(self, name, offset_xyz_m=(0.0, 0.0, 0.0)):
+        """AeroSandbox fuselage through the same stations (super-ellipse `shape` is the top exponent)."""
+        dx_m, dy_m, dz_m = offset_xyz_m
+        return asb.Fuselage(name=name, xsecs=[
+            asb.FuselageXSec(xyz_c=[self.x_nose_m + station.x_m + dx_m, dy_m, station.z_m + dz_m],
+                             width=station.width_m, height=station.height_m, shape=station.exponent)
+            for station in self.stations])
+
 
 @dataclass(frozen=True)
 class SurfaceSnapshot:
@@ -58,6 +67,26 @@ class SurfaceSnapshot:
         return (self.x_le_root_m + self.fraction_chord_sweep * (self.chord_root_m - self.chord_tip_m)
                 + semispan_m * math.tan(math.radians(self.sweep_deg)))
 
+    def naca_name(self):
+        return f"naca{round(100 * self.camber)}{round(10 * self.camber_location) if self.camber else 0}" \
+               f"{round(100 * self.thickness_to_chord):02d}"
+
+    def to_asb(self, name):
+        """AeroSandbox symmetric wing with the same root and tip sections as the OpenVSP surface."""
+        semispan_m = self.span_m / 2
+        dihedral_rad = math.radians(self.dihedral_deg)
+        airfoil = asb.Airfoil(self.naca_name())
+        return asb.Wing(name=name, symmetric=True, xsecs=[
+            asb.WingXSec(xyz_le=[self.x_le_root_m, 0.0, self.z_m], chord=self.chord_root_m, airfoil=airfoil),
+            asb.WingXSec(xyz_le=[self.x_le_tip_m(), semispan_m * math.cos(dihedral_rad),
+                                 self.z_m + semispan_m * math.sin(dihedral_rad)],
+                         chord=self.chord_tip_m, airfoil=airfoil),
+        ])
+
+    def mean_aerodynamic_chord_m(self):
+        taper = self.chord_tip_m / self.chord_root_m
+        return 2 / 3 * self.chord_root_m * (1 + taper + taper ** 2) / (1 + taper)
+
 
 @dataclass(frozen=True)
 class NacelleSnapshot:
@@ -69,6 +98,14 @@ class NacelleSnapshot:
     offset_z_spindle_m: float         # spindle z above the wing reference plane
     length_mast_m: float              # spindle to rotor hub along the nacelle axis
     offset_nose_m: float = 0.0        # nacelle nose (spinner tip) ahead of the hub
+
+    def stations(self):
+        """Airplane-mode body along +x from the spinner tip: spinner, flat-sided cowling, tapering tail."""
+        w_m, h_m, length_m = self.width_m, self.height_m, self.length_m
+        rows = ((0.00, 0.05, 0.05, 2.0), (0.05, 0.6 * w_m, 0.6 * w_m, 2.0), (0.14, 0.95 * w_m, 0.85 * h_m, 2.4),
+                (0.40, w_m, h_m, 2.8), (0.80, 0.85 * w_m, 0.9 * h_m, 2.8), (1.00, 0.45 * w_m, 0.55 * h_m, 2.4))
+        return tuple(BodyStation(x_m=fraction_x * length_m, z_m=0.0, width_m=width_m, height_m=height_m,
+                                 exponent=exponent) for fraction_x, width_m, height_m, exponent in rows)
 
 
 @dataclass(frozen=True)
@@ -97,6 +134,28 @@ class GeometrySnapshot:
         """Conversion spindle of the right nacelle."""
         w, n = self.wing, self.nacelle
         return (w.x_le_tip_m() + n.fraction_chord_spindle * w.chord_tip_m, w.span_m / 2, w.z_m + n.offset_z_spindle_m)
+
+    def to_asb(self):
+        """AeroSandbox airplane of the airplane-mode (0 deg) outer mold line, without rotors.
+
+        Reference area and span are the wing's; reference chord is its MAC.
+        """
+        x_spindle_m, y_spindle_m, z_spindle_m = self.spindle_xyz_m()
+        x_nose_nacelle_m = x_spindle_m - self.nacelle.length_mast_m - self.nacelle.offset_nose_m
+        nacelle = BodySnapshot(stations=self.nacelle.stations(), x_nose_m=x_nose_nacelle_m)
+        wings = [self.wing.to_asb("wing")]
+        wings += [surface.to_asb(name) for name, surface in (("horizontal_tail", self.horizontal_tail),
+                                                             ("v_tail", self.v_tail)) if surface is not None]
+        if self.vertical_tail is not None:
+            raise NotImplementedError("A conventional vertical tail is not exported to AeroSandbox yet.")
+        fuselages = [self.fuselage.to_asb("fuselage")]
+        if self.wing_fairing is not None:
+            fuselages.append(self.wing_fairing.to_asb("wing_fairing"))
+        fuselages += [nacelle.to_asb(f"nacelle_{side}", (0.0, sign * y_spindle_m, z_spindle_m))
+                      for side, sign in (("right", 1.0), ("left", -1.0))]
+        return asb.Airplane(name="halo", wings=wings, fuselages=fuselages, s_ref=self.wing.span_m * 0.5 * (
+            self.wing.chord_root_m + self.wing.chord_tip_m), c_ref=self.wing.mean_aerodynamic_chord_m(),
+                            b_ref=self.wing.span_m)
 
 
 def v_tail_equivalent(area_horizontal_tail_m2, area_vertical_tail_m2, aspect_ratio, taper_ratio, sweep_le_deg,

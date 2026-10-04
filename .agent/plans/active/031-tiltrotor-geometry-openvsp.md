@@ -312,3 +312,41 @@ Each new margin is added to the Halo report. The new margins become constraints 
     rotor STLs per angle, from the new OpenVSP sets "Airframe" and "Rotors".
   - **Install note:** `uv sync` removes the OpenVSP packages, which are installed outside the lock file; reinstall
     them with `uv pip install`, or sync with `--inexact`.
+- 2026-10-04: OpenVSP outer mold line committed on branch `feat/openvsp-geometry` (3704dbf).
+  - The plan is renumbered 028 -> 031, because 028/030 are the parallel thermal work; the follow-up becomes 032.
+  - The commit was built with a temporary index, so the shared `main` working tree, where another session has
+    uncommitted plan 030 changes, was not touched.
+- 2026-10-04: aero cross-check, added at the user's request ("run some kind of aero analysis ... with vsp panel
+  methods and compare it to what aero sandbox is doing"). It is a check only; nothing feeds the sizing.
+  - **Code:** `GeometrySnapshot.to_asb()` gives both tools the same geometry; `export/openvsp/aero.py` runs VSPAERO
+    7.2.2 and the OpenVSP parasite tool; `examples/halo_aero_compare.py` does the comparison.
+  - **Condition:** 210 kt, 10,000 ft (Mach 0.329, Re(MAC) 1.1e7), moments about the wing MAC quarter chord
+    (x 4.546 m), airplane mode, no rotors.
+  - **VSPAERO models:** an all-vortex-lattice model is singular, because a VLM body is a flat plate on its centre
+    plane and coincides with the wing tip inside the tip nacelle. So the "mixed" model panels the bodies and keeps
+    the lifting surfaces thin. With thick bodies, VSPAERO's wake induced drag is not credible, so induced drag is
+    compared on the thin model only.
+  - **Results:**
+
+    | | VSPAERO thin | VSPAERO mixed | VSPAERO panel | AeroSandbox VLM | AeroBuildup |
+    |---|---|---|---|---|---|
+    | CL_alpha (/deg) | 0.0873 | 0.0988 | 0.1114 | 0.0836 | 0.0954 |
+    | CL at 0 deg | 0.158 | 0.100 | 0.093 | 0.148 | 0.245 |
+    | Neutral point x (m) | 4.867 | 4.674 | 4.699 | 4.935 | 4.598 |
+    | Oswald e (wing AR 6.12) | 1.14 | — | — | 1.04 | 0.82 |
+
+  - **Profile drag at alpha 0:** OpenVSP tool CD0 0.0205 against AeroBuildup 0.0221 (+8 %).
+    - Fuselage 61 vs 64 counts.
+    - Wing 84 vs 62 counts (VSP form factor 1.62 at t/c 0.23).
+    - Nacelles 26 vs 42 counts.
+    - Fairing 15 vs 40 counts: AeroBuildup counts the buried area, 24.5 against 12.0 m2 exposed.
+    - V-tail 20 vs 13 counts.
+  - **Reading:**
+    - The thin-surface lift slopes agree within 4 %.
+    - Bodies add about 13 % in VSPAERO, and AeroBuildup sits between the thin and body models.
+    - AeroBuildup places the neutral point furthest forward (0.08–0.10 m ahead of VSPAERO with bodies) and has
+      about 25 % more induced drag than either vortex lattice, so it is conservative on both counts for this
+      geometry.
+    - The difference in CL at 0 deg (about 1 deg in zero-lift angle) and the Cm offset are open.
+    - This is the drawn Halo geometry (V-tail about 2 m forward of the sized tail position), not the sizing's
+      aircraft, so absolute static margins are not the sizing's.

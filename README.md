@@ -63,6 +63,7 @@ uv run python -m examples.aircraft_mass_closure   # Tier 4: mass and CG closure
 uv run python -m examples.series_hybrid_point     # Tiers 2-3: topology-coupled hover point
 uv run python -m examples.series_hybrid_point_explicit  # Tier 1: hand-coupled hover point
 uv run python -m examples.halo_openvsp            # Plan 031: Halo in OpenVSP (needs OpenVSP, see below)
+uv run python -m examples.halo_aero_compare       # Plan 031: VSPAERO and OpenVSP parasite drag vs AeroSandbox
 ```
 
 ### Optional: OpenVSP geometry export
