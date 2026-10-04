@@ -24,6 +24,7 @@ equipment changes from the XV-15 statement.
 Assumptions specific to this case are fields of `HaloAssumptions` and are
 listed in plan 013. Illustrative study, not Archer data.
 """
+import time
 from dataclasses import dataclass, field, fields, replace
 from typing import Any
 
@@ -38,6 +39,7 @@ from aircraft_closure.aerodynamics.simple import SimpleAerodynamics
 from aircraft_closure.aerodynamics.slipstream import BlownWing
 from aircraft_closure.controls.stability import DirectionalStability, LongitudinalStability
 from aircraft_closure.core.margins import margin_above, margin_below, margin_report
+from aircraft_closure.mission.cost import CostBreakdown, CostModel
 from aircraft_closure.mission.mission import Mission, build_mission
 from aircraft_closure.mission.segments import (ClimbSegment, CruiseSegment, DescentSegment, HoverSegment,
                                                LoiterSegment, ground_distance_m)
@@ -69,6 +71,7 @@ fuel_factor = 1.1
 soc_take_off = 0.95
 soc_minimum = 0.3
 soc_emergency_floor = 0.1
+scale_objective_cost_usd = 100.0       # objective="cost": IPOPT converged from the mass optimum with 100, not 1,000
 
 
 @dataclass(frozen=True)
@@ -242,6 +245,20 @@ class HaloAssumptions:
     diameter_nacelle_m: float = 3.3 * u.foot
     drag_area_misc_buildup_m2: float = 3.00 * u.foot**2  # XV-15 "fuselage fittings & fixtures" (NDARC, Johnson 2010)
     blown_wing: bool = True                       # "buildup": rotor slipstream increments in airplane mode
+    # ---- Tier 22 design-space practice (plan 029) ----
+    # Freed trades: each flag turns a fixed assumption above into a design variable within the bounds.
+    # Mission cruise and loiter altitude: drag against turboshaft lapse and climb energy. The 210 kt speed
+    # requirement stays at `HaloRequirements.altitude_cruise_m`; the upper bound is the 13,000 ft ceiling.
+    free_altitude_cruise: bool = False
+    bounds_altitude_cruise_m: tuple = (2000 * u.foot, 13000 * u.foot)
+    # Wing aspect ratio: induced drag against wing weight, whirl-flutter stiffness and rotor-span clearance.
+    free_aspect_ratio_wing: bool = False
+    bounds_aspect_ratio_wing: tuple = (4.0, 12.0)
+    # Reserve SOC: the mission SOC floor, which is also where the engine-out hover starts (0.30 when fixed).
+    free_soc_reserve: bool = False
+    bounds_soc_reserve: tuple = (0.20, 0.90)
+    # Cost per mission for objective="cost" and for every result's `cost` (src/aircraft_closure/mission/cost.py).
+    cost_model: Any = field(default_factory=CostModel)
 
 
 @dataclass(frozen=True)
@@ -268,6 +285,9 @@ class HaloDesign:
                                                   # above are then derived from the pack
     speed_rotor_wing_design_rad_s: Any = None     # Tier 20 "afdd_tiltrotor": rotor speed the wing frequencies are
                                                   # placed against; None: the design (hover) rotor speed
+    altitude_cruise_m: Any = None                 # Tier 22 freed trades; None: the fixed values
+    aspect_ratio_wing: Any = None
+    soc_reserve: Any = None
 
 
 def build_halo_battery(design, assumptions=HaloAssumptions()):
@@ -394,7 +414,8 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
             count_rotors=a.count_rotors, load_factor_jump=a.load_factor_jump, smoothing=a.smoothing_wing_tiltrotor))
     else:
         raise ValueError(f"Unknown wing weight model '{a.wing_weight_model}'.")
-    wing = Wing(area_m2=d.area_wing_m2, aspect_ratio=a.aspect_ratio_wing, taper_ratio=1.0, x_le_root_m=d.x_le_wing_m,
+    aspect_ratio_wing = d.aspect_ratio_wing if d.aspect_ratio_wing is not None else a.aspect_ratio_wing
+    wing = Wing(area_m2=d.area_wing_m2, aspect_ratio=aspect_ratio_wing, taper_ratio=1.0, x_le_root_m=d.x_le_wing_m,
                 z_m=1.2, airfoil=asb.Airfoil("naca2423"), **wing_mass)
     x_rotor_m = d.x_le_wing_m + 0.25 * wing.chord_root_m()
     z_rotor_m = wing.z_m + 1.0
@@ -483,38 +504,39 @@ class HaloSizingResult:
     # and beam frequencies in per rev of that point's rotor speed.
     wing_masses_kg: tuple = ()
     whirl_flutter: tuple = ()
+    # Tier 22 (plan 029): the starting point that produced this result (StartRecord; None when the caller passed
+    # `initial`) and the cost per mission of `HaloAssumptions.cost_model` (CostBreakdown, numeric).
+    start: Any = None
+    cost: Any = None
 
 
 def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None, verbose=False,
                       max_iter=3000, initial=None, objective="mass_takeoff"):
-    """`initial`: an earlier `HaloSizingResult` used as the initial guess (sensitivity studies).
+    """Size the Halo: one coupled AeroSandbox solve from `initial`, or the Tier 22 starting-point strategy.
+
+    `initial`: an earlier `HaloSizingResult` used as the initial guess (sensitivity studies); the problem is then
+    solved once from it.
 
     objective "mass_takeoff" minimizes take-off mass at the required payload; "payload" makes payload a
-    variable and maximizes it (the aircraft is sized around fixed engines, plan 017).
+    variable and maximizes it (the aircraft is sized around fixed engines, plan 017); "cost" minimizes the
+    cost per mission of `HaloAssumptions.cost_model` at the required payload (Tier 22).
 
-    With the equivalent-circuit battery and no `initial`, the same problem is first solved with the constant
-    battery and used as the initial guess: IPOPT reaches local infeasibility from the generic guess (plan 022).
-    If the problem then still fails, the equivalent-circuit problem at 85 % of the payload is solved (by the same
-    rule) and used as the start (plan 026). These are starting points only; each coupled problem is one solve.
-
-    With the AeroBuildup model and no `initial`, the same problem is first solved with the Scholz hand-check
-    aerodynamics (fast, within about 1 % in mass) and used as the start (plan 025): from the generic guess the
-    constant-battery build-up problem can stop at a point of local infeasibility.
+    With no `initial`, `solve_halo_sizing_multistart` tries an ordered list of starting points, each one
+    independent coupled solve, and returns the first that converges; `result.start` records which start
+    succeeded and every attempt (plan 029). The order reproduces the earlier rules first (Scholz-aero start for
+    the AeroBuildup model, plan 025; constant-battery start for the equivalent-circuit pack, plan 022; payload
+    continuation, plan 026), then perturbed designs, then the generic guess.
     """
-    if initial is None and assumptions.aerodynamics_model == "buildup":
-        initial = solve_halo_sizing(requirements, replace(assumptions, aerodynamics_model="scholz"), factors,
-                                    max_iter=max_iter, objective=objective)
-    if initial is None and assumptions.battery_model == "ecm":
-        constant_start = solve_halo_sizing(requirements, replace(assumptions, battery_model="constant"), factors,
-                                           max_iter=max_iter)
-        try:
-            return solve_halo_sizing(requirements, assumptions, factors, verbose, max_iter, constant_start, objective)
-        except RuntimeError:
-            if objective != "mass_takeoff" or requirements.mass_payload_kg < 300.0:
-                raise
-        lighter_start = solve_halo_sizing(replace(requirements, mass_payload_kg=0.85 * requirements.mass_payload_kg),
-                                          assumptions, factors, max_iter=max_iter)
-        return solve_halo_sizing(requirements, assumptions, factors, verbose, max_iter, lighter_start, objective)
+    if initial is None:
+        return solve_halo_sizing_multistart(requirements, assumptions, factors, verbose, max_iter, objective)
+    return solve_halo_sizing_once(requirements, assumptions, factors, verbose, max_iter, initial, objective)
+
+
+def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None,
+                           verbose=False, max_iter=3000, initial=None, objective="mass_takeoff"):
+    """One coupled solve from `initial` (None: the generic guess). Raises RuntimeError if IPOPT fails."""
+    if objective not in ("mass_takeoff", "payload", "cost"):
+        raise ValueError(f"Unknown objective '{objective}'.")
     factors = factors if factors is not None else calibration_factors()
     lapse_exponent = fit_lapse_exponent()
     a, r = assumptions, requirements
@@ -582,7 +604,25 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         design = replace(design, speed_rotor_wing_design_rad_s=opti.variable(
             init_guess=guess.speed_rotor_wing_design_rad_s if guess.speed_rotor_wing_design_rad_s is not None
             else 40.0, scale=10.0, lower_bound=5.0, upper_bound=200.0))
-    mission = halo_mission(r, velocity_cruise_m_s=opti.variable(
+    # Tier 22 freed trades (plan 029).
+    if a.free_altitude_cruise:
+        low, high = a.bounds_altitude_cruise_m
+        design = replace(design, altitude_cruise_m=opti.variable(
+            init_guess=guess.altitude_cruise_m if guess.altitude_cruise_m is not None else r.altitude_cruise_m,
+            scale=1000.0, lower_bound=low, upper_bound=high))
+    if a.free_aspect_ratio_wing:
+        low, high = a.bounds_aspect_ratio_wing
+        design = replace(design, aspect_ratio_wing=opti.variable(
+            init_guess=guess.aspect_ratio_wing if guess.aspect_ratio_wing is not None else a.aspect_ratio_wing,
+            lower_bound=low, upper_bound=high))
+    if a.free_soc_reserve:
+        low, high = a.bounds_soc_reserve
+        design = replace(design, soc_reserve=opti.variable(
+            init_guess=guess.soc_reserve if guess.soc_reserve is not None else soc_minimum,
+            lower_bound=low, upper_bound=high))
+    soc_reserve = design.soc_reserve if design.soc_reserve is not None else soc_minimum
+    altitude_cruise_m = design.altitude_cruise_m if design.altitude_cruise_m is not None else r.altitude_cruise_m
+    mission = halo_mission(replace(r, altitude_cruise_m=altitude_cruise_m), velocity_cruise_m_s=opti.variable(
         init_guess=initial.velocity_cruise_m_s if initial else 110.0, scale=50.0, lower_bound=60.0,
         upper_bound=r.velocity_max_m_s), velocity_loiter_m_s=opti.variable(
         init_guess=initial.velocity_loiter_m_s if initial else 80.0, scale=50.0, lower_bound=55.0,
@@ -602,7 +642,7 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     flown = build_mission(opti, aircraft, aerodynamics, mission, mass_takeoff_kg, soc_take_off,
                           hybridization_electric_min=a.hybridization_electric_min,
                           # The engine-out reserve is assessed from the SOC floor, so hold it at every segment.
-                          soc_floor=soc_minimum if a.soc_floor_every_segment else None,
+                          soc_floor=soc_reserve if a.soc_floor_every_segment else None,
                           **(dict(subsegments=a.subsegments_mission) if is_ecm else {}))
     requirement_points = [build_flight_point(opti, aircraft, aerodynamics, c, mass_takeoff_kg)
                           for c in r.requirement_set().flight_conditions()]
@@ -614,7 +654,7 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         # when the engine fails; SOC may fall to the emergency floor.
         reserve = build_mission(opti, aircraft, aerodynamics, Mission((HoverSegment(
             r.duration_engine_out_hover_s, 0.0, None, "engine-out hover",
-            active_generator_count=a.count_turbogenerators - 1),)), mass_takeoff_kg, soc_minimum,
+            active_generator_count=a.count_turbogenerators - 1),)), mass_takeoff_kg, soc_reserve,
             soc_floor=soc_emergency_floor, subsegments=a.subsegments_engine_out, polarization_start="steady")
         engine_out_points = reserve.segments[0].subsegments or reserve.segments
         engine_out = engine_out_points[0].point
@@ -622,11 +662,11 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         soc_after_reserve = reserve.soc_end
     else:
         engine_out = build_flight_point(opti, aircraft, aerodynamics, FlightCondition(
-            mode="hover", altitude_m=0.0, soc=soc_minimum, active_generator_count=a.count_turbogenerators - 1,
+            mode="hover", altitude_m=0.0, soc=soc_reserve, active_generator_count=a.count_turbogenerators - 1,
             label="engine-out hover"), mass_takeoff_kg)
         engine_out_points = ()
         engine_out_margins = engine_out.margins
-        soc_after_reserve = soc_minimum - (engine_out.battery.power_chemical_W * r.duration_engine_out_hover_s
+        soc_after_reserve = soc_reserve - (engine_out.battery.power_chemical_W * r.duration_engine_out_hover_s
                                            / design.energy_capacity_battery_J)
     # Tier 16: hot/high OGE hover at the destination, at the mission's end mass and end SOC.
     hover_hot = None
@@ -642,7 +682,7 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     # ---- Mass closure ------------------------------------------------------------------
     condition = StructuralDesignCondition(mass_design_kg=mass_takeoff_kg, load_factor_ultimate=a.load_factor_ultimate,
                                           velocity_cruise_m_s=cruise.segment.velocity_m_s,
-                                          altitude_cruise_m=r.altitude_cruise_m,
+                                          altitude_cruise_m=altitude_cruise_m,
                                           lift_to_drag_cruise=cruise.point.aero.lift_to_drag)
     breakdown = aircraft.get_mass_breakdown(condition)
     total = breakdown.total()
@@ -660,7 +700,7 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     design_margins = (
         margin_above("static_margin", static_margin, 0.10),
         margin_above("cn_beta_per_rad", cn_beta_per_rad, 0.06),
-        margin_above("soc_end", flown.soc_end, soc_minimum),
+        margin_above("soc_end", flown.soc_end, soc_reserve),
         margin_above("soc_after_engine_out_hover", soc_after_reserve, soc_emergency_floor),
         margin_above("stall_lift_at_120kt", lift_stall_N, weight_N),
         margin_below("rotor_radius_m", radius_m, (span_m - a.diameter_fuselage_m) / 2 - a.clearance_rotor_fuselage_m),
@@ -693,13 +733,37 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         power_turboshaft(design.mass_turboshaft_bare_kg) / design.power_rated_turboshaft_W == 1,  # engine regression
     ])
     opti.subject_to([m.value >= 0 for m in all_margins])
-    opti.minimize(-r.mass_payload_kg / 100 if objective == "payload" else mass_takeoff_kg / 1000)
+    # ---- Cost per mission (Tier 22) -----------------------------------------------------------
+    motor_component, generator_component = instances["motor"].component, instances["generator"].component
+    turboshaft_component = instances["turboshaft"].component
+    mass_airframe_kg = (breakdown.mass_empty_kg() - battery.get_mass()
+                        - a.count_rotors * motor_component.get_mass()
+                        - a.count_turbogenerators * (generator_component.get_mass() + turboshaft_component.get_mass()))
+    energies_point_J = [p.energy_battery_chemical_J for s in flown.segments for p in (s.subsegments or (s,))]
+    softness_energy_J = 1e-3 * design.energy_capacity_battery_J   # smooth max(E, 0): charge is not throughput
+    cost = a.cost_model.evaluate(
+        mass_airframe_kg=mass_airframe_kg,
+        power_rated_machines_W=(a.count_rotors * motor_component.power_rated_W
+                                + a.count_turbogenerators * generator_component.power_rated_W),
+        power_rated_turboshafts_W=a.count_turbogenerators * design.power_rated_turboshaft_W,
+        energy_capacity_battery_J=design.energy_capacity_battery_J,
+        mass_fuel_burnt_kg=flown.mass_fuel_burnt_kg,
+        energy_discharge_battery_J=sum(np.softmax(e, 0.0, softness=softness_energy_J) for e in energies_point_J),
+        energy_recharge_ground_J=(soc_take_off - flown.soc_end) * design.energy_capacity_battery_J,
+        duration_mission_s=flown.duration_s)
+    if objective == "payload":
+        opti.minimize(-r.mass_payload_kg / 100)
+    elif objective == "cost":
+        opti.minimize(cost.per_mission_usd / scale_objective_cost_usd)
+    else:
+        opti.minimize(mass_takeoff_kg / 1000)
 
     solution = opti.solve(verbose=verbose, max_iter=max_iter)
     value = lambda expression: float(solution.value(expression))
     report = margin_report(all_margins, solution.value)
-    altitudes = [(0, 0), (0, r.altitude_cruise_m), (r.altitude_cruise_m,) * 2, (r.altitude_cruise_m,) * 2,
-                 (r.altitude_cruise_m, 0), (0, 0)]
+    altitude_cruise_value_m = value(altitude_cruise_m)
+    altitudes = [(0, 0), (0, altitude_cruise_value_m), (altitude_cruise_value_m,) * 2, (altitude_cruise_value_m,) * 2,
+                 (altitude_cruise_value_m, 0), (0, 0)]
     return HaloSizingResult(
         mass_takeoff_kg=value(mass_takeoff_kg), mass_payload_kg=value(r.mass_payload_kg),
         mass_empty_kg=value(breakdown.mass_empty_kg()),
@@ -746,6 +810,7 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
                                  torsion_per_rev=value(wing_masses.frequency_torsion_rad_s / p.speed_rotor_rad_s),
                                  beam_per_rev=value(wing_masses.frequency_beam_rad_s / p.speed_rotor_rad_s))
                             for p in whirl_points),
+        cost=CostBreakdown(**{f.name: value(getattr(cost, f.name)) for f in fields(CostBreakdown)}),
     )
 
 
@@ -799,6 +864,194 @@ def battery_trace(points, value):
                          current_A=value(b.current_A), power_W=value(b.power_electric_W)))
         time_s += rows[-1]["duration_s"]
     return tuple(rows)
+
+
+# ---- Tier 22 (plan 029): starting-point strategy ---------------------------------------------------------------
+# Every candidate start is one independent coupled solve of the target problem from an initial guess; a candidate
+# may first solve a simpler precursor problem (other aerodynamics, other battery, lower payload) to obtain that
+# guess. Nothing iterates to a fixed point: the list is finite and ordered, and the record says what happened.
+start_labels = ("caller", "mass_objective", "scholz_aero", "constant_battery", "payload_continuation",
+                "perturbed_low", "perturbed_high", "generic")
+fraction_payload_continuation = 0.85      # plan 026
+factor_perturbation_low = 0.85
+factor_perturbation_high = 1.15
+
+
+@dataclass(frozen=True)
+class StartAttempt:
+    """One candidate start: whether the target solve converged, its objective value and its wall time."""
+    label: str
+    success: bool
+    mass_takeoff_kg: Any = None
+    objective_value: Any = None
+    time_s: float = 0.0
+    message: str = ""
+
+
+@dataclass(frozen=True)
+class StartRecord:
+    """`label`: the start whose solution was returned; `attempts`: every candidate tried, in order."""
+    label: str
+    attempts: tuple
+
+    def successes(self):
+        return tuple(a for a in self.attempts if a.success)
+
+    def spread_mass_takeoff_kg(self):
+        """Largest minus smallest take-off mass over the successful starts (local-optimum spread)."""
+        masses = [a.mass_takeoff_kg for a in self.successes()]
+        return max(masses) - min(masses) if masses else None
+
+
+def objective_value(result, objective):
+    """The minimized quantity of `objective` on a numeric result (lower is better)."""
+    if objective == "mass_takeoff":
+        return result.mass_takeoff_kg
+    if objective == "payload":
+        return -result.mass_payload_kg
+    if objective == "cost":
+        return result.cost.per_mission_usd
+    raise ValueError(f"Unknown objective '{objective}'.")
+
+
+def default_starts(requirements, assumptions, objective):
+    """The ordered candidate starts that apply to this problem (plan 029).
+
+    0. "mass_objective" (objective "cost" only): the same problem at minimum take-off mass.
+    1. "scholz_aero" (AeroBuildup only): the same problem with the Scholz hand-check aerodynamics (plan 025).
+    2. "constant_battery" (equivalent-circuit pack only): the same requirements with the constant-OCV battery at
+       minimum take-off mass (plan 022).
+    3. "payload_continuation" (equivalent-circuit pack, fixed payload of at least 300 kg): the same problem at
+       85 % payload (plan 026).
+    4. "perturbed_low" / "perturbed_high": the first precursor (or caller) design scaled by 0.85 / 1.15.
+    5. "generic": the built-in generic guess.
+    """
+    a, is_ecm = assumptions, assumptions.battery_model == "ecm"
+    starts = ["mass_objective"] if objective == "cost" else []
+    if a.aerodynamics_model == "buildup":
+        starts.append("scholz_aero")
+    if is_ecm:
+        starts.append("constant_battery")
+        if objective != "payload" and requirements.mass_payload_kg >= 300.0:
+            starts.append("payload_continuation")
+    if starts:
+        starts += ["perturbed_low", "perturbed_high"]
+    return tuple(starts + ["generic"])
+
+
+def _precursor_problem(label, requirements, assumptions, objective):
+    """The simpler problem a start label solves first, as (requirements, assumptions, objective); None: none."""
+    if label == "mass_objective":
+        return requirements, assumptions, "mass_takeoff"
+    if label == "scholz_aero":
+        return requirements, replace(assumptions, aerodynamics_model="scholz"), objective
+    if label == "constant_battery":
+        return requirements, replace(assumptions, battery_model="constant"), "mass_takeoff"
+    if label == "payload_continuation":
+        return (replace(requirements, mass_payload_kg=fraction_payload_continuation * requirements.mass_payload_kg),
+                assumptions, "mass_takeoff")
+    return None
+
+
+def perturbed_start(result, factor):
+    """`result` with every design quantity, take-off mass and speeds scaled by `factor` (an initial guess only)."""
+    design = HaloDesign(**{f.name: (getattr(result.design, f.name) * factor
+                                    if getattr(result.design, f.name) is not None else None)
+                           for f in fields(HaloDesign)})
+    return replace(result, design=design, mass_takeoff_kg=result.mass_takeoff_kg * factor,
+                   velocity_cruise_m_s=result.velocity_cruise_m_s * factor,
+                   velocity_loiter_m_s=result.velocity_loiter_m_s * factor)
+
+
+def solve_halo_sizing_multistart(requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None,
+                                 verbose=False, max_iter=3000, objective="mass_takeoff", starts=None, select="first",
+                                 cache=None, initial=None):
+    """Tier 22 starting-point strategy (plan 029): try `starts` in order, each one coupled solve of this problem.
+
+    `starts`: start labels (`start_labels`); None uses `default_starts`. `initial`: a caller-supplied design (an
+    earlier `HaloSizingResult`, e.g. a neighbouring problem in a sweep) tried first as start "caller" and used as
+    the design the perturbed starts scale. `select` "first" returns the first converged solution (the default,
+    as cheap as the earlier rules); "best" tries every start and returns the lowest objective among those that
+    converged, so `result.start` also shows whether different starts reach
+    different local optima (`StartRecord.spread_mass_takeoff_kg`).
+
+    Precursor problems are solved by this same strategy with the default starts, but without perturbation, and
+    without payload continuation inside a continuation precursor, so a failing problem costs a bounded number of
+    solves. `cache` (a dict) shares precursor solutions between calls. Raises RuntimeError when no start converges.
+    """
+    if select not in ("first", "best"):
+        raise ValueError(f"Unknown select '{select}'.")
+    starts = default_starts(requirements, assumptions, objective) if starts is None else tuple(starts)
+    if initial is not None:
+        starts = ("caller",) + tuple(s for s in starts if s != "caller")
+    return _multistart(requirements, assumptions, factors, verbose, max_iter, objective, starts, select,
+                       {} if cache is None else cache, initial)
+
+
+def _multistart(requirements, assumptions, factors, verbose, max_iter, objective, starts, select, cache,
+                initial_caller=None):
+    unknown = [s for s in starts if s not in start_labels]
+    if unknown:
+        raise ValueError(f"Unknown start labels {unknown}.")
+    if "caller" in starts and initial_caller is None:
+        raise ValueError("Start 'caller' needs `initial`.")
+    attempts, solutions, precursors = [], [], []
+    for label in starts:
+        time_start_s = time.perf_counter()
+        initial, message = None, ""
+        if label == "caller":
+            initial = initial_caller
+            precursors.append(initial)
+        elif label in ("perturbed_low", "perturbed_high"):
+            if not precursors:
+                attempts.append(StartAttempt(label, False, message="no precursor design to perturb"))
+                continue
+            initial = perturbed_start(precursors[0], factor_perturbation_low if label == "perturbed_low"
+                                      else factor_perturbation_high)
+        elif label != "generic":
+            problem = _precursor_problem(label, requirements, assumptions, objective)
+            initial = _precursor(problem, factors, max_iter, cache, allow_continuation=label != "payload_continuation")
+            if initial is None:
+                attempts.append(StartAttempt(label, False, time_s=time.perf_counter() - time_start_s,
+                                             message="precursor problem did not converge"))
+                continue
+            precursors.append(initial)
+        try:
+            result = solve_halo_sizing_once(requirements, assumptions, factors, verbose, max_iter, initial, objective)
+        except RuntimeError as error:
+            lines = [line.strip() for line in str(error).splitlines() if line.strip()]
+            message = lines[-1][:200] if lines else "solver failed"
+            attempts.append(StartAttempt(label, False, time_s=time.perf_counter() - time_start_s, message=message))
+            continue
+        attempts.append(StartAttempt(label, True, result.mass_takeoff_kg, objective_value(result, objective),
+                                     time.perf_counter() - time_start_s))
+        solutions.append((label, result))
+        if select == "first":
+            break
+    if not solutions:
+        raise RuntimeError("Halo sizing: no starting point converged; attempts: "
+                           + "; ".join(f"{a.label}: {a.message}" for a in attempts))
+    # Ties (within 1e-6 relative) go to the earlier start, so "best" keeps the "first" answer when they agree.
+    lowest = min(objective_value(r, objective) for _, r in solutions)
+    label, result = next((l, r) for l, r in solutions
+                         if objective_value(r, objective) <= lowest + 1e-6 * max(abs(lowest), 1.0))
+    return replace(result, start=StartRecord(label, tuple(attempts)))
+
+
+def _precursor(problem, factors, max_iter, cache, allow_continuation):
+    """Solve a precursor problem (cached); None if it does not converge. No perturbed starts below the first
+    level, and no payload continuation inside a continuation precursor, so the number of solves stays bounded."""
+    requirements, assumptions, objective = problem
+    excluded = ("perturbed_low", "perturbed_high") + (() if allow_continuation else ("payload_continuation",))
+    key = (repr(requirements), repr(assumptions), objective, id(factors), excluded)
+    if key not in cache:
+        starts = tuple(s for s in default_starts(requirements, assumptions, objective) if s not in excluded)
+        try:
+            cache[key] = _multistart(requirements, assumptions, factors, False, max_iter, objective, starts, "first",
+                                     cache)
+        except RuntimeError:
+            cache[key] = None
+    return cache[key]
 
 
 
