@@ -34,6 +34,7 @@ All numbers are illustrative engineering inputs, not Archer or Halo data
 | Requirements | `requirements/` | Hover, climb, speed and ceiling capability requirements |
 | Mission | `mission/` | Hover, climb, cruise, loiter, descent segments; missions with fuel burn and SOC |
 | Weights | `weights/` | AFDD rotorcraft weight equations (rotor, drive system, engine section) from NDARC |
+| Export | `export/openvsp/` | Numeric geometry snapshot of a solved aircraft; OpenVSP outer mold line (tilting nacelles, Modes), STEP/STL export, PyVista renders. Optional; never imported by sizing code |
 
 Lower layers never import higher ones; components build equations and callers
 own variables, constraints and objectives ([architecture](docs/ARCHITECTURE.md),
@@ -61,7 +62,25 @@ uv run python -m examples.cruise_closure          # Tier 5: cruise equilibrium i
 uv run python -m examples.aircraft_mass_closure   # Tier 4: mass and CG closure
 uv run python -m examples.series_hybrid_point     # Tiers 2-3: topology-coupled hover point
 uv run python -m examples.series_hybrid_point_explicit  # Tier 1: hand-coupled hover point
+uv run python -m examples.halo_openvsp            # Plan 031: Halo in OpenVSP (needs OpenVSP, see below)
+uv run python -m examples.halo_aero_compare       # Plan 031: VSPAERO and OpenVSP parasite drag vs AeroSandbox
 ```
+
+### Optional: OpenVSP geometry export
+
+The OpenVSP Python API ships with the OpenVSP release, not on PyPI. Install it
+into `.venv` from a release built for Python 3.13 (3.53.1 is used here), and
+the PyVista renderer from the `geometry` group:
+
+```powershell
+$vsp = "<OpenVSP-3.53.1-win64>\python"
+uv pip install --system-certs "$vsp\openvsp_config" "$vsp\utilities" "$vsp\degen_geom" "$vsp\vsp_airfoils" "$vsp\openvsp"
+uv sync --inexact --group geometry
+```
+
+These packages are outside the lockfile, so a plain `uv sync` removes them;
+use `uv sync --inexact`. Tests that need OpenVSP skip when it is absent.
+Outputs go to `output/` (not committed).
 
 ## Continuous integration
 

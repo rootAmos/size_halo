@@ -12,6 +12,9 @@ dependencies = ["aerosandbox>=4.2.8,<5"]
 
 [dependency-groups]
 dev = ["pyyaml>=6,<7"]
+geometry = [
+    "pyvista>=0.44",
+]
 notebooks = ["jupyterlab>=4,<5"]
 
 [tool.setuptools.packages.find]
