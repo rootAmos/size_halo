@@ -350,3 +350,39 @@ Each new margin is added to the Halo report. The new margins become constraints 
     - The difference in CL at 0 deg (about 1 deg in zero-lift angle) and the Cm offset are open.
     - This is the drawn Halo geometry (V-tail about 2 m forward of the sized tail position), not the sizing's
       aircraft, so absolute static margins are not the sizing's.
+- 2026-10-04: Milestone C started; the user approved going to structure after the aero check ("closer than I
+  expected").
+  - **Code:** `export/openvsp/structure.py`, uncommitted. It builds:
+    - a wing box (right half): spars at 0.15/0.60 c, 0.5 m ribs, fairing-attach and nacelle ribs, carbon skins;
+    - the fuselage: 0.6 m frames, nose, front-spar, rear-spar and cabin-end bulkheads, a floor;
+    - the V-tail: spars and ribs.
+    Gauges are placeholders.
+  - **Meshing:**
+    - OpenVSP's "FeaMeshAnalysis" did not finish (>10 min, 5.4 GB); the per-structure `ComputeFeaMesh` calls work.
+    - The V-tail meshes in 3 s.
+    - The wing box mesh wrote STL, CalculiX `.inp`, Nastran `.dat`/`.bdf` and the mass file within seconds.
+    - The STEP export (`FEA_STEP_FILE_NAME`) appeared to stall; the run was stopped there.
+  - **Next:**
+    - Make the STEP export optional or find out why it stalls.
+    - Mesh the fuselage.
+    - Render the structure (PyVista, skins hidden) for user review.
+    - Map the AFDD wing-box masses to gauges.
+    - Commit to `feat/openvsp-geometry`.
+- 2026-10-04: Milestone C first layout rendered for user review (`examples/halo_structure.py`,
+  `output/structure/halo_structure.png`).
+  - **Meshing:**
+    - `ComputeFeaMesh` writes one file type per call and re-meshes each time, whatever the export flags; the
+      `FeaMeshAnalysis` wrapper never finished, even with STEP off. `export_structure_meshes(kinds=...)` therefore
+      asks only for what is needed.
+    - Times on the loaded machine: wing box about 14 s per kind, fuselage about 8 min per kind (each frame slice
+      10–60 s), V-tail about 2 s.
+    - The frame pitch is 1.0 m for now.
+  - **Placeholder wing-box mass:** 431 kg for both halves (skins 266, spars 91, ribs 74). The gauges are not yet
+    tied to the AFDD wing.
+  - **Open items:**
+    - OpenVSP slices are full planes, so the "frames" are solid discs. Ring frames would mean beam-only frames,
+      or cut-outs.
+    - There is no fairing, nacelle or gear structure.
+    - Map the AFDD wing-box masses to gauges.
+    - Note on `timeout`: on Windows it kills only the `.venv` launcher, so the child python keeps running. Kill the
+      children by command line after each timeout.
