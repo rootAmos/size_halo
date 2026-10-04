@@ -2,7 +2,8 @@
 import unittest
 from dataclasses import replace
 
-from examples.halo_sizing import HaloAssumptions, HaloDesign, build_halo_aircraft, solve_halo_sizing
+from examples.halo_sizing import (HaloAssumptions, HaloDesign, assumptions_plan030, build_halo_aircraft,
+                                  requirements_plan030, solve_halo_sizing)
 
 thermal = HaloAssumptions(thermal_model=True)
 
@@ -42,7 +43,7 @@ class HaloThermalSwitchTests(unittest.TestCase):
 class HaloThermalSizingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.sized = solve_halo_sizing()                     # plan 030: the defaults are the thermal reference
+        cls.sized = solve_halo_sizing(requirements_plan030, assumptions_plan030)    # the plan 030 thermal reference
 
     def test_closes_with_all_margins(self):
         self.assertGreater(self.sized.min_margin, -1e-6)
