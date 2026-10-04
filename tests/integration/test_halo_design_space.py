@@ -27,6 +27,13 @@ class StartListTests(unittest.TestCase):
         # Thermal model on (plan 028): the thermal-off problem is the first start.
         self.assertEqual(default_starts(r, replace(reference, thermal_model=True), "cost")[:3],
                          ("thermal_off", "mass_objective", "scholz_aero"))
+        # Tier 15 electrical layer (plan 023): with the thermal model the layer-off problem is the first start;
+        # without it, a fallback after payload continuation. The constant-battery start drops the layer too.
+        self.assertEqual(default_starts(r, replace(reference, thermal_model=True, electrical_layer=True),
+                                        "mass_takeoff")[:2], ("electrical_off", "scholz_aero"))
+        self.assertEqual(default_starts(r, replace(reference, electrical_layer=True), "mass_takeoff"),
+                         ("scholz_aero", "constant_battery", "payload_continuation", "electrical_off",
+                          "perturbed_low", "perturbed_high", "generic"))
         self.assertEqual(default_starts(replace(r, mass_payload_kg=200.0), scholz, "cost"),
                          ("mass_objective", "constant_battery", "perturbed_low", "perturbed_high", "generic"))
 
