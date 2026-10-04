@@ -12,7 +12,7 @@ from aircraft_closure.trajectory.tiltrotor import (ConversionCorridor, Trajector
 from examples.trajectory_optimization import (altitude_band_transition_m, altitude_transition_m, halo_trajectory_case,
                                               ratio_transition_end_stall, solve_min_energy_transition,
                                               solve_min_time_climb, solve_prescribed_transition)
-from examples.halo_sizing import assumptions_tier16, requirements_tier16
+from examples.halo_sizing import assumptions_plan027, assumptions_tier16, requirements_plan027, requirements_tier16
 
 g_m_s2 = acceleration_gravity_m_s2
 _cases = {}
@@ -236,7 +236,8 @@ class EquivalentCircuitTrajectoryTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.case = halo_trajectory_case()
+        # Plan 027 aircraft (thermal off): the trajectory model has no thermal states yet (plan 030).
+        cls.case = halo_trajectory_case(None, requirements_plan027, assumptions_plan027)
         cls.climb = solve_min_time_climb(cls.case)
 
     def test_reference_uses_the_equivalent_circuit_battery(self):
