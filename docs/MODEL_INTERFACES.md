@@ -89,6 +89,11 @@ Declarations live in `powertrain/ports.py` (`port_specs_for`), not on the
 component classes. `powertrain/topologies.py` provides
 `build_series_hybrid(..., count_rotors=n)`. Multiplicity is symmetric: n copies
 share one set of port values; asymmetric or failed instances are deferred.
+Tier 18 adds combiners and splitters (`connect(a, b, combine=True)`: counts
+may differ by an integer multiple; efforts equal, total flow conserved,
+`port_flow_fields` names the flow per domain) and bus copies
+(`add_bus(name, count=n)`); failed instances are flight-point inputs (see
+"Redundancy (Tier 18)").
 
 ## Compatibility margins (Tier 3)
 
@@ -832,3 +837,40 @@ Plan 028. Every value may be an Opti expression; nothing iterates.
 - **Halo:** `HaloAssumptions.thermal_model` (False) and its fields;
   `HaloDesign.power_rated_heat_exchanger_W` and `power_rated_gearbox_W`;
   `HaloSizingResult.thermal_trace` and `heat_exchanger`.
+
+## Redundancy (Tier 18)
+
+No new component class: the architecture is multiplicity plus Tier 15
+`ProtectionUnit` and `Cable` instances.
+
+- `powertrain/topologies.py`: `RedundancyLayer(count_lanes, count_buses,
+  count_strings_battery, protection_string, protection_bus_tie,
+  cable_bus_tie)` and `build_series_hybrid(..., redundancy=None)`. `motor` is
+  then one lane motor (count rotors x lanes) on a combining gearbox input;
+  the bus has `count_buses` copies and `count_buses - 1` normally open ties
+  (`protection_bus_tie` -> `cable_bus_tie`, outer ports unconnected); the
+  pack splits into `count_strings_battery` string contactors. All ones (the
+  default) builds the plain topology. Lanes must be a multiple of buses.
+- `powertrain/redundancy.py`: `redundancy_counts(topology)`,
+  `degraded_state(topology, condition)` (validated active lanes per rotor,
+  active strings, failed buses), `battery_with_strings(battery,
+  fraction_active)` (parallel count, or capacity, power ratings and
+  conductance, scaled) and `battery_for_condition(topology, condition)`.
+- `FlightCondition.active_lane_count` (per rotor, None = all),
+  `active_battery_string_count` (None = all), `count_buses_failed` (0); the
+  same fields on `HoverSegment`. `FlightPoint.redundancy`:
+  `RedundancyPointResult(count_lanes_active, count_strings_active,
+  count_buses_failed, torque_gearbox_input_Nm, current_string_A,
+  power_loss_strings_W, current_tie_A, power_loss_tie_W)` (None for the
+  plain topology). `FlightPoint.torque_motor_Nm` is per lane.
+- `operating_margins(..., components=None)` and
+  `evaluate_point_thermal(..., components=None)` take per-point component
+  overrides (the pack with a string isolated).
+- Degraded states apply to every rotor alike (symmetric multiplicity). Tie
+  current = failed buses x motor-feeder demand / (bus count x bus voltage);
+  tie loss joins the bus demand; ties have no margins in normal operation.
+- Halo: `HaloAssumptions.redundancy` (default False) with `count_lanes_motor`,
+  `count_buses`, `count_strings_battery`, `length_cable_bus_tie_m` and the
+  failure flags; `build_halo_redundancy`, `failure_hover_cases`,
+  `halo_failure_hovers`, `HaloSizingResult.count_lanes_motor` and
+  `failure_cases`; `assumptions_tier18`.

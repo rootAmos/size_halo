@@ -24,7 +24,7 @@
 | 15 | Electrical layer: inverters, cables, protection, DC/DC; bus voltage as a discrete choice | Implemented |
 | 16 | Hot and high: ISA + delta-T atmosphere, temperature lapse, hover at destination after the mission | Implemented |
 | 17 | Battery equivalent circuit with sag and ageing: OCV(SOC), R(SOC, C-rate, T), end-of-life, cycle cost | Implemented |
-| 18 | Redundancy: lanes per rotor, cross-strapped buses, battery strings, multipoint failure cases | Planned |
+| 18 | Redundancy: lanes per rotor, cross-strapped buses, battery strings, multipoint failure cases (Halo option `redundancy`, off by default; lane out, bus out and string out hovers; symmetric degraded states) | Implemented |
 | 19 | Thermal: losses to heat-exchanger mass and cooling drag; short-time ratings from thermal mass (machines and pack; Halo option `thermal_model`, off by default; pack temperature into resistance deferred) | Implemented |
 | 20 | Tiltrotor airframe weights: AFDD wing with torsional stiffness and whirl flutter; second calibration aircraft | Implemented |
 | 21 | Aero: AeroBuildup model, Scholz hand check, compressibility, nacelle build-up, blown wing, download model (V-tail and conversion segments deferred) | Implemented |
@@ -252,6 +252,14 @@ a new constraint inside the sizing Opti.
 - **Ratings:** short-time emergency ratings.
 - **Removed:** the fixed-wing failed-propulsor yaw helper is dropped for
   tiltrotors.
+
+Implemented in plan 032 as the Halo option `HaloAssumptions.redundancy`
+(off by default): lane motors on a combining gearbox input, cross-strapped
+buses with normally open ties, isolated pack strings, and lane-out, bus-out
+and string-out hovers (double failures with an engine out optional) as extra
+points of the sizing problem. Degraded states are symmetric (both rotors);
+roll trim by differential collective, a genset out at landing and inverter
+short-time ratings are deferred.
 
 ### 19 Thermal (review item 3)
 

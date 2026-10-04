@@ -34,6 +34,17 @@ per-point variable added to the thrust and tied to the exchanger's drag by
 an equality (drag depends on heat, heat on thrust). Components with a thermal
 model get an end-of-interval temperature from `temperature_start_C` (None:
 steady state) over `duration_s`, with margins against their limits.
+
+Redundancy (Tier 18, `topologies.RedundancyLayer`): with lane motors (motor count = rotors x lanes) the
+rotor gearbox input torque is shared by the active lanes of each rotor; `FlightCondition.active_lane_count`
+(per rotor), `active_battery_string_count` and `count_buses_failed` select a degraded state, applied to every
+rotor alike (symmetric multiplicity; conservative for power and heat, no roll trim needed); a failed lane is
+declutched (no spinning loss). String
+contactors sit in series with the pack (exact drop at the string current); an isolated string removes its
+share of the pack (`redundancy.battery_with_strings`), whose limits and thermal state are used at the point.
+A failed bus loses its lanes and its sources feed the other buses through a tie, whose current is the
+failed bus's share of the motor feeders' demand at the bus voltage (first order) and whose loss joins the
+bus demand. Ties carry no current, and have no margins, in normal operation.
 """
 from dataclasses import dataclass
 from typing import Any
@@ -45,6 +56,7 @@ from aircraft_closure.aerodynamics.slipstream import RotorState
 from aircraft_closure.core.ports import ElectricalPortValue, MechanicalPortValue
 from aircraft_closure.powertrain.compatibility import operating_margins
 from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery
+from aircraft_closure.powertrain.redundancy import battery_with_strings, degraded_state
 from aircraft_closure.thermal.heat import HeatLoad, evaluate_point_thermal
 
 acceleration_gravity_m_s2 = 9.80665
@@ -64,6 +76,11 @@ class FlightCondition:
     label: str = "point"
     # Tier 16: ambient temperature minus ISA at the (pressure) altitude; 0 is a standard day.
     temperature_offset_K: Any = 0.0
+    # Tier 18 degraded states (Python integers): active lanes per rotor (None: all), active battery strings
+    # (None: all) and failed buses (their lanes lost, their sources through a bus tie).
+    active_lane_count: Any = None
+    active_battery_string_count: Any = None
+    count_buses_failed: int = 0
 
     def __post_init__(self):
         if self.mode not in ("hover", "airplane"):
@@ -92,6 +109,20 @@ class FlightPoint:
     heat_loads: tuple = ()                 # Tier 19: HeatLoad per loss source
     thermal: Any = None                    # Tier 19: PointThermal
     electrical: Any = None          # ElectricalLayerResult (Tier 15) or None without the electrical layer
+    redundancy: Any = None          # RedundancyPointResult (Tier 18) or None without redundancy hardware or lanes
+
+
+@dataclass(frozen=True)
+class RedundancyPointResult:
+    """Tier 18 per-point state: active units, string contactors and the bus tie (currents per unit)."""
+    count_lanes_active: int          # per rotor
+    count_strings_active: int
+    count_buses_failed: int
+    torque_gearbox_input_Nm: Any     # per rotor, shared by the active lanes
+    current_string_A: Any            # per active string (0 without string contactors)
+    power_loss_strings_W: Any        # total over the active string contactors
+    current_tie_A: Any               # per tie (0 in normal operation)
+    power_loss_tie_W: Any            # contactor + cable of the one tie in use
 
 
 @dataclass(frozen=True)
@@ -123,7 +154,8 @@ class ElectricalLayerResult:
 def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridization_electric=None, *,
                        hybridization_electric_min=0.0,
                        drag_increments=(), duration_s=0.0, voltage_rc_start_V=None, temperature_start_C=None):
-    instances = aircraft.powertrain.topology.instances
+    topology = aircraft.powertrain.topology
+    instances = topology.instances
     motor_model = instances["motor"].component
     generator_model = instances["generator"].component
     battery_model = instances["battery"].component
@@ -132,6 +164,14 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     turboshaft_model = instances["turboshaft"].component
     active_rotor_count = condition.active_rotor_count or instances["propulsor"].count
     active_generator_count = condition.active_generator_count or instances["generator"].count
+    # Tier 18: lanes per rotor, active strings and failed buses (all ones for the plain topology).
+    state = degraded_state(topology, condition)
+    count_lanes_active = state.count_lanes_active
+    count_motors_active = active_rotor_count * count_lanes_active
+    has_strings = "protection_string" in instances
+    has_redundancy = has_strings or state.counts.count_lanes > 1 or state.counts.count_buses > 1
+    battery_model = battery_with_strings(battery_model, state.fraction_strings_active)
+    components_override = {"battery": battery_model} if state.fraction_strings_active != 1 else {}
     weight_N = mass_kg * acceleration_gravity_m_s2
     temperature_offset_K = condition.temperature_offset_K
     atmosphere = asb.Atmosphere(altitude=condition.altitude_m, temperature_deviation=temperature_offset_K)
@@ -185,8 +225,11 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
         opti.subject_to(rotor.advance_ratio <= rotor_model.advance_ratio_max)
     speed_motor_rad_s = gearbox_model.reduction_ratio * speed_rotor_rad_s
     # Gearbox loss is taken from torque, so input torque = P_out / (eta * omega_in).
-    torque_motor_Nm = rotor.shaft_power_W / (gearbox_model.efficiency * speed_motor_rad_s)
-    gear = gearbox_model.evaluate(speed_motor_rad_s, torque_motor_Nm)
+    torque_gearbox_input_Nm = rotor.shaft_power_W / (gearbox_model.efficiency * speed_motor_rad_s)
+    # Tier 18: the active lanes of a rotor share its gearbox input torque.
+    torque_motor_Nm = (torque_gearbox_input_Nm if count_lanes_active == 1
+                       else torque_gearbox_input_Nm / count_lanes_active)
+    gear = gearbox_model.evaluate(speed_motor_rad_s, torque_gearbox_input_Nm)
 
     # With cooling (Tier 19) start at zero current: 50 A held through a long cruise drives the coulomb-counted SOC
     # chain far outside the cell data, and the battery loss there, through the exchanger's cubic pumping law,
@@ -199,25 +242,45 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     else:
         battery = battery_model.evaluate(current_battery_A, condition.soc)
     has_layer = "inverter_motor" in instances
+    layer = {name: instance.component for name, instance in instances.items()}
+    dcdc_model = layer.get("dcdc") if has_layer else None
+    resistances_feeder_ohm = []
     if has_layer:
-        layer = {name: instance.component for name, instance in instances.items()}
-        dcdc_model = layer.get("dcdc")
-        resistance_battery_feeder_ohm = (layer["cable_battery"].resistance_ohm()
-                                         + layer["protection_battery"].resistance_ohm())
+        resistances_feeder_ohm.append(layer["cable_battery"].resistance_ohm()
+                                      + layer["protection_battery"].resistance_ohm())
+    if has_strings:
+        # Tier 18: the active strings' contactors in parallel, in series with the pack.
+        current_string_A = current_battery_A / state.count_strings_active
+        protection_string = layer["protection_string"].evaluate(current_string_A)
+        resistances_feeder_ohm.append(layer["protection_string"].resistance_ohm() / state.count_strings_active)
+    if resistances_feeder_ohm:
+        resistance_battery_feeder_ohm = (resistances_feeder_ohm[0] if len(resistances_feeder_ohm) == 1
+                                         else resistances_feeder_ohm[0] + resistances_feeder_ohm[1])
         # Battery side of the feeder: exact series drop at the battery current.
         voltage_feeder_battery_V = battery.voltage_V - current_battery_A * resistance_battery_feeder_ohm
         voltage_bus_V = dcdc_model.voltage_output_V if dcdc_model is not None else voltage_feeder_battery_V
     else:
         voltage_bus_V = battery.voltage_V
     motor = motor_model.evaluate(speed_motor_rad_s, torque_motor_Nm, voltage_bus_V)
-    power_electric_motors_W = active_rotor_count * motor.power_electric_W
+    power_electric_motors_W = count_motors_active * motor.power_electric_W
     if has_layer:
         inverter_motor = layer["inverter_motor"].evaluate(motor.power_electric_W, voltage_bus_V)
         current_motor_feeder_A = inverter_motor.power_dc_W / voltage_bus_V
         cable_motor = layer["cable_motor"].evaluate(current_motor_feeder_A)
         protection_motor = layer["protection_motor"].evaluate(current_motor_feeder_A)
         power_motor_bus_W = inverter_motor.power_dc_W + cable_motor.power_loss_W + protection_motor.power_loss_W
-        power_electric_motors_W = active_rotor_count * power_motor_bus_W
+        power_electric_motors_W = count_motors_active * power_motor_bus_W
+    # Tier 18 bus tie: a failed bus's sources feed the others through one tie (normally open: no current).
+    current_tie_A, power_loss_tie_W, tie_ports = 0.0, 0.0, {}
+    if state.counts.count_ties:
+        if state.count_buses_failed:
+            current_tie_A = (state.count_buses_failed * power_electric_motors_W
+                             / (state.counts.count_buses * voltage_bus_V))
+            protection_tie = layer["protection_bus_tie"].evaluate(current_tie_A)
+            cable_tie = layer["cable_bus_tie"].evaluate(current_tie_A)
+            power_loss_tie_W = protection_tie.power_loss_W + cable_tie.power_loss_W
+        tie_ports = {f"{name}.{port}": ElectricalPortValue(voltage_bus_V, current_tie_A)
+                     for name in ("protection_bus_tie", "cable_bus_tie") for port in ("input", "output")}
     if hybridization_electric is None:
         hybridization_electric = condition.hybridization_electric
     if hybridization_electric is None:
@@ -229,6 +292,8 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     generator = generator_model.evaluate(speed_generator_rad_s, torque_generator_Nm, voltage_bus_V)
     electrical = None
     power_battery_bus_W = battery.power_electric_W
+    if has_strings and not has_layer:
+        power_battery_bus_W = voltage_feeder_battery_V * current_battery_A
     power_generator_bus_W = generator.power_electric_W
     if has_layer:
         # Rectifier: positive inverter power flows DC -> AC, so generation is negative AC power.
@@ -253,18 +318,18 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
             inverter_generator=inverter_generator, cable_motor=cable_motor, cable_generator=cable_generator,
             cable_battery=cable_battery, dcdc=dcdc, power_motor_bus_W=power_motor_bus_W,
             power_generator_bus_W=power_generator_bus_W, power_battery_bus_W=power_battery_bus_W,
-            power_loss_inverters_W=(active_rotor_count * inverter_motor.power_loss_W
+            power_loss_inverters_W=(count_motors_active * inverter_motor.power_loss_W
                                     + active_generator_count * inverter_generator.power_loss_W),
-            power_loss_cables_W=(active_rotor_count * cable_motor.power_loss_W
+            power_loss_cables_W=(count_motors_active * cable_motor.power_loss_W
                                  + active_generator_count * cable_generator.power_loss_W + cable_battery.power_loss_W),
-            power_loss_protection_W=(active_rotor_count * protection_motor.power_loss_W
+            power_loss_protection_W=(count_motors_active * protection_motor.power_loss_W
                                      + active_generator_count * protection_generator.power_loss_W
                                      + protection_battery.power_loss_W),
             power_loss_dcdc_W=power_loss_dcdc_W,
             heat_loads=(
-                HeatLoad("inverter_motor", inverter_motor.power_loss_W, active_rotor_count),
-                HeatLoad("cable_motor", cable_motor.power_loss_W, active_rotor_count),
-                HeatLoad("protection_motor", protection_motor.power_loss_W, active_rotor_count),
+                HeatLoad("inverter_motor", inverter_motor.power_loss_W, count_motors_active),
+                HeatLoad("cable_motor", cable_motor.power_loss_W, count_motors_active),
+                HeatLoad("protection_motor", protection_motor.power_loss_W, count_motors_active),
                 HeatLoad("inverter_generator", inverter_generator.power_loss_W, active_generator_count),
                 HeatLoad("cable_generator", cable_generator.power_loss_W, active_generator_count),
                 HeatLoad("protection_generator", protection_generator.power_loss_W, active_generator_count),
@@ -286,7 +351,7 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
         }
     engine = turboshaft_model.evaluate(speed_engine_rad_s * torque_engine_Nm, atmosphere)
     # Tier 19: heat loads by source (per unit, active count); new loss sources add a HeatLoad here.
-    heat_loads = (HeatLoad("motor", motor.power_loss_W, active_rotor_count),
+    heat_loads = (HeatLoad("motor", motor.power_loss_W, count_motors_active),
                   HeatLoad("gearbox", gear.power_loss_W, active_rotor_count),
                   HeatLoad("generator", generator.power_loss_W, active_generator_count),
                   HeatLoad("battery", battery.power_loss_W, 1))
@@ -294,15 +359,32 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
         heat_loads += (HeatLoad("generator_gearbox", generator_gear.power_loss_W, active_generator_count),)
     if electrical is not None:
         heat_loads += electrical.heat_loads          # Tier 15: inverters, cables, protection, DC/DC by instance
+    redundancy = None
+    if has_redundancy:
+        power_loss_strings_W = state.count_strings_active * protection_string.power_loss_W if has_strings else 0.0
+        if has_strings:
+            heat_loads += (HeatLoad("protection_string", protection_string.power_loss_W, state.count_strings_active),)
+        if state.count_buses_failed:
+            heat_loads += (HeatLoad("protection_bus_tie", protection_tie.power_loss_W, 1),
+                           HeatLoad("cable_bus_tie", cable_tie.power_loss_W, 1))
+        redundancy = RedundancyPointResult(
+            count_lanes_active=count_lanes_active, count_strings_active=state.count_strings_active,
+            count_buses_failed=state.count_buses_failed, torque_gearbox_input_Nm=torque_gearbox_input_Nm,
+            current_string_A=current_string_A if has_strings else 0.0, power_loss_strings_W=power_loss_strings_W,
+            current_tie_A=current_tie_A, power_loss_tie_W=power_loss_tie_W)
     thermal = evaluate_point_thermal(aircraft.powertrain, heat_loads, atmosphere, velocity_m_s, condition.mode,
-                                     duration_s, temperature_start_C, condition.label)
+                                     duration_s, temperature_start_C, condition.label, components=components_override)
     power_electric_demand_W = power_electric_motors_W
+    if state.count_buses_failed:
+        power_electric_demand_W = power_electric_motors_W + power_loss_tie_W
     if thermal.cooling is not None:
-        power_electric_demand_W = power_electric_motors_W + thermal.cooling.power_fan_W
+        power_electric_demand_W = power_electric_demand_W + thermal.cooling.power_fan_W
         if condition.mode == "airplane":
             opti.subject_to((drag_cooling_N - thermal.cooling.drag_N) / (0.01 * weight_N) == 0)
     # Each active turbogenerator carries an equal share of the generator power.
     power_scale_W = active_rotor_count * motor_model.power_rated_W
+    if state.counts.count_lanes > 1:
+        power_scale_W = power_scale_W * state.counts.count_lanes
     opti.subject_to([
         (power_battery_bus_W - hybridization_electric * power_electric_demand_W) / power_scale_W == 0,
         (active_generator_count * power_generator_bus_W - (1 - hybridization_electric) * power_electric_demand_W)
@@ -320,7 +402,7 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
         "battery.electrical": ElectricalPortValue(battery.voltage_V, current_battery_A),
         "motor.electrical": ElectricalPortValue(voltage_bus_V, motor.current_A),
         "motor.shaft": MechanicalPortValue(speed_motor_rad_s, torque_motor_Nm),
-        "gearbox.shaft_in": MechanicalPortValue(speed_motor_rad_s, torque_motor_Nm),
+        "gearbox.shaft_in": MechanicalPortValue(speed_motor_rad_s, torque_gearbox_input_Nm),
         "gearbox.shaft_out": MechanicalPortValue(gear.speed_output_rad_s, gear.torque_output_Nm),
         "propulsor.shaft": MechanicalPortValue(gear.speed_output_rad_s, gear.torque_output_Nm),
     }
@@ -348,8 +430,19 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
                 "dcdc.input": ElectricalPortValue(voltage_feeder_battery_V, current_battery_A),
                 "dcdc.output": ElectricalPortValue(voltage_bus_V, dcdc.current_output_A),
             })
-    margins = tuple(type(m)(f"{condition.label}: {m.label}", m.value)
-                    for m in operating_margins(aircraft.powertrain.topology, port_values, atmosphere)) + thermal.margins
+    if has_strings:
+        port_values.update({
+            "protection_string.input": ElectricalPortValue(battery.voltage_V, current_string_A),
+            "protection_string.output": ElectricalPortValue(battery.voltage_V - protection_string.voltage_drop_V,
+                                                            current_string_A),
+        })
+    port_values.update(tie_ports)
+    margins_operating = operating_margins(topology, port_values, atmosphere, components=components_override)
+    if state.counts.count_ties and not state.count_buses_failed:
+        # Normally open ties: de-energized, no current, no margins.
+        margins_operating = tuple(m for m in margins_operating
+                                  if not m.label.startswith(("protection_bus_tie ", "cable_bus_tie ")))
+    margins = tuple(type(m)(f"{condition.label}: {m.label}", m.value) for m in margins_operating) + thermal.margins
     return FlightPoint(condition=condition, weight_N=weight_N, alpha_deg=alpha_deg, aero=aero,
                        thrust_per_rotor_N=thrust_per_rotor_N, power_shaft_rotor_W=rotor.shaft_power_W,
                        speed_rotor_rad_s=speed_rotor_rad_s, speed_motor_rad_s=speed_motor_rad_s,
@@ -357,4 +450,5 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
                        hybridization_electric=hybridization_electric, battery=battery, generator=generator,
                        engine=engine, power_battery_W=battery.power_electric_W,
                        fuel_flow_kg_s=active_generator_count * engine.fuel_flow_kg_s,
-                       margins=margins, heat_loads=heat_loads, thermal=thermal, electrical=electrical)
+                       margins=margins, heat_loads=heat_loads, thermal=thermal, electrical=electrical,
+                       redundancy=redundancy)

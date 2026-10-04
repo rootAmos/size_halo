@@ -8,11 +8,20 @@ to zero in its own `asb.Opti`.
 
 An instance with `count` n represents n identical copies sharing one set of
 port values (symmetric operation). Its flow into a bus is scaled by n.
+
+Tier 18: a direct connection made with `combine=True` may join counts where
+one is an integer multiple of the other: a combiner (several lane motors on
+one gearbox input) or a splitter (one pack into isolated strings). Efforts
+(speed, voltage) are equal and the total flow is conserved,
+count_source x flow_source = count_target x flow_target. A bus may have a
+`count` too: that many identical buses (cross-strapped, each with an equal
+share of the attached copies), lumped as one junction under symmetric
+operation; the count is read by callers that model a bus failure.
 """
 from dataclasses import dataclass, fields
 from typing import Any
 
-from .ports import Direction, Domain, PortSpec, port_value_types
+from .ports import Direction, Domain, PortSpec, port_flow_fields, port_value_types
 
 
 @dataclass(frozen=True)
@@ -33,14 +42,17 @@ class Instance:
 class Bus:
     name: str
     domain: Domain
+    count: int = 1          # Tier 18: identical cross-strapped buses lumped as one junction
 
 
 @dataclass(frozen=True)
 class Connection:
     """Direct: `source` OUT port -> `target` IN port. Bus: `source` is the attached
-    port (either direction; see its PortSpec) and `target` is the bus name."""
+    port (either direction; see its PortSpec) and `target` is the bus name. `combine`
+    (Tier 18) marks a direct connection between different counts (combiner or splitter)."""
     source: str
     target: str
+    combine: bool = False
 
 
 @dataclass(frozen=True)
@@ -81,15 +93,21 @@ class Topology:
         self._instances[name] = Instance(name, component, tuple(ports), count)
         return name
 
-    def add_bus(self, name, domain=Domain.ELECTRICAL):
+    def add_bus(self, name, domain=Domain.ELECTRICAL, count=1):
         self._check_new_name(name)
         if domain is not Domain.ELECTRICAL:
-            raise ValueError("Only electrical buses are supported; splitters/combiners are deferred.")
-        self._buses[name] = Bus(name, domain)
+            raise ValueError("Only electrical buses are supported; shaft combiners use connect(..., combine=True).")
+        if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+            raise ValueError(f"Bus count must be a positive integer, got {count!r}.")
+        self._buses[name] = Bus(name, domain, count)
         return name
 
-    def connect(self, reference_a, reference_b):
-        """Join two ports (either order) or a port and a bus; validated immediately."""
+    def connect(self, reference_a, reference_b, combine=False):
+        """Join two ports (either order) or a port and a bus; validated immediately.
+
+        `combine=True` (Tier 18) allows a direct connection between counts where one is an integer multiple of
+        the other (a combiner or splitter); without it the counts must be equal.
+        """
         if reference_b in self._buses or reference_a in self._buses:
             port_reference, bus_name = ((reference_a, reference_b) if reference_b in self._buses
                                         else (reference_b, reference_a))
@@ -108,11 +126,15 @@ class Topology:
             if {port_a.direction, port_b.direction} != {Direction.OUT, Direction.IN}:
                 raise ValueError(f"Direct connections join one OUT and one IN port: "
                                  f"'{reference_a}' and '{reference_b}' are both {port_a.direction.value}.")
-            if instance_a.count != instance_b.count:
+            counts = sorted((instance_a.count, instance_b.count))
+            if not combine and counts[0] != counts[1]:
                 raise ValueError(f"Direct connection between counts {instance_a.count} and "
-                                 f"{instance_b.count} needs a splitter/combiner (deferred) or a bus.")
-            connection = (Connection(reference_a, reference_b) if port_a.direction is Direction.OUT
-                          else Connection(reference_b, reference_a))
+                                 f"{instance_b.count} needs combine=True (a combiner or splitter) or a bus.")
+            if combine and counts[1] % counts[0] != 0:
+                raise ValueError(f"A combiner or splitter needs one count to be a multiple of the other, got "
+                                 f"{instance_a.count} and {instance_b.count}.")
+            connection = (Connection(reference_a, reference_b, combine) if port_a.direction is Direction.OUT
+                          else Connection(reference_b, reference_a, combine))
         for reference in (connection.source, connection.target):
             if reference in self._connected_ports:
                 raise ValueError(f"Port '{reference}' is already connected; use a bus for junctions.")
@@ -150,9 +172,21 @@ def connection_residuals(topology, port_values):
         source = _port_value(topology, port_values, connection.source)
         target = _port_value(topology, port_values, connection.target)
         link = f"{connection.source}->{connection.target}"
+        count_source = count_target = 1
+        flow_field = None
+        if connection.combine:
+            # Combiner or splitter: efforts equal, total flow conserved.
+            count_source = topology.instances[connection.source.partition(".")[0]].count
+            count_target = topology.instances[connection.target.partition(".")[0]].count
+            flow_field = port_flow_fields[topology.get_port(connection.source).domain]
         for field_name in (field.name for field in fields(source)):
-            residuals.append(Residual(f"{link} {field_name}",
-                                      getattr(source, field_name) - getattr(target, field_name)))
+            if field_name == flow_field:
+                residuals.append(Residual(f"{link} {field_name} (total)",
+                                          count_source * getattr(source, field_name)
+                                          - count_target * getattr(target, field_name)))
+            else:
+                residuals.append(Residual(f"{link} {field_name}",
+                                          getattr(source, field_name) - getattr(target, field_name)))
 
     for bus_name, references in bus_ports.items():
         if not references:

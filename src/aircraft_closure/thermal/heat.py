@@ -94,12 +94,17 @@ class PointThermal:
 
 
 def evaluate_point_thermal(powertrain, heat_loads, atmosphere, velocity_m_s, mode, duration_s=0.0,
-                           temperature_start_C=None, label="point"):
-    """`temperature_start_C`: None (steady state, no history) or a dict of start temperatures by instance name."""
+                           temperature_start_C=None, label="point", components=None):
+    """`temperature_start_C`: None (steady state, no history) or a dict of start temperatures by instance name.
+
+    `components` (Tier 18, optional): instance name -> the component at this point in place of the topology's
+    (a pack with an isolated string has its own capacitance and resistance)."""
     margins, temperatures_end_C, temperatures_mean_C, mean_W, end_W = [], {}, {}, {}, {}
     instances = powertrain.topology.instances
+    components = components or {}
     for load in heat_loads:
         component = instances[load.source].component if load.source in instances else None
+        component = components.get(load.source, component)
         thermal = getattr(component, "thermal_model", None)
         if thermal is None:
             mean_W[load.source] = end_W[load.source] = load.power_W
