@@ -21,6 +21,10 @@ Tier 20 (plan 024) adds the AFDD tiltrotor wing as an option
 (`HaloAssumptions.wing_weight_model = "afdd_tiltrotor"`) with whirl-flutter
 frequency margins at every airplane-mode point, and itemises the uncrewed
 equipment changes from the XV-15 statement.
+Tier 19 (plan 028) adds a thermal option (`HaloAssumptions.thermal_model`): heat
+loads from every loss, a ram-air heat exchanger (mass, cooling drag, hover fan
+power) sized by a design-variable rating, and lumped motor and generator
+temperatures that let hover and engine-out peaks exceed the continuous rating.
 Assumptions specific to this case are fields of `HaloAssumptions` and are
 listed in plan 013. Illustrative study, not Archer data.
 """
@@ -48,10 +52,12 @@ from aircraft_closure.powertrain.components.cable import Cable, aluminium_conduc
 from aircraft_closure.powertrain.components.converters import ConverterLossModel, DcDcConverter, Inverter
 from aircraft_closure.powertrain.components.gearbox import Gearbox
 from aircraft_closure.powertrain.components.generator import Generator
+from aircraft_closure.powertrain.components.heat_exchanger import RamAirHeatExchanger
 from aircraft_closure.powertrain.components.motor import Motor, TorqueDensityMassModel, rubber_machine
 from aircraft_closure.powertrain.components.protection import ProtectionUnit
 from aircraft_closure.powertrain.components.propulsor import ActuatorDiskPropulsor
 from aircraft_closure.powertrain.components.rotor import MomentumProfileRotor
+from aircraft_closure.powertrain.components.thermal import LumpedThermalModel
 from aircraft_closure.powertrain.components.turboshaft import SimpleTurboshaft, deck_1120hp_part_power_model
 from aircraft_closure.powertrain.topologies import ElectricalLayer, build_series_hybrid
 from aircraft_closure.requirements.capability import (CeilingRequirement, ClimbRequirement, HoverRequirement,
@@ -60,7 +66,9 @@ from aircraft_closure.vehicle.aircraft import Aircraft, MassBreakdown
 from aircraft_closure.vehicle.condition import StructuralDesignCondition
 from aircraft_closure.vehicle.fuselage import Fuselage
 from aircraft_closure.vehicle.items import FixedEquipment, FuelLoad, LandingGear, Nacelles, Payload, Systems
-from aircraft_closure.vehicle.powertrain_installation import InstalledInstance, PowertrainInstallation
+from aircraft_closure.thermal.heat import coolant_temperatures_C, thermal_parameters
+from aircraft_closure.vehicle.powertrain_installation import (InstalledCooling, InstalledInstance,
+                                                              PowertrainInstallation)
 from aircraft_closure.vehicle.surfaces import (HorizontalTail, TiltrotorWingMassModel, VerticalTail, Wing,
                                                aluminium_wing_material, graphite_epoxy_wing_material)
 from aircraft_closure.weights import afdd
@@ -269,6 +277,27 @@ class HaloAssumptions:
     diameter_nacelle_m: float = 3.3 * u.foot
     drag_area_misc_buildup_m2: float = 3.00 * u.foot**2  # XV-15 "fuselage fittings & fixtures" (NDARC, Johnson 2010)
     blown_wing: bool = True                       # "buildup": rotor slipstream increments in airplane mode
+    # ---- Tier 19 thermal (plan 028) ----
+    # True: heat loads from every loss go to a ram-air heat exchanger (mass from its rating, a design variable;
+    # cooling drag in airplane mode, fan power in hover), and lumped motor and generator temperatures replace
+    # their power ratings (hover and engine-out peaks may exceed the continuous rating for their duration). The
+    # rotor gearbox is then rated separately (`HaloDesign.power_rated_gearbox_W`). False: the reference.
+    thermal_model: bool = False
+    specific_power_heat_exchanger_W_kg: float = 1000.0   # at the 40 K reference (Kellermann 2021, Potamiti 2024)
+    delta_temperature_ref_heat_exchanger_C: float = 40.0
+    temperature_coolant_C: float = 60.0                  # water-glycol loop into the heat exchanger and machines
+    effectiveness_heat_exchanger: float = 0.8
+    pressure_drop_ref_heat_exchanger_Pa: float = 1000.0  # air side, at the rated flow and sea-level density
+    efficiency_fan_heat_exchanger: float = 0.6
+    specific_heat_machine_J_kg_K: float = 500.0          # effective, whole machine mass
+    temperature_max_machine_C: float = 150.0             # mean winding (class H: 180 C hot spot)
+    # The pack: lumped on its whole mass, its loop held at `temperature_cell_battery_C` (25 C; moving that heat
+    # into the 60 C loop needs a chiller, not modelled). Its thermal mass absorbs the engine-out peak.
+    specific_heat_battery_J_kg_K: float = 1000.0         # Li-ion cells ~1,000-1,100 J/(kg K), pack structure less
+    temperature_max_battery_C: float = 60.0
+    # Heat loads cooled elsewhere: the gearboxes' own oil coolers, assumed inside the XV-15-calibrated AFDD drive
+    # system weights (they include the lubrication systems). Their heat is still reported.
+    sources_excluded_heat_exchanger: tuple = ("gearbox", "generator_gearbox")
 
 
 @dataclass(frozen=True)
@@ -295,6 +324,17 @@ class HaloDesign:
                                                   # above are then derived from the pack
     speed_rotor_wing_design_rad_s: Any = None     # Tier 20 "afdd_tiltrotor": rotor speed the wing frequencies are
                                                   # placed against; None: the design (hover) rotor speed
+    power_rated_heat_exchanger_W: Any = None      # Tier 19 thermal: heat rejected at the reference difference
+    power_rated_gearbox_W: Any = None             # Tier 19 thermal: rotor gearbox rating; None: the motor rating
+
+
+def battery_thermal(assumptions):
+    """Tier 19: the pack's lumped thermal model (its own loop at the managed cell temperature)."""
+    a = assumptions
+    if not a.thermal_model:
+        return {}
+    return dict(thermal_model=LumpedThermalModel(a.specific_heat_battery_J_kg_K, a.temperature_max_battery_C,
+                                                 a.temperature_cell_battery_C))
 
 
 def build_halo_battery(design, assumptions=HaloAssumptions()):
@@ -306,13 +346,13 @@ def build_halo_battery(design, assumptions=HaloAssumptions()):
                                         factor_capacity_ageing=a.factor_capacity_ageing_battery,
                                         factor_resistance_ageing=a.factor_resistance_ageing_battery,
                                         fraction_mass_cells=a.fraction_mass_cells_battery,
-                                        min_soc=soc_emergency_floor, max_soc=soc_take_off)
+                                        min_soc=soc_emergency_floor, max_soc=soc_take_off, **battery_thermal(a))
     if a.battery_model == "constant":
         return Battery(energy_capacity_J=d.energy_capacity_battery_J,
                        resistance_ohm=a.resistance_energy_product_ohm_J / d.energy_capacity_battery_J,
                        max_discharge_power_W=d.power_max_discharge_battery_W,
                        max_charge_power_W=0.5 * d.power_max_discharge_battery_W,
-                       mass_smoothing_kg=a.battery_mass_smoothing_kg)
+                       mass_smoothing_kg=a.battery_mass_smoothing_kg, **battery_thermal(a))
     raise ValueError(f"Unknown battery model '{a.battery_model}'.")
 
 
@@ -434,9 +474,15 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
         speed_peak_generator_rad_s = a.speed_peak_generator_rad_s
     reduction_ratio = 1.0 if a.direct_drive_rotor else (d.reduction_ratio if d.reduction_ratio is not None
                                                         else a.reduction_ratio)
-    motor = rubber_machine(Motor, speed_peak_motor_rad_s, d.torque_peak_motor_Nm, **ratios, mass_model=mass_model)
+    thermal = dict(thermal_model=LumpedThermalModel(a.specific_heat_machine_J_kg_K, a.temperature_max_machine_C,
+                                                    a.temperature_coolant_C)) if a.thermal_model else {}
+    motor = rubber_machine(Motor, speed_peak_motor_rad_s, d.torque_peak_motor_Nm, **ratios, mass_model=mass_model,
+                           **thermal)
     generator = rubber_machine(Generator, speed_peak_generator_rad_s, d.torque_peak_generator_Nm, **ratios,
-                               mass_model=mass_model)
+                               mass_model=mass_model, **thermal)
+    # Tier 19: with thermal machines the drive is rated on its own (the motor's rating is continuous).
+    power_rated_gearbox_W = (d.power_rated_gearbox_W if a.thermal_model and d.power_rated_gearbox_W is not None
+                             else motor.power_rated_W)
     radius_m = np.sqrt(d.area_disk_m2 / np.pi)
     solidity = d.solidity if d.solidity is not None else a.solidity
     speed_tip_m_s = d.speed_tip_m_s if d.speed_tip_m_s is not None else a.speed_tip_m_s
@@ -446,18 +492,19 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                                                                      speed_tip_m_s, a.frequency_coning_per_rev)
     if a.direct_drive_rotor:
         # No rotor gearbox: a lossless, massless pass-through keeps the topology uniform.
-        gearbox = Gearbox(reduction_ratio=1.0, efficiency=1.0, power_rated_W=motor.power_rated_W, specific_power_W_kg=1e12)
+        gearbox = Gearbox(reduction_ratio=1.0, efficiency=1.0, power_rated_W=power_rated_gearbox_W,
+                          specific_power_W_kg=1e12)
     else:
         if by_torque:
             # AFDD00: mild penalty for higher reduction ratio (input-speed exponent 0.099).
             mass_gearboxes_kg = factors.transmission * afdd.mass_gearbox_rotor_shaft_afdd00_kg(
-                a.count_rotors, a.count_rotors * motor.power_rated_W, speed_peak_motor_rad_s, speed_rotor_design_rad_s)
+                a.count_rotors, a.count_rotors * power_rated_gearbox_W, speed_peak_motor_rad_s, speed_rotor_design_rad_s)
         else:
             mass_gearboxes_kg = factors.transmission * afdd.mass_gearbox_rotor_shaft_afdd83_kg(
-                a.count_rotors * motor.power_rated_W, speed_rotor_design_rad_s, a.speed_peak_motor_rad_s, a.count_rotors,
+                a.count_rotors * power_rated_gearbox_W, speed_rotor_design_rad_s, a.speed_peak_motor_rad_s, a.count_rotors,
                 0.6)
-        gearbox = Gearbox(reduction_ratio=reduction_ratio, power_rated_W=motor.power_rated_W,
-                          specific_power_W_kg=motor.power_rated_W / (mass_gearboxes_kg / a.count_rotors))
+        gearbox = Gearbox(reduction_ratio=reduction_ratio, power_rated_W=power_rated_gearbox_W,
+                          specific_power_W_kg=power_rated_gearbox_W / (mass_gearboxes_kg / a.count_rotors))
     generator_gearbox = None
     if by_torque and a.generator_step_up and d.speed_peak_generator_rad_s is not None:
         # Step-up from the engine's output shaft; AFDD00 with the slow (engine) side as the "rotor" speed.
@@ -542,6 +589,16 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
             InstalledInstance("protection_battery", x_m=x_bus_m, z_m=z_bus_m))
         if electrical.dcdc is not None:
             locations = locations + (InstalledInstance("dcdc", x_m=x_bus_m, z_m=z_bus_m),)
+    cooling = None
+    if a.thermal_model:
+        # One ram-air cooler for every heat load, in the fuselage at the wing (the loop runs to the tips).
+        cooling = InstalledCooling(RamAirHeatExchanger(
+            power_rated_W=d.power_rated_heat_exchanger_W, specific_power_W_kg=a.specific_power_heat_exchanger_W_kg,
+            temperature_coolant_C=a.temperature_coolant_C,
+            delta_temperature_ref_C=a.delta_temperature_ref_heat_exchanger_C,
+            effectiveness=a.effectiveness_heat_exchanger, pressure_drop_ref_Pa=a.pressure_drop_ref_heat_exchanger_Pa,
+            efficiency_fan=a.efficiency_fan_heat_exchanger), x_m=x_rotor_m, z_m=0.0,
+            sources_excluded=a.sources_excluded_heat_exchanger)
     return Aircraft(
         wing=wing,
         horizontal_tail=HorizontalTail(area_m2=d.area_horizontal_tail_m2, aspect_ratio=3.27, taper_ratio=1.0,
@@ -554,7 +611,7 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
         landing_gear=LandingGear(length_main_m=3.0 * u.foot, length_nose_m=3.0 * u.foot, x_main_m=x_rotor_m + 0.6,
                                  x_nose_m=1.5, z_m=-0.9, is_retractable=True, mass_factor=factors.alighting_gear),
         systems=Systems(mass_avionics_uninstalled_kg=0.0, x_m=3.0, mass_factor=factors.flight_controls),
-        powertrain=PowertrainInstallation(topology, locations),
+        powertrain=PowertrainInstallation(topology, locations, cooling=cooling),
         payload=Payload(mass_kg=requirements.mass_payload_kg, x_m=x_rotor_m),
         fuel=FuelLoad(mass_kg=d.mass_fuel_kg, x_m=x_rotor_m, z_m=wing.z_m),
         nacelles=replace(nacelles, x_m=x_rotor_m, z_m=wing.z_m, length_m=a.length_nacelle_m,
@@ -619,6 +676,11 @@ class HaloSizingResult:
     # and beam frequencies in per rev of that point's rotor speed.
     wing_masses_kg: tuple = ()
     whirl_flutter: tuple = ()
+    # Tier 19 (`thermal_model`): per point (mission, engine-out, requirement and hot-day points) the heat by
+    # source, heat rejected, cooling drag, fan power, required exchanger rating and machine end temperatures;
+    # and the exchanger (rating, mass) plus the continuous machine losses and thermal time constants.
+    thermal_trace: tuple = ()
+    heat_exchanger: Any = None
 
 
 def count_parallel_guess(guess, assumptions):
@@ -636,6 +698,9 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
                       max_iter=3000, initial=None, objective="mass_takeoff"):
     """`initial`: an earlier `HaloSizingResult` used as the initial guess (sensitivity studies).
 
+    With the thermal model (Tier 19) and no `initial`, the same problem without it is solved first (by the rules
+    below) and used as the start.
+
     objective "mass_takeoff" minimizes take-off mass at the required payload; "payload" makes payload a
     variable and maximizes it (the aircraft is sized around fixed engines, plan 017).
 
@@ -648,6 +713,11 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     aerodynamics (fast, within about 1 % in mass) and used as the start (plan 025): from the generic guess the
     constant-battery build-up problem can stop at a point of local infeasibility.
     """
+    if initial is None and assumptions.thermal_model:
+        # Tier 19 (plan 028): start from the same problem without the thermal model. From the generic guess, and
+        # with AeroBuildup from the thermal Scholz design, IPOPT can fail in restoration.
+        initial = solve_halo_sizing(requirements, replace(assumptions, thermal_model=False), factors,
+                                    max_iter=max_iter, objective=objective)
     if initial is None and assumptions.aerodynamics_model == "buildup":
         initial = solve_halo_sizing(requirements, replace(assumptions, aerodynamics_model="scholz"), factors,
                                     max_iter=max_iter, objective=objective)
@@ -688,6 +758,14 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         torque_peak_motor_Nm=opti.variable(init_guess=guess.torque_peak_motor_Nm, scale=1000.0, lower_bound=100.0),
         torque_peak_generator_Nm=opti.variable(init_guess=guess.torque_peak_generator_Nm, scale=1000.0,
                                                lower_bound=100.0),
+        # Tier 19: the cooler's rating and the drive's own rating (the motor's becomes continuous).
+        power_rated_heat_exchanger_W=opti.variable(
+            init_guess=guess.power_rated_heat_exchanger_W if guess.power_rated_heat_exchanger_W is not None
+            else 3e5, scale=1e5, lower_bound=1e3) if a.thermal_model else None,
+        power_rated_gearbox_W=opti.variable(
+            init_guess=guess.power_rated_gearbox_W if guess.power_rated_gearbox_W is not None
+            else (initial.power_rated_motor_W if initial is not None else 7e5), scale=1e6,
+            lower_bound=1e4) if a.thermal_model else None,
         power_rated_turboshaft_W=(a.power_rated_turboshaft_fixed_W if a.power_rated_turboshaft_fixed_W is not None
                                   else opti.variable(init_guess=guess.power_rated_turboshaft_W, scale=1e6,
                                                      lower_bound=5e4)),
@@ -747,13 +825,23 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     if is_ecm:
         design = replace(design, energy_capacity_battery_J=battery.energy_capacity_J,
                          power_max_discharge_battery_W=battery.power_max_discharge_W)
+    thermal = a.thermal_model
     flown = build_mission(opti, aircraft, aerodynamics, mission, mass_takeoff_kg, soc_take_off,
                           hybridization_electric_min=a.hybridization_electric_min,
                           # The engine-out reserve is assessed from the SOC floor, so hold it at every segment.
                           soc_floor=soc_minimum if a.soc_floor_every_segment else None,
-                          **(dict(subsegments=a.subsegments_mission) if is_ecm else {}))
-    requirement_points = [build_flight_point(opti, aircraft, aerodynamics, c, mass_takeoff_kg)
+                          **(dict(subsegments=a.subsegments_mission) if is_ecm else {}),
+                          # Tier 19: machines start at the coolant temperature and carry their history.
+                          **(dict(thermal_start="coolant") if thermal else {}))
+    # Tier 19: the hover requirement is a 60 s hover from a cold start; airplane-mode requirements are steady.
+    cold_C = coolant_temperatures_C(aircraft.powertrain) if thermal else None
+    requirement_points = [build_flight_point(opti, aircraft, aerodynamics, c, mass_takeoff_kg,
+                                             **(dict(duration_s=r.duration_hover_s, temperature_start_C=cold_C)
+                                                if thermal and c.mode == "hover" else {}))
                           for c in r.requirement_set().flight_conditions()]
+    take_off = flown.segments[0]
+    # Tier 19: the engine fails at the end of the take-off hover (at MTOM); the machines are that warm.
+    take_off_end_C = (take_off.subsegments or (take_off,))[-1].point.thermal.temperatures_end_C if thermal else None
     cruise = next(s for s in flown.segments if isinstance(s.segment, CruiseSegment))
     loiter = next(s for s in flown.segments if isinstance(s.segment, LoiterSegment))
     # Engine-out hover: one turbogenerator plus the battery, at MTOM, from the SOC floor.
@@ -763,7 +851,8 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         reserve = build_mission(opti, aircraft, aerodynamics, Mission((HoverSegment(
             r.duration_engine_out_hover_s, 0.0, None, "engine-out hover",
             active_generator_count=a.count_turbogenerators - 1),)), mass_takeoff_kg, soc_minimum,
-            soc_floor=soc_emergency_floor, subsegments=a.subsegments_engine_out, polarization_start="steady")
+            soc_floor=soc_emergency_floor, subsegments=a.subsegments_engine_out, polarization_start="steady",
+            **(dict(thermal_start=take_off_end_C) if thermal else {}))
         engine_out_points = reserve.segments[0].subsegments or reserve.segments
         engine_out = engine_out_points[0].point
         engine_out_margins = reserve.margins
@@ -771,7 +860,8 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     else:
         engine_out = build_flight_point(opti, aircraft, aerodynamics, FlightCondition(
             mode="hover", altitude_m=0.0, soc=soc_minimum, active_generator_count=a.count_turbogenerators - 1,
-            label="engine-out hover"), mass_takeoff_kg)
+            label="engine-out hover"), mass_takeoff_kg,
+            **(dict(duration_s=r.duration_engine_out_hover_s, temperature_start_C=take_off_end_C) if thermal else {}))
         engine_out_points = ()
         engine_out_margins = engine_out.margins
         soc_after_reserve = soc_minimum - (engine_out.battery.power_chemical_W * r.duration_engine_out_hover_s
@@ -783,7 +873,9 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
             mode="hover", altitude_m=r.altitude_hover_hot_m, thrust_to_weight=r.thrust_to_weight_hover_hot,
             soc=flown.soc_end, temperature_offset_K=temperature_offset_K(r.altitude_hover_hot_m,
                                                                          r.temperature_hover_hot_K),
-            label="hot-day hover"), flown.mass_end_kg)
+            label="hot-day hover"), flown.mass_end_kg,
+            **(dict(duration_s=r.duration_hover_hot_s, temperature_start_C=flown.temperatures_end_C) if thermal
+               else {}))
         soc_after_hover_hot = flown.soc_end - (hover_hot.battery.power_chemical_W * r.duration_hover_hot_s
                                                / design.energy_capacity_battery_J)
 
@@ -896,6 +988,11 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
                                  torsion_per_rev=value(wing_masses.frequency_torsion_rad_s / p.speed_rotor_rad_s),
                                  beam_per_rev=value(wing_masses.frequency_beam_rad_s / p.speed_rotor_rad_s))
                             for p in whirl_points),
+        thermal_trace=thermal_trace(
+            tuple(p for s in flown.segments for p in (s.subsegments or (s,))) + tuple(engine_out_points),
+            requirement_points + ([] if is_ecm else [engine_out]) + ([hover_hot] if hover_hot is not None else []),
+            value) if thermal else (),
+        heat_exchanger=heat_exchanger_summary(aircraft.powertrain, value) if thermal else None,
     )
 
 
@@ -948,6 +1045,46 @@ def electrical_summary(electrical, value):
                 power_loss_protection_W=value(electrical.power_loss_protection_W),
                 power_loss_dcdc_W=value(electrical.power_loss_dcdc_W),
                 power_loss_electrical_W=value(electrical.power_loss_total_W))
+
+
+def thermal_trace(segment_points, other_points, value):
+    """Numeric thermal state per point (Tier 19): segment results (with durations) then single flight points."""
+    rows = []
+    for duration_s, p in ([(s.duration_s, s.point) for s in segment_points] + [(None, p) for p in other_points]):
+        t = p.thermal
+        rows.append(dict(
+            label=p.condition.label, mode=p.condition.mode,
+            duration_s=value(duration_s) if duration_s is not None else None,
+            heat_W={load.source: value(load.total_W()) for load in t.heat_loads},
+            power_heat_W=value(t.power_heat_W), drag_cooling_N=value(t.cooling.drag_N),
+            power_fan_W=value(t.cooling.power_fan_W), power_heat_equivalent_W=value(t.power_heat_equivalent_W),
+            mass_flow_air_kg_s=value(t.cooling.mass_flow_air_kg_s),
+            delta_temperature_C=value(t.cooling.delta_temperature_C),
+            power_heat_end_W=value(t.power_heat_end_W),
+            power_to_coolant_W={name: value(power_W) for name, power_W in t.power_to_coolant_W.items()},
+            temperatures_end_C={name: value(temperature) for name, temperature in t.temperatures_end_C.items()},
+            power_shaft_motor_W=value(p.speed_motor_rad_s * p.torque_motor_Nm)))
+    return tuple(rows)
+
+
+def heat_exchanger_summary(powertrain, value):
+    exchanger = powertrain.cooling.heat_exchanger
+    machines = {}
+    for name in ("motor", "generator", "battery"):
+        component = powertrain.topology.instances[name].component
+        parameters = thermal_parameters(component)
+        if name != "battery":
+            rating_W = component.power_rated_W
+        elif isinstance(component, EquivalentCircuitBattery):
+            rating_W = component.power_max_discharge_W
+        else:
+            rating_W = component.max_discharge_power_W
+        machines[name] = dict(power_rated_W=value(rating_W), mass_kg=value(component.get_mass()),
+                              power_loss_continuous_W=value(parameters.power_loss_continuous_W),
+                              time_constant_s=value(parameters.capacity_J_K * parameters.resistance_K_W))
+    return dict(power_rated_W=value(exchanger.power_rated_W), mass_kg=value(exchanger.get_mass()),
+                power_rated_gearbox_W=value(powertrain.topology.instances["gearbox"].component.power_rated_W),
+                machines=machines)
 
 
 def battery_trace(points, value):

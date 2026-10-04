@@ -18,6 +18,7 @@ Models build equations and do not enforce limits, clip outputs or resize parts.
 | DcDcConverter | power_input_W (positive battery to bus), voltage_input_V | rated power; regulated output voltage (Tier 15) |
 | Cable | current_A | design current (sets the conductor area); peak voltage (sets the insulation) (Tier 15) |
 | ProtectionUnit | current_A | rated current per pole (Tier 15) |
+| RamAirHeatExchanger | power_heat_W, atmosphere, velocity_m_s, fan | heat rejected at the reference coolant-to-air temperature difference (Tier 19) |
 
 Motor/generator default losses follow McDonald, AIAA 2015-1676 (plan 005):
 P_L = C0 + C1 w + C2 w^3 + C3 Q^2 with coefficients from the peak-efficiency
@@ -697,8 +698,8 @@ whole layer is optional (`build_series_hybrid(..., electrical=None)`; Halo
   cable - inverter - motor, generator - rectifier - cable - protection - bus, battery - protection - cable -
   [DC/DC] - bus.
 - **Flight point:** `FlightPoint.electrical` (`ElectricalLayerResult`: bus and battery voltages, per-instance
-  results, bus-side powers, loss totals, and `loss_sources`: one `LossSource(instance_name, power_loss_W)`
-  per electrical instance, summed over active copies, for Tier 19 heat loads). The hybridization share is on
+  results, bus-side powers, loss totals, and `heat_loads`: one Tier 19 `HeatLoad(instance_name, per-unit
+  loss, active count)` per electrical instance, appended to `FlightPoint.heat_loads`). The hybridization share is on
   the bus side.
 - **Operating margins:** inverter AC power and DC window; cable and protection current (squared, either
   sign); cable partial discharge at the point's pressure; DC/DC power and input window.
@@ -771,3 +772,61 @@ aero=None)`, `lift_curve_slope_per_rad`, `surface_lift_curve_slope_per_rad`,
   "scholz"), `length_nacelle_m` (9 ft), `diameter_nacelle_m` (3.3 ft),
   `drag_area_misc_buildup_m2` (3.00 ft2), `blown_wing` (True);
   `build_halo_aerodynamics(requirements, assumptions)`.
+
+## Thermal (Tier 19)
+
+Plan 028. Every value may be an Opti expression; nothing iterates.
+
+- **`powertrain/components/thermal.py` `LumpedThermalModel(specific_heat_J_kg_K=500,
+  temperature_max_C=150, temperature_coolant_C=60)`:** a submodel owned by a
+  component (`thermal_model` on `Motor`, `Generator`, `Battery` and
+  `EquivalentCircuitBattery`, default None).
+  `temperature_end_C(power_loss_W, duration_s, capacity_J_K, resistance_K_W,
+  temperature_start_C=None)` is the exact constant-heat solution
+  T_ss + (T_0 - T_ss) e^(-dt/tau), T_ss = T_c + Q R, tau = R C; a None start
+  is the steady state, a numeric zero duration keeps the start.
+  `temperature_mean_C(...)` is the interval mean T_ss + (T_0 - T_ss) g with
+  g = (tau/dt)(1 - e^(-dt/tau)); the mean heat to the coolant is
+  (T_mean - T_c) / R = loss - C (T_end - T_0) / dt.
+- **`powertrain/components/heat_exchanger.py` `RamAirHeatExchanger(power_rated_W,
+  specific_power_W_kg, temperature_coolant_C, delta_temperature_ref_C,
+  effectiveness, pressure_drop_ref_Pa, efficiency_fan)`:** mass = rating /
+  specific power; `evaluate(power_heat_W, atmosphere, velocity_m_s=0, fan=False)`
+  returns `HeatExchangerResult(mass_flow_air_kg_s, pressure_drop_Pa,
+  power_pumping_W, drag_N, power_fan_W, power_heat_equivalent_W,
+  delta_temperature_C)`. Air flow Q / (eps cp dT), pressure loss
+  dp_ref (m/m_ref)^2 rho_ref/rho, pumping power m dp / rho; ram drag = pumping
+  power / V, or fan power = pumping power / eta_fan with `fan=True`; required
+  rating Q dT_ref / dT.
+- **`thermal/heat.py`:** `HeatLoad(source, power_W, count)` (per unit, by
+  instance name), `total_heat_W(loads, sources_excluded=())`,
+  `thermal_parameters(component)` (C = c x mass; R = (T_max - T_c) / loss
+  at the continuous rating: rated power at rated speed for machines, rated
+  discharge current at SOC 0.5 for batteries, so the continuous rating's
+  steady state is the limit), `evaluate_point_thermal(...)` returning
+  `PointThermal(heat_loads, power_heat_W, power_heat_end_W,
+  power_heat_equivalent_W, cooling, temperatures_end_C, temperatures_mean_C,
+  power_to_coolant_W, margins)`, and `coolant_temperatures_C(powertrain)`.
+  A thermal-modelled source passes (T - T_c) / R to the cooler (interval
+  mean for drag and fan power, end of interval for the rating margin);
+  other sources pass their loss.
+- **`vehicle/powertrain_installation.py`:** `InstalledCooling(heat_exchanger,
+  x_m, z_m=0, sources_excluded=())`; `PowertrainInstallation.cooling`
+  (None) adds the item "heat_exchanger" to the powertrain mass.
+- **Flight point:** `build_flight_point(..., temperature_start_C=None)`.
+  `FlightPoint.heat_loads` (motor, gearbox, generator, battery,
+  generator_gearbox) and `FlightPoint.thermal`. With cooling installed, the
+  fan power joins the bus demand that the battery share and the generators
+  supply; in airplane mode a cooling-drag variable joins the thrust, with the
+  equality D_cool = exchanger drag. Margins "<label>: heat_exchanger
+  power_heat_W" and "<label>: <instance> temperature_C" (normalized by the
+  allowed rise T_max - T_c).
+- **Mission:** `build_mission(..., thermal_start="steady" | "coolant" | dict)`;
+  `MissionResult.temperatures_end_C`.
+- **Flight point start:** with cooling installed the battery current starts
+  at 0 A (50 A otherwise).
+- **Compatibility:** a machine with a thermal model has no power-rating
+  operating margin (torque, speed and voltage margins stay).
+- **Halo:** `HaloAssumptions.thermal_model` (False) and its fields;
+  `HaloDesign.power_rated_heat_exchanger_W` and `power_rated_gearbox_W`;
+  `HaloSizingResult.thermal_trace` and `heat_exchanger`.

@@ -34,6 +34,7 @@ class Battery:
     min_soc: float = 0.2
     max_soc: float = 0.95
     mass_smoothing_kg: Any = None
+    thermal_model: Any = None       # Tier 19: LumpedThermalModel or None
 
     def get_mass(self):
         # Energy capacity alone can undersize a hover pack: both charge and

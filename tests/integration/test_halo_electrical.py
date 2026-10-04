@@ -65,10 +65,9 @@ class HaloElectricalLayerTests(unittest.TestCase):
                        - 2 * value(e.inverter_motor.power_ac_W))
         self.assertAlmostEqual(terminals_W / value(e.power_loss_total_W), 1.0, delta=1e-6)
         # Tier 19 heat loads: per-instance losses sum to the layer total.
-        self.assertAlmostEqual(sum(value(source.power_loss_W) for source in e.loss_sources)
+        self.assertAlmostEqual(sum(value(load.total_W()) for load in e.heat_loads)
                                / value(e.power_loss_total_W), 1.0, delta=1e-9)
-        self.assertEqual({source.instance_name for source in e.loss_sources},
-                         set(electrical_names))
+        self.assertTrue(set(electrical_names) <= {load.source for load in point.heat_loads})
         labels = [m.label for m in point.margins]
         self.assertTrue(any("cable_motor partial_discharge_V" in label for label in labels))
         self.assertTrue(any("inverter_motor max_voltage_V" in label for label in labels))
