@@ -964,45 +964,64 @@ feeder), `ProtectionUnit` (contactors and fuses) and an optional
 - **Installation factor:** no longer passed by the Halo; the cabling and
   protection it stood for are explicit. Cooling stays for Tier 19.
 
-**Halo with the layer** (756 V nominal, 210s pack, 1,200 V inverters):
+**Halo with the layer, current aircraft** (plan 027 with thermal off: 900 kg,
+210 kt, AFDD wing; 756 V nominal, 210s pack, 1,200 V inverters). Results on
+the Scholz hand-check aerodynamics (within about 1 % in mass of AeroBuildup,
+plan 025):
 
-- The minimum-mass problem at 900 kg is infeasible on the fixed
-  2 x 1,120 hp engines.
-- Maximum payload 567 kg (against 959 kg without the layer) at 6,304 kg
-  (13,898 lb).
-- Electrical items 320 kg: inverters 73 + 84 kg, cables 60 + 69 + 9 kg,
-  protection 10 + 11 + 4 kg (motor, generator, battery feeders, both
-  sides).
-- Losses about 17 kW in cruise (inverters dominate; cables about 1/5).
-- The payload loss is the 320 kg of items, their converter losses on
-  the turbine-limited 210 kt and engine-out points, and the snowball.
+- Take-off mass 6,900 kg (15,211 lb) against 6,215 kg (13,702 lb) without
+  the layer: +685 kg.
+- Electrical items 332 kg: inverters 80 + 84 kg, cables 64 + 67 + 11 kg,
+  protection 11 + 11 + 5 kg (motor, generator, battery feeders, both sides).
+- Losses 2.8-3.1 % of the rotor power on every segment (inverters dominate,
+  cables about 1/6).
+- Binding: the hover inverter rating (it nudges the motor rating up), the
+  engine-out battery current and turbine power, rotor radius and whirl
+  flutter.
+- With the Tier 19 thermal model as well: 7,641 kg. Inverter, cable and
+  protection losses join the heat loads by instance name (about 20 kW per
+  inverter set in take-off hover).
+- With AeroBuildup the flag-on minimum-mass solve did not converge from any
+  start tried (the default chain, the flag-off reference, the constant-battery
+  aircraft without the layer): open issue.
+- A 10 kW/kg *bare* machine cap (inverter added on top of the Tier 13 cap)
+  has no feasible 900 kg design.
 
-**Bus voltage (maximum payload, discrete enumeration):**
+**Bus voltage (minimum take-off mass at 900 kg, Scholz, discrete
+enumeration):**
 
-| Nominal bus | Pack | Inverter class | Max payload | Electrical mass |
-|---|---|---|---|---|
-| 540 V | 150s | 1,200 V | 501 kg | 378 kg |
-| 756 V | 210s | 1,200 V | 567 kg | 320 kg |
-| 800 V | 222s | 1,700 V | 574 kg | 312 kg |
-| 1,000 V | 278s | 1,700 V | 604 kg | 286 kg |
-| 540 V DC/DC | 210s | 1,200 V | 484 kg | 375 kg |
-| 756 V DC/DC | 210s | 1,200 V | 530 kg | 337 kg |
-| 800 V DC/DC | 210s | 1,200 V | 536 kg | 332 kg |
-| 1,000 V DC/DC | 210s | 1,700 V | 557 kg | 315 kg |
+| Nominal bus | Pack | Inverter class | Take-off mass | Electrical mass | Cables |
+|---|---|---|---|---|---|
+| 540 V | 150s | 1,200 V | 7,096 kg | 404 kg | 200 kg |
+| 756 V | 210s | 1,200 V | 6,900 kg | 332 kg | 141 kg |
+| 800 V | 222s | 1,700 V | 6,875 kg | 323 kg | 134 kg |
+| 1,000 V | 278s | 1,700 V | 6,792 kg | 293 kg | 109 kg |
+| 540 V DC/DC | 210s | 1,200 V | 7,192 kg | 423 kg | 142 kg |
+| 756 V DC/DC | 210s | 1,200 V | 7,053 kg | 373 kg | 103 kg |
+| 800 V DC/DC | 210s | 1,200 V | 7,002 kg | 365 kg | 98 kg |
+| 1,000 V DC/DC | 210s | 1,700 V | 6,943 kg | 344 kg | 82 kg |
 
 - Higher voltage wins: conductor mass falls as 1/V while the PD-sized
-  insulation stays small. The model has no penalty for 1,700 V devices
-  or higher-voltage contactors (deferred).
+  insulation stays small. The model has no penalty for 1,700 V devices or
+  higher-voltage contactors (deferred), so the trend is optimistic.
 - 800 V nominal (932 V maximum) already exceeds the derated 1,200 V class.
-- A DC/DC converter (64 kg, 2 % loss) never pays here: it buys a constant
-  bus voltage, but the pack can set the bus directly.
+- A DC/DC converter never pays here: it buys a constant bus voltage, but
+  costs its own 60-65 kg and 2 % loss.
+
+**Earlier result** (plan 026 aircraft, simple aerodynamics, before the
+AeroBuildup and thermal merges): the 900 kg problem was infeasible with the
+layer; maximum payload 567 kg against 959 kg, and 1,000 V gave 604 kg.
 
 **Solver practice.** The equivalent-circuit maximum-payload solve is
 sensitive to its start. `solve_halo_max_payload` starts from a
 constant-battery design and falls back to the constant-battery maximum
-payload of the same assumptions; `enumerate_bus_voltage` retries a failed
-option from its neighbours; from a constant-battery start the parallel
-count is energy-matched (`count_parallel_guess`). Feeder ratings at 125 %
+payload without the layer; `enumerate_bus_voltage` retries a failed option
+from its neighbours; with the layer a constant-battery start is
+energy-matched in parallel count (`count_parallel_guess`). With the
+equivalent-circuit pack, the warm start is the constant-battery aircraft
+*without* the layer, and with the thermal model the thermal aircraft
+without the layer: from the layer designs IPOPT reached local
+infeasibility. Feeder ratings at 125 %
 of their sources also keep the cable and contactor current limits from
 duplicating the source's own limit (degenerate active constraints made
 IPOPT report local infeasibility).

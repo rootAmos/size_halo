@@ -165,8 +165,16 @@ off by default, so the plan 022 reference (780 kg, 14,436 lb) is unchanged.
 - **Bus voltage enumeration (max payload):** 540 V 501 kg, 756 V 567 kg,
   800 V 574 kg (1,700 V devices), 1,000 V 604 kg (1,700 V devices); every
   DC/DC variant is 30-40 kg worse than the pack-set bus at the same voltage.
-- Tests: 23 component tests, 5 Halo integration tests; notebook
-  `notebooks/tier15_electrical/electrical_verification.ipynb`.
+- Merged main again (plan 027 AeroBuildup, Tier 19 thermal). Electrical
+  losses are Tier 19 `HeatLoad`s by instance name. `assumptions_tier15`
+  pins `thermal_model=False`. Flag off: 13,639 lb (plan 027) unchanged.
+- **Current results (Scholz aero, 900 kg):** 6,900 kg with the layer
+  against 6,215 kg; electrical items 332 kg; with thermal 7,641 kg. Bus
+  enumeration: 540 V 7,096 kg, 756 V 6,900 kg, 800 V 6,875 kg, 1,000 V
+  6,792 kg; every DC/DC variant heavier. AeroBuildup + layer: no converged
+  start found (open).
+- Tests: 23 component tests, 5 Halo integration tests (Scholz-pinned);
+  notebook 27/27 checks and the full suite (498 tests) pass.
 
 ## Deferred
 
