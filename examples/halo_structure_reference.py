@@ -47,6 +47,7 @@ if __name__ == "__main__":
         mass_wing_kg=float(breakdown.wing.mass), mass_horizontal_tail_kg=float(breakdown.horizontal_tail.mass),
         mass_vertical_tail_kg=float(breakdown.vertical_tail.mass), mass_fuselage_kg=float(breakdown.fuselage.mass),
         factor_wing=float(wing.mass_factor),
+        factor_fuselage=float(aircraft.fuselage.mass_factor),
     )
     path_output.parent.mkdir(parents=True, exist_ok=True)
     path_output.write_text(json.dumps(reference, indent=1))

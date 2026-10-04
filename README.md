@@ -5,18 +5,25 @@
 AeroSandbox/CasADi framework for sizing an unmanned series-hybrid-electric
 tiltrotor together with its mission. Every discipline contributes equations to
 one `asb.Opti` problem; there are no hidden convergence loops or second
-solvers. Tiers 0–10c of the [fidelity roadmap](docs/FIDELITY_ROADMAP.md) are
-implemented. Tier 9 is a coupled problem that sizes the aircraft,
+solvers. Tiers 0–21 of the [fidelity roadmap](docs/FIDELITY_ROADMAP.md) are
+implemented apart from Tiers 15, 18 and 22, and Tier 23 (geometry) is partial. Tier 9 is a coupled problem that sizes the aircraft,
 optimizes its mission and allocates battery versus turbogenerator energy per
 segment. Tiers 10a and 10b check the mass models and the engine and hover models against
 the Bell XV-15. Tier 10c uses them to size a Halo-class two-rotor series
 hybrid: 18,740 lb take-off for 900 kg payload, 445 nm, 250 kt and a 13,000 ft
 ceiling (18,506 lb with the user-supplied turboshaft deck's part-power fuel curve,
-Tier 11a). The current reference (plan 027) fixes the engines at 2 x 1,120 hp
-and flies 210 kt with 900 kg of payload. It uses a Samsung 50G-shaped
-equivalent-circuit battery, the NDARC tiltrotor wing with whirl-flutter
-margins, and AeroSandbox AeroBuildup aerodynamics with Scholz
-miscellaneous items. It weighs 13,639 lb at take-off.
+Tier 11a).
+
+**Current reference (plan 032): 12,821 lb at take-off** with 900 kg of payload at 210 kt.
+- **Engines:** fixed at 2 x 1,120 hp, inside the fuselage.
+- **Battery:** a Samsung 50G-shaped equivalent-circuit battery.
+- **Wing:** the NDARC tiltrotor wing with whirl-flutter margins.
+- **Aerodynamics:** AeroSandbox AeroBuildup, with Scholz miscellaneous items.
+- **Thermal:** a thermal model with a ram-air heat exchanger.
+- **Fuselage:** an unpressurized boxy fuselage (11 m long, 1.68 x 2.0 m). Its weight is raw Raymer GA x 1.70,
+  anchored to a layout-based structure estimate.
+
+The reference has moved as fidelity was added; see the [results](docs/RESULTS.md) for how and why.
 
 All numbers are illustrative engineering inputs, not Archer or Halo data
 (see [reference assumptions](docs/HALO_REFERENCE.md)).
@@ -82,6 +89,30 @@ These packages are outside the lockfile, so a plain `uv sync` removes them;
 use `uv sync --inexact`. Tests that need OpenVSP skip when it is absent.
 Outputs go to `output/` (not committed).
 
+## Geometry, aero cross-check and structure tools (plan 031)
+
+These are optional, they need OpenVSP, and nothing in the sizing depends on them. They take a solved aircraft (as
+plain numbers) and check it from a different direction.
+
+| Tool | What it does | Run |
+|---|---|---|
+| Outer mold line | The drawn Halo in OpenVSP: smooth bodies, a tapered wing, a V-tail, tip nacelles that tilt about the spindle, rotors. Writes `.vsp3` with hover, conversion and cruise Modes, STEP and STL per nacelle angle, and renders | `python -m examples.halo_openvsp` |
+| Aero cross-check | VSPAERO (vortex lattice and panel) and the OpenVSP parasite-drag build-up against AeroSandbox VLM and AeroBuildup on the same geometry. Compares lift slope, neutral point, induced and profile drag | `python -m examples.halo_aero_compare` |
+| Internal structure | Wing box (spars, ribs), fuselage (ring frames, bulkheads, floor) and V-tail as OpenVSP FEA structures. Writes CalculiX and Nastran decks, STL and a mass report, and renders the layout | `python -m examples.halo_structure` |
+| Weight back-check | Sizes the primary-structure gauges on the drawn layout from simple ultimate loads and the AFDD stiffness requirements, then compares with the AFDD wing and Raymer tail and fuselage | `python -m examples.halo_structure_reference`, then `python -m examples.halo_structure_check` |
+
+Main findings so far:
+- The AFDD wing agrees with the layout to within about 10 %.
+- AeroBuildup is conservative on stability and induced drag compared with VSPAERO.
+- The XV-15 fuselage calibration overstated an uncrewed fuselage, which led to plan 032.
+
+Limits:
+- Fuselage FE meshing takes minutes per file type.
+- The structural STEP export is off.
+- No FE solution is run yet.
+
+See [implementation notes](docs/IMPLEMENTATION_NOTES.md) (plans 031 and 032) for numbers and OpenVSP quirks.
+
 ## Continuous integration
 
 GitHub Actions runs the unit suite on every push and pull request
@@ -117,11 +148,16 @@ uv run jupyter lab notebooks
 
 ## Status and next step
 
-The largest remaining assumption is airplane-mode rotor efficiency (the cruise
-coefficient). Compressibility drag, conversion flight and rotor-loss handling
-are also open. These are Tier 11 candidates.
+Open items, roughly by impact:
 
-At XV-15 scale, the uncalibrated mass models close 13 % light. The Raymer GA
-wing, fuselage and flight-control equations are the weak groups; the AFDD
-rotorcraft equations track well. Per-group calibration factors are available,
-and Tier 10c will document which of them it applies.
+- **Airplane-mode rotor efficiency.** The cruise coefficient is the largest remaining assumption.
+- **Plan 032 assumptions:**
+  - the turbogenerator station inside the fuselage;
+  - the XV-15 pylon radius of gyration, now without engines in the nacelle;
+  - Raymer's flight-control mass scaling with fuselage length, which gives 104 kg of the 11 m saving and is weak
+    for fly-by-wire.
+- **V-tail.** The sizing still uses a conventional tail; the V-tail is drawn only.
+- **Symbolic geometry layout (Tier 23).** Clearance and packaging constraints are still planned.
+- **Structure.** No FE solve has been run, and the gauges in the decks are placeholders.
+
+[Results](docs/RESULTS.md) has the full list and how the reference moved.

@@ -1150,6 +1150,117 @@ The user approved it on 2026-10-04 ("yes").
 - **Solve time:** about 4 minutes from cold. The solve starts from the
   thermal-off solve, which starts from Scholz aero and the constant battery.
 
+## Plan 031: OpenVSP geometry, aero cross-check and structure (Tier 23, partial)
+
+Asked for on 2026-10-04: "a very strong geometric module for the tiltrotor ... script OpenVSP ... internal
+structural layout for export". Everything here is a check or an export. Nothing feeds the sizing, and nothing in
+`vehicle/` or the sizing imports it.
+
+**Optional dependencies.**
+- The OpenVSP 3.53.1 Python API, installed from the release folder (see README).
+- PyVista, for renders (`geometry` group).
+- Tests that need them skip when they are absent.
+
+**Geometry** (`export/openvsp/snapshot.py`, `model.py`).
+- **`GeometrySnapshot`** is a plain-float description of the aircraft: bodies as super-ellipse stations, surfaces,
+  tip nacelle, rotor, and a V-tail or conventional tails.
+- **`halo_plan027_snapshot()`** draws the plan 027 solution as Halo, from user-supplied stills:
+  - boxy 11 m fuselage;
+  - dorsal wing fairing;
+  - wing tapered 0.6 at the sized area and span (aesthetic);
+  - V-tail by the equal-projected-area rule;
+  - flat-sided tip nacelles.
+- **`build_openvsp_model`** follows the user's tiltrotor skeleton:
+  - smoothly skinned Fuselage geoms, with each section's tangents taken from its neighbours' slopes (the
+    blending the user asked for, after the Joby S4 and Kitty Hawk Heaviside models);
+  - the whole nacelle tilts on a Hinge about the spindle at the tip quarter chord;
+  - propellers from the sized solidity;
+  - a rotor tip-path auxiliary;
+  - hover, conversion and cruise Modes.
+- **`export_outer_mold_line`** writes `.vsp3`, plus STEP and STL per nacelle angle.
+- **`GeometrySnapshot.to_asb()`** gives AeroSandbox the same shape.
+- **`examples/halo_openvsp.py`** renders the outer mold line.
+
+**Aero cross-check** (`aero.py`, `examples/halo_aero_compare.py`; 210 kt, 10,000 ft, same geometry).
+
+| | VSPAERO VLM | VSPAERO VLM + panel bodies | VSPAERO panel | AeroSandbox VLM | AeroBuildup |
+|---|---|---|---|---|---|
+| CL_alpha (/deg) | 0.087 | 0.099 | 0.111 | 0.084 | 0.095 |
+| Neutral point x (m) | 4.87 | 4.67 | 4.70 | 4.94 | 4.60 |
+| Oswald e | 1.14 | — | — | 1.04 | 0.82 |
+
+- AeroBuildup has the most forward neutral point and about 25 % more induced drag than either vortex lattice, so
+  it is conservative on both.
+- Profile drag: OpenVSP parasite tool CD0 0.0205 vs AeroBuildup 0.0221. AeroBuildup counts buried body area.
+- Open: AeroBuildup's CL at 0 deg (zero-lift angle about 1 deg different) and its Cm offset.
+- An all-vortex-lattice model is singular, because a VLM body is a plate that coincides with the wing tip inside
+  the tip nacelle. Bodies are therefore panelled.
+
+**Structure** (`structure.py`, `examples/halo_structure.py`).
+- **Wing box:** spars at 0.15 and 0.60 c, 0.5 m ribs, fairing-attach and nacelle ribs.
+- **Fuselage:** 0.6 m ring frames (I-section beams along the skin), four bulkheads, floor.
+- **V-tail:** two spars, ribs.
+- Placeholder gauges.
+- Outputs: STL, CalculiX, Nastran and the OpenVSP mass report, plus a render.
+
+**Weight back-check** (`structure_check.py`, `examples/halo_structure_reference.py`, `halo_structure_check.py`).
+Gauges come from simple ultimate loads (4.5 g flight with elliptic lift and tip relief, the AFDD jump take-off,
+tail CL max at dive speed, fuselage bending) and the AFDD stiffness requirements, on the drawn layout. They do not
+come from the weight models.
+- **Wing:** the layout primary structure is 1.07x the AFDD primary (box + caps) as sized and 1.14x as drawn.
+  Root jump moment: 318 vs 310 kN m.
+- **Tails:** minimum gauge. The user keeps Raymer.
+- **Fuselage:** layout primary 310 kg + secondary 220 kg = 530 kg, i.e. 1.73x raw unpressurized Raymer GA.
+  - The XV-15 group calibration of 2.07 (a crewed fuselage) overstates it.
+  - This became plan 032's factor of 1.70.
+
+**OpenVSP 3.53.1 behaviour worth knowing.**
+- Exports keep the first export's tessellation of hinge children, so each nacelle angle is a fresh build.
+- `ComputeFeaMesh` writes one file type per call and re-meshes each time, whatever the export flags.
+- `FeaMeshAnalysis` never finished on this model.
+- The structural STEP export stalls (it is opt-in).
+- Fuselage meshing time grows quickly with the number of frames: minutes per file type.
+- On Windows, `timeout` on `.venv/Scripts/python` kills only the launcher; the child keeps running.
+
+**Not done (deferred):**
+- milestone A, the symbolic `TiltrotorLayout` with clearance and packaging constraints in `Opti`;
+- CalculiX runs;
+- nacelle, gear and fairing structure;
+- gauges tied to the AFDD breakdown in the FE decks;
+- an unattended full fuselage deck export.
+
+## Plan 032: Halo reference from the drawn layout
+
+Three user decisions on 2026-10-04 bring plan 031's findings into the sizing. Every earlier named set
+(including the new `assumptions_plan030`) pins the old values.
+
+| Step | Change | Take-off |
+|---|---|---|
+| Plan 030 | — | 14,037 lb |
+| 1 | Fuselage: raw Raymer GA (ΔP = 0) x 1.70, layout-anchored, replacing the XV-15 2.07 | 13,307 lb |
+| 2 | Turbogenerators, their gearboxes and the engine section in the fuselage; cowling stays at the tips | 13,170 lb |
+| 3 | Boxy section (1.68 x 2.0 m, super-ellipse 3.2) at the drawn 11 m length; tail root leading edge 9.8 m | **12,821 lb** |
+
+**Step 2 (turbogenerators):**
+- Torque box 86.5 -> 51.5 kg: less pitch inertia at the tip.
+- Jump spar caps 23.5 -> 36.9 kg: less tip relief.
+
+**Step 3 (boxy section):**
+- At 12.8 m the boxy section cost +782 lb (59.9 vs 50.3 m2 wetted).
+- At 11 m it has the round tube's wetted area (51.3 m2).
+- Tails grow to 4.66 / 2.49 m2 for the shorter arm.
+- Systems fall 451 -> 347 kg, because Raymer's flight-control mass scales with fuselage length^1.536. That
+  dependence is weak for an uncrewed fly-by-wire aircraft, so treat this part of the saving with care.
+
+**Solver:** the generic start chain can end in IPOPT restoration failure with the new fuselage factor.
+`solve_halo_sizing` then starts from the same problem with the XV-15 fuselage calibration
+(`start_from_fuselage_calibration`).
+
+**Open:**
+- The pylon radius of gyration still uses the XV-15 ratio, which assumed engines in the nacelle.
+- The turbogenerator station (1.0 m behind the wing quarter chord, z 0.5 m) is assumed.
+- The sizing keeps a conventional tail; the V-tail is drawn only.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,

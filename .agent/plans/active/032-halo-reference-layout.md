@@ -90,3 +90,13 @@ one item at a time. Each item is solved and reported before the next.
     - the full integration and notebook re-run on the final defaults;
     - IMPLEMENTATION_NOTES, MODEL_INTERFACES, roadmap and README updates;
     - merging to `main`.
+- 2026-10-04: wrap-up, at the user's request ("rein in the new features; focus on robustness and documenting what
+  the tool does; update the readme").
+  - **Systems drop checked:** Raymer flight controls scale with fuselage length^1.536, which gives 0.79x for
+    11 / 12.8 m, and with the weight and span changes 0.77x, matching 451 -> 347 kg.
+  - **Docs:** IMPLEMENTATION_NOTES, MODEL_INTERFACES, HALO_REFERENCE, a roadmap Tier 23 row and the README
+    (current reference, tools table, status).
+  - **Bug fix:** the back-check now reads the fuselage factor the reference used (`factor_fuselage` in
+    `reference.json`) instead of assuming the XV-15 calibration.
+  - **Tests:** 351 fast tests pass.
+  - **Still to do:** the integration suite and notebook re-execution on the final defaults, and merging to `main`.

@@ -217,8 +217,9 @@ if __name__ == "__main__":
           f"{fuselage.mass_frames_kg:.1f}, bulkheads {fuselage.mass_bulkheads_kg:.1f}, floor {fuselage.mass_floor_kg:.1f}"
           f" -> primary {fuselage.mass_primary_kg():.1f} kg vs Raymer fuselage {reference['mass_fuselage_kg']:.1f} kg")
 
-    factors = calibration_factors()
-    mass_fuselage_raymer_raw_kg = reference["mass_fuselage_kg"] / factors.fuselage
+    # The factor the reference applied (XV-15 calibration before plan 032, 1.70 after); older files lack it.
+    factor_fuselage = reference.get("factor_fuselage", calibration_factors().fuselage)
+    mass_fuselage_raymer_raw_kg = reference["mass_fuselage_kg"] / factor_fuselage
     items = fuselage_secondary_items(area_doors_m2, afdd["mass_fittings_kg"], area_fairings_m2, area_access_panels_m2,
                                      measured["area_floor_m2"])
     mass_secondary_kg = sum(item.mass_kg() for item in items)
@@ -231,7 +232,7 @@ if __name__ == "__main__":
     print(f"  {'fasteners, sealant, paint':<38}{100 * fraction_fasteners_paint:7.1f} %{'':24}= {mass_fasteners_kg:6.1f} kg")
     print(f"Fuselage layout total {mass_fuselage_layout_kg:.1f} kg (primary {fuselage.mass_primary_kg():.1f} + "
           f"secondary {mass_secondary_kg + mass_fasteners_kg:.1f}) vs Raymer GA unpressurized "
-          f"{mass_fuselage_raymer_raw_kg:.1f} kg, x {factors.fuselage:.2f} XV-15 calibration = "
+          f"{mass_fuselage_raymer_raw_kg:.1f} kg, x {factor_fuselage:.2f} = "
           f"{reference['mass_fuselage_kg']:.1f} kg")
 
     rows = [("Wing, as sized\n(vs AFDD primary)", mass_afdd_primary_kg,

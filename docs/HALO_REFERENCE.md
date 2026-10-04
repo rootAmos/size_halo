@@ -49,3 +49,17 @@ The XV-15 is a manned research aircraft with ejection seats, crashworthy fuel
 cells, redundant flight controls and an oxygen system. TM X-62407 warns that
 these weigh more than the concept needs, so its calibration factors are applied
 to an unmanned aircraft with stated adjustments, not wholesale.
+
+## Drawn Halo layout and plan 032 reference (2026-10-04)
+
+The Halo is uncrewed and unpressurized. Plan 032 uses these user statements and the plan 031 drawing, made from
+public stills:
+
+- turbines in the fuselage;
+- whole tip nacelles that tilt;
+- a V-tail (drawn only);
+- a boxy fuselage, deeper than wide.
+
+The sized aircraft is 11 m long, 1.68 m wide and 2.0 m deep (super-ellipse 3.2). Its fuselage mass is raw Raymer GA
+x 1.70, anchored to a layout estimate of an uncrewed cargo fuselage. It weighs 12,821 lb at take-off with 900 kg
+payload at 210 kt. These remain illustrative engineering inputs, not Archer data.

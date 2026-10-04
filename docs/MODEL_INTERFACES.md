@@ -130,7 +130,7 @@ times a dimensionless `mass_factor` (default 1).
 |---|---|---|---|
 | Wing, HorizontalTail | area_m2, aspect_ratio, taper_ratio, x_le_root_m, z_m, airfoil | raymer mass_wing / mass_hstab (Wing: or `mass_model`, Tier 20) | 40 % MAC |
 | VerticalTail | area_m2, aspect_ratio (h^2/S), taper_ratio, x_le_root_m, z_root_m | raymer mass_vstab | 40 % MAC, 40 % height |
-| Fuselage | length_m, diameter_m, nose/tail fractions, x_nose_m | raymer mass_fuselage (needs wing-to-tail arm) | 45 % length |
+| Fuselage | length_m, diameter_m (the width), optional height_m and shape (super-ellipse, plan 032), nose/tail fractions, x_nose_m | raymer mass_fuselage (needs wing-to-tail arm; unpressurized) | 45 % length |
 | LandingGear | gear lengths, x_main_m, x_nose_m | raymer main + nose, fixed | mass-weighted |
 | Systems | mass_avionics_uninstalled_kg, x_m | raymer flight controls + avionics | stated |
 | Payload | mass_kg, x_m, z_m | given | stated |
@@ -832,3 +832,52 @@ Plan 028. Every value may be an Opti expression; nothing iterates.
 - **Halo:** `HaloAssumptions.thermal_model` (False) and its fields;
   `HaloDesign.power_rated_heat_exchanger_W` and `power_rated_gearbox_W`;
   `HaloSizingResult.thermal_trace` and `heat_exchanger`.
+
+## Geometry export and cross-checks (plan 031)
+
+These functions are optional (they need the OpenVSP API, and PyVista for renders). They read numbers only and are
+never imported by the sizing.
+
+**`export.openvsp.snapshot`**
+- `GeometrySnapshot` (fuselage and wing-fairing `BodySnapshot`s of super-ellipse `BodyStation`s, wing and tail
+  `SurfaceSnapshot`s, `NacelleSnapshot`, `RotorSnapshot`):
+  - `spindle_xyz_m()`;
+  - `to_asb()`: the same airplane for AeroSandbox, in airplane mode, without rotors.
+- `halo_plan027_snapshot()`: the drawn Halo.
+- `v_tail_equivalent(...)`: the equal-projected-area V-tail.
+
+**`export.openvsp.model`**
+- `build_openvsp_model(snapshot, angle_nacelle_deg)` returns `{name: geom id}`.
+- `export_outer_mold_line(snapshot, directory, ...)` writes `.vsp3`, STEP and STL per angle.
+- `add_nacelle_modes`.
+- Sets: `set_outer_mold_line`, `set_clearance`, `set_airframe`, `set_rotors`.
+
+**`export.openvsp.aero`**
+- `run_vspaero_sweep(snapshot, directory, model, alpha_deg, mach, reynolds_cref, xyz_ref_m)` returns a
+  `VspaeroPolar`. `model` is "thin", "mixed" or "panel".
+- `run_parasite_drag(snapshot, altitude_m, velocity_m_s)` returns a `ParasiteDragBuildup`.
+
+**`export.openvsp.structure`**
+- `StructureLayout` holds spar stations, pitches and placeholder gauges.
+- `build_structure(snapshot, layout)` returns `(geoms, {"WingBox", "Fuselage", "VTail": struct id})`.
+- `export_structure_meshes(structures, directory, kinds=("stl", "calculix", "nastran", "mass"))`: each kind
+  re-meshes.
+
+**`export.openvsp.structure_check`** (no OpenVSP needed)
+- `size_box(...)` returns a `BoxSizing`: a two-spar box with skins from the Bredt torsion stiffness, webs from
+  shear, and caps from strength or bending stiffness, all subject to minimum gauges.
+- `elliptic_panel_loads`, `torsion_stiffness_min_mass_Nm2`, `size_fuselage` (returns `FuselageSizing`),
+  `fuselage_secondary_items`, `naca_four_digit_thickness`, `stl_solid_areas_m2`.
+
+**`export.openvsp.render`**
+- `render_sheet(views, path_png)` and `render_structure(paths_stl, path_airframe_stl, path_png, x_ring_frames_m)`.
+
+## Halo plan 032 fields
+
+`HaloAssumptions` gains these fields; each earlier named set pins the value in brackets:
+- `mass_factor_fuselage` (1.70; None means the XV-15 calibration);
+- `turbogenerators_on_wing_tips` (False), with `offset_x_turbogenerators_m` and `z_turbogenerators_m`;
+- `height_fuselage_m` (2.0) and `shape_fuselage` (3.2);
+- `length_fuselage_m` (11.0) and `x_horizontal_tail_m` (9.8).
+
+`solve_halo_sizing(..., start_from_fuselage_calibration=True)`.

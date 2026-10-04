@@ -1,6 +1,6 @@
 # Tiltrotor geometry layout and OpenVSP export (Tier 23, plan 031)
 
-Status: APPROVED 2026-10-04 ("yes yes yes. but calculix evaluation comes later").
+Status: PARTIAL 2026-10-04. Milestones B (OpenVSP outer mold line) and C (structure, FE decks, weight back-check) are done, plus an aero cross-check; milestone A (symbolic layout) and CalculiX runs are deferred. Approved 2026-10-04 ("yes yes yes. but calculix evaluation comes later").
 
 ## Goal
 
