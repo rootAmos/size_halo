@@ -684,11 +684,12 @@ class HaloSizingResult:
 
 
 def count_parallel_guess(guess, assumptions):
-    """Initial parallel-string count: the guess's own count; from a constant-battery design, energy-matched
-    (so packs with any series count start with the guess's energy); else 30."""
+    """Initial parallel-string count: the guess's own count, else 30. With the Tier 15 electrical layer a start
+    from a constant-battery design is energy-matched instead, so packs of any series count (the bus-voltage
+    options) start with the guess's energy; without the layer the earlier 30 is kept (results unchanged)."""
     if guess.count_parallel_battery is not None:
         return guess.count_parallel_battery
-    if guess.energy_capacity_battery_J is None:
+    if guess.energy_capacity_battery_J is None or not assumptions.electrical_layer:
         return 30.0
     string = build_halo_battery(replace(guess, count_parallel_battery=1.0), replace(assumptions, battery_model="ecm"))
     return guess.energy_capacity_battery_J / string.energy_capacity_J
@@ -716,8 +717,11 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     if initial is None and assumptions.thermal_model:
         # Tier 19 (plan 028): start from the same problem without the thermal model. From the generic guess, and
         # with AeroBuildup from the thermal Scholz design, IPOPT can fail in restoration.
-        initial = solve_halo_sizing(requirements, replace(assumptions, thermal_model=False), factors,
-                                    max_iter=max_iter, objective=objective)
+        # With the Tier 15 electrical layer as well, the start is the thermal aircraft without the layer: from the
+        # layer design without the thermal model IPOPT reaches local infeasibility (plan 023).
+        previous = (replace(assumptions, electrical_layer=False) if assumptions.electrical_layer
+                    else replace(assumptions, thermal_model=False))
+        initial = solve_halo_sizing(requirements, previous, factors, max_iter=max_iter, objective=objective)
     if initial is None and assumptions.aerodynamics_model == "buildup":
         initial = solve_halo_sizing(requirements, replace(assumptions, aerodynamics_model="scholz"), factors,
                                     max_iter=max_iter, objective=objective)
@@ -1124,7 +1128,7 @@ assumptions_tier12b = HaloAssumptions(battery_model="constant", wing_weight_mode
 assumptions_tier17 = HaloAssumptions(battery_model="ecm", wing_weight_model="raymer", aerodynamics_model="simple")
 assumptions_tier11a = replace(assumptions_tier12, rotor_speed_physics=False)
 # Tier 15 (plan 023): the reference with the electrical layer (756 V nominal pack, 1,200 V inverters).
-assumptions_tier15 = HaloAssumptions(electrical_layer=True)
+assumptions_tier15 = HaloAssumptions(electrical_layer=True, thermal_model=False)
 standard_blocking_voltages_V = (650.0, 1200.0, 1700.0, 3300.0)
 
 
