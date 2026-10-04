@@ -15,3 +15,6 @@ data/propellers/
 
 # Claude Code agent worktrees
 .claude/
+
+# Generated exports (OpenVSP models, CAD, meshes)
+output/
