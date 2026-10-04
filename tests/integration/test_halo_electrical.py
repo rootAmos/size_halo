@@ -5,8 +5,7 @@ from dataclasses import replace
 import aerosandbox as asb
 
 from examples.halo_sizing import (HaloAssumptions, HaloRequirements, assumptions_for_bus_voltage, assumptions_tier15,
-                                  build_halo_aircraft, bus_voltage_window, solve_halo_max_payload,
-                                  solve_halo_sizing)
+                                  build_halo_aircraft, bus_voltage_window, solve_halo_sizing)
 from aircraft_closure.aerodynamics.simple import SimpleAerodynamics
 from aircraft_closure.performance.flight_point import FlightCondition, build_flight_point
 
@@ -15,26 +14,32 @@ electrical_names = ("inverter_motor", "inverter_generator", "cable_motor", "cabl
 
 
 class HaloElectricalLayerTests(unittest.TestCase):
+    """On the Scholz hand-check aerodynamics (within about 1 % in mass of the AeroBuildup reference, and fast)."""
+
     @classmethod
     def setUpClass(cls):
-        cls.start = solve_halo_sizing(assumptions=replace(HaloAssumptions(), battery_model="constant"))
-        cls.on = solve_halo_max_payload(assumptions=assumptions_tier15, initial=cls.start)
+        cls.assumptions = replace(assumptions_tier15, aerodynamics_model="scholz")
+        cls.start = solve_halo_sizing(assumptions=replace(cls.assumptions, battery_model="constant",
+                                                          electrical_layer=False))
+        cls.off = solve_halo_sizing(assumptions=replace(cls.assumptions, electrical_layer=False), initial=cls.start)
+        cls.on = solve_halo_sizing(assumptions=cls.assumptions, initial=cls.start)
 
     def test_flag_defaults_off(self):
         self.assertFalse(HaloAssumptions().electrical_layer)
         aircraft = build_halo_aircraft(self.start.design)
         self.assertFalse(any(name in aircraft.powertrain.topology.instances for name in electrical_names))
 
-    def test_max_payload_closes_with_explicit_items(self):
+    def test_closes_at_900_kg_with_explicit_items(self):
         r = self.on
+        self.assertEqual(r.mass_payload_kg, 900.0)
         self.assertGreater(r.min_margin, -1e-6)
         self.assertLess(abs(r.closure_residual_kg), 1e-4)
         masses = dict(r.powertrain_masses_kg)
         for name in electrical_names:
             self.assertGreater(masses[name], 0.0, name)
-        # The layer costs payload against the 959 kg flag-off maximum (plan 024), but the aircraft still closes.
-        self.assertGreater(r.mass_payload_kg, 300.0)
-        self.assertLess(r.mass_payload_kg, 959.0)
+        # The layer adds mass and losses: the aircraft is heavier than without it, by more than the items alone.
+        electrical_kg = sum(masses[name] for name in electrical_names)
+        self.assertGreater(r.mass_takeoff_kg - self.off.mass_takeoff_kg, electrical_kg - 1e-6)
 
     def test_mission_losses_and_bus_voltage(self):
         window = bus_voltage_window(assumptions_tier15)
@@ -48,8 +53,7 @@ class HaloElectricalLayerTests(unittest.TestCase):
 
     def test_flight_point_energy_balance(self):
         """Sources minus sinks at the machine terminals equal the electrical-layer losses (exact identity)."""
-        aircraft = build_halo_aircraft(self.on.design, HaloRequirements(mass_payload_kg=self.on.mass_payload_kg),
-                                       assumptions_tier15)
+        aircraft = build_halo_aircraft(self.on.design, HaloRequirements(), self.assumptions)
         opti = asb.Opti()
         point = build_flight_point(opti, aircraft, SimpleAerodynamics(), FlightCondition(
             mode="airplane", velocity_m_s=100.0, altitude_m=3000.0, soc=0.6, hybridization_electric=0.2),

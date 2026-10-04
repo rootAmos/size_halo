@@ -652,8 +652,10 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         initial = solve_halo_sizing(requirements, replace(assumptions, aerodynamics_model="scholz"), factors,
                                     max_iter=max_iter, objective=objective)
     if initial is None and assumptions.battery_model == "ecm":
-        constant_start = solve_halo_sizing(requirements, replace(assumptions, battery_model="constant"), factors,
-                                           max_iter=max_iter)
+        # With the Tier 15 electrical layer the start is the constant-battery aircraft without the layer: from the
+        # constant-battery design with the layer the equivalent-circuit pack starts too small (plan 023).
+        constant_start = solve_halo_sizing(requirements, replace(assumptions, battery_model="constant",
+                                                                 electrical_layer=False), factors, max_iter=max_iter)
         try:
             return solve_halo_sizing(requirements, assumptions, factors, verbose, max_iter, constant_start, objective)
         except RuntimeError:
@@ -992,8 +994,8 @@ standard_blocking_voltages_V = (650.0, 1200.0, 1700.0, 3300.0)
 def solve_halo_max_payload(requirements=HaloRequirements(), assumptions=HaloAssumptions(), initial=None, **kwargs):
     """Maximum payload from `initial` (with the equivalent-circuit pack, a constant-battery design: plan 022).
 
-    If that start fails and the pack is the equivalent circuit, the constant-battery maximum payload of the same
-    assumptions (itself from `initial`) is tried as a second starting point. Starting points only: each attempt
+    If that start fails and the pack is the equivalent circuit, the constant-battery maximum payload without the
+    electrical layer (itself from `initial`) is tried as a second starting point. Starting points only: each attempt
     is one complete coupled solve.
     """
     try:
@@ -1001,8 +1003,8 @@ def solve_halo_max_payload(requirements=HaloRequirements(), assumptions=HaloAssu
     except RuntimeError:
         if assumptions.battery_model != "ecm":
             raise
-    start = solve_halo_sizing(requirements, replace(assumptions, battery_model="constant"), objective="payload",
-                              initial=initial, **kwargs)
+    start = solve_halo_sizing(requirements, replace(assumptions, battery_model="constant", electrical_layer=False),
+                              objective="payload", initial=initial, **kwargs)
     return solve_halo_sizing(requirements, assumptions, objective="payload", initial=start, **kwargs)
 
 
@@ -1025,7 +1027,7 @@ def assumptions_for_bus_voltage(assumptions, voltage_nominal_V, dcdc=False):
 
 
 def enumerate_bus_voltage(voltages_nominal_V=(540.0, 756.0, 800.0, 1000.0), requirements=HaloRequirements(),
-                          assumptions=HaloAssumptions(), objective="payload", dcdc=False, initial=None):
+                          assumptions=HaloAssumptions(), objective="mass_takeoff", dcdc=False, initial=None):
     """Tier 15 discrete trade: one independent sizing per bus-voltage option (an explicit enumeration of a
     discrete choice, not a convergence loop). Returns ((option assumptions, result or None), ...); None marks
     an option that failed to solve.
