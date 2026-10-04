@@ -60,6 +60,7 @@ from aircraft_closure.powertrain.components.gearbox import Gearbox, GearStageMod
 from aircraft_closure.powertrain.components.generator import Generator
 from aircraft_closure.powertrain.components.heat_exchanger import RamAirHeatExchanger
 from aircraft_closure.powertrain.components.motor import (DatabaseMassModel, Motor, TorqueDensityMassModel,
+                                                          UnitMachineMassModel,
                                                           rubber_machine)
 from aircraft_closure.powertrain.components.protection import ProtectionUnit
 from aircraft_closure.powertrain.components.propulsor import ActuatorDiskPropulsor
@@ -365,6 +366,24 @@ class HaloAssumptions:
     # but not through the AeroBuildup and thermal starts with the database machines (plan 033).
     gear_stage_model: Any = field(default_factory=lambda: GearStageModel(staircase=False))
     reduction_ratio_max: float = 40.0                  # upper bound on the rotor gear ratio (slow-motor trades)
+    # ---- Plan 035: machines from whole units of real best-in-class products ("no rubber motors", user 2026-10-04) --
+    # machine_mass_model "units": each lane motor is `count_units_motor` stacked units of a low-speed axial-flux
+    # machine, each generator `count_units_generator` units of a high-speed radial machine. None: the relaxed count,
+    # then (`integer_units`) rounded up and re-solved. Unit data from data/machines/aerospace_motors.csv.
+    # Motor unit: Evolito D1500 2x3 (40 kg, 1,500 N m peak, rated 35 N m/kg -> 1,400 N m continuous, 2,500 rpm max;
+    # continuous power at the 1,800 rpm peak-power speed: 1,400 x 188.5 rad/s = 264 kW).
+    mass_unit_motor_kg: float = 40.0
+    torque_peak_unit_motor_Nm: float = 1500.0
+    power_continuous_unit_motor_W: float = 1400.0 * 1800 * u.rpm
+    speed_max_unit_motor_rad_s: float = 2500 * u.rpm
+    # Generator unit: Helix SPX242 demonstrator (31.2 kg, 470 N m peak, 315 kW continuous, 17,000 rpm max).
+    mass_unit_generator_kg: float = 31.2
+    torque_peak_unit_generator_Nm: float = 470.0
+    power_continuous_unit_generator_W: float = 315e3
+    speed_max_unit_generator_rad_s: float = 17000 * u.rpm
+    count_units_motor: Any = None
+    count_units_generator: Any = None
+    integer_units: bool = True
 
 
 @dataclass(frozen=True)
@@ -579,7 +598,7 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
     lapse_exponent = lapse_exponent if lapse_exponent is not None else fit_lapse_exponent()
     ratios = dict(torque_ratio=2.5, power_ratio=1.25, speed_ratio=2.5)
     by_torque = a.machine_mass_by_torque
-    if a.machine_mass_model not in ("torque_density", "database"):
+    if a.machine_mass_model not in ("torque_density", "database", "units"):
         raise ValueError(f"Unknown machine mass model '{a.machine_mass_model}'.")
     is_database = a.machine_mass_model == "database"
     if is_database and not (by_torque or a.electrical_layer):
@@ -599,6 +618,7 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
             torque_density_ref_Nm_kg=a.torque_density_database_Nm_kg, speed_ref_rad_s=a.speed_ref_database_rad_s,
             exponent_speed=a.exponent_speed_database, specific_power_max_W_kg=a.specific_power_max_machine_bare_W_kg,
             specific_power_inverter_W_kg=None if a.electrical_layer else a.specific_power_inverter_W_kg)
+    mass_model_generator = mass_model
     speed_peak_motor_rad_s = d.speed_peak_motor_rad_s if d.speed_peak_motor_rad_s is not None else a.speed_peak_motor_rad_s
     if d.speed_peak_generator_rad_s is not None:
         speed_peak_generator_rad_s = d.speed_peak_generator_rad_s
@@ -613,7 +633,19 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
     motor = rubber_machine(Motor, speed_peak_motor_rad_s, d.torque_peak_motor_Nm, **ratios, mass_model=mass_model,
                            **thermal)
     generator = rubber_machine(Generator, speed_peak_generator_rad_s, d.torque_peak_generator_Nm, **ratios,
-                               mass_model=mass_model, **thermal)
+                               mass_model=mass_model_generator, **thermal)
+    if a.machine_mass_model == "units":
+        # Plan 035: whole units of real machines. The machine's limits are n x the unit's published ratings (max
+        # torque, continuous power) and the unit's max speed; the peak-efficiency point (w_hat, Q_hat, design
+        # variables) only places the efficiency map. n: `count_units_*`, or the relaxed count the rubber ratings
+        # would need (used only to find n). The inverter is added unless it is a Tier 15 component.
+        inverter = None if a.electrical_layer else a.specific_power_inverter_W_kg
+        motor = unit_machine(motor, a.count_units_motor, UnitMachineMassModel(
+            a.mass_unit_motor_kg, a.torque_peak_unit_motor_Nm, a.power_continuous_unit_motor_W,
+            a.speed_max_unit_motor_rad_s, specific_power_inverter_W_kg=inverter))
+        generator = unit_machine(generator, a.count_units_generator, UnitMachineMassModel(
+            a.mass_unit_generator_kg, a.torque_peak_unit_generator_Nm, a.power_continuous_unit_generator_W,
+            a.speed_max_unit_generator_rad_s, specific_power_inverter_W_kg=inverter))
     # Tier 19: with thermal machines the drive is rated on its own (the motor's rating is continuous).
     # Tier 18: `motor` is one lane motor; the drive takes all of a rotor's lanes.
     lanes = count_lanes_motor(a)
@@ -847,6 +879,8 @@ class HaloSizingResult:
     # `initial`) and the cost per mission of `HaloAssumptions.cost_model` (CostBreakdown, numeric).
     start: Any = None
     cost: Any = None
+    # Plan 035 ("units" machines): (motor, generator) unit counts, relaxed (what the units would need) and fixed.
+    machine_units: Any = None
     # Tier 19 (`thermal_model`): per point (mission, engine-out, requirement and hot-day points) the heat by
     # source, heat rejected, cooling drag, fan power, required exchanger rating and machine end temperatures;
     # and the exchanger (rating, mass) plus the continuous machine losses and thermal time constants.
@@ -871,6 +905,25 @@ def count_parallel_guess(guess, assumptions):
     return guess.energy_capacity_battery_J / string.energy_capacity_J
 
 
+def unit_machine(rubber, count_units, units):
+    """Plan 035: `rubber` (a McDonald machine, which places the efficiency map) rebuilt from `count_units` whole
+    units (None: the relaxed count the rubber ratings need): limits and mass are those of the units."""
+    count = count_units if count_units is not None else units.count_units_relaxed(rubber)
+    return replace(rubber, max_torque_Nm=count * units.torque_peak_unit_Nm,
+                   power_rated_W=count * units.power_continuous_unit_W, max_speed_rad_s=units.speed_max_unit_rad_s,
+                   mass_model=replace(units, count_units=count))
+
+
+def machine_units_record(instances, value, assumptions):
+    """Plan 035: {machine: (unit count in this solve, whole count or None if relaxed)}; None for other models."""
+    if assumptions.machine_mass_model != "units":
+        return None
+    a = assumptions
+    fixed = dict(motor=a.count_units_motor, generator=a.count_units_generator)
+    return {name: (value(instances[name].component.mass_model.count_units), fixed[name])
+            for name in ("motor", "generator")}
+
+
 def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None, verbose=False,
                       max_iter=3000, initial=None, objective="mass_takeoff", staged_start=True, stage_fallback=True):
     """Size the Halo: one coupled AeroSandbox solve from `initial`, or the Tier 22 starting-point strategy.
@@ -888,6 +941,17 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     the thermal model, plan 028; Scholz-aero start for the AeroBuildup model, plan 025; constant-battery start for the equivalent-circuit pack, plan 022; payload
     continuation, plan 026), then perturbed designs, then the generic guess.
     """
+    a = assumptions
+    if (a.machine_mass_model == "units" and a.integer_units
+            and (a.count_units_motor is None or a.count_units_generator is None)):
+        # Plan 035: whole units. Solve with the relaxed unit counts, round each up, re-solve with the counts fixed
+        # (two explicit solves; the relaxed one is the start of the integer one).
+        relaxed = solve_halo_sizing(requirements, replace(a, integer_units=False), factors, verbose, max_iter,
+                                    initial, objective, staged_start, stage_fallback)
+        counts = {name: int(np.ceil(n - 1e-3)) for name, (n, _) in relaxed.machine_units.items()}
+        fixed = replace(a, count_units_motor=a.count_units_motor or counts["motor"],
+                        count_units_generator=a.count_units_generator or counts["generator"])
+        return solve_halo_sizing_once(requirements, fixed, factors, verbose, max_iter, relaxed, objective)
     if assumptions.redundancy:
         failure_hover_cases(assumptions)              # Tier 18: reject impossible failure cases before any solve
     stages = assumptions.gear_stage_model
@@ -1230,6 +1294,7 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
                                  beam_per_rev=value(wing_masses.frequency_beam_rad_s / p.speed_rotor_rad_s))
                             for p in whirl_points),
         cost=CostBreakdown(**{f.name: value(getattr(cost, f.name)) for f in fields(CostBreakdown)}),
+        machine_units=machine_units_record(instances, value, a),
         thermal_trace=thermal_trace(
             tuple(p for s in flown.segments for p in (s.subsegments or (s,))) + tuple(engine_out_points)
             + tuple(p for _, failure in failures for s in failure.segments for p in (s.subsegments or (s,))),

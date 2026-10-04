@@ -153,6 +153,39 @@ class DatabaseMassModel:
 
 
 @dataclass(frozen=True)
+class UnitMachineMassModel:
+    """A machine built from whole units of one real product, not a rubber machine (plan 035).
+
+    A unit has a mass, a peak torque, a continuous power and a maximum speed (published ratings). The unit count
+    is `count_units`, a whole number fixed by the caller; None gives the relaxed (continuous) count
+    n = smooth max(T_peak / T_peak_unit, P_rated / P_cont_unit), used only to find the count before the integer
+    solve. Mass = n x unit mass (+ rated power / `specific_power_inverter_W_kg` for an integrated drive).
+    The caller constrains the machine to the units: relaxed count <= `count_units` and maximum speed <= the unit's
+    (`unit_margins`). Units stack axially on one shaft (Evolito D250/D500 practice), so torque and power add.
+    """
+    mass_unit_kg: Any
+    torque_peak_unit_Nm: Any
+    power_continuous_unit_W: Any
+    speed_max_unit_rad_s: Any
+    count_units: Any = None
+    specific_power_inverter_W_kg: Any = None
+    smoothing_units: Any = 0.05
+
+    def count_units_relaxed(self, machine):
+        return np.softmax(machine.max_torque_Nm / self.torque_peak_unit_Nm,
+                          machine.power_rated_W / self.power_continuous_unit_W, softness=self.smoothing_units)
+
+    def mass_inverter_kg(self, machine):
+        if self.specific_power_inverter_W_kg is None:
+            return 0.0
+        return machine.power_rated_W / self.specific_power_inverter_W_kg
+
+    def mass_kg(self, machine):
+        count = self.count_units if self.count_units is not None else self.count_units_relaxed(machine)
+        return count * self.mass_unit_kg + self.mass_inverter_kg(machine)
+
+
+@dataclass(frozen=True)
 class MotorResult:
     power_shaft_W: Any
     power_electric_W: Any
