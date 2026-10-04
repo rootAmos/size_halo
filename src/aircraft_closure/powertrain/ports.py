@@ -7,9 +7,12 @@ and gearbox/propulsor torque is positive in forward power transfer.
 from aircraft_closure.core.ports import Direction, Domain, PortSpec
 from .components.battery import Battery
 from .components.battery_ecm import EquivalentCircuitBattery
+from .components.cable import Cable
+from .components.converters import DcDcConverter, Inverter
 from .components.gearbox import Gearbox
 from .components.generator import Generator
 from .components.motor import Motor
+from .components.protection import ProtectionUnit
 from .components.propulsor import ActuatorDiskPropulsor
 from .components.rotor import MomentumProfileRotor
 from .components.turboshaft import SimpleTurboshaft
@@ -27,7 +30,22 @@ _port_specs_by_type = {
               PortSpec("shaft_out", Domain.MECHANICAL, Direction.OUT)),
     ActuatorDiskPropulsor: (PortSpec("shaft", Domain.MECHANICAL, Direction.IN),),
     MomentumProfileRotor: (PortSpec("shaft", Domain.MECHANICAL, Direction.IN),),
+    # Tier 15 electrical layer: two-ports named in the nominal power-flow direction. A generator's active
+    # rectifier is an Inverter with `rectifier_port_specs()`.
+    Inverter: (PortSpec("dc", Domain.ELECTRICAL, Direction.IN),
+               PortSpec("ac", Domain.ELECTRICAL, Direction.OUT)),
+    Cable: (PortSpec("input", Domain.ELECTRICAL, Direction.IN),
+            PortSpec("output", Domain.ELECTRICAL, Direction.OUT)),
+    ProtectionUnit: (PortSpec("input", Domain.ELECTRICAL, Direction.IN),
+                     PortSpec("output", Domain.ELECTRICAL, Direction.OUT)),
+    DcDcConverter: (PortSpec("input", Domain.ELECTRICAL, Direction.IN),
+                    PortSpec("output", Domain.ELECTRICAL, Direction.OUT)),
 }
+
+
+def rectifier_port_specs():
+    """An Inverter operated as an active rectifier: AC in from a generator, DC out to the bus."""
+    return (PortSpec("ac", Domain.ELECTRICAL, Direction.IN), PortSpec("dc", Domain.ELECTRICAL, Direction.OUT))
 
 
 def port_specs_for(component):

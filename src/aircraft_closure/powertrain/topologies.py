@@ -9,15 +9,37 @@ from .components.generator import Generator
 from .components.motor import Motor, rubber_machine
 from .components.propulsor import ActuatorDiskPropulsor
 from .components.turboshaft import SimpleTurboshaft
-from .ports import port_specs_for
+from .ports import port_specs_for, rectifier_port_specs
+
+
+@dataclass(frozen=True)
+class ElectricalLayer:
+    """Tier 15 feeder components, one set per feeder type (copied by the machine counts).
+
+    Motor feeder: bus -> protection_motor -> cable_motor -> inverter_motor -> motor.
+    Generator feeder: generator -> inverter_generator (active rectifier) -> cable_generator ->
+    protection_generator -> bus. Battery feeder: battery -> protection_battery -> cable_battery ->
+    [dcdc ->] bus. `dcdc` None (the default) lets the pack set the bus voltage.
+    """
+    inverter_motor: Any
+    cable_motor: Any
+    protection_motor: Any
+    inverter_generator: Any
+    cable_generator: Any
+    protection_generator: Any
+    cable_battery: Any
+    protection_battery: Any
+    dcdc: Any = None
 
 
 def build_series_hybrid(motor, generator, battery, turboshaft, gearbox, propulsor, count_rotors=1,
-                        count_turbogenerators=1, generator_gearbox=None):
+                        count_turbogenerators=1, generator_gearbox=None, electrical=None):
     """m x (turboshaft [-> generator_gearbox] -> generator) -> bus <- battery; bus -> n x (motor -> gearbox -> rotor).
 
     The turboshaft fuel port is left unconnected as a boundary port. `generator_gearbox` (optional) is a
-    step-up gearbox between the engine output shaft and the generator (reduction_ratio < 1).
+    step-up gearbox between the engine output shaft and the generator (reduction_ratio < 1). `electrical`
+    (optional `ElectricalLayer`, Tier 15) inserts inverters, cables, protection and an optional DC/DC
+    converter between the machines, the battery and the bus; None connects them to the bus directly.
     """
     topology = Topology()
     topology.add("turboshaft", turboshaft, port_specs_for(turboshaft), count=count_turbogenerators)
@@ -33,12 +55,41 @@ def build_series_hybrid(motor, generator, battery, turboshaft, gearbox, propulso
         topology.add("generator_gearbox", generator_gearbox, port_specs_for(generator_gearbox), count=count_turbogenerators)
         topology.connect("turboshaft.shaft", "generator_gearbox.shaft_in")
         topology.connect("generator_gearbox.shaft_out", "generator.shaft")
-    topology.connect("generator.electrical", "bus")
-    topology.connect("battery.electrical", "bus")
-    topology.connect("motor.electrical", "bus")
+    if electrical is None:
+        topology.connect("generator.electrical", "bus")
+        topology.connect("battery.electrical", "bus")
+        topology.connect("motor.electrical", "bus")
+    else:
+        _add_electrical_layer(topology, electrical, count_rotors, count_turbogenerators)
     topology.connect("motor.shaft", "gearbox.shaft_in")
     topology.connect("gearbox.shaft_out", "propulsor.shaft")
     return topology
+
+
+def _add_electrical_layer(topology, e, count_rotors, count_turbogenerators):
+    for name, count in (("protection_motor", count_rotors), ("cable_motor", count_rotors),
+                        ("inverter_motor", count_rotors), ("cable_generator", count_turbogenerators),
+                        ("protection_generator", count_turbogenerators), ("protection_battery", 1),
+                        ("cable_battery", 1)):
+        component = getattr(e, name)
+        topology.add(name, component, port_specs_for(component), count=count)
+    topology.add("inverter_generator", e.inverter_generator, rectifier_port_specs(), count=count_turbogenerators)
+    topology.connect("protection_motor.input", "bus")
+    topology.connect("protection_motor.output", "cable_motor.input")
+    topology.connect("cable_motor.output", "inverter_motor.dc")
+    topology.connect("inverter_motor.ac", "motor.electrical")
+    topology.connect("generator.electrical", "inverter_generator.ac")
+    topology.connect("inverter_generator.dc", "cable_generator.input")
+    topology.connect("cable_generator.output", "protection_generator.input")
+    topology.connect("protection_generator.output", "bus")
+    topology.connect("battery.electrical", "protection_battery.input")
+    topology.connect("protection_battery.output", "cable_battery.input")
+    if e.dcdc is None:
+        topology.connect("cable_battery.output", "bus")
+    else:
+        topology.add("dcdc", e.dcdc, port_specs_for(e.dcdc))
+        topology.connect("cable_battery.output", "dcdc.input")
+        topology.connect("dcdc.output", "bus")
 
 
 def build_mechanical_tiltrotor(turboshaft, gearbox, propulsor, count_rotors=2):

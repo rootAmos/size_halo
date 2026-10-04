@@ -49,16 +49,19 @@ from aircraft_closure.mission.segments import (ClimbSegment, CruiseSegment, Desc
                                                LoiterSegment, ground_distance_m)
 from aircraft_closure.performance.flight_point import FlightCondition, acceleration_gravity_m_s2, build_flight_point
 from aircraft_closure.powertrain.components.battery import Battery
-from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery
+from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery, inr21700_50g_cell
+from aircraft_closure.powertrain.components.cable import Cable, aluminium_conductor
+from aircraft_closure.powertrain.components.converters import ConverterLossModel, DcDcConverter, Inverter
 from aircraft_closure.powertrain.components.gearbox import Gearbox
 from aircraft_closure.powertrain.components.generator import Generator
 from aircraft_closure.powertrain.components.heat_exchanger import RamAirHeatExchanger
 from aircraft_closure.powertrain.components.motor import Motor, TorqueDensityMassModel, rubber_machine
+from aircraft_closure.powertrain.components.protection import ProtectionUnit
 from aircraft_closure.powertrain.components.propulsor import ActuatorDiskPropulsor
 from aircraft_closure.powertrain.components.rotor import MomentumProfileRotor
 from aircraft_closure.powertrain.components.thermal import LumpedThermalModel
 from aircraft_closure.powertrain.components.turboshaft import SimpleTurboshaft, deck_1120hp_part_power_model
-from aircraft_closure.powertrain.topologies import build_series_hybrid
+from aircraft_closure.powertrain.topologies import ElectricalLayer, build_series_hybrid
 from aircraft_closure.requirements.capability import (CeilingRequirement, ClimbRequirement, HoverRequirement,
                                                       RequirementSet, SpeedRequirement)
 from aircraft_closure.vehicle.aircraft import Aircraft, MassBreakdown
@@ -228,6 +231,30 @@ class HaloAssumptions:
     # resistance follow SOC through long segments; and points in the 60 s engine-out hover (SOC 0.30 -> 0.10).
     subsegments_mission: tuple = (1, 1, 4, 1, 1, 1)
     subsegments_engine_out: int = 3
+    # ---- Tier 15 electrical layer (plan 023) ----
+    # True inserts inverters (motors) and active rectifiers (generators), DC feeder cables and protection
+    # between the machines, the battery and the bus, and sizes the machines as bare machines. False keeps the
+    # machines connected to the bus directly, with the integrated Tier 13 machine figures above.
+    electrical_layer: bool = False
+    # Bare-machine figures that keep the Tier 13 integrated calibration: 1/15 = 1/17.6 + 200 rad/s / 20 kW/kg
+    # (magniX at its speed) and 1/10 kW/kg = 1/20 + 1/20 (high-speed cap). 20 kW/kg is above NASA's HEMM
+    # 16 kW/kg electromagnetic target, i.e. the Tier 13 cap was optimistic (plan 023 sensitivity).
+    torque_density_machine_bare_Nm_kg: float = 17.6
+    specific_power_max_machine_bare_W_kg: float = 20000.0
+    specific_power_inverter_W_kg: float = 20000.0      # NASA EAP goal ~19 kW/kg (Jansen et al. 2017); assumed
+    efficiency_inverter: float = 0.985                 # at rated power and nominal bus voltage (SiC; assumed)
+    voltage_blocking_inverter_V: float = 1200.0        # semiconductor class; DC link <= blocking x derating
+    factor_derating_voltage_inverter: float = 0.75     # cosmic-ray single-event-burnout margin (assumed)
+    factor_voltage_min_machine: float = 0.9            # machines and inverters work down to 0.9 x pack minimum
+    factor_routing_cable: float = 1.25                 # feeder length = factor x half span (bus in the fuselage)
+    length_cable_battery_m: float = 3.0
+    factor_rating_feeder: float = 1.25                 # feeder current rating / source rating (NEC-style 125 %)
+    conductor_cable: Any = field(default_factory=aluminium_conductor)
+    # Optional DC/DC converter between the battery feeder and the bus, regulating the bus at voltage_bus_dcdc_V.
+    dcdc_converter: bool = False
+    voltage_bus_dcdc_V: float = 800.0
+    specific_power_dcdc_W_kg: float = 12000.0          # assumed
+    efficiency_dcdc: float = 0.98                      # assumed
     # ---- Tier 20 wing weight (plan 024) ----
     # "afdd_tiltrotor" (the reference from plan 026, user-approved 2026-10-03): the AFDD tiltrotor wing
     # (NDARC 19-1.1) x its own XV-15 factor, built for the wing design rotor speed (a design variable) and checked
@@ -350,6 +377,86 @@ def build_halo_battery(design, assumptions=HaloAssumptions()):
     raise ValueError(f"Unknown battery model '{a.battery_model}'.")
 
 
+@dataclass(frozen=True)
+class BusVoltageWindow:
+    """Tier 15 bus voltages implied by the pack (or the DC/DC converter) and the inverter class."""
+    voltage_nominal_V: float
+    voltage_min_V: float           # lowest bus voltage the machines and feeders are designed for
+    voltage_max_V: float           # highest bus voltage (insulation design)
+    voltage_max_inverter_V: float  # derated semiconductor limit
+
+
+def bus_voltage_window(assumptions=HaloAssumptions()):
+    a = assumptions
+    cell = inr21700_50g_cell()
+    if a.dcdc_converter:
+        nominal_V, min_V, max_V = a.voltage_bus_dcdc_V, a.voltage_bus_dcdc_V, a.voltage_bus_dcdc_V
+    else:
+        nominal_V = a.count_series_battery * cell.voltage_nominal_V
+        min_V = a.count_series_battery * cell.voltage_min_V
+        max_V = a.count_series_battery * cell.voltage_max_V
+    return BusVoltageWindow(nominal_V, min_V, max_V, a.voltage_blocking_inverter_V * a.factor_derating_voltage_inverter)
+
+
+def power_electric_rated_W(machine):
+    """Electrical rating of a machine's converter and feeder: shaft rating / peak machine efficiency."""
+    return machine.power_rated_W / machine.loss_model.efficiency_peak
+
+
+def build_halo_electrical(motor, generator, battery, span_m, requirements=HaloRequirements(),
+                          assumptions=HaloAssumptions()):
+    """Tier 15 feeders: inverters at machine rating, cables and protection sized at rated power and the
+    lowest bus voltage (battery: its discharge current rating), insulation for the highest bus voltage at the
+    ceiling."""
+    a, window = assumptions, bus_voltage_window(assumptions)
+    cell = inr21700_50g_cell()
+    pack_min_V = a.count_series_battery * cell.voltage_min_V
+    pack_max_V = a.count_series_battery * cell.voltage_max_V
+    if isinstance(battery, EquivalentCircuitBattery):
+        current_battery_max_A = battery.get_limits().max_discharge_current_A
+        power_battery_max_W = battery.power_max_discharge_W
+    else:
+        current_battery_max_A = battery.max_discharge_power_W / pack_min_V
+        power_battery_max_W = battery.max_discharge_power_W
+    loss_model = ConverterLossModel(efficiency_rated=a.efficiency_inverter, voltage_rated_V=window.voltage_nominal_V)
+    min_voltage_machine_V = a.factor_voltage_min_machine * window.voltage_min_V
+
+    def inverter(machine):
+        # Rated at the machine's electrical power: shaft rating / McDonald peak efficiency (motor input).
+        return Inverter(power_rated_W=power_electric_rated_W(machine), specific_power_W_kg=a.specific_power_inverter_W_kg,
+                        voltage_blocking_V=a.voltage_blocking_inverter_V,
+                        factor_derating_voltage=a.factor_derating_voltage_inverter,
+                        min_voltage_V=min_voltage_machine_V, loss_model=loss_model)
+
+    def feeder(length_m, current_A, voltage_max_V):
+        # Feeders are rated above their source's continuous current (NEC-style 125 % rule); this also keeps the
+        # cable and contactor limits from duplicating the source's own current limit (degenerate constraints).
+        current_A = a.factor_rating_feeder * current_A
+        return (Cable(length_m=length_m, max_current_A=current_A, max_voltage_V=voltage_max_V,
+                      altitude_design_m=requirements.altitude_ceiling_m, conductor=a.conductor_cable),
+                ProtectionUnit(max_current_A=current_A, max_voltage_V=voltage_max_V))
+
+    length_nacelle_m = a.factor_routing_cable * span_m / 2
+    cable_motor, protection_motor = feeder(length_nacelle_m, power_electric_rated_W(motor) / window.voltage_min_V,
+                                           window.voltage_max_V)
+    cable_generator, protection_generator = feeder(length_nacelle_m,
+                                                   power_electric_rated_W(generator) / window.voltage_min_V,
+                                                   window.voltage_max_V)
+    cable_battery, protection_battery = feeder(a.length_cable_battery_m, current_battery_max_A, pack_max_V)
+    dcdc = None
+    if a.dcdc_converter:
+        dcdc = DcDcConverter(power_rated_W=power_battery_max_W, specific_power_W_kg=a.specific_power_dcdc_W_kg,
+                             voltage_output_V=a.voltage_bus_dcdc_V, min_voltage_input_V=a.factor_voltage_min_machine
+                             * pack_min_V, max_voltage_input_V=pack_max_V,
+                             loss_model=ConverterLossModel(efficiency_rated=a.efficiency_dcdc,
+                                                           voltage_rated_V=a.count_series_battery
+                                                           * cell.voltage_nominal_V))
+    return ElectricalLayer(inverter_motor=inverter(motor), cable_motor=cable_motor, protection_motor=protection_motor,
+                           inverter_generator=inverter(generator), cable_generator=cable_generator,
+                           protection_generator=protection_generator, cable_battery=cable_battery,
+                           protection_battery=protection_battery, dcdc=dcdc)
+
+
 def build_halo_aerodynamics(requirements=HaloRequirements(), assumptions=HaloAssumptions()):
     a, r = assumptions, requirements
     if a.aerodynamics_model == "simple":
@@ -370,7 +477,15 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
     lapse_exponent = lapse_exponent if lapse_exponent is not None else fit_lapse_exponent()
     ratios = dict(torque_ratio=2.5, power_ratio=1.25, speed_ratio=2.5)
     by_torque = a.machine_mass_by_torque
-    mass_model = TorqueDensityMassModel(a.torque_density_Nm_kg, a.specific_power_max_machine_W_kg) if by_torque else None
+    if a.electrical_layer:
+        # Tier 15: the inverter is a separate component, so the machines are bare machines wound for the bus.
+        mass_model = TorqueDensityMassModel(a.torque_density_machine_bare_Nm_kg, a.specific_power_max_machine_bare_W_kg)
+        window = bus_voltage_window(a)
+        ratios = dict(ratios, min_voltage_V=a.factor_voltage_min_machine * window.voltage_min_V,
+                      max_voltage_V=window.voltage_max_inverter_V)
+    else:
+        mass_model = (TorqueDensityMassModel(a.torque_density_Nm_kg, a.specific_power_max_machine_W_kg)
+                      if by_torque else None)
     speed_peak_motor_rad_s = d.speed_peak_motor_rad_s if d.speed_peak_motor_rad_s is not None else a.speed_peak_motor_rad_s
     if d.speed_peak_generator_rad_s is not None:
         speed_peak_generator_rad_s = d.speed_peak_generator_rad_s
@@ -435,8 +550,11 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                                   thermal_efficiency=thermal_efficiency_turboshaft(d.mass_turboshaft_bare_kg),
                                   lapse_exponent=lapse_exponent, part_power_model=a.part_power_model,
                                   lapse_model=xv15_lapse_model(lapse_exponent) if a.temperature_lapse else None)
+    electrical = (build_halo_electrical(motor, generator, battery, np.sqrt(d.area_wing_m2 * a.aspect_ratio_wing),
+                                        requirements, a) if a.electrical_layer else None)
     topology = build_series_hybrid(motor, generator, battery, turboshaft, gearbox, rotor, count_rotors=a.count_rotors,
-                                   count_turbogenerators=a.count_turbogenerators, generator_gearbox=generator_gearbox)
+                                   count_turbogenerators=a.count_turbogenerators, generator_gearbox=generator_gearbox,
+                                   electrical=electrical)
 
     nacelles = Nacelles(mass_engines_kg=a.count_turbogenerators * d.mass_turboshaft_bare_kg,
                         count_engines=a.count_turbogenerators, area_wetted_m2=a.area_wetted_nacelles_m2,
@@ -446,9 +564,12 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
     elif a.wing_weight_model == "afdd_tiltrotor":
         # Mass on one wing tip: rotor, motor and rotor gearbox, plus the turbogenerator and its nacelle section.
         mass_tip_kg = mass_rotors_kg / a.count_rotors + motor.get_mass() + gearbox.get_mass()
+        if electrical is not None:
+            mass_tip_kg = mass_tip_kg + electrical.inverter_motor.get_mass()    # Tier 15: inverters in the nacelle
         if a.turbogenerators_on_wing_tips:
             mass_tip_kg = mass_tip_kg + (a.count_turbogenerators / a.count_rotors) * (
                 factors.powerplant * d.mass_turboshaft_bare_kg + generator.get_mass()
+                + (electrical.inverter_generator.get_mass() if electrical is not None else 0.0)
                 + (generator_gearbox.get_mass() if generator_gearbox is not None else 0.0)) \
                 + nacelles.get_mass_properties().mass / a.count_rotors
         materials = dict(graphite_epoxy=graphite_epoxy_wing_material, aluminium=aluminium_wing_material)
@@ -475,6 +596,21 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                  InstalledInstance("propulsor", x_m=x_rotor_m, z_m=z_rotor_m + 0.5))
     if generator_gearbox is not None:
         locations = locations + (InstalledInstance("generator_gearbox", x_m=x_rotor_m, z_m=wing.z_m),)
+    if electrical is not None:
+        # Inverters in the tip nacelles with their machines; nacelle feeders along the wing quarter chord;
+        # protection at the bus next to the battery.
+        x_bus_m, z_bus_m = x_rotor_m - 0.8, -0.2
+        locations = locations + (
+            InstalledInstance("inverter_motor", x_m=x_rotor_m, z_m=z_rotor_m),
+            InstalledInstance("inverter_generator", x_m=x_rotor_m, z_m=wing.z_m),
+            InstalledInstance("cable_motor", x_m=x_rotor_m, z_m=wing.z_m),
+            InstalledInstance("cable_generator", x_m=x_rotor_m, z_m=wing.z_m),
+            InstalledInstance("cable_battery", x_m=x_bus_m, z_m=z_bus_m),
+            InstalledInstance("protection_motor", x_m=x_bus_m, z_m=z_bus_m),
+            InstalledInstance("protection_generator", x_m=x_bus_m, z_m=z_bus_m),
+            InstalledInstance("protection_battery", x_m=x_bus_m, z_m=z_bus_m))
+        if electrical.dcdc is not None:
+            locations = locations + (InstalledInstance("dcdc", x_m=x_bus_m, z_m=z_bus_m),)
     cooling = None
     if a.thermal_model:
         # One ram-air cooler for every heat load, in the fuselage at the wing (the loop runs to the tips).
@@ -497,7 +633,7 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
         landing_gear=LandingGear(length_main_m=3.0 * u.foot, length_nose_m=3.0 * u.foot, x_main_m=x_rotor_m + 0.6,
                                  x_nose_m=1.5, z_m=-0.9, is_retractable=True, mass_factor=factors.alighting_gear),
         systems=Systems(mass_avionics_uninstalled_kg=0.0, x_m=3.0, mass_factor=factors.flight_controls),
-        powertrain=PowertrainInstallation(topology, locations, installation_factor=1.0, cooling=cooling),
+        powertrain=PowertrainInstallation(topology, locations, cooling=cooling),
         payload=Payload(mass_kg=requirements.mass_payload_kg, x_m=x_rotor_m),
         fuel=FuelLoad(mass_kg=d.mass_fuel_kg, x_m=x_rotor_m, z_m=wing.z_m),
         nacelles=replace(nacelles, x_m=x_rotor_m, z_m=wing.z_m, length_m=a.length_nacelle_m,
@@ -573,6 +709,18 @@ class HaloSizingResult:
     heat_exchanger: Any = None
 
 
+def count_parallel_guess(guess, assumptions):
+    """Initial parallel-string count: the guess's own count, else 30. With the Tier 15 electrical layer a start
+    from a constant-battery design is energy-matched instead, so packs of any series count (the bus-voltage
+    options) start with the guess's energy; without the layer the earlier 30 is kept (results unchanged)."""
+    if guess.count_parallel_battery is not None:
+        return guess.count_parallel_battery
+    if guess.energy_capacity_battery_J is None or not assumptions.electrical_layer:
+        return 30.0
+    string = build_halo_battery(replace(guess, count_parallel_battery=1.0), replace(assumptions, battery_model="ecm"))
+    return guess.energy_capacity_battery_J / string.energy_capacity_J
+
+
 def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None, verbose=False,
                       max_iter=3000, initial=None, objective="mass_takeoff"):
     """Size the Halo: one coupled AeroSandbox solve from `initial`, or the Tier 22 starting-point strategy.
@@ -642,8 +790,7 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         energy_capacity_battery_J=None if is_ecm else opti.variable(
             init_guess=guess.energy_capacity_battery_J, scale=1e8, lower_bound=1e6),
         count_parallel_battery=opti.variable(
-            init_guess=guess.count_parallel_battery if guess.count_parallel_battery is not None else 30.0,
-            scale=10.0, lower_bound=1.0) if is_ecm else None,
+            init_guess=count_parallel_guess(guess, a), scale=10.0, lower_bound=1.0) if is_ecm else None,
         area_disk_m2=opti.variable(init_guess=guess.area_disk_m2, scale=10.0, lower_bound=5.0, upper_bound=120.0),
         mass_fuel_kg=opti.variable(init_guess=guess.mass_fuel_kg, scale=500.0, lower_bound=0.0),
     )
@@ -874,7 +1021,9 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
                             power_rotors_W=value(a.count_rotors * s.point.power_shaft_rotor_W),
                             speed_motor_rad_s=value(s.point.speed_motor_rad_s),
                             torque_motor_Nm=value(s.point.torque_motor_Nm),
-                            altitude_start_m=h[0], altitude_end_m=h[1])
+                            altitude_start_m=h[0], altitude_end_m=h[1],
+                            **(electrical_summary(s.point.electrical, value) if s.point.electrical is not None
+                               else {}))
                        for s, h in zip(flown.segments, altitudes)),
         binding=tuple(e.label for e in report if abs(float(e.value)) < 1e-4),
         min_margin=float(report[0].value),
@@ -927,7 +1076,9 @@ def hover_summary(point, value, instances, assumptions):
     atmosphere = asb.Atmosphere(altitude=c.altitude_m, temperature_deviation=c.temperature_offset_K)
     count_generators = c.active_generator_count or assumptions.count_turbogenerators
     available_W = count_generators * instances["turboshaft"].component.power_available_W(atmosphere)
-    efficiency_generator = point.generator.power_electric_W / point.engine.power_shaft_W
+    power_generator_bus_W = (point.electrical.power_generator_bus_W if point.electrical is not None
+                             else point.generator.power_electric_W)
+    efficiency_generator = power_generator_bus_W / point.engine.power_shaft_W
     rotor = instances["propulsor"].component
     blade_loading = None
     if getattr(rotor, "solidity", None) is not None:
@@ -941,6 +1092,16 @@ def hover_summary(point, value, instances, assumptions):
         power_rotors_W=value(assumptions.count_rotors * point.power_shaft_rotor_W),
         power_available_turboshafts_W=value(available_W), power_battery_W=value(point.power_battery_W),
         blade_loading=blade_loading)
+
+
+def electrical_summary(electrical, value):
+    """Tier 15 per-point numbers: bus voltage and the electrical-layer losses (W)."""
+    return dict(voltage_bus_V=value(electrical.voltage_bus_V),
+                power_loss_inverters_W=value(electrical.power_loss_inverters_W),
+                power_loss_cables_W=value(electrical.power_loss_cables_W),
+                power_loss_protection_W=value(electrical.power_loss_protection_W),
+                power_loss_dcdc_W=value(electrical.power_loss_dcdc_W),
+                power_loss_electrical_W=value(electrical.power_loss_total_W))
 
 
 def thermal_trace(segment_points, other_points, value):
@@ -1000,7 +1161,7 @@ def battery_trace(points, value):
 # Every candidate start is one independent coupled solve of the target problem from an initial guess; a candidate
 # may first solve a simpler precursor problem (other aerodynamics, other battery, lower payload) to obtain that
 # guess. Nothing iterates to a fixed point: the list is finite and ordered, and the record says what happened.
-start_labels = ("caller", "thermal_off", "mass_objective", "scholz_aero", "constant_battery",
+start_labels = ("caller", "electrical_off", "thermal_off", "mass_objective", "scholz_aero", "constant_battery",
                 "payload_continuation", "perturbed_low", "perturbed_high", "generic")
 fraction_payload_continuation = 0.85      # plan 026
 factor_perturbation_low = 0.85
@@ -1047,19 +1208,24 @@ def objective_value(result, objective):
 def default_starts(requirements, assumptions, objective):
     """The ordered candidate starts that apply to this problem (plan 029).
 
-    1. "thermal_off" (thermal model only): the same problem without the thermal model (plan 028); from the
-       generic guess, and with AeroBuildup from the thermal Scholz design, IPOPT can fail in restoration.
+    1. "electrical_off" (Tier 15 electrical layer with the thermal model): the same problem without the layer
+       (plan 023: from the layer design without the thermal model IPOPT reaches local infeasibility). Without
+       the thermal model it is a later fallback, after payload continuation.
+       "thermal_off" (thermal model without the layer): the same problem without the thermal model (plan 028);
+       from the generic guess, and with AeroBuildup from the thermal Scholz design, IPOPT can fail.
     2. "mass_objective" (objective "cost" only): the same problem at minimum take-off mass.
     3. "scholz_aero" (AeroBuildup only): the same problem with the Scholz hand-check aerodynamics (plan 025).
-    4. "constant_battery" (equivalent-circuit pack only): the same requirements with the constant-OCV battery at
-       minimum take-off mass (plan 022).
+    4. "constant_battery" (equivalent-circuit pack only): the same requirements with the constant-OCV battery,
+       without the electrical layer, at minimum take-off mass (plans 022 and 023).
     5. "payload_continuation" (equivalent-circuit pack, fixed payload of at least 300 kg): the same problem at
        85 % payload (plan 026).
     6. "perturbed_low" / "perturbed_high": the first precursor (or caller) design scaled by 0.85 / 1.15.
     7. "generic": the built-in generic guess.
     """
     a, is_ecm = assumptions, assumptions.battery_model == "ecm"
-    starts = ["thermal_off"] if a.thermal_model else []
+    starts = []
+    if a.thermal_model:
+        starts.append("electrical_off" if a.electrical_layer else "thermal_off")
     if objective == "cost":
         starts.append("mass_objective")
     if a.aerodynamics_model == "buildup":
@@ -1068,6 +1234,8 @@ def default_starts(requirements, assumptions, objective):
         starts.append("constant_battery")
         if objective != "payload" and requirements.mass_payload_kg >= 300.0:
             starts.append("payload_continuation")
+    if a.electrical_layer and not a.thermal_model:
+        starts.append("electrical_off")
     if starts:
         starts += ["perturbed_low", "perturbed_high"]
     return tuple(starts + ["generic"])
@@ -1075,6 +1243,8 @@ def default_starts(requirements, assumptions, objective):
 
 def _precursor_problem(label, requirements, assumptions, objective):
     """The simpler problem a start label solves first, as (requirements, assumptions, objective); None: none."""
+    if label == "electrical_off":
+        return requirements, replace(assumptions, electrical_layer=False), objective
     if label == "thermal_off":
         return requirements, replace(assumptions, thermal_model=False), objective
     if label == "mass_objective":
@@ -1082,7 +1252,7 @@ def _precursor_problem(label, requirements, assumptions, objective):
     if label == "scholz_aero":
         return requirements, replace(assumptions, aerodynamics_model="scholz"), objective
     if label == "constant_battery":
-        return requirements, replace(assumptions, battery_model="constant"), "mass_takeoff"
+        return requirements, replace(assumptions, battery_model="constant", electrical_layer=False), "mass_takeoff"
     if label == "payload_continuation":
         return (replace(requirements, mass_payload_kg=fraction_payload_continuation * requirements.mass_payload_kg),
                 assumptions, "mass_takeoff")
@@ -1215,6 +1385,85 @@ assumptions_tier12b = HaloAssumptions(thermal_model=False, battery_model="consta
 assumptions_tier17 = HaloAssumptions(thermal_model=False, battery_model="ecm", wing_weight_model="raymer",
                                      aerodynamics_model="simple")
 assumptions_tier11a = replace(assumptions_tier12, rotor_speed_physics=False)
+# Tier 15 (plan 023): the reference with the electrical layer (756 V nominal pack, 1,200 V inverters).
+assumptions_tier15 = HaloAssumptions(electrical_layer=True, thermal_model=False)
+standard_blocking_voltages_V = (650.0, 1200.0, 1700.0, 3300.0)
+
+
+def solve_halo_max_payload(requirements=HaloRequirements(), assumptions=HaloAssumptions(), initial=None, **kwargs):
+    """Maximum payload from `initial` (with the equivalent-circuit pack, a constant-battery design: plan 022).
+
+    If that start fails and the pack is the equivalent circuit, the constant-battery maximum payload without the
+    electrical layer (itself from `initial`) is tried as a second starting point. Starting points only: each attempt
+    is one complete coupled solve.
+    """
+    try:
+        return solve_halo_sizing(requirements, assumptions, objective="payload", initial=initial, **kwargs)
+    except RuntimeError:
+        if assumptions.battery_model != "ecm":
+            raise
+    start = solve_halo_sizing(requirements, replace(assumptions, battery_model="constant", electrical_layer=False),
+                              objective="payload", initial=initial, **kwargs)
+    return solve_halo_sizing(requirements, assumptions, objective="payload", initial=start, **kwargs)
+
+
+def assumptions_for_bus_voltage(assumptions, voltage_nominal_V, dcdc=False):
+    """Tier 15 discrete bus-voltage option, with the explicit pack coupling.
+
+    Without a DC/DC converter the pack sets the bus: count_series = round(V_nominal / 3.6 V) (50G cells). With
+    one, the pack keeps its series count and the converter regulates the bus at `voltage_nominal_V`. The
+    inverter class is the smallest standard blocking voltage whose derated limit covers the highest bus
+    voltage (650 / 1,200 / 1,700 / 3,300 V).
+    """
+    a = replace(assumptions, electrical_layer=True, dcdc_converter=dcdc)
+    if dcdc:
+        a = replace(a, voltage_bus_dcdc_V=voltage_nominal_V)
+    else:
+        a = replace(a, count_series_battery=int(round(voltage_nominal_V / inr21700_50g_cell().voltage_nominal_V)))
+    voltage_max_V = bus_voltage_window(a).voltage_max_V
+    blocking_V = next(v for v in standard_blocking_voltages_V if v * a.factor_derating_voltage_inverter >= voltage_max_V)
+    return replace(a, voltage_blocking_inverter_V=blocking_V)
+
+
+def enumerate_bus_voltage(voltages_nominal_V=(540.0, 756.0, 800.0, 1000.0), requirements=HaloRequirements(),
+                          assumptions=HaloAssumptions(), objective="mass_takeoff", dcdc=False, initial=None):
+    """Tier 15 discrete trade: one independent sizing per bus-voltage option (an explicit enumeration of a
+    discrete choice, not a convergence loop). Returns ((option assumptions, result or None), ...); None marks
+    an option that failed to solve.
+
+    Every option starts from the same `initial` design; None uses the constant-battery aircraft without the
+    electrical layer (the max-payload solve needs a constant-battery start, plan 022; see
+    `solve_halo_max_payload`). An option that fails from it is retried from the previous option's solution and
+    then from the nearest option that solved (different starting points only; each is one coupled solve).
+    """
+    if initial is None:
+        initial = solve_halo_sizing(requirements, replace(assumptions, battery_model="constant", electrical_layer=False))
+    rows, previous = [], None
+    for voltage_V in voltages_nominal_V:
+        option = assumptions_for_bus_voltage(assumptions, voltage_V, dcdc=dcdc)
+        result = None
+        for start in (initial, previous):
+            if start is None:
+                continue
+            try:
+                result = (solve_halo_max_payload(requirements, option, initial=start) if objective == "payload"
+                          else solve_halo_sizing(requirements, option, initial=start))
+                break
+            except RuntimeError:
+                pass
+        previous = result or previous
+        rows.append((option, result))
+    # Options that failed from both are retried once from the nearest option that solved.
+    for index, (option, result) in enumerate(rows):
+        solved = [(abs(j - index), r) for j, (_, r) in enumerate(rows) if r is not None]
+        if result is None and solved:
+            try:
+                start = min(solved, key=lambda item: item[0])[1]
+                rows[index] = (option, solve_halo_max_payload(requirements, option, initial=start)
+                               if objective == "payload" else solve_halo_sizing(requirements, option, initial=start))
+            except RuntimeError:
+                pass
+    return tuple(rows)
 # Tier 20 (plan 024): the AFDD tiltrotor wing (the default from plan 026).
 assumptions_tier20 = HaloAssumptions(thermal_model=False, wing_weight_model="afdd_tiltrotor", aerodynamics_model="simple")
 # Plan 027 reference: 900 kg, AFDD wing, AeroBuildup, no thermal model (13,639 lb).

@@ -930,6 +930,102 @@ the hand check; `SimpleAerodynamics` stays (and stays the Halo default,
 - **Deferred:** V-tail, conversion segments and the blown wing in conversion,
   trim drag, transition location as a calibration against XV-15 data.
 
+## Tier 15: electrical layer
+
+Plan 023. An optional layer between the machines, the battery and the bus:
+`Inverter` (motor drive and generator active rectifier), `Cable` (DC
+feeder), `ProtectionUnit` (contactors and fuses) and an optional
+`DcDcConverter`. It is switched by `HaloAssumptions.electrical_layer`,
+**off by default**, so the reference (900 kg, AFDD tiltrotor wing,
+14,247 lb) is unchanged.
+
+**Models.**
+
+- **Converter losses:** fixed + switching (|P|) + conduction ((P/V)^2),
+  98.5 % at rated power and nominal voltage, peak efficiency at 45 % load.
+  Inverters 20 kW/kg (NASA EAP goal 19 kW/kg), DC link at most 0.75 x the
+  semiconductor blocking voltage (1,200 V class: 900 V).
+- **Cables:** aluminium at 3 A/mm2 of the design current (125 % of the
+  source rating), length 1.25 x half span (bus in the fuselage, machines
+  in the tip nacelles), battery feeder 3 m. Insulation sized so that
+  Dakin's PD inception voltage at the 13,000 ft ceiling is 1.5 x the
+  peak pack voltage (minimum wall 0.25 mm); a partial-discharge margin is
+  checked at every flight point's pressure.
+- **Protection:** two poles per feeder, 0.2 kg + 1.3 g/A per pole, 0.15 V
+  per pole at rating.
+- **Flight point:** the power balance and the battery share are on the bus
+  side; the battery feeder's series drop is exact.
+- **Machines:** split into bare machine + inverter so that the Tier 13
+  integrated calibration is kept where it was anchored: 17.6 N.m/kg
+  (magniX at 200 rad/s) and a 20 kW/kg bare high-speed cap (the old
+  integrated 10 kW/kg). The implied bare cap is above NASA's HEMM
+  16 kW/kg, so the Tier 13 cap was optimistic (sensitivity in the
+  notebook).
+- **Installation factor:** no longer passed by the Halo; the cabling and
+  protection it stood for are explicit. Cooling stays for Tier 19.
+
+**Halo with the layer, current aircraft** (plan 027 with thermal off: 900 kg,
+210 kt, AFDD wing; 756 V nominal, 210s pack, 1,200 V inverters). Results on
+the Scholz hand-check aerodynamics (within about 1 % in mass of AeroBuildup,
+plan 025):
+
+- Take-off mass 6,900 kg (15,211 lb) against 6,215 kg (13,702 lb) without
+  the layer: +685 kg.
+- Electrical items 332 kg: inverters 80 + 84 kg, cables 64 + 67 + 11 kg,
+  protection 11 + 11 + 5 kg (motor, generator, battery feeders, both sides).
+- Losses 2.8-3.1 % of the rotor power on every segment (inverters dominate,
+  cables about 1/6).
+- Binding: the hover inverter rating (it nudges the motor rating up), the
+  engine-out battery current and turbine power, rotor radius and whirl
+  flutter.
+- With the Tier 19 thermal model as well: 7,641 kg. Inverter, cable and
+  protection losses join the heat loads by instance name (about 20 kW per
+  inverter set in take-off hover).
+- With AeroBuildup the flag-on minimum-mass solve did not converge from any
+  start tried (the default chain, the flag-off reference, the constant-battery
+  aircraft without the layer): open issue.
+- A 10 kW/kg *bare* machine cap (inverter added on top of the Tier 13 cap)
+  has no feasible 900 kg design.
+
+**Bus voltage (minimum take-off mass at 900 kg, Scholz, discrete
+enumeration):**
+
+| Nominal bus | Pack | Inverter class | Take-off mass | Electrical mass | Cables |
+|---|---|---|---|---|---|
+| 540 V | 150s | 1,200 V | 7,096 kg | 404 kg | 200 kg |
+| 756 V | 210s | 1,200 V | 6,900 kg | 332 kg | 141 kg |
+| 800 V | 222s | 1,700 V | 6,875 kg | 323 kg | 134 kg |
+| 1,000 V | 278s | 1,700 V | 6,792 kg | 293 kg | 109 kg |
+| 540 V DC/DC | 210s | 1,200 V | 7,192 kg | 423 kg | 142 kg |
+| 756 V DC/DC | 210s | 1,200 V | 7,053 kg | 373 kg | 103 kg |
+| 800 V DC/DC | 210s | 1,200 V | 7,002 kg | 365 kg | 98 kg |
+| 1,000 V DC/DC | 210s | 1,700 V | 6,943 kg | 344 kg | 82 kg |
+
+- Higher voltage wins: conductor mass falls as 1/V while the PD-sized
+  insulation stays small. The model has no penalty for 1,700 V devices or
+  higher-voltage contactors (deferred), so the trend is optimistic.
+- 800 V nominal (932 V maximum) already exceeds the derated 1,200 V class.
+- A DC/DC converter never pays here: it buys a constant bus voltage, but
+  costs its own 60-65 kg and 2 % loss.
+
+**Earlier result** (plan 026 aircraft, simple aerodynamics, before the
+AeroBuildup and thermal merges): the 900 kg problem was infeasible with the
+layer; maximum payload 567 kg against 959 kg, and 1,000 V gave 604 kg.
+
+**Solver practice.** The equivalent-circuit maximum-payload solve is
+sensitive to its start. `solve_halo_max_payload` starts from a
+constant-battery design and falls back to the constant-battery maximum
+payload without the layer; `enumerate_bus_voltage` retries a failed option
+from its neighbours; with the layer a constant-battery start is
+energy-matched in parallel count (`count_parallel_guess`). With the
+equivalent-circuit pack, the warm start is the constant-battery aircraft
+*without* the layer, and with the thermal model the thermal aircraft
+without the layer: from the layer designs IPOPT reached local
+infeasibility. Feeder ratings at 125 %
+of their sources also keep the cable and contactor current limits from
+duplicating the source's own limit (degenerate active constraints made
+IPOPT report local infeasibility).
+
 ## Plan 027: AeroBuildup aerodynamics as the reference
 
 The user decided on 2026-10-04: "aerobuild up as default".

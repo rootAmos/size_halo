@@ -18,6 +18,14 @@ polarization), and the bus voltage is the interval-mean terminal voltage. The
 power balance R_eff I^2 - V* I + P = 0 is an equality like any other; the
 branch constraint V >= V*/2 selects its physical low-current root.
 
+Electrical layer (Tier 15, when the topology has an `inverter_motor` instance): each motor draws its AC
+power through an inverter, a cable and a protection unit; each generator delivers through an active
+rectifier, a cable and a protection unit; the battery through a protection unit, a cable and optionally a
+DC/DC converter that regulates the bus. The power balance and the hybridization share are then on the bus
+side (`power_electric_motors_W` is what the motor feeders draw from the bus). Feeder currents for the cable
+and contactor losses use the bus voltage (first order; drops are below 1 %); the battery feeder is exact,
+bus voltage = terminal voltage - I (R_cable + R_protection) without a DC/DC converter.
+
 Thermal (Tier 19): every point returns its named heat loads (motor, gearbox,
 generator, generator_gearbox, battery; per unit, with the active count). With
 an installed heat exchanger (`aircraft.powertrain.cooling`) the fan power
@@ -83,6 +91,33 @@ class FlightPoint:
     margins: tuple
     heat_loads: tuple = ()                 # Tier 19: HeatLoad per loss source
     thermal: Any = None                    # Tier 19: PointThermal
+    electrical: Any = None          # ElectricalLayerResult (Tier 15) or None without the electrical layer
+
+
+@dataclass(frozen=True)
+class ElectricalLayerResult:
+    """Tier 15 per-point electrical state; powers are per instance unless they are named totals."""
+    voltage_bus_V: Any
+    voltage_battery_V: Any
+    inverter_motor: Any
+    inverter_generator: Any
+    cable_motor: Any
+    cable_generator: Any
+    cable_battery: Any
+    dcdc: Any
+    power_motor_bus_W: Any          # drawn from the bus per motor feeder
+    power_generator_bus_W: Any      # delivered to the bus per generator feeder
+    power_battery_bus_W: Any        # delivered to the bus by the battery feeder
+    power_loss_inverters_W: Any     # totals over the active instances
+    power_loss_cables_W: Any
+    power_loss_protection_W: Any
+    power_loss_dcdc_W: Any
+    heat_loads: tuple = ()          # Tier 19 HeatLoad per electrical-layer instance (per unit, active count)
+
+    @property
+    def power_loss_total_W(self):
+        return (self.power_loss_inverters_W + self.power_loss_cables_W + self.power_loss_protection_W
+                + self.power_loss_dcdc_W)
 
 
 def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridization_electric=None, *,
@@ -163,9 +198,26 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
         opti.subject_to(battery.voltage_V / battery.voltage_driving_V >= 0.5)
     else:
         battery = battery_model.evaluate(current_battery_A, condition.soc)
-    voltage_bus_V = battery.voltage_V
+    has_layer = "inverter_motor" in instances
+    if has_layer:
+        layer = {name: instance.component for name, instance in instances.items()}
+        dcdc_model = layer.get("dcdc")
+        resistance_battery_feeder_ohm = (layer["cable_battery"].resistance_ohm()
+                                         + layer["protection_battery"].resistance_ohm())
+        # Battery side of the feeder: exact series drop at the battery current.
+        voltage_feeder_battery_V = battery.voltage_V - current_battery_A * resistance_battery_feeder_ohm
+        voltage_bus_V = dcdc_model.voltage_output_V if dcdc_model is not None else voltage_feeder_battery_V
+    else:
+        voltage_bus_V = battery.voltage_V
     motor = motor_model.evaluate(speed_motor_rad_s, torque_motor_Nm, voltage_bus_V)
     power_electric_motors_W = active_rotor_count * motor.power_electric_W
+    if has_layer:
+        inverter_motor = layer["inverter_motor"].evaluate(motor.power_electric_W, voltage_bus_V)
+        current_motor_feeder_A = inverter_motor.power_dc_W / voltage_bus_V
+        cable_motor = layer["cable_motor"].evaluate(current_motor_feeder_A)
+        protection_motor = layer["protection_motor"].evaluate(current_motor_feeder_A)
+        power_motor_bus_W = inverter_motor.power_dc_W + cable_motor.power_loss_W + protection_motor.power_loss_W
+        power_electric_motors_W = active_rotor_count * power_motor_bus_W
     if hybridization_electric is None:
         hybridization_electric = condition.hybridization_electric
     if hybridization_electric is None:
@@ -175,6 +227,50 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     speed_generator_rad_s = generator_model.loss_model.speed_peak_efficiency_rad_s
     torque_generator_Nm = opti.variable(init_guess=500.0, scale=500.0, lower_bound=0.0)
     generator = generator_model.evaluate(speed_generator_rad_s, torque_generator_Nm, voltage_bus_V)
+    electrical = None
+    power_battery_bus_W = battery.power_electric_W
+    power_generator_bus_W = generator.power_electric_W
+    if has_layer:
+        # Rectifier: positive inverter power flows DC -> AC, so generation is negative AC power.
+        inverter_generator = layer["inverter_generator"].evaluate(-generator.power_electric_W, voltage_bus_V)
+        current_generator_feeder_A = -inverter_generator.power_dc_W / voltage_bus_V
+        cable_generator = layer["cable_generator"].evaluate(current_generator_feeder_A)
+        protection_generator = layer["protection_generator"].evaluate(current_generator_feeder_A)
+        power_generator_bus_W = (-inverter_generator.power_dc_W - cable_generator.power_loss_W
+                                 - protection_generator.power_loss_W)
+        cable_battery = layer["cable_battery"].evaluate(current_battery_A)
+        protection_battery = layer["protection_battery"].evaluate(current_battery_A)
+        power_battery_feeder_W = voltage_feeder_battery_V * current_battery_A
+        dcdc = None
+        power_loss_dcdc_W = 0.0
+        power_battery_bus_W = power_battery_feeder_W
+        if dcdc_model is not None:
+            dcdc = dcdc_model.evaluate(power_battery_feeder_W, voltage_feeder_battery_V)
+            power_battery_bus_W = dcdc.power_output_W
+            power_loss_dcdc_W = dcdc.power_loss_W
+        electrical = ElectricalLayerResult(
+            voltage_bus_V=voltage_bus_V, voltage_battery_V=battery.voltage_V, inverter_motor=inverter_motor,
+            inverter_generator=inverter_generator, cable_motor=cable_motor, cable_generator=cable_generator,
+            cable_battery=cable_battery, dcdc=dcdc, power_motor_bus_W=power_motor_bus_W,
+            power_generator_bus_W=power_generator_bus_W, power_battery_bus_W=power_battery_bus_W,
+            power_loss_inverters_W=(active_rotor_count * inverter_motor.power_loss_W
+                                    + active_generator_count * inverter_generator.power_loss_W),
+            power_loss_cables_W=(active_rotor_count * cable_motor.power_loss_W
+                                 + active_generator_count * cable_generator.power_loss_W + cable_battery.power_loss_W),
+            power_loss_protection_W=(active_rotor_count * protection_motor.power_loss_W
+                                     + active_generator_count * protection_generator.power_loss_W
+                                     + protection_battery.power_loss_W),
+            power_loss_dcdc_W=power_loss_dcdc_W,
+            heat_loads=(
+                HeatLoad("inverter_motor", inverter_motor.power_loss_W, active_rotor_count),
+                HeatLoad("cable_motor", cable_motor.power_loss_W, active_rotor_count),
+                HeatLoad("protection_motor", protection_motor.power_loss_W, active_rotor_count),
+                HeatLoad("inverter_generator", inverter_generator.power_loss_W, active_generator_count),
+                HeatLoad("cable_generator", cable_generator.power_loss_W, active_generator_count),
+                HeatLoad("protection_generator", protection_generator.power_loss_W, active_generator_count),
+                HeatLoad("cable_battery", cable_battery.power_loss_W, 1),
+                HeatLoad("protection_battery", protection_battery.power_loss_W, 1),
+            ) + ((HeatLoad("dcdc", power_loss_dcdc_W, 1),) if dcdc is not None else ()))
     # Optional step-up gearbox between turboshaft output and generator (Tier 13): ratio = input / output speed.
     speed_engine_rad_s, torque_engine_Nm = speed_generator_rad_s, torque_generator_Nm
     generator_gear_ports = {}
@@ -196,6 +292,8 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
                   HeatLoad("battery", battery.power_loss_W, 1))
     if generator_gear_ports:
         heat_loads += (HeatLoad("generator_gearbox", generator_gear.power_loss_W, active_generator_count),)
+    if electrical is not None:
+        heat_loads += electrical.heat_loads          # Tier 15: inverters, cables, protection, DC/DC by instance
     thermal = evaluate_point_thermal(aircraft.powertrain, heat_loads, atmosphere, velocity_m_s, condition.mode,
                                      duration_s, temperature_start_C, condition.label)
     power_electric_demand_W = power_electric_motors_W
@@ -206,8 +304,8 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     # Each active turbogenerator carries an equal share of the generator power.
     power_scale_W = active_rotor_count * motor_model.power_rated_W
     opti.subject_to([
-        (battery.power_electric_W - hybridization_electric * power_electric_demand_W) / power_scale_W == 0,
-        (active_generator_count * generator.power_electric_W - (1 - hybridization_electric) * power_electric_demand_W)
+        (power_battery_bus_W - hybridization_electric * power_electric_demand_W) / power_scale_W == 0,
+        (active_generator_count * power_generator_bus_W - (1 - hybridization_electric) * power_electric_demand_W)
         / power_scale_W == 0,
         speed_motor_rad_s <= speed_motor_limit_rad_s,
     ])
@@ -219,13 +317,37 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
         **generator_gear_ports,
         "generator.shaft": MechanicalPortValue(speed_generator_rad_s, torque_generator_Nm),
         "generator.electrical": ElectricalPortValue(voltage_bus_V, generator.current_A),
-        "battery.electrical": ElectricalPortValue(voltage_bus_V, current_battery_A),
+        "battery.electrical": ElectricalPortValue(battery.voltage_V, current_battery_A),
         "motor.electrical": ElectricalPortValue(voltage_bus_V, motor.current_A),
         "motor.shaft": MechanicalPortValue(speed_motor_rad_s, torque_motor_Nm),
         "gearbox.shaft_in": MechanicalPortValue(speed_motor_rad_s, torque_motor_Nm),
         "gearbox.shaft_out": MechanicalPortValue(gear.speed_output_rad_s, gear.torque_output_Nm),
         "propulsor.shaft": MechanicalPortValue(gear.speed_output_rad_s, gear.torque_output_Nm),
     }
+    if has_layer:
+        port_values.update({
+            "inverter_motor.ac": ElectricalPortValue(voltage_bus_V, motor.current_A),
+            "inverter_motor.dc": ElectricalPortValue(voltage_bus_V, current_motor_feeder_A),
+            "cable_motor.input": ElectricalPortValue(voltage_bus_V, current_motor_feeder_A),
+            "cable_motor.output": ElectricalPortValue(voltage_bus_V, current_motor_feeder_A),
+            "protection_motor.input": ElectricalPortValue(voltage_bus_V, current_motor_feeder_A),
+            "protection_motor.output": ElectricalPortValue(voltage_bus_V, current_motor_feeder_A),
+            "inverter_generator.ac": ElectricalPortValue(voltage_bus_V, generator.current_A),
+            "inverter_generator.dc": ElectricalPortValue(voltage_bus_V, current_generator_feeder_A),
+            "cable_generator.input": ElectricalPortValue(voltage_bus_V, current_generator_feeder_A),
+            "cable_generator.output": ElectricalPortValue(voltage_bus_V, current_generator_feeder_A),
+            "protection_generator.input": ElectricalPortValue(voltage_bus_V, current_generator_feeder_A),
+            "protection_generator.output": ElectricalPortValue(voltage_bus_V, current_generator_feeder_A),
+            "protection_battery.input": ElectricalPortValue(battery.voltage_V, current_battery_A),
+            "protection_battery.output": ElectricalPortValue(voltage_feeder_battery_V, current_battery_A),
+            "cable_battery.input": ElectricalPortValue(battery.voltage_V, current_battery_A),
+            "cable_battery.output": ElectricalPortValue(voltage_feeder_battery_V, current_battery_A),
+        })
+        if dcdc_model is not None:
+            port_values.update({
+                "dcdc.input": ElectricalPortValue(voltage_feeder_battery_V, current_battery_A),
+                "dcdc.output": ElectricalPortValue(voltage_bus_V, dcdc.current_output_A),
+            })
     margins = tuple(type(m)(f"{condition.label}: {m.label}", m.value)
                     for m in operating_margins(aircraft.powertrain.topology, port_values, atmosphere)) + thermal.margins
     return FlightPoint(condition=condition, weight_N=weight_N, alpha_deg=alpha_deg, aero=aero,
@@ -235,4 +357,4 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
                        hybridization_electric=hybridization_electric, battery=battery, generator=generator,
                        engine=engine, power_battery_W=battery.power_electric_W,
                        fuel_flow_kg_s=active_generator_count * engine.fuel_flow_kg_s,
-                       margins=margins, heat_loads=heat_loads, thermal=thermal)
+                       margins=margins, heat_loads=heat_loads, thermal=thermal, electrical=electrical)
