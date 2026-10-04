@@ -18,9 +18,10 @@ def numeric_design():
 
 
 class HaloThermalSwitchTests(unittest.TestCase):
-    def test_off_by_default(self):
-        self.assertFalse(HaloAssumptions().thermal_model)
-        aircraft = build_halo_aircraft(numeric_design())
+    def test_on_by_default_and_off_switch(self):
+        """Plan 030 (user-approved 2026-10-04) makes the thermal model the default."""
+        self.assertTrue(HaloAssumptions().thermal_model)
+        aircraft = build_halo_aircraft(numeric_design(), assumptions=HaloAssumptions(thermal_model=False))
         self.assertIsNone(aircraft.powertrain.cooling)
         self.assertIsNone(aircraft.powertrain.topology.instances["motor"].component.thermal_model)
         # Off: the gearbox keeps the motor's rating whatever the design says.
@@ -41,12 +42,13 @@ class HaloThermalSwitchTests(unittest.TestCase):
 class HaloThermalSizingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.sized = solve_halo_sizing(assumptions=thermal)
+        cls.sized = solve_halo_sizing()                     # plan 030: the defaults are the thermal reference
 
     def test_closes_with_all_margins(self):
         self.assertGreater(self.sized.min_margin, -1e-6)
         self.assertLess(abs(self.sized.closure_residual_kg), 1e-3)
         self.assertAlmostEqual(self.sized.mass_payload_kg, 900.0)
+        self.assertAlmostEqual(self.sized.mass_takeoff_kg / 0.45359237, 14037, delta=10)    # plan 030 reference
 
     def test_heat_exchanger_covers_every_point_and_is_sized_by_one(self):
         hx = self.sized.heat_exchanger

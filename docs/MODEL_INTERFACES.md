@@ -667,8 +667,10 @@ min and max terminal voltage.
     aircraft with the Raymer wing).
   - `requirements_plan026` with `assumptions_plan026` (SimpleAerodynamics,
     AFDD wing, 900 kg).
-  - Since plan 027 the defaults are the ECM pack, the AFDD tiltrotor wing
-    and AeroBuildup aerodynamics, at 900 kg.
+  - `requirements_plan027` with `assumptions_plan027` (thermal off,
+    13,639 lb).
+  - Since plan 030 the defaults are the ECM pack, the AFDD tiltrotor wing,
+    AeroBuildup aerodynamics and the thermal model, at 900 kg (14,037 lb).
 - **Trajectory** (`build_tiltrotor_trajectory`):
   - accepts either battery;
   - the motors see the terminal voltage;

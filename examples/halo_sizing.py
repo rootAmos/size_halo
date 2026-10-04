@@ -281,8 +281,9 @@ class HaloAssumptions:
     # True: heat loads from every loss go to a ram-air heat exchanger (mass from its rating, a design variable;
     # cooling drag in airplane mode, fan power in hover), and lumped motor and generator temperatures replace
     # their power ratings (hover and engine-out peaks may exceed the continuous rating for their duration). The
-    # rotor gearbox is then rated separately (`HaloDesign.power_rated_gearbox_W`). False: the reference.
-    thermal_model: bool = False
+    # rotor gearbox is then rated separately (`HaloDesign.power_rated_gearbox_W`). True is the reference from plan 030
+    # (user-approved 2026-10-04); False: the reference until then (`assumptions_plan027`).
+    thermal_model: bool = True
     specific_power_heat_exchanger_W_kg: float = 1000.0   # at the 40 K reference (Kellermann 2021, Potamiti 2024)
     delta_temperature_ref_heat_exchanger_C: float = 40.0
     temperature_coolant_C: float = 60.0                  # water-glycol loop into the heat exchanger and machines
@@ -1110,22 +1111,24 @@ requirements_tier10c = HaloRequirements(mass_payload_kg=900.0, velocity_max_m_s=
 requirements_tier12b = HaloRequirements(mass_payload_kg=900.0, hover_hot_day=False)
 # Tiers 13-16 reference (plans 018-020): 900 kg with the constant-OCV battery (13,760 lb).
 requirements_tier16 = HaloRequirements(mass_payload_kg=900.0)
-assumptions_tier16 = HaloAssumptions(battery_model="constant", wing_weight_model="raymer", aerodynamics_model="simple")
+assumptions_tier16 = HaloAssumptions(thermal_model=False, battery_model="constant", wing_weight_model="raymer",
+                                     aerodynamics_model="simple")
 # Plan 022 reference: 780 kg with the equivalent-circuit battery and the Raymer wing (14,436 lb).
 requirements_plan022 = HaloRequirements(mass_payload_kg=780.0)
-assumptions_plan022 = HaloAssumptions(wing_weight_model="raymer", aerodynamics_model="simple")
+assumptions_plan022 = HaloAssumptions(thermal_model=False, wing_weight_model="raymer", aerodynamics_model="simple")
 # Plan 026 reference: 900 kg, AFDD wing, SimpleAerodynamics (14,247 lb).
 requirements_plan026 = HaloRequirements(mass_payload_kg=900.0)
-assumptions_plan026 = HaloAssumptions(aerodynamics_model="simple")
-assumptions_tier12 = HaloAssumptions(battery_model="constant", wing_weight_model="raymer", aerodynamics_model="simple",
-                                     power_rated_turboshaft_fixed_W=None,
+assumptions_plan026 = HaloAssumptions(thermal_model=False, aerodynamics_model="simple")
+assumptions_tier12 = HaloAssumptions(thermal_model=False, battery_model="constant", wing_weight_model="raymer",
+                                     aerodynamics_model="simple", power_rated_turboshaft_fixed_W=None,
                                      hybridization_electric_min=0.0, soc_floor_every_segment=False,
                                      machine_mass_by_torque=False)
 # Tier 12b reference (plan 017): fixed engines with the constant-OCV battery and Tier 12b machines.
-assumptions_tier12b = HaloAssumptions(battery_model="constant", wing_weight_model="raymer", aerodynamics_model="simple",
-                                      machine_mass_by_torque=False)
+assumptions_tier12b = HaloAssumptions(thermal_model=False, battery_model="constant", wing_weight_model="raymer",
+                                      aerodynamics_model="simple", machine_mass_by_torque=False)
 # Tier 17 (plan 021): the equivalent-circuit 50G-shaped pack at end of life, on the Raymer-wing aircraft.
-assumptions_tier17 = HaloAssumptions(battery_model="ecm", wing_weight_model="raymer", aerodynamics_model="simple")
+assumptions_tier17 = HaloAssumptions(thermal_model=False, battery_model="ecm", wing_weight_model="raymer",
+                                     aerodynamics_model="simple")
 assumptions_tier11a = replace(assumptions_tier12, rotor_speed_physics=False)
 # Tier 15 (plan 023): the reference with the electrical layer (756 V nominal pack, 1,200 V inverters).
 assumptions_tier15 = HaloAssumptions(electrical_layer=True, thermal_model=False)
@@ -1207,7 +1210,11 @@ def enumerate_bus_voltage(voltages_nominal_V=(540.0, 756.0, 800.0, 1000.0), requ
                 pass
     return tuple(rows)
 # Tier 20 (plan 024): the AFDD tiltrotor wing (the default from plan 026).
-assumptions_tier20 = HaloAssumptions(wing_weight_model="afdd_tiltrotor", aerodynamics_model="simple")
+assumptions_tier20 = HaloAssumptions(thermal_model=False, wing_weight_model="afdd_tiltrotor", aerodynamics_model="simple")
+# Plan 027 reference: 900 kg, AFDD wing, AeroBuildup, no thermal model (13,639 lb).
+requirements_plan027 = HaloRequirements(mass_payload_kg=900.0)
+assumptions_plan027 = HaloAssumptions(thermal_model=False)
+
 
 if __name__ == "__main__":
     result = solve_halo_sizing(verbose=False)

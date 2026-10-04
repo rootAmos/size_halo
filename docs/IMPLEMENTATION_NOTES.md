@@ -1135,6 +1135,21 @@ from the thermal-off design and from the thermal Scholz design.
   checks. Thermal-on sizing takes about 4 min (the thermal-off solve as the
   start, then about 90 s).
 
+## Plan 030: thermal model as the reference
+
+The user approved it on 2026-10-04 ("yes").
+
+- **Default:** `thermal_model=True`.
+- **Reference:** 900 kg at 210 kt, 14,037 lb.
+  - Heat exchanger: 133 kg, sized by the hot-day hover.
+  - Motors and generators: 63 kg lighter, thanks to short-time ratings.
+- **Legacy sets** pin `thermal_model=False`. `requirements_plan027` /
+  `assumptions_plan027` keep the 13,639 lb plan 027 reference.
+- **Trajectory tests** fly the plan 027 aircraft: there are no thermal
+  states along trajectories yet.
+- **Solve time:** about 4 minutes from cold. The solve starts from the
+  thermal-off solve, which starts from Scholz aero and the constant battery.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
