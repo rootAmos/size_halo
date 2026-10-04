@@ -695,7 +695,9 @@ whole layer is optional (`build_series_hybrid(..., electrical=None)`; Halo
   cable - inverter - motor, generator - rectifier - cable - protection - bus, battery - protection - cable -
   [DC/DC] - bus.
 - **Flight point:** `FlightPoint.electrical` (`ElectricalLayerResult`: bus and battery voltages, per-instance
-  results, bus-side powers and loss totals). The hybridization share is on the bus side.
+  results, bus-side powers, loss totals, and `loss_sources`: one `LossSource(instance_name, power_loss_W)`
+  per electrical instance, summed over active copies, for Tier 19 heat loads). The hybridization share is on
+  the bus side.
 - **Operating margins:** inverter AC power and DC window; cable and protection current (squared, either
   sign); cable partial discharge at the point's pressure; DC/DC power and input window.
 - **Halo:** `electrical_layer`, bare-machine figures (17.6 N.m/kg, 20 kW/kg cap), inverter (20 kW/kg,

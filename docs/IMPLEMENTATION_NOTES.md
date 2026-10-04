@@ -930,6 +930,83 @@ the hand check; `SimpleAerodynamics` stays (and stays the Halo default,
 - **Deferred:** V-tail, conversion segments and the blown wing in conversion,
   trim drag, transition location as a calibration against XV-15 data.
 
+## Tier 15: electrical layer
+
+Plan 023. An optional layer between the machines, the battery and the bus:
+`Inverter` (motor drive and generator active rectifier), `Cable` (DC
+feeder), `ProtectionUnit` (contactors and fuses) and an optional
+`DcDcConverter`. It is switched by `HaloAssumptions.electrical_layer`,
+**off by default**, so the reference (900 kg, AFDD tiltrotor wing,
+14,247 lb) is unchanged.
+
+**Models.**
+
+- **Converter losses:** fixed + switching (|P|) + conduction ((P/V)^2),
+  98.5 % at rated power and nominal voltage, peak efficiency at 45 % load.
+  Inverters 20 kW/kg (NASA EAP goal 19 kW/kg), DC link at most 0.75 x the
+  semiconductor blocking voltage (1,200 V class: 900 V).
+- **Cables:** aluminium at 3 A/mm2 of the design current (125 % of the
+  source rating), length 1.25 x half span (bus in the fuselage, machines
+  in the tip nacelles), battery feeder 3 m. Insulation sized so that
+  Dakin's PD inception voltage at the 13,000 ft ceiling is 1.5 x the
+  peak pack voltage (minimum wall 0.25 mm); a partial-discharge margin is
+  checked at every flight point's pressure.
+- **Protection:** two poles per feeder, 0.2 kg + 1.3 g/A per pole, 0.15 V
+  per pole at rating.
+- **Flight point:** the power balance and the battery share are on the bus
+  side; the battery feeder's series drop is exact.
+- **Machines:** split into bare machine + inverter so that the Tier 13
+  integrated calibration is kept where it was anchored: 17.6 N.m/kg
+  (magniX at 200 rad/s) and a 20 kW/kg bare high-speed cap (the old
+  integrated 10 kW/kg). The implied bare cap is above NASA's HEMM
+  16 kW/kg, so the Tier 13 cap was optimistic (sensitivity in the
+  notebook).
+- **Installation factor:** no longer passed by the Halo; the cabling and
+  protection it stood for are explicit. Cooling stays for Tier 19.
+
+**Halo with the layer** (756 V nominal, 210s pack, 1,200 V inverters):
+
+- The minimum-mass problem at 900 kg is infeasible on the fixed
+  2 x 1,120 hp engines.
+- Maximum payload 567 kg (against 959 kg without the layer) at 6,304 kg
+  (13,898 lb).
+- Electrical items 320 kg: inverters 73 + 84 kg, cables 60 + 69 + 9 kg,
+  protection 10 + 11 + 4 kg (motor, generator, battery feeders, both
+  sides).
+- Losses about 17 kW in cruise (inverters dominate; cables about 1/5).
+- The payload loss is the 320 kg of items, their converter losses on
+  the turbine-limited 210 kt and engine-out points, and the snowball.
+
+**Bus voltage (maximum payload, discrete enumeration):**
+
+| Nominal bus | Pack | Inverter class | Max payload | Electrical mass |
+|---|---|---|---|---|
+| 540 V | 150s | 1,200 V | 501 kg | 378 kg |
+| 756 V | 210s | 1,200 V | 567 kg | 320 kg |
+| 800 V | 222s | 1,700 V | 574 kg | 312 kg |
+| 1,000 V | 278s | 1,700 V | 604 kg | 286 kg |
+| 540 V DC/DC | 210s | 1,200 V | 484 kg | 375 kg |
+| 756 V DC/DC | 210s | 1,200 V | 530 kg | 337 kg |
+| 800 V DC/DC | 210s | 1,200 V | 536 kg | 332 kg |
+| 1,000 V DC/DC | 210s | 1,700 V | 557 kg | 315 kg |
+
+- Higher voltage wins: conductor mass falls as 1/V while the PD-sized
+  insulation stays small. The model has no penalty for 1,700 V devices
+  or higher-voltage contactors (deferred).
+- 800 V nominal (932 V maximum) already exceeds the derated 1,200 V class.
+- A DC/DC converter (64 kg, 2 % loss) never pays here: it buys a constant
+  bus voltage, but the pack can set the bus directly.
+
+**Solver practice.** The equivalent-circuit maximum-payload solve is
+sensitive to its start. `solve_halo_max_payload` starts from a
+constant-battery design and falls back to the constant-battery maximum
+payload of the same assumptions; `enumerate_bus_voltage` retries a failed
+option from its neighbours; from a constant-battery start the parallel
+count is energy-matched (`count_parallel_guess`). Feeder ratings at 125 %
+of their sources also keep the cable and contactor current limits from
+duplicating the source's own limit (degenerate active constraints made
+IPOPT report local infeasibility).
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,

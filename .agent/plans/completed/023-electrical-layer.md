@@ -1,6 +1,6 @@
 # Electrical layer: inverters, cables, protection, DC/DC, bus voltage
 
-Status: ACTIVE 2026-10-03. Tier 15 (roadmap "15 Electrical layer", review
+Status: COMPLETED 2026-10-03. Tier 15 (roadmap "15 Electrical layer", review
 item 3). Orchestrator direction: the layer is a `HaloAssumptions` switch,
 off by default, so the plan 022 reference (780 kg, 14,436 lb) is unchanged.
 
@@ -77,8 +77,10 @@ off by default, so the plan 022 reference (780 kg, 14,436 lb) is unchanged.
   shield, clamps) +20 % of the cable mass.
 - Feeder lengths: 1.25 x half span (bus in the fuselage, machines in the
   tip nacelles); battery feeder 3 m.
-- Design current: rated power over the minimum bus voltage (motor and
-  generator feeders), the pack's discharge current rating (battery).
+- Design current: 125 % (NEC-style continuous-load rule) of the source
+  rating: machine shaft rating / peak efficiency over the minimum bus
+  voltage, or the pack's discharge current rating. Inverters are rated at
+  the machine shaft rating / peak efficiency.
 - PD design: PDIV(ceiling) >= 1.5 x peak pack voltage at 13,000 ft.
 - Protection: two poles per feeder; 0.2 kg + 1.3 g/A per pole; 0.15 V per
   pole at rated current.
@@ -143,7 +145,28 @@ off by default, so the plan 022 reference (780 kg, 14,436 lb) is unchanged.
 
 ## Progress and decisions
 
-- 2026-10-03: plan written.
+- 2026-10-03: plan written; components, topology insertion, flight point,
+  margins and Halo integration implemented.
+- **Degenerate constraints:** feeders first sized at exactly the source
+  rating duplicated the battery's own current limit (cable, contactor and
+  battery limits active together); IPOPT reported local infeasibility.
+  Feeders are now rated at 125 % of their source.
+- **Starting points:** the equivalent-circuit max-payload solve is
+  sensitive to its start. `solve_halo_max_payload` (constant-battery start,
+  fallback via the constant-battery max payload), energy-matched parallel
+  count from constant-battery starts (`count_parallel_guess`; the reference
+  is unchanged), and neighbour retries in `enumerate_bus_voltage`.
+- **Merged main** twice (Tier 20 AFDD wing / plan 026, then Tier 21
+  aerodynamics). The AFDD wing tip mass includes the nacelle inverters when
+  the layer is on. Flag off: reference 14,247 lb at 900 kg, unchanged.
+- **Results (flag on, 756 V):** 900 kg minimum mass infeasible; max
+  payload 567 kg (959 kg flag off) at 6,304 kg; electrical items 320 kg;
+  cruise losses about 17 kW.
+- **Bus voltage enumeration (max payload):** 540 V 501 kg, 756 V 567 kg,
+  800 V 574 kg (1,700 V devices), 1,000 V 604 kg (1,700 V devices); every
+  DC/DC variant is 30-40 kg worse than the pack-set bus at the same voltage.
+- Tests: 23 component tests, 5 Halo integration tests; notebook
+  `notebooks/tier15_electrical/electrical_verification.ipynb`.
 
 ## Deferred
 
@@ -151,4 +174,9 @@ off by default, so the plan 022 reference (780 kg, 14,436 lb) is unchanged.
 - Nacelle-local buses, cross-strapping and redundancy: Tier 18.
 - Device-class penalties on converter mass/efficiency; DC arc interruption
   mass at higher voltage; reflected-wave overvoltage at machine terminals.
+  Without them the enumeration always favours the highest voltage.
+- Whether the electrical layer becomes the default (orchestrator/user).
+- Inverter rating as its own design variable (now tied to the machine
+  rating; the hover inverter power margin binds and nudges the motor
+  rating up).
 - Electrical layer in the Tier 14 trajectory model.

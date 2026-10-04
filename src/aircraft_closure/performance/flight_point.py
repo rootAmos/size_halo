@@ -83,6 +83,13 @@ class FlightPoint:
 
 
 @dataclass(frozen=True)
+class LossSource:
+    """One heat load: total loss of a topology instance at a point (all its active copies), for thermal sizing."""
+    instance_name: str
+    power_loss_W: Any
+
+
+@dataclass(frozen=True)
 class ElectricalLayerResult:
     """Tier 15 per-point electrical state; powers are per instance unless they are named totals."""
     voltage_bus_V: Any
@@ -100,6 +107,7 @@ class ElectricalLayerResult:
     power_loss_cables_W: Any
     power_loss_protection_W: Any
     power_loss_dcdc_W: Any
+    loss_sources: tuple = ()        # LossSource per electrical-layer instance (Tier 19 heat loads)
 
     @property
     def power_loss_total_W(self):
@@ -239,7 +247,17 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
             power_loss_protection_W=(active_rotor_count * protection_motor.power_loss_W
                                      + active_generator_count * protection_generator.power_loss_W
                                      + protection_battery.power_loss_W),
-            power_loss_dcdc_W=power_loss_dcdc_W)
+            power_loss_dcdc_W=power_loss_dcdc_W,
+            loss_sources=(
+                LossSource("inverter_motor", active_rotor_count * inverter_motor.power_loss_W),
+                LossSource("cable_motor", active_rotor_count * cable_motor.power_loss_W),
+                LossSource("protection_motor", active_rotor_count * protection_motor.power_loss_W),
+                LossSource("inverter_generator", active_generator_count * inverter_generator.power_loss_W),
+                LossSource("cable_generator", active_generator_count * cable_generator.power_loss_W),
+                LossSource("protection_generator", active_generator_count * protection_generator.power_loss_W),
+                LossSource("cable_battery", cable_battery.power_loss_W),
+                LossSource("protection_battery", protection_battery.power_loss_W),
+            ) + ((LossSource("dcdc", power_loss_dcdc_W),) if dcdc is not None else ()))
     # Optional step-up gearbox between turboshaft output and generator (Tier 13): ratio = input / output speed.
     speed_engine_rad_s, torque_engine_Nm = speed_generator_rad_s, torque_generator_Nm
     generator_gear_ports = {}
