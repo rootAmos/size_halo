@@ -6,11 +6,12 @@ import aerosandbox.tools.units as u
 
 from examples.halo_design_space import UncertainInput, enumerate_architectures, sensitivity_study
 from examples.halo_sizing import (HaloAssumptions, HaloRequirements, StartRecord, assumptions_plan026,
+                                  assumptions_plan027,
                                   default_starts, perturbed_start, requirements_plan026, solve_halo_sizing,
                                   solve_halo_sizing_multistart)
 
-# Thermal model pinned off: these cases are the plan 027 (thermal-off) aircraft whatever the default is.
-reference = replace(HaloAssumptions(), thermal_model=False)
+# The plan 027 (thermal-off) aircraft: plan 030 made the thermal model the default; these cases keep it off.
+reference = assumptions_plan027
 scholz = replace(reference, aerodynamics_model="scholz")
 
 
