@@ -217,3 +217,50 @@ def size_fuselage(area_skin_m2, length_frames_m, area_section_frame_m2, area_bul
         mass_frames_kg=length_frames_m * area_section_frame_m2 * m.density_kg_m3,
         mass_bulkheads_kg=area_bulkheads_m2 * m.thickness_bulkhead_m * m.fraction_bulkhead_solid * m.density_kg_m3,
         mass_floor_kg=area_floor_m2 * m.unit_mass_floor_kg_m2)
+
+
+def torsion_stiffness_min_mass_Nm2(y_m, chord_m, stiffness_uniform_Nm2, y_root_m):
+    """GJ(y) for a tapered Bredt box with the same tip twist flexibility as a uniform requirement.
+
+    The flexibility of the panel outboard of `y_root_m` is the integral of dy / GJ. For a box whose
+    perimeter^2 / area^2 scales as 1 / chord^2 the wall mass per length is proportional to GJ / chord^2,
+    and minimising mass at fixed flexibility gives GJ proportional to chord. Inboard of `y_root_m` (the
+    carry-through) the root value is kept.
+    """
+    outboard = y_m >= y_root_m
+    length_m = y_m[outboard][-1] - y_root_m
+    # Choose GJ = scale * chord so that the integral of dy / GJ equals length / GJ_uniform.
+    scale = stiffness_uniform_Nm2 * np.trapezoid(1.0 / chord_m[outboard], y_m[outboard]) / length_m
+    stiffness_Nm2 = scale * chord_m
+    stiffness_Nm2[~outboard] = scale * np.interp(y_root_m, y_m, chord_m)
+    return stiffness_Nm2
+
+
+@dataclass(frozen=True)
+class FuselageSecondaryItem:
+    name: str
+    quantity: float
+    unit: str
+    unit_mass_kg: float
+    basis: str
+
+    def mass_kg(self):
+        return self.quantity * self.unit_mass_kg
+
+
+def fuselage_secondary_items(area_doors_m2, mass_wing_fittings_kg, area_fairings_m2, area_access_panels_m2,
+                             area_floor_m2):
+    """Layout-based secondary structure of an uncrewed, unpressurized cargo fuselage (unit masses assumed).
+
+    Fasteners, sealant and paint are a fraction of everything else and are added by the caller.
+    """
+    return (
+        FuselageSecondaryItem("cargo doors", area_doors_m2, "m2", 12.0, "door panel with frame, hinges, latches"),
+        FuselageSecondaryItem("door cut-out reinforcement", area_doors_m2, "m2", 6.0,
+                              "surround doublers and edge members, half the door panel mass"),
+        FuselageSecondaryItem("wing attach fittings (fuselage side)", mass_wing_fittings_kg, "kg", 1.0,
+                              "taken equal to the AFDD wing-side fittings"),
+        FuselageSecondaryItem("fairings (dorsal, aft boom)", area_fairings_m2, "m2", 2.5, "composite fairing panels"),
+        FuselageSecondaryItem("access panels and radome", area_access_panels_m2, "m2", 3.0, "nose bay access"),
+        FuselageSecondaryItem("cargo floor fittings and rails", area_floor_m2, "m2", 2.0, "tie-downs, rails"),
+    )

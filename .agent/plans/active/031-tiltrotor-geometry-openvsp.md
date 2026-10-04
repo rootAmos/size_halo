@@ -411,3 +411,24 @@ Each new margin is added to the Halo report. The new margins become constraints 
       fittings, doors and cut-outs, fairings) or a layout-based secondary estimate.
 - 2026-10-04: frames switched to ring frames (I-section beams, 75 x 30 x 1.6 mm) at 0.6 m pitch, with full-plate
   bulkheads only. The fuselage mesh with ring frames is still running.
+- 2026-10-04: back-check extended (user: "I would take Raymer for the tails"; asked whether Raymer was told the
+  fuselage is unpressurized).
+  - **Pressurization:** the sizing's `raymer.mass_fuselage` call passes no pressure differential (0 Pa), so the
+    pressurization term is zero.
+  - **Fuselage calibration:** the 636 kg is raw Raymer GA (307 kg) times the XV-15 calibration factor 2.07 (XV-15
+    actual fuselage group / Raymer prediction).
+  - **Tapered wing:** the torsion requirement can now be distributed as GJ proportional to chord at the same tip
+    twist flexibility, the minimum-mass distribution for a Bredt box. The drawn wing then comes to 137.3 kg
+    (1.14x AFDD primary); uniform GJ gave 138.5 kg, because caps and minimum gauge dominate.
+  - **Fuselage secondary structure** (layout, assumed unit masses), 220 kg in total:
+    - doors 62 kg;
+    - cut-out reinforcement 31 kg;
+    - fuselage-side wing fittings 37 kg;
+    - dorsal fairing 30 kg;
+    - access panels and radome 12 kg;
+    - floor fittings 18 kg;
+    - fasteners and paint 6 %.
+  - **Fuselage layout total:** 530 kg, i.e. 1.73x raw Raymer and 0.83x XV-15-calibrated.
+  - **User decision:** "drop the 2.07 calibration factor for the fuselage". The layout total suggests about 1.7
+    rather than 1.0; confirmation was asked before the reference is changed. That change belongs to plan 032
+    (sizing reference changes), not to this export plan.

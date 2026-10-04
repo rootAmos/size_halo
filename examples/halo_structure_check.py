@@ -22,16 +22,27 @@ import matplotlib.pyplot as plt
 from aircraft_closure.export.openvsp.snapshot import halo_plan027_snapshot, v_tail_equivalent
 from aircraft_closure.export.openvsp.structure import StructureLayout
 from aircraft_closure.export.openvsp.structure_check import (BoxMaterial, FuselageMaterial, SurfaceLoads,
-                                                             area_by_part_m2, elliptic_panel_loads, size_box,
-                                                             size_fuselage)
+                                                             area_by_part_m2, elliptic_panel_loads,
+                                                             fuselage_secondary_items, size_box, size_fuselage,
+                                                             torsion_stiffness_min_mass_Nm2)
+from examples.xv15_reference import calibration_factors
 
 directory = Path("output/structure")
 factor_safety = 1.5
 count_stations = 61
+# Fuselage secondary-structure quantities (assumed, from the Halo stills and the OpenVSP model).
+area_doors_m2 = 2 * 2.0 * 1.3            # one large side cargo door each side
+area_fairings_m2 = 12.0                  # exposed dorsal-fairing area (OpenVSP parasite-drag tool, plan 031)
+area_access_panels_m2 = 4.0              # nose-bay access panels and sensor radome
+fraction_fasteners_paint = 0.06          # fasteners, sealant, paint on primary + secondary structure
 
 
-def wing_check(reference, layout, taper_ratio, area_ribs_m2):
-    """Layout wing box over both panels; the box runs through over the fuselage (constant moment inboard)."""
+def wing_check(reference, layout, taper_ratio, area_ribs_m2, torsion="uniform"):
+    """Layout wing box over both panels; the box runs through over the fuselage (constant moment inboard).
+
+    `torsion`: "uniform" applies the AFDD torsion stiffness everywhere; "min_mass" keeps its tip twist
+    flexibility with GJ proportional to chord (the lightest distribution for a tapered box).
+    """
     r = reference
     material_afdd = r["material_wing"]
     material = BoxMaterial(density_box_kg_m3=material_afdd["density_torque_box_kg_m3"],
@@ -65,9 +76,11 @@ def wing_check(reference, layout, taper_ratio, area_ribs_m2):
                          shear_N=np.where(jump_governs, shear_jump_N, shear_flight_N),
                          case=tuple("jump" if j else "flight" for j in jump_governs))
     afdd = r["wing_afdd"]
+    stiffness_torsion_Nm2 = (afdd["stiffness_torsion_Nm2"] if torsion == "uniform" else
+                             torsion_stiffness_min_mass_Nm2(y_m, chord_m, afdd["stiffness_torsion_Nm2"], y_side_m))
     box = size_box(y_m, chord_m, r["thickness_to_chord_wing"], layout.fraction_chord_front_spar,
                    layout.fraction_chord_rear_spar, loads, material,
-                   stiffness_torsion_Nm2=afdd["stiffness_torsion_Nm2"], stiffness_beam_Nm2=afdd["stiffness_beam_Nm2"],
+                   stiffness_torsion_Nm2=stiffness_torsion_Nm2, stiffness_beam_Nm2=afdd["stiffness_beam_Nm2"],
                    stiffness_chord_Nm2=afdd["stiffness_chord_Nm2"], area_ribs_m2=area_ribs_m2)
     return box, loads, material
 
@@ -138,14 +151,15 @@ def plot(rows, path_png):
     figure, axis = plt.subplots(figsize=(10, 5))
     width = 0.38
     axis.bar(x - width / 2, [row[1] for row in rows], width - 0.02, color="#2a78d6", label="Sizing correlation")
-    axis.bar(x + width / 2, [row[2] for row in rows], width - 0.02, color="#eb6834", label="Layout primary structure")
+    axis.bar(x + width / 2, [row[2] for row in rows], width - 0.02, color="#eb6834", label="Layout-based estimate")
     for index, row in enumerate(rows):
         axis.text(index + width / 2, row[2], f"{row[2] / row[1]:.2f}x", ha="center", va="bottom", fontsize=9,
                   color="#333333")
     axis.set_xticks(x, labels)
     axis.set_ylabel("Mass (kg)")
     axis.set_title("Halo primary structure: sizing correlations vs layout-based estimate\n"
-                   "wing: AFDD primary (box + caps); tails and fuselage: Raymer whole-group masses", fontsize=11)
+                   "wing: primary structure; fuselage: primary + secondary (layout) vs the Raymer group",
+                   fontsize=11)
     axis.grid(True, axis="y", color="#e5e5e2")
     axis.set_axisbelow(True)
     for spine in ("top", "right"):
@@ -173,8 +187,10 @@ if __name__ == "__main__":
           f"sized wing (calibrated) {reference['mass_wing_kg']:.1f} kg; AFDD jump M_ult "
           f"{afdd['moment_jump_ultimate_Nm'] / 1e3:.0f} kN m")
     results = {}
-    for name, taper in (("as sized (constant chord)", 1.0), ("as drawn (taper 0.6)", 0.6)):
-        box, loads, material = wing_check(reference, layout, taper, area_ribs_wing_m2)
+    for name, taper, torsion in (("as sized (constant chord)", 1.0, "uniform"),
+                                 ("as drawn (taper 0.6), uniform GJ", 0.6, "uniform"),
+                                 ("as drawn (taper 0.6), GJ ~ chord", 0.6, "min_mass")):
+        box, loads, material = wing_check(reference, layout, taper, area_ribs_wing_m2, torsion)
         results[name] = box
         index_side = np.searchsorted(box.y_m, reference["width_fuselage_m"] / 2)
         print(f"\nWing {name}: root M {loads.moment_Nm[0] / 1e3:.0f} kN m ({loads.case[0]}), "
@@ -201,8 +217,27 @@ if __name__ == "__main__":
           f"{fuselage.mass_frames_kg:.1f}, bulkheads {fuselage.mass_bulkheads_kg:.1f}, floor {fuselage.mass_floor_kg:.1f}"
           f" -> primary {fuselage.mass_primary_kg():.1f} kg vs Raymer fuselage {reference['mass_fuselage_kg']:.1f} kg")
 
-    rows = [("Wing (as sized)", mass_afdd_primary_kg, results["as sized (constant chord)"].mass_primary_kg()),
-            ("Wing (as drawn)", mass_afdd_primary_kg, results["as drawn (taper 0.6)"].mass_primary_kg()),
-            ("Tails (Raymer group)", mass_tails_raymer_kg, tail_box.mass_primary_kg()),
-            ("Fuselage (Raymer group)", reference["mass_fuselage_kg"], fuselage.mass_primary_kg())]
+    factors = calibration_factors()
+    mass_fuselage_raymer_raw_kg = reference["mass_fuselage_kg"] / factors.fuselage
+    items = fuselage_secondary_items(area_doors_m2, afdd["mass_fittings_kg"], area_fairings_m2, area_access_panels_m2,
+                                     measured["area_floor_m2"])
+    mass_secondary_kg = sum(item.mass_kg() for item in items)
+    mass_fasteners_kg = fraction_fasteners_paint * (fuselage.mass_primary_kg() + mass_secondary_kg)
+    mass_fuselage_layout_kg = fuselage.mass_primary_kg() + mass_secondary_kg + mass_fasteners_kg
+    print("\nFuselage secondary structure (layout, assumed unit masses):")
+    for item in items:
+        print(f"  {item.name:<38}{item.quantity:7.1f} {item.unit:<3} x {item.unit_mass_kg:5.1f} kg/{item.unit:<3}"
+              f"= {item.mass_kg():6.1f} kg  ({item.basis})")
+    print(f"  {'fasteners, sealant, paint':<38}{100 * fraction_fasteners_paint:7.1f} %{'':24}= {mass_fasteners_kg:6.1f} kg")
+    print(f"Fuselage layout total {mass_fuselage_layout_kg:.1f} kg (primary {fuselage.mass_primary_kg():.1f} + "
+          f"secondary {mass_secondary_kg + mass_fasteners_kg:.1f}) vs Raymer GA unpressurized "
+          f"{mass_fuselage_raymer_raw_kg:.1f} kg, x {factors.fuselage:.2f} XV-15 calibration = "
+          f"{reference['mass_fuselage_kg']:.1f} kg")
+
+    rows = [("Wing, as sized\n(vs AFDD primary)", mass_afdd_primary_kg,
+             results["as sized (constant chord)"].mass_primary_kg()),
+            ("Wing, as drawn\n(GJ ~ chord)", mass_afdd_primary_kg,
+             results["as drawn (taper 0.6), GJ ~ chord"].mass_primary_kg()),
+            ("Fuselage\n(vs raw Raymer)", mass_fuselage_raymer_raw_kg, mass_fuselage_layout_kg),
+            ("Fuselage\n(vs XV-15-calibrated)", reference["mass_fuselage_kg"], mass_fuselage_layout_kg)]
     plot(rows, directory / "structure_check.png")

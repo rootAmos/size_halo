@@ -84,3 +84,21 @@ class FuselageTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TorsionDistributionTests(unittest.TestCase):
+    def test_min_mass_distribution_keeps_flexibility_and_scales_with_chord(self):
+        from aircraft_closure.export.openvsp.structure_check import torsion_stiffness_min_mass_Nm2
+        y_m = np.linspace(0.0, 5.0, 501)
+        chord_m = 2.0 * (1 - 0.4 * y_m / 5.0)
+        stiffness_Nm2 = torsion_stiffness_min_mass_Nm2(y_m, chord_m, 1.0e6, y_root_m=1.0)
+        outboard = y_m >= 1.0
+        self.assertAlmostEqual(np.trapezoid(1 / stiffness_Nm2[outboard], y_m[outboard]), 4.0 / 1.0e6,
+                               delta=1e-9)
+        ratio = stiffness_Nm2[outboard] / chord_m[outboard]
+        self.assertAlmostEqual(ratio.max() / ratio.min(), 1.0, places=12)
+
+    def test_untapered_box_keeps_the_uniform_requirement(self):
+        from aircraft_closure.export.openvsp.structure_check import torsion_stiffness_min_mass_Nm2
+        y_m = np.linspace(0.0, 5.0, 51)
+        np.testing.assert_allclose(torsion_stiffness_min_mass_Nm2(y_m, np.full(51, 1.5), 2.0e6, 1.0), 2.0e6)
