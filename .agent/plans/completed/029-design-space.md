@@ -1,8 +1,10 @@
 # Design-space practice: starting points, freed trades, cost, enumeration, robustness
 
-Status: ACTIVE. Tier 22 (roadmap "22 Design-space practice", review items 9
-and 10). Follows plan 027 (AeroBuildup reference). Tiers 15 and 19 are being
-implemented in parallel and are out of scope.
+Status: COMPLETED 2026-10-04. Tier 22 (roadmap "22 Design-space practice",
+review items 9 and 10). Follows plan 027 (AeroBuildup reference). Tiers 15
+(electrical layer) and 19 (thermal, made the default by plan 030) landed on
+main while this plan ran; they are out of scope except that the start list
+covers their flags.
 
 ## Goal and scope
 
@@ -28,8 +30,11 @@ Not in scope: new physics; Tier 15 electrical layer (bus voltage as a real
 trade); Tier 19 thermal; optimization under uncertainty (robust objective);
 payload-range diagrams.
 
-The default reference is unchanged: 900 kg, 210 kt, AeroBuildup, AFDD wing,
-equivalent-circuit battery, `objective="mass_takeoff"`, 13,639 lb.
+The sizing is unchanged. Studies use the plan 027 aircraft
+(`assumptions_plan027`: 900 kg, 210 kt, AeroBuildup, AFDD wing,
+equivalent-circuit battery, thermal model off, 13,639 lb); the plan 030
+default (thermal on, 14,037 lb) is reached by the same strategy through its
+`thermal_off` start.
 
 ## References
 
@@ -63,8 +68,9 @@ equivalent-circuit battery, `objective="mass_takeoff"`, 13,639 lb.
 - `solve_halo_sizing_multistart(requirements, assumptions, factors,
   verbose, max_iter, objective, starts=None, select="first", cache=None)`.
 - `default_starts(requirements, assumptions, objective)`; start labels
-  `mass_objective`, `scholz_aero`, `constant_battery`,
-  `payload_continuation`, `perturbed_low`, `perturbed_high`, `generic`.
+  `caller`, `electrical_off`, `thermal_off`, `mass_objective`, `scholz_aero`,
+  `constant_battery`, `payload_continuation`, `perturbed_low`,
+  `perturbed_high`, `generic`. `solve_halo_sizing_once` is the single solve.
 - `StartAttempt`, `StartRecord` (frozen); `HaloSizingResult.start` and
   `HaloSizingResult.cost` (new, defaulted fields).
 - `HaloAssumptions`: `free_aspect_ratio_wing`, `free_altitude_cruise`,
@@ -110,8 +116,43 @@ equivalent-circuit battery, `objective="mass_takeoff"`, 13,639 lb.
 ## Progress and decisions
 
 - 2026-10-04: plan written.
+- **Strategy:** the earlier rules become the first entries of an ordered
+  list, so every existing reference reproduces (13,639, 14,247 lb). Perturbed
+  starts scale the first precursor design. Precursors run the strategy
+  without perturbation; a continuation precursor has no continuation.
+  `initial=` on the multistart adds a `caller` start (sweeps, sensitivity).
+- **Fragile cases solved from cold:** plan 026 900 kg ECM (continuation);
+  ECM max payload (`perturbed_low`, 1,753 kg Scholz); Tier 15 AeroBuildup +
+  electrical layer + ECM at 900 kg, the Tier 15 open issue
+  (`perturbed_low`, 6,862 kg / 15,129 lb, after four failed starts; 2.5 h).
+- **Local optima:** no spread found (Scholz: five starts, < 1e-4 kg;
+  AeroBuildup: two converged starts, 0.000 kg; cost optimum: five starts).
+- **Freed trades:** first choice was the battery series count; dropped
+  because with per-cell limits the pack mass depends only on the cell count
+  (the optimizer returned 179s x 21.7p with the same 3,887 cells and mass:
+  a degenerate trade). Replaced by mission cruise altitude. The reserve SOC
+  runs to its upper bound (0.90, -386 lb); first bounds 0.15-0.60 failed
+  from the fixed design (NaN in the ECM at low SOC), 0.20-0.90 converge from
+  the constant-battery start.
+- **Cost:** objective scaled by USD 100 (USD 1,000 gave local
+  infeasibility from the mass optimum); `mass_objective` start added. Cost
+  optimum USD 2,939 vs 3,191 per mission at the mass optimum (AeroBuildup),
+  at 14,176 vs 13,639 lb and 210 vs 163 kt.
+- **Enumeration:** the planned generator step-up pair could not be the test
+  case: on-shaft generators do not close at 900 kg (max payload 515 kg with
+  ECM); the test enumerates the battery model instead.
+- **Merges:** main (Tier 19, plan 030, Tier 15) merged twice; thermal-off and
+  electrical-off starts added; tests and notebook pin `assumptions_plan027`.
+- **Acceptance:** full suite 451 tests before the plan 030/Tier 15 merges,
+  518 after (inside the notebook); notebook checks in the executed notebook.
 
 ## Deferred
 
-- Bus voltage (battery series count) as a trade: see decisions.
-- Optimization under uncertainty.
+- Bus voltage (series count) as a trade, once Tier 15 voltage-dependent
+  masses make it non-degenerate.
+- Optimization under uncertainty; cycle life against depth of discharge;
+  a cost-mass Pareto front.
+- Start order or per-start iteration cap for slow failing starts (the
+  Tier 15 case spends 2.3 h in failing starts).
+- Three enumeration combinations converge neither at 900 kg nor at maximum
+  payload.

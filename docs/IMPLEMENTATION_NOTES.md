@@ -1150,6 +1150,81 @@ The user approved it on 2026-10-04 ("yes").
 - **Solve time:** about 4 minutes from cold. The solve starts from the
   thermal-off solve, which starts from Scholz aero and the constant battery.
 
+## Tier 22: design-space practice
+
+Plan 029. Tooling around the Halo sizing solve; the sizing is unchanged.
+Studies use the plan 027 aircraft (`assumptions_plan027`, thermal model off,
+13,639 lb) to stay fast; sweeps use `aerodynamics_model="scholz"` (about 1 %
+in mass from AeroBuildup).
+
+- **Starting-point strategy** (`solve_halo_sizing_multistart`, called by
+  `solve_halo_sizing` when `initial` is None): an ordered, finite list of
+  candidate starts, each one independent coupled solve; the first that
+  converges is returned (or, with `select="best"`, the lowest objective of
+  all), with a `StartRecord` of every attempt on `result.start`. Order:
+  `caller` (a supplied design), `electrical_off` / `thermal_off`,
+  `mass_objective` (cost objective), `scholz_aero`, `constant_battery`,
+  `payload_continuation` (85 %), `perturbed_low` / `perturbed_high` (the
+  first precursor design x 0.85 / 1.15), `generic`. The first entries
+  reproduce the earlier hand rules, so every existing reference is unchanged.
+  Precursors run the same strategy without perturbation (bounded cost).
+- **Previously fragile cases now solved from cold:** the plan 026 900 kg
+  ECM case (constant-battery start fails, continuation converges, 14,247 lb);
+  the ECM maximum payload (constant-battery start fails, `perturbed_low`
+  converges: 1,753 kg, Scholz); the reference from cold (`scholz_aero`,
+  13,639 lb); and the Tier 15 open issue, AeroBuildup + electrical layer +
+  ECM at 900 kg (`assumptions_tier15`): `scholz_aero`, `constant_battery`,
+  `payload_continuation` and `electrical_off` fail, `perturbed_low`
+  converges at 6,862 kg (15,129 lb). That run took 2.5 h, nearly all in the
+  failing starts (the continuation precursor alone 1.8 h).
+- **Local-optimum spread:** zero. Scholz reference, all five default starts
+  converge to 13,702 lb (spread below 1e-4 kg); AeroBuildup reference,
+  `scholz_aero` and `perturbed_low` agree to 0.000 kg (`perturbed_high`
+  fails in restoration). The cost optimum is also reached from five starts.
+- **Freed trades** (flags `free_aspect_ratio_wing`, `free_altitude_cruise`,
+  `free_soc_reserve`):
+
+  | Case | MTOM | Change | Free value |
+  |---|---|---|---|
+  | Scholz reference | 13,702 lb | | AR 6.12, 10,000 ft, SOC 0.30 |
+  | aspect ratio | 13,629 lb | -73 lb | AR 7.11 |
+  | cruise altitude | 13,552 lb | -150 lb | 13,000 ft (the ceiling bound) |
+  | reserve SOC | 13,316 lb | -386 lb | 0.90 (upper bound) |
+  | AeroBuildup, all three | 13,078 lb | -560 lb | AR 6.81, 13,000 ft, SOC 0.90 |
+
+  The reserve SOC runs to its bound: the engine-out sag sizes the pack, so
+  starting the reserve hover fuller shrinks it (56 to 40 kWh) while the
+  turbines fly the mission. A reserve that high leaves almost no battery
+  for the mission; a real operating rule would set it. The battery series
+  count was tried first and dropped: with every limit per cell (window,
+  current), pack mass depends only on the cell count, so the series count
+  is a flat, degenerate trade until Tier 15 voltage-dependent masses
+  (machine and inverter windows, cables) are in the same problem.
+- **Cost objective** (`objective="cost"`, `CostModel` in
+  `mission/cost.py`; all prices labelled assumptions, anchored on
+  BloombergNEF 2024, EIA jet fuel and electricity): AeroBuildup mass optimum
+  USD 3,191 per mission at 13,639 lb, 163 kt; cost optimum USD 2,939 (-8 %)
+  at 14,176 lb, 210 kt. The USD 500/h time cost drives cruise to the 210 kt
+  bound; with no time cost the optimum is 173 kt. The cost optimum also stops
+  cycling the battery (battery wear USD 38 to 8.5) and recharges it in flight
+  (no ground electricity). The objective is scaled by USD 100; with USD 1,000
+  IPOPT reported local infeasibility from the mass optimum.
+- **Enumeration** (Scholz, 16 combinations of generator step-up, rotor
+  physics, wing model, battery): 8 close at 900 kg. Every on-shaft
+  generator combination except one fails at 900 kg; the converged maximum
+  payloads are 240-759 kg. Three ECM combinations converge neither way
+  (open, not proven infeasible).
+- **Sensitivity** (Scholz, +/- 15 %, take-off mass): calibration factors
+  dominate (powerplant -544/+545 lb, fuselage -540/+546, rotor -499/+551, wing
+  -313/+327), then cell power-density factor (+305/-103), end-of-life
+  capacity (+256/-67), fixed equipment (+/- 224), end-of-life resistance
+  (-88/+192), fittings drag (+/- 60) and machine torque density (+50/-42).
+- **Verification:** `tests/mission/test_cost.py`,
+  `tests/integration/test_halo_design_space.py`; Tier 22 notebook.
+- **Deferred:** optimization under uncertainty; cycle life as a function of
+  depth of discharge; a cost-mass Pareto front (the time-cost sweep stands in);
+  a cheaper start order (or an iteration cap per start) for slow failures.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
