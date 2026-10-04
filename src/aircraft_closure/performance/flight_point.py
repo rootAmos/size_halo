@@ -17,6 +17,15 @@ Equivalent-circuit battery (Tier 17): the point holds the current for
 polarization), and the bus voltage is the interval-mean terminal voltage. The
 power balance R_eff I^2 - V* I + P = 0 is an equality like any other; the
 branch constraint V >= V*/2 selects its physical low-current root.
+
+Thermal (Tier 19): every point returns its named heat loads (motor, gearbox,
+generator, generator_gearbox, battery; per unit, with the active count). With
+an installed heat exchanger (`aircraft.powertrain.cooling`) the fan power
+joins the bus demand in hover, and in airplane mode the cooling drag is a
+per-point variable added to the thrust and tied to the exchanger's drag by
+an equality (drag depends on heat, heat on thrust). Components with a thermal
+model get an end-of-interval temperature from `temperature_start_C` (None:
+steady state) over `duration_s`, with margins against their limits.
 """
 from dataclasses import dataclass
 from typing import Any
@@ -28,6 +37,7 @@ from aircraft_closure.aerodynamics.slipstream import RotorState
 from aircraft_closure.core.ports import ElectricalPortValue, MechanicalPortValue
 from aircraft_closure.powertrain.compatibility import operating_margins
 from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery
+from aircraft_closure.thermal.heat import HeatLoad, evaluate_point_thermal
 
 acceleration_gravity_m_s2 = 9.80665
 
@@ -71,11 +81,13 @@ class FlightPoint:
     power_battery_W: Any
     fuel_flow_kg_s: Any
     margins: tuple
+    heat_loads: tuple = ()                 # Tier 19: HeatLoad per loss source
+    thermal: Any = None                    # Tier 19: PointThermal
 
 
 def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridization_electric=None, *,
                        hybridization_electric_min=0.0,
-                       drag_increments=(), duration_s=0.0, voltage_rc_start_V=None):
+                       drag_increments=(), duration_s=0.0, voltage_rc_start_V=None, temperature_start_C=None):
     instances = aircraft.powertrain.topology.instances
     motor_model = instances["motor"].component
     generator_model = instances["generator"].component
@@ -88,6 +100,8 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     weight_N = mass_kg * acceleration_gravity_m_s2
     temperature_offset_K = condition.temperature_offset_K
     atmosphere = asb.Atmosphere(altitude=condition.altitude_m, temperature_deviation=temperature_offset_K)
+    has_cooling = getattr(aircraft.powertrain, "cooling", None) is not None
+    drag_cooling_N = 0.0
 
     if condition.mode == "hover":
         alpha_deg, aero = None, None
@@ -114,7 +128,10 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
                          alpha_deg <= aerodynamics.alpha_stall_deg(aircraft, velocity_m_s, condition.altitude_m,
                                                                    temperature_offset_K=temperature_offset_K,
                                                                    aero=aero)])
-        thrust_total_N = aero.drag_N + weight_N * sin_gamma
+        if has_cooling:
+            # Tier 19: cooling drag as a variable, tied to the heat exchanger's drag below.
+            drag_cooling_N = opti.variable(init_guess=100.0, scale=100.0, lower_bound=0.0)
+        thrust_total_N = aero.drag_N + drag_cooling_N + weight_N * sin_gamma
         if rotor_state is not None:
             opti.subject_to((active_rotor_count * rotor_state.thrust_per_rotor_N - thrust_total_N) / weight_N == 0)
             thrust_total_N = active_rotor_count * rotor_state.thrust_per_rotor_N
@@ -136,7 +153,10 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     torque_motor_Nm = rotor.shaft_power_W / (gearbox_model.efficiency * speed_motor_rad_s)
     gear = gearbox_model.evaluate(speed_motor_rad_s, torque_motor_Nm)
 
-    current_battery_A = opti.variable(init_guess=50.0, scale=100.0)
+    # With cooling (Tier 19) start at zero current: 50 A held through a long cruise drives the coulomb-counted SOC
+    # chain far outside the cell data, and the battery loss there, through the exchanger's cubic pumping law,
+    # swamps IPOPT. Without cooling the earlier 50 A start is kept (reference results unchanged).
+    current_battery_A = opti.variable(init_guess=0.0 if has_cooling else 50.0, scale=100.0)
     if isinstance(battery_model, EquivalentCircuitBattery):
         battery = battery_model.evaluate(current_battery_A, condition.soc, duration_s, voltage_rc_start_V)
         # Low-current root of R_eff I^2 - V* I + P = 0; also P <= V*^2 / (4 R_eff).
@@ -169,11 +189,25 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
                                                                generator_gear.torque_output_Nm),
         }
     engine = turboshaft_model.evaluate(speed_engine_rad_s * torque_engine_Nm, atmosphere)
+    # Tier 19: heat loads by source (per unit, active count); new loss sources add a HeatLoad here.
+    heat_loads = (HeatLoad("motor", motor.power_loss_W, active_rotor_count),
+                  HeatLoad("gearbox", gear.power_loss_W, active_rotor_count),
+                  HeatLoad("generator", generator.power_loss_W, active_generator_count),
+                  HeatLoad("battery", battery.power_loss_W, 1))
+    if generator_gear_ports:
+        heat_loads += (HeatLoad("generator_gearbox", generator_gear.power_loss_W, active_generator_count),)
+    thermal = evaluate_point_thermal(aircraft.powertrain, heat_loads, atmosphere, velocity_m_s, condition.mode,
+                                     duration_s, temperature_start_C, condition.label)
+    power_electric_demand_W = power_electric_motors_W
+    if thermal.cooling is not None:
+        power_electric_demand_W = power_electric_motors_W + thermal.cooling.power_fan_W
+        if condition.mode == "airplane":
+            opti.subject_to((drag_cooling_N - thermal.cooling.drag_N) / (0.01 * weight_N) == 0)
     # Each active turbogenerator carries an equal share of the generator power.
     power_scale_W = active_rotor_count * motor_model.power_rated_W
     opti.subject_to([
-        (battery.power_electric_W - hybridization_electric * power_electric_motors_W) / power_scale_W == 0,
-        (active_generator_count * generator.power_electric_W - (1 - hybridization_electric) * power_electric_motors_W)
+        (battery.power_electric_W - hybridization_electric * power_electric_demand_W) / power_scale_W == 0,
+        (active_generator_count * generator.power_electric_W - (1 - hybridization_electric) * power_electric_demand_W)
         / power_scale_W == 0,
         speed_motor_rad_s <= speed_motor_limit_rad_s,
     ])
@@ -193,7 +227,7 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
         "propulsor.shaft": MechanicalPortValue(gear.speed_output_rad_s, gear.torque_output_Nm),
     }
     margins = tuple(type(m)(f"{condition.label}: {m.label}", m.value)
-                    for m in operating_margins(aircraft.powertrain.topology, port_values, atmosphere))
+                    for m in operating_margins(aircraft.powertrain.topology, port_values, atmosphere)) + thermal.margins
     return FlightPoint(condition=condition, weight_N=weight_N, alpha_deg=alpha_deg, aero=aero,
                        thrust_per_rotor_N=thrust_per_rotor_N, power_shaft_rotor_W=rotor.shaft_power_W,
                        speed_rotor_rad_s=speed_rotor_rad_s, speed_motor_rad_s=speed_motor_rad_s,
@@ -201,4 +235,4 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
                        hybridization_electric=hybridization_electric, battery=battery, generator=generator,
                        engine=engine, power_battery_W=battery.power_electric_W,
                        fuel_flow_kg_s=active_generator_count * engine.fuel_flow_kg_s,
-                       margins=margins)
+                       margins=margins, heat_loads=heat_loads, thermal=thermal)

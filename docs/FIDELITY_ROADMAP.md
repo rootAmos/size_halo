@@ -25,7 +25,7 @@
 | 16 | Hot and high: ISA + delta-T atmosphere, temperature lapse, hover at destination after the mission | Implemented |
 | 17 | Battery equivalent circuit with sag and ageing: OCV(SOC), R(SOC, C-rate, T), end-of-life, cycle cost | Implemented |
 | 18 | Redundancy: lanes per rotor, cross-strapped buses, battery strings, multipoint failure cases | Planned |
-| 19 | Thermal: losses to heat-exchanger mass and cooling drag; short-time ratings from thermal mass | Planned |
+| 19 | Thermal: losses to heat-exchanger mass and cooling drag; short-time ratings from thermal mass (machines and pack; Halo option `thermal_model`, off by default; pack temperature into resistance deferred) | Implemented |
 | 20 | Tiltrotor airframe weights: AFDD wing with torsional stiffness and whirl flutter; second calibration aircraft | Implemented |
 | 21 | Aero: AeroBuildup model, Scholz hand check, compressibility, nacelle build-up, blown wing, download model (V-tail and conversion segments deferred) | Implemented |
 | 22 | Design-space practice: starting-point strategy (multistart), freed trades (aspect ratio, cruise altitude, reserve SOC), cost-per-mission objective, architecture enumeration, one-at-a-time sensitivity (optimization under uncertainty deferred) | Implemented |
@@ -259,6 +259,13 @@ a new constraint inside the sizing Opti.
   cooling drag (Meredith-style), sized on the hot-day hover.
 - **Short-time ratings:** set by the thermal mass of the machines and the
   battery.
+
+Implemented in plan 028 as the Halo option `HaloAssumptions.thermal_model`
+(off by default). Named heat loads per flight point, a ram-air heat
+exchanger rated by a design variable (mass per watt at a reference
+temperature difference, ram cooling drag, hover fan power), and lumped motor,
+generator and pack temperatures propagated through every segment. The
+pack temperature's coupling into resistance is deferred.
 
 ### 20 Tiltrotor airframe weights (review item 7)
 

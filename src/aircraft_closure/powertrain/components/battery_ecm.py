@@ -228,6 +228,9 @@ class EquivalentCircuitBattery:
     fraction_mass_cells: float = 0.7        # cell mass / pack mass (assumed, cylindrical-cell packs ~0.65-0.75)
     min_soc: float = 0.1
     max_soc: float = 0.95
+    # Tier 19: LumpedThermalModel or None. The pack temperature is reported and limited; it does not yet feed
+    # back into `temperature_cell_C` (the resistance stays at the managed temperature, plan 028).
+    thermal_model: Any = None
 
     @property
     def count_cells(self):
