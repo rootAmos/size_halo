@@ -1638,6 +1638,47 @@ The reference is **13,038 lb** (+217 lb on plan 032).
 - **Remaining 10 % strain margin:** not closed in the sizing. Candidates are AFDD's box skins still bending about
   the full thickness, and the FE's root band (the clamp).
 
+## Plan 039: computed conversion corridor and trim
+
+`aircraft_closure.trajectory.corridor`.
+
+**Level-flight trim:**
+- Unknowns: thrust per rotor, attitude, tail deflection, and a cyclic fraction. The tip-path-plane tilt is
+  theta = f theta_max sin(tau).
+- Equations: F_x = 0, F_z = 0 and M_y = 0 about the CG, built in a caller's Opti (`build_trim`).
+- Forces come from `TiltrotorPointMass` with the thrust along the tip-path plane. The tail lift from deflection
+  and the aerodynamic moment come from `LongitudinalStability`. The rotor moment acts at the hub (`moment_rotor_Nm`).
+
+**Corridor bounds:** airspeed is a variable, minimized or maximized at each nacelle angle. The binding limit is
+the one with zero normalized margin. Each bound solves in about 3 s.
+
+**Halo reference** (6,885 kg, sea level, 238 m/s tip speed, `examples/halo_conversion_corridor.py`):
+
+| Corridor (kt) | 90 deg | 75 deg | 60 deg | 45 deg | 30 deg | 0 deg |
+|---|---|---|---|---|---|---|
+| Low side | hover | hover | 89 (pitch) | 106 (pitch) | 112 (pitch) | 119 (pitch) |
+| High side | 130 (edgewise) | 134 (edgewise) | 144 (edgewise) | 174 (edgewise) | 231 (placard) | 219 (rotor power) |
+
+**Mid-corridor trim schedule:**
+- Pitch 4-8 deg and tail -4 to -5 deg from 0 to 60 deg.
+- At 90 deg and 65 kt, the tail is at -25 deg (its limit) and cyclic at -8.5 deg.
+
+**Decisions:**
+- Stall is limited only on the unblown wing at the free-stream angle, above 10 m/s. The blown wing's local angle
+  is reported; near hover it is the download, which the force model already carries.
+- Cyclic washes out toward airplane mode (XV-15 practice). Without the washout it acted as free thrust vectoring.
+- The placard is 1.1 x the required maximum speed. The first run used the solved cruise speed (182 kt), which is
+  too low.
+
+**Not modelled:**
+- the rotor H-force (edgewise drag);
+- rotor speed scheduling;
+- CG travel with the nacelles;
+- the tail in the rotor wake;
+- lateral-directional trim;
+- climbing or accelerating trims;
+- linearized models.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
@@ -1652,7 +1693,7 @@ Tier 11 candidates:
 - airplane-mode rotor efficiency and cruise-power validation (the largest
   remaining assumption);
 - compressibility drag (cruise is about Mach 0.4);
-- the conversion corridor;
+- the conversion corridor (computed in plan 039; H-force and rotor speed schedule open);
 - dual-wound motor and rotor-loss modelling;
 - engine decks;
 - BEM rotors.

@@ -109,6 +109,7 @@ uncertain input. The XV-15 weight-calibration factors dominate.
 | Vehicle | `vehicle/` | Wing, tails, fuselage, gear, systems, payload, fuel, nacelles, interconnect shaft, fixed equipment, installed powertrain; Raymer GA and AFDD masses; mass and CG aggregation |
 | Aerodynamics | `aerodynamics/` | Linear lift, parasite buildup, induced drag, drag-increment hook |
 | Controls | `controls/` | Neutral point, static margin, elevator trim, Cn_beta, rudder for failed-rotor yaw |
+| Trajectory | `trajectory/` | Tiltrotor point mass, direct-collocation trajectories, computed conversion corridor and level-flight trim |
 | Performance | `performance/` | Quasi-steady flight points coupling aero and the whole powertrain |
 | Requirements | `requirements/` | Hover, climb, speed and ceiling capability requirements |
 | Mission | `mission/` | Hover, climb, cruise, loiter, descent segments; missions with fuel burn and SOC |
@@ -189,6 +190,38 @@ Limits:
 
 See [implementation notes](docs/IMPLEMENTATION_NOTES.md) (plans 031, 037 and 038) for numbers and OpenVSP quirks.
 
+## Conversion corridor and trim (plan 039)
+
+`trajectory/corridor.py` computes where the sized aircraft can fly level at each nacelle angle, instead of assuming
+an XV-15-shaped corridor.
+
+- **Trim:** thrust, attitude, ruddervator and longitudinal cyclic balance the forces along and normal to the flight
+  path and the pitching moment about the CG. The spare freedom goes to least rotor power.
+- **Corridor:** at each nacelle angle, the least and greatest airspeed with a trim inside the limits. Each side
+  reports the limit that sets it.
+- **Limits:**
+  - pitch -5 to +12 deg;
+  - ruddervator +/-25 deg;
+  - cyclic +/-10 deg, washed out toward airplane mode;
+  - wing stall;
+  - edgewise advance ratio 0.28, a proxy for flapping and hub loads;
+  - rotor power, blade loading, and a placard at 1.1 x the 210 kt requirement.
+
+`python examples/halo_conversion_corridor.py` writes `output/corridor/corridor.png` and a trim schedule. Results for
+the reference (6,885 kg, sea level, hover tip speed):
+
+| Corridor (kt) | 90 deg | 75 deg | 60 deg | 45 deg | 30 deg | 0 deg |
+|---|---|---|---|---|---|---|
+| Low side | hover | hover | 89 (pitch) | 106 (pitch) | 112 (pitch) | 119 (pitch) |
+| High side | 130 (edgewise) | 134 (edgewise) | 144 (edgewise) | 174 (edgewise) | 231 (placard) | 219 (rotor power) |
+
+- **High side:** the edgewise limit sets it at high nacelle angles, close to the XV-15.
+- **Low side:** the attitude limit sets it, not wing stall.
+- **Pitch authority:** tightest in helicopter mode near 65 kt, where trim uses the full ruddervator and most of
+  the cyclic.
+- **Not modelled yet:** the rotor's in-plane force in edgewise flow (so the low side at 45-60 deg is conservative)
+  and an airplane-mode rotor speed schedule.
+
 ## Continuous integration
 
 GitHub Actions runs the unit suite on every push and pull request
@@ -234,4 +267,5 @@ All roadmap tiers 0-22 are implemented, and Tier 23 (geometry) is partial. Open 
 - **Layout assumptions:** the turbogenerator station and the nacelle drive and cowling offsets.
 - **V-tail:** the sizing uses a conventional tail; the V-tail is drawn only.
 - **Geometry:** the symbolic layout with clearance and packaging constraints (Tier 23) is still planned.
-- **Trajectories:** the trajectory layer has no 6-DOF yet.
+- **Trajectories:** the trajectory layer has no 6-DOF yet. The computed corridor (plan 039) still needs the rotor
+  in-plane force and a rotor speed schedule. Linearized pitch models at its trim points are the next controls step.
