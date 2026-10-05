@@ -1442,6 +1442,31 @@ The notebook repeats this with relaxed stages and a 10 kW/kg cap.
 - The generator step-up can sit on a one-stage step near 6,300 rpm.
 - With the database machines, the full reference solves only with relaxed stages.
 
+## Plan 035: final reference (real machine units, redundancy, drag corrections)
+
+The user decided on 2026-10-04: "best in class. no rubber motors";
+redundancy as the default, but switchable; drag corrections on; then wrap
+up.
+
+- **Machines are whole units of real products.**
+  - Each lane motor is n Evolito D1500 units: 40 kg, 1,500 N·m peak,
+    264 kW continuous, 2,500 rpm.
+  - Each generator is n Helix SPX242 units: 31.2 kg, 315 kW continuous,
+    17,000 rpm.
+  - The limits are n × the unit's ratings. The count is solved relaxed,
+    rounded up, then re-solved with the count fixed.
+- **Defaults now on:**
+  - drag corrections;
+  - redundancy (2 lanes, 2 buses, 2 strings, failure hovers);
+  - unit-built machines;
+  - gearbox stages.
+- **Reference:** 900 kg at 210 kt, 7,362 kg (16,231 lb), cruise L/D 9.3.
+  - 2 motor units per lane (8 in all), 3 generator units per generator.
+  - Rotor gearbox 5.0:1, a single stage. The rubber model had picked about
+    32:1.
+- **Legacy sets:** `pre_plan035` pins every named set to the plan 030
+  settings. `requirements_plan030` / `assumptions_plan030` keep 14,037 lb.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,

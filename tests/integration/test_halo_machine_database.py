@@ -16,6 +16,13 @@ from examples.halo_sizing import (HaloAssumptions, HaloDesign, assumptions_plan0
                                   ratio_reference_gear_stages, solve_halo_sizing, stage_mass_ratio)
 from examples.xv15_reference import calibration_factors
 
+# Plan 035 changed the defaults; these tests reproduce their tier on the plan 030 settings.
+from functools import partial  # noqa: E402
+from examples.halo_sizing import pre_plan035  # noqa: E402
+HaloAssumptions = partial(HaloAssumptions, **pre_plan035)
+build_halo_aircraft = partial(build_halo_aircraft, assumptions=HaloAssumptions())
+solve_halo_sizing = partial(solve_halo_sizing, assumptions=HaloAssumptions())
+
 
 def numeric_design():
     """A numeric Halo design near the reference (as in test_halo_thermal)."""

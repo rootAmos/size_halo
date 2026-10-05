@@ -303,7 +303,7 @@ class HaloAssumptions:
     # Plan 034: drag AeroBuildup and the Scholz build-up leave out. Excrescence, leakage and protuberance as a factor
     # on component drag, calibrated so the XV-15 components match NDARC's 6.25 ft2 (Johnson 2010, Table 1); trim
     # drag as a fraction of parasite + induced drag (assumed 2 %, within the 1-5 % usual for an aft tail at cruise).
-    drag_corrections: bool = False
+    drag_corrections: bool = True   # plan 035 default (user, 2026-10-04); False before
     factor_excrescence_buildup: float = 1.27
     factor_excrescence_scholz: float = 1.17
     fraction_trim_drag: float = 0.02
@@ -333,9 +333,9 @@ class HaloAssumptions:
     # True: `count_lanes_motor` lane motors per rotor (each 1/N of the torque, on a combining gearbox input),
     # `count_buses` cross-strapped buses joined by normally open ties (contactor + cable), `count_strings_battery`
     # isolated pack strings (a contactor each), and the failure hovers below as extra points of the sizing problem.
-    # False (default): the single-lane aircraft, unchanged. With True, all counts 1 and no failure cases the
+    # True is the default from plan 035. False: the single-lane aircraft. With True, all counts 1 and no failure cases the
     # problem is the same as with False.
-    redundancy: bool = False
+    redundancy: bool = True   # plan 035 default (user, 2026-10-04); False before
     count_lanes_motor: int = 2
     count_buses: int = 2
     count_strings_battery: int = 2
@@ -348,20 +348,21 @@ class HaloAssumptions:
     failure_string_out_engine_out: bool = False      # double failure: a string and an engine
     failure_lane_out_engine_out: bool = False        # double failure: a lane per rotor and an engine
     # ---- Plan 033 machine database and gearbox stages (refines Tier 13) ----
-    # Machine mass: "torque_density" (TorqueDensityMassModel above, the reference) or "database"
+    # Machine mass: "units" (whole units of real machines, plan 035, the default), "torque_density"
+    # (TorqueDensityMassModel above, the rubber reference until plan 035) or "database"
     # (DatabaseMassModel: continuous torque density falling with base speed, fitted to
     # data/machines/aerospace_motors.csv). The database model is a bare-machine fit: with the electrical layer
     # the inverter is the separate component; without it the model adds rated power / specific_power_inverter_W_kg.
     # The cap is specific_power_max_machine_bare_W_kg in both modes.
-    machine_mass_model: str = "torque_density"
+    machine_mass_model: str = "units"   # plan 035 default (user, 2026-10-04); "torque_density" before
     torque_density_database_Nm_kg: float = 11.79       # at speed_ref_database_rad_s (fit, plan 033)
     speed_ref_database_rad_s: float = 500.0
     exponent_speed_database: float = 0.271
     # True: rotor and generator step-up gearboxes get an explicit stage count from their ratio, with mass factor
     # and efficiency per stage (GearStageModel). The AFDD drive mass is evaluated at the XV-15 calibration ratio
     # (20,000 / 565 rpm) and scaled by mass_factor(ratio) / mass_factor(XV-15 ratio). False: AFDD with its own
-    # mild ratio exponent and a constant 0.97 efficiency (the reference).
-    gearbox_stages: bool = False
+    # mild ratio exponent and a constant 0.97 efficiency (the reference until plan 035).
+    gearbox_stages: bool = True   # plan 035 default (user, 2026-10-04); False before
     # Relaxed (softplus) stage count: the smooth staircase (GearStageModel(staircase=True)) solves on the fast set
     # but not through the AeroBuildup and thermal starts with the database machines (plan 033).
     gear_stage_model: Any = field(default_factory=lambda: GearStageModel(staircase=False))
@@ -1698,32 +1699,40 @@ def _precursor(problem, factors, max_iter, cache, allow_continuation):
 
 
 
-# Named earlier baselines, so each tier's notebook keeps reproducing its own result.
+# Named earlier baselines, so each tier's notebook keeps reproducing its own result. `pre_plan035` pins the
+# settings plan 035 changed (drag corrections, redundancy, unit-built machines, gearbox stages) to their earlier
+# values for every set below.
+pre_plan035 = dict(drag_corrections=False, redundancy=False, machine_mass_model="torque_density", gearbox_stages=False)
 requirements_tier10c = HaloRequirements(mass_payload_kg=900.0, velocity_max_m_s=250 * u.knot, hover_hot_day=False)
 requirements_tier12b = HaloRequirements(mass_payload_kg=900.0, hover_hot_day=False)
 # Tiers 13-16 reference (plans 018-020): 900 kg with the constant-OCV battery (13,760 lb).
 requirements_tier16 = HaloRequirements(mass_payload_kg=900.0)
-assumptions_tier16 = HaloAssumptions(thermal_model=False, battery_model="constant", wing_weight_model="raymer",
+assumptions_tier16 = HaloAssumptions(**pre_plan035, thermal_model=False, battery_model="constant",
+                                     wing_weight_model="raymer",
                                      aerodynamics_model="simple")
 # Plan 022 reference: 780 kg with the equivalent-circuit battery and the Raymer wing (14,436 lb).
 requirements_plan022 = HaloRequirements(mass_payload_kg=780.0)
-assumptions_plan022 = HaloAssumptions(thermal_model=False, wing_weight_model="raymer", aerodynamics_model="simple")
+assumptions_plan022 = HaloAssumptions(**pre_plan035, thermal_model=False, wing_weight_model="raymer",
+                                      aerodynamics_model="simple")
 # Plan 026 reference: 900 kg, AFDD wing, SimpleAerodynamics (14,247 lb).
 requirements_plan026 = HaloRequirements(mass_payload_kg=900.0)
-assumptions_plan026 = HaloAssumptions(thermal_model=False, aerodynamics_model="simple")
-assumptions_tier12 = HaloAssumptions(thermal_model=False, battery_model="constant", wing_weight_model="raymer",
+assumptions_plan026 = HaloAssumptions(**pre_plan035, thermal_model=False, aerodynamics_model="simple")
+assumptions_tier12 = HaloAssumptions(**pre_plan035, thermal_model=False, battery_model="constant",
+                                     wing_weight_model="raymer",
                                      aerodynamics_model="simple", power_rated_turboshaft_fixed_W=None,
                                      hybridization_electric_min=0.0, soc_floor_every_segment=False,
                                      machine_mass_by_torque=False)
 # Tier 12b reference (plan 017): fixed engines with the constant-OCV battery and Tier 12b machines.
-assumptions_tier12b = HaloAssumptions(thermal_model=False, battery_model="constant", wing_weight_model="raymer",
+assumptions_tier12b = HaloAssumptions(**pre_plan035, thermal_model=False, battery_model="constant",
+                                      wing_weight_model="raymer",
                                       aerodynamics_model="simple", machine_mass_by_torque=False)
 # Tier 17 (plan 021): the equivalent-circuit 50G-shaped pack at end of life, on the Raymer-wing aircraft.
-assumptions_tier17 = HaloAssumptions(thermal_model=False, battery_model="ecm", wing_weight_model="raymer",
+assumptions_tier17 = HaloAssumptions(**pre_plan035, thermal_model=False, battery_model="ecm",
+                                     wing_weight_model="raymer",
                                      aerodynamics_model="simple")
 assumptions_tier11a = replace(assumptions_tier12, rotor_speed_physics=False)
 # Tier 15 (plan 023): the reference with the electrical layer (756 V nominal pack, 1,200 V inverters).
-assumptions_tier15 = HaloAssumptions(electrical_layer=True, thermal_model=False)
+assumptions_tier15 = HaloAssumptions(**pre_plan035, electrical_layer=True, thermal_model=False)
 standard_blocking_voltages_V = (650.0, 1200.0, 1700.0, 3300.0)
 
 
@@ -1802,13 +1811,17 @@ def enumerate_bus_voltage(voltages_nominal_V=(540.0, 756.0, 800.0, 1000.0), requ
                 pass
     return tuple(rows)
 # Tier 20 (plan 024): the AFDD tiltrotor wing (the default from plan 026).
-assumptions_tier20 = HaloAssumptions(thermal_model=False, wing_weight_model="afdd_tiltrotor", aerodynamics_model="simple")
+assumptions_tier20 = HaloAssumptions(**pre_plan035, thermal_model=False, wing_weight_model="afdd_tiltrotor",
+                                     aerodynamics_model="simple")
 # Plan 027 reference: 900 kg, AFDD wing, AeroBuildup, no thermal model (13,639 lb).
 requirements_plan027 = HaloRequirements(mass_payload_kg=900.0)
-assumptions_plan027 = HaloAssumptions(thermal_model=False)
+assumptions_plan027 = HaloAssumptions(**pre_plan035, thermal_model=False)
 # Tier 18 (plan 032): the reference with the sensible redundancy set (2 lanes per rotor, 2 cross-strapped buses,
 # 2 battery strings; lane-out, bus-out and string-out hovers).
-assumptions_tier18 = HaloAssumptions(redundancy=True)
+assumptions_tier18 = HaloAssumptions(**dict(pre_plan035, redundancy=True))
+# Plan 030 reference: 900 kg, AFDD wing, AeroBuildup, thermal model, rubber machines (14,037 lb).
+requirements_plan030 = HaloRequirements(mass_payload_kg=900.0)
+assumptions_plan030 = HaloAssumptions(**pre_plan035)
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ import aerosandbox.tools.units as u
 
 from aircraft_closure.aerodynamics.buildup import BuildupAerodynamics
 from aircraft_closure.aerodynamics.scholz import InterferenceFactors, ScholzAerodynamics
-from examples.halo_sizing import HaloAssumptions, build_halo_aerodynamics
+from examples.halo_sizing import HaloAssumptions, assumptions_plan030, build_halo_aerodynamics
 from examples.xv15_reference import Xv15Reference, build_xv15_aircraft
 
 
@@ -59,8 +59,8 @@ class DragCorrectionTests(unittest.TestCase):
                                    0.02 * (scalar(base.cd0) + scalar(base.cdi)), places=10)
 
     def test_halo_switch(self):
-        off = build_halo_aerodynamics(assumptions=HaloAssumptions())
-        on = build_halo_aerodynamics(assumptions=HaloAssumptions(drag_corrections=True))
+        off = build_halo_aerodynamics(assumptions=assumptions_plan030)
+        on = build_halo_aerodynamics(assumptions=HaloAssumptions())       # on by default since plan 035
         self.assertEqual(off.factor_excrescence, 1.0)
         self.assertEqual(on.factor_excrescence, HaloAssumptions().factor_excrescence_buildup)
         self.assertEqual(on.fraction_trim_drag, 0.02)
