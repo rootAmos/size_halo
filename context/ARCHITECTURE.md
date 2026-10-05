@@ -185,7 +185,9 @@ Structures is intentionally a mass model.
 
 V0 uses empirical mass buildup such as Raymer-style equations.
 
-Do not add stress analysis, deflection analysis, beam sizing, or FEM unless the project scope is explicitly changed.
+Scope change (user, 2026-10-04): structural analysis is allowed as a downstream check outside the sizing
+loop, e.g. the OpenVSP structure model exported to CalculiX/Nastran FEA decks (plan 031). Sizing code never
+imports it; inside the coupled problem, structures remain a mass model.
 
 ## Aerodynamics
 
