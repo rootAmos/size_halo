@@ -8,8 +8,8 @@ from tests.integration.test_halo_thermal import numeric_design
 
 # Plan 035 changed the defaults; these tests reproduce their tier on the plan 030 settings.
 from functools import partial  # noqa: E402
-from examples.halo_sizing import pre_plan035  # noqa: E402
-HaloAssumptions = partial(HaloAssumptions, **pre_plan035)
+from examples.halo_sizing import pre_layout, pre_plan035  # noqa: E402
+HaloAssumptions = partial(HaloAssumptions, **pre_plan035, **pre_layout)
 build_halo_aircraft = partial(build_halo_aircraft, assumptions=HaloAssumptions())
 solve_halo_sizing = partial(solve_halo_sizing, assumptions=HaloAssumptions())
 
