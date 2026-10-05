@@ -21,7 +21,7 @@ from aircraft_closure.vehicle.condition import StructuralDesignCondition
 from examples.halo_sizing import (HaloAssumptions, HaloRequirements, build_halo_aerodynamics, build_halo_aircraft,
                                   solve_halo_sizing)
 
-ratio_placard_cruise = 1.1          # airplane-mode limit speed over the design cruise speed (assumed)
+ratio_placard_speed = 1.1           # airplane-mode limit speed over the required maximum speed (assumed)
 tilts_deg = (0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0)
 
 
@@ -42,7 +42,7 @@ def halo_corridor_case(sizing, requirements=HaloRequirements(), assumptions=Halo
     geometry = TrimGeometry(x_cg_m=float(total.x_cg), z_cg_m=float(total.z_cg),
                             x_spindle_m=wing.x_le_root_m + 0.25 * wing.chord_root_m(), z_spindle_m=wing.z_m,
                             length_mast_m=a.length_mast_m)
-    limits = CorridorLimits(velocity_placard_m_s=ratio_placard_cruise * sizing.velocity_cruise_m_s)
+    limits = CorridorLimits(velocity_placard_m_s=ratio_placard_speed * r.velocity_max_m_s)
     rotor = model.instance("propulsor")
     speed_rotor_rad_s = rotor.speed_tip_max_m_s / rotor.radius_m()           # hover rotor speed throughout
     return model, geometry, limits, speed_rotor_rad_s
