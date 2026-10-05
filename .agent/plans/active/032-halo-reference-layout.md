@@ -100,3 +100,8 @@ one item at a time. Each item is solved and reported before the next.
     `reference.json`) instead of assuming the XV-15 calibration.
   - **Tests:** 351 fast tests pass.
   - **Still to do:** the integration suite and notebook re-execution on the final defaults, and merging to `main`.
+- 2026-10-04 (overnight): **integration suite on the final defaults: all 21 test files pass**, run one file at a
+  time. This includes `test_halo_plan032`, which reproduces 12,821 lb with the default solve in 13 min. Notebook
+  re-execution was then stopped by Claude Code because the machine ran low on memory (desktop apps plus the other
+  session's notebook run). Still pending: re-run `output/overnight.sh` notebooks section (Tiers 10, 12, 12b, 13, 14,
+  15, 16, 17, 19, 20, 21) when memory allows, then merge to `main`.
