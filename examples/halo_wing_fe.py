@@ -22,7 +22,7 @@ from aircraft_closure.export.openvsp.structure import StructureLayout, build_str
 
 directory = Path("output/fe_wing")
 path_ccx = Path(os.environ.get("CCX", "C:/Users/alexa/Documents/Xenon/Software/CalculiX/CalculiX-2.22.0-win-x64/bin/ccx.exe"))
-ratio_radius_gyration_pylon = 0.222      # HaloAssumptions default (XV-15)
+ratio_radius_gyration_pylon = 0.222      # fallback for reference files without radius_gyration_pylon_m (XV-15)
 # Rest of the aircraft for the free-free modes (assumed): CG at the wing quarter chord, 1 m below the wing;
 # pitch radius of gyration 0.3 of the 11 m fuselage, roll radius of gyration 0.6 m.
 radius_gyration_pitch_fuselage_m, radius_gyration_roll_fuselage_m, drop_cg_m = 3.3, 0.6, 1.0
@@ -44,7 +44,8 @@ if __name__ == "__main__":
     properties = properties_from_afdd(afdd, r["material_wing"], chord_m, r["thickness_to_chord_wing"],
                                       layout.fraction_chord_front_spar, layout.fraction_chord_rear_spar,
                                       r["span_wing_m"], r["width_fuselage_m"], width_cap_strip_fraction=0.10)
-    radius_gyration_m = ratio_radius_gyration_pylon * r["radius_rotor_m"]
+    # The sizing's own pylon radius of gyration (plan 035 builds it from the tip components); older files lack it.
+    radius_gyration_m = r.get("radius_gyration_pylon_m", ratio_radius_gyration_pylon * r["radius_rotor_m"])
     tip = TipMass(mass_kg=r["mass_tip_kg"], radius_gyration_pitch_m=radius_gyration_m,
                   xyz_spindle_m=snapshot.spindle_xyz_m())
     weight_N = r["mass_takeoff_kg"] * g_m_s2
@@ -71,7 +72,8 @@ if __name__ == "__main__":
     print(f"Tip mass {tip.mass_kg:.0f} kg each, pitch radius of gyration {radius_gyration_m:.2f} m; fuselage body "
           f"{fuselage.mass_kg:.0f} kg (free-free modes)")
     print("Modes (rad/s): " + ", ".join(f"{m.frequency_rad_s:.1f} {m.kind}{'' if m.symmetric else ' (anti)'}"
-                                        for m in modes))
+                                        for m in modes if m.kind != "local")
+          + f"; {sum(m.kind == 'local' for m in modes)} local panel modes ignored")
     rows = []
     for kind, key in (("beam", "frequency_beam_rad_s"), ("chord", "frequency_chord_rad_s"),
                       ("torsion", "frequency_torsion_rad_s")):

@@ -1307,7 +1307,20 @@ The reference is **13,038 lb** (+217 lb on plan 032).
 - Whirl-flutter torsion at max speed rises from 1.09 to 1.49 per rev and is no longer binding.
 - Every earlier named set pins the NDARC values; `assumptions_plan032` reproduces 12,821 lb.
 
-The CalculiX re-check on this aircraft has not run yet. Claude Code stopped it because memory ran low.
+**CalculiX re-check** of the plan 035 wing (2026-10-05):
+
+| | Plan 032 | Plan 035 |
+|---|---|---|
+| Beam frequency, FE / AFDD | 0.70 | 0.85 |
+| Chord frequency, FE / AFDD | 1.43 | 1.12 |
+| Jump-take-off cap strain / allowable | 1.29 | 1.10 |
+
+- **Torsion is unresolved.** Four modes at 48.8 rad/s with nacelle pitch (0.78 x AFDD) are probably nacelle-local.
+  Clean symmetric torsion modes sit at 57.3 rad/s (0.91x). Telling them apart needs the mode shapes.
+- **Panel modes:** the FE now ignores local modes, those with nacelle motion below 0.1 of the largest (18 of 30).
+- **Pylon inertia:** the FE now takes the sizing's own pylon radius of gyration from `reference.json`.
+- **Remaining 10 % strain margin:** not closed in the sizing. Candidates are AFDD's box skins still bending about
+  the full thickness, and the FE's root band (the clamp).
 
 ## Verification notebooks
 

@@ -76,7 +76,7 @@ class FuselageMass:
 @dataclass(frozen=True)
 class Mode:
     frequency_rad_s: float
-    kind: str                           # "beam", "chord", "torsion" or "other"
+    kind: str                           # "beam", "chord", "torsion" or "local" (panel mode, nacelles still)
     symmetric: bool
 
 
@@ -136,7 +136,7 @@ def _centroid(nodes, connectivity):
 
 
 def write_deck(path_inp, nodes, elsets, properties, tip, x_le_m, chord_m, fraction_front_spar,
-               fraction_rear_spar, width_fuselage_m, fuselage=None, force_tip_jump_N=None, count_modes=12,
+               fraction_rear_spar, width_fuselage_m, fuselage=None, force_tip_jump_N=None, count_modes=30,
                band_strain_m=(0.3, 1.0)):
     """Write a CalculiX deck: a free-free frequency step when `fuselage` is given, else the clamped jump step.
 
@@ -264,8 +264,12 @@ def run_calculix(path_inp, path_ccx, timeout_s=3600):
     return path_inp.with_suffix(".dat")
 
 
-def read_modes(path_dat, references, radius_gyration_m, frequency_min_rad_s=1.0):
-    """Elastic modes (rigid-body modes below `frequency_min_rad_s` dropped), classified by nacelle motion."""
+def read_modes(path_dat, references, radius_gyration_m, frequency_min_rad_s=1.0, fraction_participation_min=0.1):
+    """Elastic modes (rigid-body modes below `frequency_min_rad_s` dropped), classified by nacelle motion.
+
+    CalculiX normalises modes to unit modal mass, so a local panel mode (soft fairing, thin skin) barely moves the
+    nacelles: modes whose nacelle motion is below `fraction_participation_min` of the largest found are "local".
+    """
     text = Path(path_dat).read_text()
     frequencies = [float(m.group(2)) for m in re.finditer(
         r"^\s+(\d+)\s+[-\d.E+]+\s+([-\d.E+]+)\s+[-\d.E+]+\s+[-\d.E+]+\s*$", text, re.M)]
@@ -285,8 +289,11 @@ def read_modes(path_dat, references, radius_gyration_m, frequency_min_rad_s=1.0)
         kind = max(measures, key=measures.get)
         component = {"beam": (u_right[2], u_left[2]), "chord": (u_right[0], u_left[0]),
                      "torsion": (theta_right[1], theta_left[1])}[kind]
-        modes.append(Mode(frequency_rad_s=frequency_rad_s, kind=kind, symmetric=bool(component[0] * component[1] > 0)))
-    return tuple(modes)
+        modes.append((Mode(frequency_rad_s=frequency_rad_s, kind=kind,
+                           symmetric=bool(component[0] * component[1] > 0)), measures[kind]))
+    largest = max((participation for _, participation in modes), default=0.0)
+    return tuple(mode if participation >= fraction_participation_min * largest else
+                 Mode(mode.frequency_rad_s, "local", mode.symmetric) for mode, participation in modes)
 
 
 def read_static(path_dat, references):

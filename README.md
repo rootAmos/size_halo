@@ -168,7 +168,8 @@ Open items, roughly by impact:
   strain in the jump take-off and torsion about 9 % low.
   - Plan 035 corrects the sizing: caps at the real box depth, a 1 mm minimum gauge, and pylon inertia from the
     tip components.
-  - The FE re-check of the corrected wing is still to run.
+  - The FE re-check of the corrected wing: beam 0.85x AFDD, jump strain 1.10x the allowable (was 1.29x).
+    Torsion identification is unresolved.
 - **FE models.** Only the wing box is checked. The fuselage and tail decks carry placeholder gauges.
 
 [Results](docs/RESULTS.md) has the full list and how the reference moved.

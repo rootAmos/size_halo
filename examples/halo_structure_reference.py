@@ -48,6 +48,8 @@ if __name__ == "__main__":
         mass_vertical_tail_kg=float(breakdown.vertical_tail.mass), mass_fuselage_kg=float(breakdown.fuselage.mass),
         factor_wing=float(wing.mass_factor),
         factor_fuselage=float(aircraft.fuselage.mass_factor),
+        radius_gyration_pylon_m=float(model.radius_gyration_pylon_m),
+        ratio_depth_spar_cap=float(model.ratio_depth_spar_cap),
     )
     path_output.parent.mkdir(parents=True, exist_ok=True)
     path_output.write_text(json.dumps(reference, indent=1))
