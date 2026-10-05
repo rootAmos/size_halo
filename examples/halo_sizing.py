@@ -981,6 +981,16 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
         if assumptions.redundancy and not staged_start:
             starts = tuple(s for s in default_starts(requirements, assumptions, objective) if s != "strings_off")
         return solve_halo_sizing_multistart(requirements, assumptions, factors, verbose, max_iter, objective, starts)
+    if assumptions.redundancy and staged_start and assumptions.count_strings_battery > 1:
+        # Tier 18 (plan 032) with a caller's start: if the redundant problem with battery strings fails from it,
+        # the same problem without the strings and their cases is solved from it and used as the start instead.
+        try:
+            return solve_halo_sizing_once(requirements, assumptions, factors, verbose, max_iter, initial, objective)
+        except RuntimeError:
+            pass
+        without_strings = replace(assumptions, count_strings_battery=1, failure_string_out=False,
+                                  failure_string_out_engine_out=False)
+        initial = solve_halo_sizing_once(requirements, without_strings, factors, False, max_iter, initial, objective)
     return solve_halo_sizing_once(requirements, assumptions, factors, verbose, max_iter, initial, objective)
 
 
