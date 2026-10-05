@@ -101,32 +101,32 @@ Diagrams of the layering, the fidelity scaling and the solve levels:
 GASP deck). The engines are not sized, because a non-OEM cannot add
 turbine power. The battery supplements hover and is recharged in flight.
 
-### Reference result (`solve_halo_sizing()`, plan 035)
+### Reference result (`solve_halo_sizing()`, plans 035–036)
 
 | Quantity | Value |
 |---|---|
-| Take-off mass | **7,362 kg (16,231 lb)** |
-| Empty mass | 5,496 kg |
-| Fuel (with reserve) | 967 kg |
-| Battery | 81.1 kWh, 550 kg, 2 isolated strings (end-of-life rating) |
-| Wing | 24.6 m², span 12.3 m (tiltrotor wing, whirl-flutter sized) |
+| Take-off mass | **7,395 kg (16,303 lb)** |
+| Empty mass | 5,522 kg |
+| Fuel (with reserve) | 973 kg |
+| Battery | 81.8 kWh, 556 kg, 2 isolated strings (end-of-life rating) |
+| Wing | 24.7 m², span 12.3 m (tiltrotor wing, whirl-flutter sized) |
 | Rotors | 2 × 10.0 m diameter; disk loading 47 kg/m² (9.6 lb/ft²) |
 | Motors | 2 lanes per rotor; each lane is 2 Evolito D1500-class units (528 kW continuous), 8 units in all |
 | Generators | each is 3 Helix SPX242-class units |
 | Rotor gearbox | 5.0:1, one stage |
 | Turboshafts | 2 × 835 kW (1,120 hp), fixed |
-| Cruise | 162 kt at 10,000 ft, L/D 9.3 |
-| Heat exchanger | 139 kg ram-air unit, fans in hover |
-| Cost per mission | about USD 3,440 (Tier 22 cost model; prices are labelled assumptions) |
+| Cruise | 166 kt at 10,000 ft, L/D 9.25 |
+| Heat exchanger | 140 kg ram-air unit, fans in hover |
+| Cost per mission | about USD 3,420 (Tier 22 cost model; prices are labelled assumptions) |
 
 **Mass breakdown (kg):**
 
 | Group | Mass |
 |---|---|
-| Powertrain | 3,045 |
-| Fuselage | 654 |
-| Systems | 550 |
-| Wing | 451 |
+| Powertrain | 3,057 |
+| Fuselage | 663 |
+| Systems | 552 |
+| Wing | 453 |
 | Landing gear | 272 |
 | Equipment | 266 |
 | Nacelles | 195 |
@@ -136,14 +136,14 @@ Within the powertrain:
 
 | Item | Mass |
 |---|---|
-| Rotors | 735 |
-| Battery | 550 |
+| Rotors | 739 |
+| Battery | 556 |
 | Motors with inverters | 426 |
 | Turboshafts | 422 |
-| Rotor gearboxes | 318 |
+| Rotor gearboxes | 319 |
 | Generators with inverters | 282 |
 | Generator gearboxes | 144 |
-| Heat exchanger | 139 |
+| Heat exchanger | 140 |
 | Bus tie and string protection | 31 |
 
 ### What sizes the aircraft
@@ -173,7 +173,8 @@ These are the constraints active at the optimum:
 | Plan 026 | 900 kg | 14,247 lb | NDARC tiltrotor wing replaces the light-aircraft wing equations |
 | Plan 027 | 900 kg | 13,639 lb | AeroBuildup aerodynamics: the guessed 0.8 m² miscellaneous drag area was most of the aircraft's drag |
 | Plan 030 | 900 kg | 14,037 lb | Thermal model: heat exchanger +133 kg; short-time ratings save 63 kg of machines |
-| **Plan 035** | **900 kg** | **16,231 lb** | **Real machine units instead of idealized ("rubber") scaling; redundancy (2 lanes, 2 buses, 2 strings); drag corrections for excrescence and trim** |
+| Plan 035 | 900 kg | 16,231 lb | **Real machine units instead of idealized ("rubber") scaling; redundancy (2 lanes, 2 buses, 2 strings); drag corrections for excrescence and trim** |
+| **Plan 036** | **900 kg** | **16,303 lb** | **Trim drag from the tail load (η_H 0.9, cos tail dihedral, Scholz downwash) replaces the flat 2 %** |
 
 Two outcomes stand out:
 
@@ -193,25 +194,30 @@ Two outcomes stand out:
 
 ## 5. Trajectory optimization (Tier 14)
 
-These problems fly the plan 027 aircraft (13,639 lb, thermal off); see
-Section 6 for why.
+Since plan 036 the trajectory model flies the current reference. It
+carries machine and battery temperature states with short-time ratings,
+cooling drag and fan power, and the lane motors.
+
+On the plan 035 reference (16,231 lb; the plan 036 trim change is small):
 
 - **Minimum-energy conversion** from hover at 500 ft to 1.3 × the
-  airplane-mode stall speed:
-  - optimized: 21.5 s and 8.5 kWh;
-  - naive linear-nacelle, constant-acceleration schedule: 60 s and
-    17.1 kWh.
-  The optimized path uses about half the energy.
+  airplane-mode stall speed: 22.5 s and 10.5 kWh.
 - **Minimum time to climb** from hover at sea level to 10,000 ft at cruise
-  speed: 222 s, against about 508 s for the sizing mission's prescribed
-  6 m/s climb.
+  speed: 225 s, SOC 0.95 → 0.73. That compares with about 508 s for the
+  sizing mission's prescribed 6 m/s climb.
+
+On the plan 027 aircraft (13,639 lb, thermal off), the optimized
+conversion took 21.5 s and 8.5 kWh. A naive linear-nacelle,
+constant-acceleration schedule took 60 s and 17.1 kWh, so the optimized
+path uses about half the energy.
 
 ## 6. Limits and open items, roughly by impact
 
-1. **Drag calibration.** Excrescence and trim corrections are applied
-   (plan 034). The excrescence factor is calibrated so the XV-15
-   components match NASA NDARC's drag (1.27 on AeroBuildup); trim drag is
-   an assumed 2 %. Neither is checked against XV-15 flight data, and drag
+1. **Drag calibration.** The excrescence factor is calibrated so the
+   XV-15 components match NASA NDARC's drag (1.27 on AeroBuildup, plan
+   034). Trim drag comes from the tail load needed for zero moment about
+   the CG (plan 036): AeroBuildup's moment, Scholz's tail efficiency
+   (0.9) and downwash, about 2 % of drag at cruise. Neither is checked against XV-15 flight data, and drag
    strongly drives payload headroom.
 2. **Weight calibration rests on one complete aircraft.** The XV-15 is the
    only complete weight statement. Two groups need large factors because

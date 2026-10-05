@@ -18,7 +18,7 @@ validated against the Bell XV-15 and the full-scale JVX proprotor test.
 - **Engines:** two fixed off-the-shelf 1,120 hp turboshafts.
 - **Battery:** Samsung 50G-shaped equivalent-circuit pack.
 - **Wing:** NDARC tiltrotor wing with whirl-flutter margins.
-- **Aerodynamics:** AeroSandbox AeroBuildup with Scholz drag corrections.
+- **Aerodynamics:** AeroSandbox AeroBuildup with Scholz drag corrections and trim drag from the tail load.
 - **Thermal:** heat exchanger sized with the aircraft.
 - **Machines and drive:**
   - redundant motors (2 lanes per rotor), 2 cross-strapped buses, 2 battery
@@ -26,7 +26,7 @@ validated against the Bell XV-15 and the full-scale JVX proprotor test.
   - machines built from whole units of real products (Evolito-class motors,
     Helix-class generators);
   - a single-stage 5:1 rotor gearbox.
-- **Result:** 7,362 kg (16,231 lb) take-off weight.
+- **Result:** 7,395 kg (16,303 lb) take-off weight.
 
 **For reviewers:**
 - [docs/RESULTS.md](docs/RESULTS.md): what the framework concludes, how it is

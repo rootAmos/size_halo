@@ -24,7 +24,7 @@ class Plan035ReferenceTests(unittest.TestCase):
         self.assertGreater(r.min_margin, -1e-6)
         self.assertLess(abs(r.closure_residual_kg), 1e-3)
         self.assertEqual(r.mass_payload_kg, 900.0)
-        self.assertAlmostEqual(r.mass_takeoff_kg / u.lbm, 16231, delta=20)
+        self.assertAlmostEqual(r.mass_takeoff_kg / u.lbm, 16303, delta=20)
 
     def test_machines_are_whole_units_on_two_lanes(self):
         r = self.result
