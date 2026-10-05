@@ -63,3 +63,6 @@ public stills:
 The sized aircraft is 11 m long, 1.68 m wide and 2.0 m deep (super-ellipse 3.2). Its fuselage mass is raw Raymer GA
 x 1.70, anchored to a layout estimate of an uncrewed cargo fuselage. It weighs 12,821 lb at take-off with 900 kg
 payload at 210 kt. These remain illustrative engineering inputs, not Archer data.
+
+Plan 035 corrects the wing (spar caps at the real box depth, a 1 mm minimum gauge, pylon inertia from the tip
+components) and places the turbogenerators by the layout: **13,038 lb**.

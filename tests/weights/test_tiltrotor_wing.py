@@ -179,5 +179,36 @@ class WingSubmodelTests(unittest.TestCase):
         self.assertGreater(solution.value(mass), 0.0)
 
 
+
+class CapDepthAndMinimumGaugeTests(unittest.TestCase):
+    """Plan 035 options: spar-cap lever arm and minimum torque-box gauge."""
+
+    def test_defaults_are_ndarc(self):
+        base, explicit = masses(), masses(ratio_depth_spar_cap=1.0, thickness_min_torque_box_m=0.0)
+        self.assertEqual(base.mass_primary_kg(), explicit.mass_primary_kg())
+
+    def test_shallower_caps_need_more_cap_mass(self):
+        base, shallow = masses(), masses(ratio_depth_spar_cap=0.8)
+        self.assertGreater(shallow.mass_spar_jump_kg + shallow.mass_spar_stiffness_kg,
+                           base.mass_spar_jump_kg + base.mass_spar_stiffness_kg)
+        self.assertAlmostEqual(shallow.mass_torque_box_kg, base.mass_torque_box_kg, places=9)
+
+    def test_beam_frequency_requirement_is_still_met(self):
+        required_rad_s = inputs["frequency_beam_per_rev"] * inputs["speed_rotor_design_rad_s"]
+        self.assertGreaterEqual(masses(ratio_depth_spar_cap=0.8).frequency_beam_rad_s, required_rad_s * (1 - 1e-9))
+
+    def test_minimum_gauge_floors_the_box_and_raises_torsion(self):
+        chord_m, tau = inputs["chord_m"], inputs["thickness_to_chord"]
+        thickness_min_m = 0.004                                            # far above the XV-15 frequency need
+        floored = masses(thickness_min_torque_box_m=thickness_min_m)
+        area_min_m2 = thickness_min_m * 2 * (0.45 * chord_m + tau * chord_m)
+        self.assertAlmostEqual(floored.area_torque_box_m2, area_min_m2, places=12)
+        self.assertGreater(floored.frequency_torsion_rad_s, masses().frequency_torsion_rad_s)
+
+    def test_inactive_minimum_gauge_changes_nothing(self):
+        self.assertAlmostEqual(masses(thickness_min_torque_box_m=1e-6).mass_primary_kg(), masses().mass_primary_kg(),
+                               places=9)
+
+
 if __name__ == "__main__":
     unittest.main()

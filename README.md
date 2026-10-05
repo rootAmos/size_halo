@@ -14,7 +14,7 @@ hybrid: 18,740 lb take-off for 900 kg payload, 445 nm, 250 kt and a 13,000 ft
 ceiling (18,506 lb with the user-supplied turboshaft deck's part-power fuel curve,
 Tier 11a).
 
-**Current reference (plan 032): 12,821 lb at take-off** with 900 kg of payload at 210 kt.
+**Current reference (plan 035): 13,038 lb at take-off** with 900 kg of payload at 210 kt.
 - **Engines:** fixed at 2 x 1,120 hp, inside the fuselage.
 - **Battery:** a Samsung 50G-shaped equivalent-circuit battery.
 - **Wing:** the NDARC tiltrotor wing with whirl-flutter margins.
@@ -164,9 +164,11 @@ Open items, roughly by impact:
     for fly-by-wire.
 - **V-tail.** The sizing still uses a conventional tail; the V-tail is drawn only.
 - **Symbolic geometry layout (Tier 23).** Clearance and packaging constraints are still planned.
-- **AFDD wing vs FE.** The CalculiX check finds the AFDD cap lever arm optimistic for this box: about 29 % over
-  strain in the jump take-off, torsion about 9 % low (whirl flutter is binding), and walls below minimum gauge.
-  The sizing is not yet corrected.
+- **AFDD wing vs FE.** The CalculiX check found the AFDD cap lever arm optimistic for this box: about 29 % over
+  strain in the jump take-off and torsion about 9 % low.
+  - Plan 035 corrects the sizing: caps at the real box depth, a 1 mm minimum gauge, and pylon inertia from the
+    tip components.
+  - The FE re-check of the corrected wing is still to run.
 - **FE models.** Only the wing box is checked. The fuselage and tail decks carry placeholder gauges.
 
 [Results](docs/RESULTS.md) has the full list and how the reference moved.

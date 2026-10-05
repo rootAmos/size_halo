@@ -1291,6 +1291,24 @@ Three user decisions on 2026-10-04 bring plan 031's findings into the sizing. Ev
 - The turbogenerator station (1.0 m behind the wing quarter chord, z 0.5 m) is assumed.
 - The sizing keeps a conventional tail; the V-tail is drawn only.
 
+## Plan 035: AFDD wing cap depth and minimum gauge; pylon inertia
+
+These changes follow the plan 031 CalculiX check, which found the AFDD wing optimistic for the drawn box.
+- **Spar-cap depth:** AFDD's caps can be placed at the real depth between the spars (`ratio_depth_spar_cap`:
+  0.826 for NACA 2423 at 0.15/0.60 chord, from AeroSandbox `local_thickness`).
+- **Minimum gauge:** the torque box has a 1 mm minimum wall gauge (`thickness_min_torque_box_m`). Torsion is
+  realized from the final wall area.
+- **Pylon pitch inertia:** built from the tip components instead of the XV-15 engine-in-nacelle ratio: 0.84 vs
+  1.0 m.
+- **Turbogenerators:** sit by the layout, behind the rear spar and below the fuselage top.
+
+The reference is **13,038 lb** (+217 lb on plan 032).
+- Wing 319 -> 358.5 kg: torque box 50 -> 75 kg, stiffness caps 4 -> 16 kg, jump caps 35 -> 22 kg.
+- Whirl-flutter torsion at max speed rises from 1.09 to 1.49 per rev and is no longer binding.
+- Every earlier named set pins the NDARC values; `assumptions_plan032` reproduces 12,821 lb.
+
+The CalculiX re-check on this aircraft has not run yet. Claude Code stopped it because memory ran low.
+
 ## Verification notebooks
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
