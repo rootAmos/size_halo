@@ -41,6 +41,7 @@ import aerosandbox.numpy as np
 import aerosandbox.tools.units as u
 from aerosandbox.library.power_turboshaft import power_turboshaft, thermal_efficiency_turboshaft
 
+from aircraft_closure.aerodynamics.trim import TailTrim
 from aircraft_closure.aerodynamics.buildup import BuildupAerodynamics
 from aircraft_closure.aerodynamics.scholz import ScholzAerodynamics
 from aircraft_closure.aerodynamics.simple import SimpleAerodynamics
@@ -306,7 +307,9 @@ class HaloAssumptions:
     drag_corrections: bool = True   # plan 035 default (user, 2026-10-04); False before
     factor_excrescence_buildup: float = 1.27
     factor_excrescence_scholz: float = 1.17
-    fraction_trim_drag: float = 0.02
+    fraction_trim_drag: float = 0.02                   # Scholz aero only; AeroBuildup trims from the tail load
+    efficiency_tail: float = 0.9                       # tail dynamic-pressure ratio eta_H (Scholz ch. 11)
+    angle_dihedral_tail_deg: float = 0.0               # 0: conventional horizontal tail
     # ---- Tier 19 thermal (plan 028) ----
     # True: heat loads from every loss go to a ram-air heat exchanger (mass from its rating, a design variable;
     # cooling drag in airplane mode, fan power in hover), and lumped motor and generator temperatures replace
@@ -570,8 +573,9 @@ def build_halo_aerodynamics(requirements=HaloRequirements(), assumptions=HaloAss
         return SimpleAerodynamics(drag_area_misc_m2=a.drag_area_misc_m2,
                                   download_fraction_hover=a.download_fraction_hover, cl_max=r.cl_max)
     if a.aerodynamics_model == "buildup":
-        corrections = (dict(factor_excrescence=a.factor_excrescence_buildup, fraction_trim_drag=a.fraction_trim_drag)
-                       if a.drag_corrections else {})
+        # Plan 036: trim drag from the tail load about the CG (Scholz ch. 11) replaces the flat fraction.
+        corrections = (dict(factor_excrescence=a.factor_excrescence_buildup,
+                            trim=TailTrim(a.efficiency_tail, a.angle_dihedral_tail_deg)) if a.drag_corrections else {})
         return BuildupAerodynamics(cl_max=r.cl_max, drag_area_misc_m2=a.drag_area_misc_buildup_m2,
                                    blown_wing=BlownWing() if a.blown_wing else None, **corrections)
     if a.aerodynamics_model == "scholz":

@@ -15,7 +15,8 @@ methods, `cl_max` and hover download). Added on top, because AeroBuildup does no
 * excrescence, leakage and protuberance drag (plan 034): (`factor_excrescence` - 1) x the component profile and
   interference drag, a separate breakdown item; AeroBuildup models clean components only. Calibrated so the
   XV-15 components match NDARC's 6.25 ft2 (Johnson 2010, Table 1): 1.27 for this model, 1.17 for Scholz;
-* trim drag (plan 034): `fraction_trim_drag` x (parasite + induced) drag, added to CD (not CD0);
+* trim drag: with `trim` (TailTrim, plan 036) from the tail lift that zeroes AeroBuildup's moment about the CG;
+  otherwise (plan 034) `fraction_trim_drag` x (parasite + induced) drag, added to CD (not CD0);
 * blown-wing increments (`BlownWing`) when the caller gives the rotor state (airplane mode);
 * hover download from wing and rotor geometry (`HoverDownload`) unless a constant fraction is given.
 
@@ -76,7 +77,8 @@ class BuildupAerodynamics:
     download: Any = field(default_factory=HoverDownload)
     alpha_reference_stall_deg: tuple = (0.0, 8.0)
     factor_excrescence: Any = 1.0                # 1: clean components (plan 025); 1.27: XV-15/NDARC (plan 034)
-    fraction_trim_drag: Any = 0.0                # trim drag / (parasite + induced)
+    fraction_trim_drag: Any = 0.0                # trim drag / (parasite + induced); not used with `trim`
+    trim: Any = None                             # TailTrim (plan 036): trim drag from the tail load about the CG
 
     def hover_download_fraction(self, aircraft):
         if self.download_fraction_hover is not None:
@@ -85,6 +87,8 @@ class BuildupAerodynamics:
 
     def to_asb(self, aircraft):
         airplane = aircraft.to_asb()
+        if self.trim is not None:
+            airplane.xyz_ref = [self.trim.x_cg_m(aircraft), 0.0, 0.0]     # moments about the CG (plan 036)
         for wing in airplane.wings:
             for xsec in wing.xsecs:
                 xsec.airfoil = TransitionAirfoil(xsec.airfoil, self.xtr_upper, self.xtr_lower, self.n_crit)
@@ -172,7 +176,12 @@ class BuildupAerodynamics:
         cd0 = sum(item.cd0 for item in breakdown)
         cdi = cl**2 / (np.pi * aspect_ratio_ref * oswald)
         cd = cd0 + cdi + sum(increment.cd for increment in drag_increments)
-        if not _is_value(self.fraction_trim_drag, 0.0):
+        if self.trim is not None:
+            cl_alpha_tail = self.surface_lift_curve_slope_per_rad(aircraft.horizontal_tail.aspect_ratio, velocity_m_s,
+                                                                  altitude_m, temperature_offset_K)
+            cd = cd + self.trim.drag_coefficient(aircraft, cl, out["Cm"], airplane.c_ref, oswald, aspect_ratio_ref,
+                                                 cl_alpha_tail)
+        elif not _is_value(self.fraction_trim_drag, 0.0):
             cd = cd + self.fraction_trim_drag * (cd0 + cdi)
         aero = AeroResult(alpha_deg=alpha_deg, cl=cl, cd=cd, cd0=cd0, cdi=cdi,
                           cl_alpha_per_rad=self.lift_curve_slope_per_rad(aircraft, velocity_m_s, altitude_m,

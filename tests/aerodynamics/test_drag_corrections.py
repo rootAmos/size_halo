@@ -63,7 +63,8 @@ class DragCorrectionTests(unittest.TestCase):
         on = build_halo_aerodynamics(assumptions=HaloAssumptions())       # on by default since plan 035
         self.assertEqual(off.factor_excrescence, 1.0)
         self.assertEqual(on.factor_excrescence, HaloAssumptions().factor_excrescence_buildup)
-        self.assertEqual(on.fraction_trim_drag, 0.02)
+        self.assertIsNotNone(on.trim)                                  # plan 036: trim from the tail load
+        self.assertIsNone(off.trim)
 
 
 if __name__ == "__main__":
