@@ -1,6 +1,7 @@
 """Tier 14 trajectory optimization on the sized Halo reference aircraft (plan 019).
 
-The aircraft is fixed: `solve_halo_sizing()` (the reference: 780 kg payload, 210 kt, fixed 2 x 1,120 hp
+The aircraft is fixed: `solve_halo_sizing()` (plan 036: the trajectory model carries the reference's thermal,
+redundancy and unit-machine features; earlier: 780 kg payload, 210 kt, fixed 2 x 1,120 hp
 turboshafts, equivalent-circuit battery since plan 022; Tier 14 itself used the 900 kg constant-battery
 aircraft, `requirements_tier16` / `assumptions_tier16`) is sized first, then `build_halo_aircraft(result.design)` gives the numeric aircraft
 that every trajectory flies. Each problem is its own `asb.Opti`, separate from sizing.
@@ -90,6 +91,9 @@ class TrajectoryResult:
     acceleration_m_s2: Any
     rate_gamma_rad_s: Any
     voltage_bus_V: Any = None             # battery terminal voltage (plan 022)
+    temperatures_C: Any = None            # plan 036: instance name -> node temperatures (thermal-modelled parts)
+    drag_cooling_N: Any = None            # plan 036: ram-air cooling drag and fan power at each node
+    power_fan_W: Any = None
 
 
 def power_available_bus_W(model, altitude_m):
@@ -131,7 +135,9 @@ def _result(label, solution, model, trajectory):
         velocity_corridor_max_m_s=v(t.corridor.velocity_max_m_s(v(t.tilt_deg))),
         alpha_stall_deg=v(t.forces.alpha_stall_deg), soc=v(t.soc), mass_kg=mass_kg, energy_bus_J=v(t.energy_bus_J),
         mass_fuel_burnt_kg=mass_kg[0] - mass_kg[-1], acceleration_m_s2=v(t.acceleration_m_s2),
-        rate_gamma_rad_s=v(t.rate_gamma_rad_s), voltage_bus_V=v(t.supply.battery.voltage_V))
+        rate_gamma_rad_s=v(t.rate_gamma_rad_s), voltage_bus_V=v(t.supply.battery.voltage_V),
+        temperatures_C={name: v(temperature) for name, temperature in t.thermal.temperatures_C.items()},
+        drag_cooling_N=v(t.thermal.drag_cooling_N), power_fan_W=v(t.thermal.power_fan_W))
 
 
 def _trimmed(opti, trajectory, index):

@@ -83,7 +83,9 @@ The main disciplines are:
 - requirements / mission integration
 - energy management
 
-Structures are intentionally limited to mass estimation.
+Structures in the sizing loop are limited to mass estimation. Structural analysis (stress, deflection,
+FEA via exported CalculiX/Nastran decks) is in scope as a downstream check outside the sizing loop
+(user decision 2026-10-04); it must never be imported by sizing code.
 
 ## Powertrain
 

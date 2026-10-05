@@ -43,6 +43,7 @@ import aerosandbox.tools.units as u
 from aircraft_closure.performance.flight_point import acceleration_gravity_m_s2
 from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery
 from aircraft_closure.powertrain.components.rotor import MomentumProfileRotor
+from aircraft_closure.thermal.heat import thermal_parameters
 
 
 @dataclass(frozen=True)
@@ -172,7 +173,9 @@ class TiltrotorPointMass:
 
         # Drive chain: gearbox loss on torque (as the flight point), motor losses from its own model.
         speed_motor_rad_s = gearbox.reduction_ratio * speed_rotor_rad_s
-        torque_motor_Nm = rotor.shaft_power_W / (gearbox.efficiency * speed_motor_rad_s)
+        # Tier 18: a rotor's lane motors share its gearbox input torque equally.
+        lanes = self.count("motor") / count_rotors
+        torque_motor_Nm = rotor.shaft_power_W / (gearbox.efficiency * speed_motor_rad_s) / lanes
         if voltage_bus_V is None:
             battery = self.instance("battery")
             voltage_bus_V = (battery.voltage_open_circuit_V(battery.max_soc)
@@ -184,7 +187,7 @@ class TiltrotorPointMass:
             force_x_wind_N=force_x_wind_N, force_z_wind_N=force_z_wind_N, cl=aero.cl, cd=aero.cd,
             alpha_stall_deg=alpha_stall_deg, rotor=rotor, speed_motor_rad_s=speed_motor_rad_s,
             torque_motor_Nm=torque_motor_Nm, power_shaft_motor_W=motor_result.power_shaft_W,
-            power_electric_motors_W=count_rotors * motor_result.power_electric_W)
+            power_electric_motors_W=self.count("motor") * motor_result.power_electric_W)
 
     def evaluate_supply(self, altitude_m, *, current_battery_A, torque_generator_Nm, soc):
         """Battery and turbogenerators (all active, equal shares) feeding the bus."""
@@ -197,9 +200,12 @@ class TiltrotorPointMass:
         speed_generator_rad_s = generator_model.loss_model.speed_peak_efficiency_rad_s
         generator = generator_model.evaluate(speed_generator_rad_s, torque_generator_Nm, battery.voltage_V)
         power_shaft_generator_W = speed_generator_rad_s * torque_generator_Nm
-        engine = turboshaft.evaluate(power_shaft_generator_W, atmosphere)
+        instances = self.aircraft.powertrain.topology.instances
+        # Tier 13: a step-up gearbox between turboshaft and generator takes its loss from the engine side.
+        efficiency_step_up = instances["generator_gearbox"].component.efficiency if "generator_gearbox" in instances else 1.0
+        engine = turboshaft.evaluate(power_shaft_generator_W / efficiency_step_up, atmosphere)
         return PowerSupply(battery=battery, generator=generator, engine=engine,
-                           power_shaft_generator_W=power_shaft_generator_W,
+                           power_shaft_generator_W=power_shaft_generator_W / efficiency_step_up,
                            power_available_turboshaft_W=turboshaft.power_available_W(atmosphere),
                            power_bus_W=count_generators * generator.power_electric_W + battery.power_electric_W,
                            fuel_flow_kg_s=count_generators * engine.fuel_flow_kg_s)
@@ -263,6 +269,61 @@ class TiltrotorTrajectory:
     corridor: Any
     acceleration_m_s2: Any
     rate_gamma_rad_s: Any
+    thermal: Any = None
+
+
+@dataclass(frozen=True)
+class TrajectoryThermal:
+    """Temperature states and cooling along a trajectory (zeros and no states without thermal models)."""
+    temperatures_C: dict                 # instance name -> node temperatures
+    power_heat_W: Any                    # heat into the exchanger at each node
+    drag_cooling_N: Any
+    power_fan_W: Any
+    constraints: tuple
+
+
+def _thermal_states(opti, model, forces, supply, altitude_m, velocity_m_s, time_s, count_nodes, temperature_start_C):
+    """Tier 19 along a trajectory (plan 036): a lumped temperature state per thermal-modelled machine and the pack,
+    dT/dt = (loss - (T - T_coolant) / R) / C by collocation, the same R and C as sizing (`thermal_parameters`); the
+    temperature limit at every node. Heat to the coolant goes to the ram-air exchanger: its pumping power is paid as
+    cooling drag in proportion w = q / (q + dp) and by the fans for the rest, with q the dynamic pressure and dp the
+    exchanger pressure drop (a smooth blend of the sizing's airplane-mode drag and hover fan cases).
+    `temperature_start_C`: dict by instance name; None starts at the coolant temperature (a cold start)."""
+    instances = model.aircraft.powertrain.topology.instances
+    losses = {
+        "motor": forces.power_electric_motors_W / model.count("motor") - forces.power_shaft_motor_W,
+        "generator": supply.generator.power_shaft_W - supply.generator.power_electric_W,
+        "battery": supply.battery.power_loss_W,
+    }
+    temperatures, constraints, heat_W = {}, [], 0.0
+    for name, loss_W in losses.items():
+        component = instances[name].component
+        thermal = getattr(component, "thermal_model", None)
+        if thermal is None:
+            continue
+        p = thermal_parameters(component)
+        start_C = thermal.temperature_coolant_C if temperature_start_C is None else temperature_start_C[name]
+        temperature_C = opti.variable(init_guess=start_C * np.ones(count_nodes), scale=50.0)
+        opti.constrain_derivative((loss_W - (temperature_C - thermal.temperature_coolant_C) / p.resistance_K_W)
+                                  / p.capacity_J_K, temperature_C, time_s)
+        constraints += [temperature_C[0] == start_C, temperature_C <= thermal.temperature_max_C]
+        temperatures[name] = temperature_C
+        cooling = getattr(model.aircraft.powertrain, "cooling", None)
+        if cooling is not None and name not in cooling.sources_excluded:
+            heat_W = heat_W + instances[name].count * (temperature_C - thermal.temperature_coolant_C) / p.resistance_K_W
+    cooling = getattr(model.aircraft.powertrain, "cooling", None)
+    zero = 0 * velocity_m_s
+    if cooling is None or not temperatures:
+        return TrajectoryThermal(temperatures, zero, zero, zero, tuple(constraints))
+    exchanger = cooling.heat_exchanger
+    atmosphere = asb.Atmosphere(altitude=altitude_m)
+    result = exchanger.evaluate(heat_W, atmosphere, velocity_m_s, fan=True)
+    pressure_dynamic_Pa = 0.5 * atmosphere.density() * velocity_m_s**2
+    ram = pressure_dynamic_Pa / (pressure_dynamic_Pa + result.pressure_drop_Pa + 1.0)
+    drag_N = ram * result.power_pumping_W / np.fmax(velocity_m_s, 1.0)
+    power_fan_W = (1 - ram) * result.power_pumping_W / exchanger.efficiency_fan
+    constraints.append(result.power_heat_equivalent_W / exchanger.power_rated_W <= 1)
+    return TrajectoryThermal(temperatures, heat_W, drag_N, power_fan_W, tuple(constraints))
 
 
 def _node_guess(value, count_nodes):
@@ -270,7 +331,7 @@ def _node_guess(value, count_nodes):
 
 
 def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, count_nodes, duration_bounds_s, guess,
-                               limits=TrajectoryLimits(), corridor=None):
+                               limits=TrajectoryLimits(), corridor=None, temperature_start_C=None):
     """Direct-collocation tiltrotor trajectory on a fixed aircraft (orchestration: creates Opti variables).
 
     States per node: x, altitude, speed, flight-path angle (AeroSandbox point mass), mass (fuel burn),
@@ -321,9 +382,11 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
     forces = model.evaluate(velocity_m_s, altitude_m, alpha_deg, tilt_deg, thrust_per_rotor_N=thrust_per_rotor_N,
                             speed_rotor_rad_s=speed_rotor_rad_s, voltage_bus_V=supply.battery.voltage_V)
 
+    thermal = _thermal_states(opti, model, forces, supply, altitude_m, velocity_m_s, time_s, n, temperature_start_C)
+
     dynamics = asb.DynamicsPointMass2DSpeedGamma(mass_props=asb.MassProperties(mass=mass_kg), x_e=x_m, z_e=-altitude_m,
                                                  speed=velocity_m_s, gamma=gamma_rad, alpha=alpha_deg)
-    dynamics.add_force(Fx=forces.force_x_wind_N, Fz=forces.force_z_wind_N, axes="wind")
+    dynamics.add_force(Fx=forces.force_x_wind_N - thermal.drag_cooling_N, Fz=forces.force_z_wind_N, axes="wind")
     dynamics.add_gravity_force(g=acceleration_gravity_m_s2)
     dynamics.constrain_derivatives(opti, time_s)
     derivatives = dynamics.state_derivatives()
@@ -347,16 +410,16 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
             supply.battery.power_electric_W / scale_power_W <= battery_model.max_discharge_power_W / scale_power_W,
             supply.battery.power_electric_W / scale_power_W >= -battery_model.max_charge_power_W / scale_power_W,
         ])
-    opti.constrain_derivative(forces.power_electric_motors_W, energy_bus_J, time_s)
+    power_demand_bus_W = forces.power_electric_motors_W + thermal.power_fan_W
+    opti.constrain_derivative(power_demand_bus_W, energy_bus_J, time_s)
 
     pitch_deg = np.degrees(gamma_rad) + alpha_deg
     corridor_constraints = [] if corridor is None else [
         velocity_m_s >= corridor.velocity_min_m_s(tilt_deg), velocity_m_s <= corridor.velocity_max_m_s(tilt_deg)]
     opti.subject_to([
         # Bus balance and sources (normalized by the installed motor rating).
-        (supply.power_bus_W - forces.power_electric_motors_W) / scale_power_W == 0,
-        supply.power_shaft_generator_W <= supply.power_available_turboshaft_W,
-        supply.power_shaft_generator_W <= generator_model.power_rated_W,
+        (supply.power_bus_W - power_demand_bus_W) / scale_power_W == 0,
+        supply.power_shaft_generator_W <= supply.power_available_turboshaft_W,      # turboshaft shaft power
         torque_generator_Nm <= generator_model.max_torque_Nm,
         # Rotor (Tier 12 validity and hardware bounds) and drive.
         forces.rotor.blade_loading <= rotor.blade_loading_max,
@@ -366,7 +429,6 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
         forces.rotor.shaft_power_W / scale_power_W <= rotor.max_shaft_power_W / scale_power_W,
         forces.speed_motor_rad_s <= motor.max_speed_rad_s,
         forces.torque_motor_Nm <= motor.max_torque_Nm,
-        forces.power_shaft_motor_W / scale_power_W <= motor.power_rated_W / scale_power_W,
         # Wing and attitude.
         alpha_deg <= forces.alpha_stall_deg,
         pitch_deg >= limits.pitch_min_deg,
@@ -374,6 +436,14 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
         tilt_rate_deg_s <= limits.tilt_rate_max_deg_s,
         tilt_rate_deg_s >= -limits.tilt_rate_max_deg_s,
     ] + corridor_constraints)
+    # Continuous power ratings, unless the machine has a thermal model (then its temperature limit applies, as in
+    # sizing: short-time ratings from thermal mass).
+    if motor.thermal_model is None:
+        opti.subject_to(forces.power_shaft_motor_W / scale_power_W <= motor.power_rated_W / scale_power_W)
+    if generator_model.thermal_model is None:
+        opti.subject_to(generator_model.loss_model.speed_peak_efficiency_rad_s * torque_generator_Nm / scale_power_W
+                        <= generator_model.power_rated_W / scale_power_W)
+    opti.subject_to(list(thermal.constraints))
     if not limits.allow_battery_charging:
         opti.subject_to(supply.battery.power_electric_W / scale_power_W >= 0)
     if rotor.speed_tip_max_m_s is not None:
@@ -385,4 +455,5 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
         alpha_deg=alpha_deg, tilt_deg=tilt_deg, tilt_rate_deg_s=tilt_rate_deg_s, pitch_deg=pitch_deg,
         thrust_per_rotor_N=thrust_per_rotor_N, speed_rotor_rad_s=speed_rotor_rad_s,
         current_battery_A=current_battery_A, torque_generator_Nm=torque_generator_Nm, forces=forces, supply=supply,
-        corridor=corridor, acceleration_m_s2=derivatives["speed"], rate_gamma_rad_s=derivatives["gamma"])
+        corridor=corridor, acceleration_m_s2=derivatives["speed"], rate_gamma_rad_s=derivatives["gamma"],
+        thermal=thermal)

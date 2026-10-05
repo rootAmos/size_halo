@@ -84,6 +84,108 @@ class TorqueDensityMassModel:
 
 
 @dataclass(frozen=True)
+class DatabaseMassModel:
+    """Machine mass from continuous torque, with torque density falling with base speed (plan 033).
+
+    The machine's continuous torque is T_cont = ratio_torque_continuous_peak x max_torque_Nm. Its base speed is
+    w = power_rated_W / T_cont. Bare-machine mass is
+
+        softmax(T_cont / tau(w), power_rated_W / specific_power_max_W_kg),
+        tau(w) = torque_density_ref_Nm_kg (w / speed_ref_rad_s)^(-exponent_speed),
+
+    so mass falls as w^(exponent_speed - 1) at fixed power until the specific-power cap binds.
+
+    Defaults:
+    - tau_ref and the exponent are the least-squares fit to the 15 bare (or unknown-inverter) machines with
+      published continuous ratings in data/machines/aerospace_motors.csv (`machine_database.fit_torque_density`);
+      the RMS log residual is 0.37 (factor 1.45); the residuals are in plan 033;
+    - ratio 0.5 matches the Halo `rubber_machine` ratings (P_rated = 1.25 w_hat Q_hat, T_max = 2.5 Q_hat, so
+      w = w_hat);
+    - the 20 kW/kg cap is the Tier 15 bare-machine assumption (the data do not constrain it).
+
+    `specific_power_inverter_W_kg` = None gives a bare machine (the inverter is a separate component, Tier 15);
+    a value adds power_rated_W / specific_power_inverter_W_kg (integrated machine).
+
+    Stacking: a machine of identical axial stacks (Evolito D250/D500 units), each carrying at most
+    `torque_continuous_max_stack_Nm`. The stack count is relaxed (continuous): count = T_cont / T_stack_max. Fitted
+    mass is linear in torque at fixed speed, so n stacks weigh n times one stack. `mass_overhead_stack_kg` adds a
+    housing per stack; 0 by default, because the fit is to whole machines whose housings are inside tau.
+    """
+    torque_density_ref_Nm_kg: Any = 11.79
+    speed_ref_rad_s: Any = 500.0
+    exponent_speed: Any = 0.271
+    specific_power_max_W_kg: Any = 20000.0
+    ratio_torque_continuous_peak: Any = 0.5
+    specific_power_inverter_W_kg: Any = None
+    torque_continuous_max_stack_Nm: Any = None
+    mass_overhead_stack_kg: Any = 0.0
+    smoothing_kg: Any = 2.0
+
+    def torque_density_Nm_kg(self, speed_base_rad_s):
+        return self.torque_density_ref_Nm_kg * (speed_base_rad_s / self.speed_ref_rad_s) ** (-self.exponent_speed)
+
+    def torque_continuous_Nm(self, machine):
+        return self.ratio_torque_continuous_peak * machine.max_torque_Nm
+
+    def speed_base_rad_s(self, machine):
+        return machine.power_rated_W / self.torque_continuous_Nm(machine)
+
+    def count_stacks(self, machine):
+        """Relaxed stack count, T_cont / T_stack_max; 1 without a per-stack torque limit."""
+        if self.torque_continuous_max_stack_Nm is None:
+            return 1.0
+        return self.torque_continuous_Nm(machine) / self.torque_continuous_max_stack_Nm
+
+    def mass_bare_kg(self, machine):
+        torque_Nm = self.torque_continuous_Nm(machine)
+        mass_torque_kg = torque_Nm / self.torque_density_Nm_kg(self.speed_base_rad_s(machine))
+        mass_kg = np.softmax(mass_torque_kg, machine.power_rated_W / self.specific_power_max_W_kg,
+                             softness=self.smoothing_kg)
+        return mass_kg + self.mass_overhead_stack_kg * self.count_stacks(machine)
+
+    def mass_inverter_kg(self, machine):
+        if self.specific_power_inverter_W_kg is None:
+            return 0.0
+        return machine.power_rated_W / self.specific_power_inverter_W_kg
+
+    def mass_kg(self, machine):
+        return self.mass_bare_kg(machine) + self.mass_inverter_kg(machine)
+
+
+@dataclass(frozen=True)
+class UnitMachineMassModel:
+    """A machine built from whole units of one real product, not a rubber machine (plan 035).
+
+    A unit has a mass, a peak torque, a continuous power and a maximum speed (published ratings). The unit count
+    is `count_units`, a whole number fixed by the caller; None gives the relaxed (continuous) count
+    n = smooth max(T_peak / T_peak_unit, P_rated / P_cont_unit), used only to find the count before the integer
+    solve. Mass = n x unit mass (+ rated power / `specific_power_inverter_W_kg` for an integrated drive).
+    The caller constrains the machine to the units: relaxed count <= `count_units` and maximum speed <= the unit's
+    (`unit_margins`). Units stack axially on one shaft (Evolito D250/D500 practice), so torque and power add.
+    """
+    mass_unit_kg: Any
+    torque_peak_unit_Nm: Any
+    power_continuous_unit_W: Any
+    speed_max_unit_rad_s: Any
+    count_units: Any = None
+    specific_power_inverter_W_kg: Any = None
+    smoothing_units: Any = 0.05
+
+    def count_units_relaxed(self, machine):
+        return np.softmax(machine.max_torque_Nm / self.torque_peak_unit_Nm,
+                          machine.power_rated_W / self.power_continuous_unit_W, softness=self.smoothing_units)
+
+    def mass_inverter_kg(self, machine):
+        if self.specific_power_inverter_W_kg is None:
+            return 0.0
+        return machine.power_rated_W / self.specific_power_inverter_W_kg
+
+    def mass_kg(self, machine):
+        count = self.count_units if self.count_units is not None else self.count_units_relaxed(machine)
+        return count * self.mass_unit_kg + self.mass_inverter_kg(machine)
+
+
+@dataclass(frozen=True)
 class MotorResult:
     power_shaft_W: Any
     power_electric_W: Any

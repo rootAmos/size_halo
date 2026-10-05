@@ -1,26 +1,26 @@
-"""Plan 032: the Halo reference with the layout-anchored fuselage factor."""
+"""Plan 037: the drawn-layout Halo reference (layout-anchored fuselage factor, turbogenerators in the fuselage)."""
 import unittest
 
 import aerosandbox.tools.units as u
 
 import examples.halo_sizing as halo
-from examples.halo_sizing import HaloAssumptions, assumptions_plan032, requirements_plan032, solve_halo_sizing
+from examples.halo_sizing import HaloAssumptions, assumptions_plan037, requirements_plan037, solve_halo_sizing
 
 
 class FuselageFactorTests(unittest.TestCase):
     def test_default_and_legacy_sets(self):
         self.assertEqual(HaloAssumptions().mass_factor_fuselage, 1.70)
-        legacy = [name for name in dir(halo) if name.startswith("assumptions_") and name != "assumptions_plan032"
+        legacy = [name for name in dir(halo) if name.startswith("assumptions_") and name not in ("assumptions_plan037", "assumptions_plan038")
                   and isinstance(getattr(halo, name), HaloAssumptions)]
         self.assertGreaterEqual(len(legacy), 10)
         for name in legacy:
             self.assertIsNone(getattr(halo, name).mass_factor_fuselage, msg=name)
 
 
-class Plan032ReferenceTests(unittest.TestCase):
+class Plan037ReferenceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.sized = solve_halo_sizing(requirements_plan032, assumptions_plan032)    # the plan 032 reference
+        cls.sized = solve_halo_sizing(requirements_plan037, assumptions_plan037)    # the plan 037 reference
 
     def test_closes_with_all_margins(self):
         self.assertGreater(self.sized.min_margin, -1e-6)

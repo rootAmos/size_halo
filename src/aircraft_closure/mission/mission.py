@@ -27,6 +27,7 @@ from typing import Any
 from aircraft_closure.core.margins import margin_above
 from aircraft_closure.performance.flight_point import build_flight_point
 from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery
+from aircraft_closure.powertrain.redundancy import battery_for_condition
 from aircraft_closure.thermal.heat import coolant_temperatures_C
 
 
@@ -119,7 +120,9 @@ def build_mission(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_star
                 margins.append(margin_above(f"{condition.label}: battery end voltage_V", point.battery.voltage_end_V,
                                             battery.get_limits().min_voltage_V))
             else:
-                soc_end = soc - energy_chemical_J / battery.energy_capacity_J
+                # Tier 18: a degraded point (a string isolated) depletes only the strings still connected.
+                capacity_J = battery_for_condition(aircraft.powertrain.topology, condition).energy_capacity_J
+                soc_end = soc - energy_chemical_J / capacity_J
             opti.subject_to([soc_end <= battery.max_soc, soc_end >= soc_lower])
             margins.extend(point.margins)
             points.append(SegmentResult(segment=segment, point=point, duration_s=duration_s, mass_start_kg=mass_kg,

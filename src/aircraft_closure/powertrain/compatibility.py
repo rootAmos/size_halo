@@ -99,15 +99,18 @@ def port_envelope(component, port_name):
     raise KeyError(f"No envelope for port '{port_name}' of {type(component).__name__}.")
 
 
-def operating_margins(topology, port_values, atmosphere=None):
+def operating_margins(topology, port_values, atmosphere=None, components=None):
     """Per-instance margins from the port values used for connection residuals.
 
     `atmosphere` is the operating point's; it sets turboshaft power available
     (sea-level rating when None). Other limits do not depend on altitude here.
+    `components` (Tier 18, optional) maps instance names to the component to check
+    in place of the topology's, e.g. a pack with a string isolated at a failure point.
     """
     margins = []
+    components = components or {}
     for name, instance in topology.instances.items():
-        component = instance.component
+        component = components.get(name, instance.component)
 
         def value(port_name):
             reference = f"{name}.{port_name}"
@@ -203,18 +206,26 @@ def design_margins(topology):
             continue
         upstream = _envelope(topology, connection.source)
         downstream = _envelope(topology, connection.target)
+        # Tier 18 combiner or splitter: totals over the copies on each side (speeds are not summed).
+        count_upstream = count_downstream = 1
+        if connection.combine:
+            count_upstream = topology.instances[connection.source.partition(".")[0]].count
+            count_downstream = topology.instances[connection.target.partition(".")[0]].count
         if isinstance(upstream, ElectricalEnvelope):
             # Tier 15 direct electrical connections (feeders): downstream tolerates the upstream power.
             margins.append(margin_below(f"{connection.source}->{connection.target} max_power_W",
-                                        upstream.max_power_W, downstream.max_power_W))
+                                        _scaled(count_upstream, upstream.max_power_W),
+                                        _scaled(count_downstream, downstream.max_power_W)))
             continue
         for field in fields(MechanicalEnvelope):
             upstream_max = getattr(upstream, field.name)
             downstream_max = getattr(downstream, field.name)
             if upstream_max is not None and downstream_max is not None:
                 # Downstream must tolerate the upstream maximum.
+                scale_up, scale_down = ((1, 1) if field.name == "max_speed_rad_s"
+                                        else (count_upstream, count_downstream))
                 margins.append(margin_below(f"{connection.source}->{connection.target} {field.name}",
-                                            upstream_max, downstream_max))
+                                            _scaled(scale_up, upstream_max), _scaled(scale_down, downstream_max)))
 
     for bus_name, references in bus_ports.items():
         envelopes = {reference: _envelope(topology, reference) for reference in references}
@@ -242,6 +253,10 @@ def design_margins(topology):
         if has_supply_and_demand:
             margins.append(margin_above(f"{bus_name} power_W (loss-free)", power_supply_W, power_demand_W))
     return tuple(margins)
+
+
+def _scaled(count, value):
+    return value if count == 1 else count * value
 
 
 def _envelope(topology, reference):

@@ -45,7 +45,7 @@ Diagrams of the layering, the fidelity scaling and the solve levels:
 
 | Check | What it shows |
 |---|---|
-| About 500 unit tests (`uv run python -m unittest discover -s tests`) | Closed-form identities, limiting cases, sign conventions and trends for every model. Every model is also exercised symbolically inside `asb.Opti` (CasADi compatibility). Integration tests pin each reference result. |
+| About 560 unit tests (`uv run python -m unittest discover -s tests`) | Closed-form identities, limiting cases, sign conventions and trends for every model. Every model is also exercised symbolically inside `asb.Opti` (CasADi compatibility). Integration tests pin each reference result. |
 | One executed notebook per tier (`notebooks/`) | Each tier's claims as numbered checks with plots. Each notebook also runs the full test suite. |
 | Tier 0 governance notebook | Repository rules: unit-suffixed names, no plain NumPy in models, every component documented, roadmap and plan bookkeeping. |
 | CI (`.github/workflows/tests.yml`) | The test suite on every push. |
@@ -101,46 +101,50 @@ Diagrams of the layering, the fidelity scaling and the solve levels:
 GASP deck). The engines are not sized, because a non-OEM cannot add
 turbine power. The battery supplements hover and is recharged in flight.
 
-### Reference result (`solve_halo_sizing()`, plan 030)
+### Reference result (`solve_halo_sizing()`, plans 035–036)
 
 | Quantity | Value |
 |---|---|
-| Take-off mass | **6,367 kg (14,037 lb)** |
-| Empty mass | 4,605 kg |
-| Fuel (with reserve) | 862 kg |
-| Battery | 60.7 kWh, 412 kg, 4,183 cells (end-of-life rating) |
-| Wing | 21.9 m², span 11.6 m (tiltrotor wing, whirl-flutter sized) |
-| Rotors | 2 × 9.3 m diameter; disk loading 47 kg/m² (9.6 lb/ft²) |
-| Motors | 2 × 570 kW continuous (short-time ratings from thermal mass) |
+| Take-off mass | **7,395 kg (16,303 lb)** |
+| Empty mass | 5,522 kg |
+| Fuel (with reserve) | 973 kg |
+| Battery | 81.8 kWh, 556 kg, 2 isolated strings (end-of-life rating) |
+| Wing | 24.7 m², span 12.3 m (tiltrotor wing, whirl-flutter sized) |
+| Rotors | 2 × 10.0 m diameter; disk loading 47 kg/m² (9.6 lb/ft²) |
+| Motors | 2 lanes per rotor; each lane is 2 Evolito D1500-class units (528 kW continuous), 8 units in all |
+| Generators | each is 3 Helix SPX242-class units |
+| Rotor gearbox | 5.0:1, one stage |
 | Turboshafts | 2 × 835 kW (1,120 hp), fixed |
-| Cruise | 162 kt at 10,000 ft, L/D 9.9 |
-| Heat exchanger | 133 kg ram-air unit, fans in hover |
+| Cruise | 166 kt at 10,000 ft, L/D 9.25 |
+| Heat exchanger | 140 kg ram-air unit, fans in hover |
+| Cost per mission | about USD 3,420 (Tier 22 cost model; prices are labelled assumptions) |
 
 **Mass breakdown (kg):**
 
 | Group | Mass |
 |---|---|
-| Powertrain | 2,347 |
-| Fuselage | 636 |
-| Systems | 479 |
-| Wing | 381 |
+| Powertrain | 3,057 |
+| Fuselage | 663 |
+| Systems | 552 |
+| Wing | 453 |
+| Landing gear | 272 |
 | Equipment | 266 |
-| Landing gear | 244 |
 | Nacelles | 195 |
-| Tails | 57 |
+| Tails | 63 |
 
 Within the powertrain:
 
 | Item | Mass |
 |---|---|
-| Rotors | 611 |
+| Rotors | 739 |
+| Battery | 556 |
+| Motors with inverters | 426 |
 | Turboshafts | 422 |
-| Battery | 412 |
-| Rotor gearboxes | 356 |
-| Generator gearboxes | 175 |
-| Heat exchanger | 133 |
-| Generators | 122 |
-| Motors | 116 |
+| Rotor gearboxes | 319 |
+| Generators with inverters | 282 |
+| Generator gearboxes | 144 |
+| Heat exchanger | 140 |
+| Bus tie and string protection | 31 |
 
 ### What sizes the aircraft
 
@@ -149,11 +153,12 @@ These are the constraints active at the optimum:
 - **Battery: the engine-out hover.** One turbogenerator plus the battery,
   starting from the 30 % reserve. The pack hits its 2.5 V-per-cell cutoff.
   Battery voltage, not energy, sizes it.
+- **Motors: the bus-out hover.** One bus lost; the surviving lane in each
+  rotor carries the torque.
 - **Wing: whirl-flutter torsion stiffness** at the 210 kt rotor speed.
-- **Motors, gearboxes and rotors:** hover at 4,000 ft. The rotor radius is
-  capped by the span.
-- **Heat exchanger:** the hot-day hover. Climb sets the motor and generator
-  temperatures.
+- **Rotors and drive:** hover at 4,000 ft. The rotor radius is capped by the
+  span.
+- **Heat exchanger:** the hot-day hover.
 - **Tails:** static margin and directional stability.
 
 ## 4. How the answer moved as fidelity was added
@@ -167,7 +172,9 @@ These are the constraints active at the optimum:
 | Plan 022 | 780 kg | 14,436 lb | Equivalent-circuit battery: the realistic pack cannot carry 900 kg with the light-aircraft wing equations |
 | Plan 026 | 900 kg | 14,247 lb | NDARC tiltrotor wing replaces the light-aircraft wing equations |
 | Plan 027 | 900 kg | 13,639 lb | AeroBuildup aerodynamics: the guessed 0.8 m² miscellaneous drag area was most of the aircraft's drag |
-| **Plan 030** | **900 kg** | **14,037 lb** | **Thermal model: heat exchanger +133 kg, short-time ratings −63 kg of machines** |
+| Plan 030 | 900 kg | 14,037 lb | Thermal model: heat exchanger +133 kg; short-time ratings save 63 kg of machines |
+| Plan 035 | 900 kg | 16,231 lb | **Real machine units instead of idealized ("rubber") scaling; redundancy (2 lanes, 2 buses, 2 strings); drag corrections for excrescence and trim** |
+| **Plan 036** | **900 kg** | **16,303 lb** | **Trim drag from the tail load (η_H 0.9, cos tail dihedral, Scholz downwash) replaces the flat 2 %** |
 
 Two outcomes stand out:
 
@@ -176,83 +183,89 @@ Two outcomes stand out:
 - **The realistic battery cost about 230 kg of payload** compared with an
   idealized constant-voltage pack. The binding limit is the cell voltage
   cutoff during the engine-out hover, not stored energy.
+- **Real machines change the drive architecture, not just the mass.**
+  - With an idealized scalable machine, the optimizer spins motors to about
+    13,000 rpm behind a roughly 32:1 gearbox.
+  - Built from whole units of real best-in-class products, it chooses slow,
+    stacked axial-flux motors behind a single 5:1 stage.
+  - A 21-machine supplier database (plan 033) shows torque density falls
+    only weakly with speed across the fleet. The best low-speed machines
+    (Evolito, Siemens SP200D) sit 1.5–1.8× above that trend.
 
 ## 5. Trajectory optimization (Tier 14)
 
-These problems fly the plan 027 aircraft (13,639 lb, thermal off); see
-Section 6 for why.
+Since plan 036 the trajectory model flies the current reference. It
+carries machine and battery temperature states with short-time ratings,
+cooling drag and fan power, and the lane motors.
+
+On the plan 035 reference (16,231 lb; the plan 036 trim change is small):
 
 - **Minimum-energy conversion** from hover at 500 ft to 1.3 × the
-  airplane-mode stall speed:
-  - optimized: 21.5 s and 8.5 kWh;
-  - naive linear-nacelle, constant-acceleration schedule: 60 s and
-    17.1 kWh.
-  The optimized path uses about half the energy.
+  airplane-mode stall speed: 22.5 s and 10.5 kWh.
 - **Minimum time to climb** from hover at sea level to 10,000 ft at cruise
-  speed: 222 s, against about 508 s for the sizing mission's prescribed
-  6 m/s climb.
+  speed: 225 s, SOC 0.95 → 0.73. That compares with about 508 s for the
+  sizing mission's prescribed 6 m/s climb.
+
+On the plan 027 aircraft (13,639 lb, thermal off), the optimized
+conversion took 21.5 s and 8.5 kWh. A naive linear-nacelle,
+constant-acceleration schedule took 60 s and 17.1 kWh, so the optimized
+path uses about half the energy.
 
 ## 6. Limits and open items, roughly by impact
 
-1. **Drag corrections.** AeroBuildup models clean components only. It
-   leaves out excrescence, leakage, protuberance and trim drag, which is
-   why it reads 15–20 % below NDARC's XV-15 drag. Plan 034 adds them
-   explicitly:
-   - a component-drag factor calibrated to NDARC's XV-15 components (1.27
-     for AeroBuildup, 1.17 for Scholz);
-   - trim drag at 2 %.
-   They are an option at the time of writing; see the implementation notes
-   for their effect. Max payload at 210 kt is about 1,650 kg with uncorrected
-   drag, so treat payload headroom as a sensitivity.
-2. **Electrical layer (Tier 15) is implemented but not the default.**
-   Inverters, cables, protection and partial-discharge insulation add
-   about 330 kg of hardware and 3 % losses; with growth, about 685 kg
-   (measured on the Scholz aero). With the full model set (AeroBuildup,
-   realistic battery, electrical layer), IPOPT has not yet converged
-   reliably.
-3. **Weight calibration rests on one complete aircraft.** The XV-15 is the
+1. **Drag calibration.** The excrescence factor is calibrated so the
+   XV-15 components match NASA NDARC's drag (1.27 on AeroBuildup, plan
+   034). Trim drag comes from the tail load needed for zero moment about
+   the CG (plan 036): AeroBuildup's moment, Scholz's tail efficiency
+   (0.9) and downwash, about 2 % of drag at cruise. Neither is checked against XV-15 flight data, and drag
+   strongly drives payload headroom.
+2. **Weight calibration rests on one complete aircraft.** The XV-15 is the
    only complete weight statement. Two groups need large factors because
    the light-aircraft equations underpredict them: fuselage about 2×,
-   flight controls about 4×. These are group factors, not aircraft mass;
-   the Halo at 14,037 lb is about 8 % heavier than the 13,000 lb XV-15.
-4. **Rotor reduction ratio of about 36:1** is a modelling artifact, being
-   addressed in plan 033 (in progress):
-   - a single motor torque density (15 N·m/kg) makes slow, high-torque
-     machines look heavy;
-   - the drive-system weight barely depends on ratio.
-   Real machines span the trade: stackable axial-flux motors such as
-   Evolito's (about 35 N·m/kg at up to 2,500 rpm) against fast radial
-   machines such as Helix and H3X (17,000–20,000 rpm). Plan 033 adds a
-   supplier database for machine mass and an explicit gearbox stage count.
-5. **The trajectory model is point-mass.** It has no thermal or
-   electrical-layer states, so it flies the thermal-off aircraft. 6-DOF is
-   planned, not built (see the architecture diagrams).
-6. **Thermal simplifications.** The battery chiller's power is not
-   modelled. Gearbox heat is assumed to go to the gearboxes' own oil
-   coolers. Losses do not depend on temperature.
-7. **Deferred aero items:** V-tail, conversion-segment aerodynamics and
-   trim drag.
-8. **In progress at the time of writing:**
-   - Tier 18, redundancy: motor lanes, cross-strapped buses, battery
-     strings, failure cases;
-   - Tier 22, design-space practice: multistart, cost objective,
-     architecture enumeration, sensitivities.
+   flight controls about 4×. These are group factors, not aircraft mass.
+   The calibration factors are also the largest sensitivities (Tier 22:
+   about ±540 lb each for ±15 %).
+3. **The electrical layer (Tier 15) is implemented but not the default.**
+   Inverters, cables, protection and partial-discharge insulation add about
+   330 kg of hardware and 3 % losses. The full combination converges only
+   through the multistart strategy, slowly.
+4. **Machine units are one product per role.** Motors are Evolito
+   D1500-class and generators Helix SPX242-class. Other catalogue choices
+   (magniX, Siemens, EMRAX, mixed units) are not enumerated. Evolito's
+   continuous rating is inferred from its rated torque density.
+5. **Redundancy failure cases are single failures.** Double failures (a
+   battery string or a lane, plus an engine) did not converge, and they are
+   not proven infeasible. Degraded states are applied to both rotors at
+   once, so roll trim is not modelled.
+6. **The trajectory model is point-mass.** It has no thermal,
+   electrical-layer or redundancy states, so it flies the plan 027
+   aircraft. 6-DOF is planned, not built (see the architecture diagrams).
+7. **Thermal simplifications.** The battery chiller's power is not
+   modelled. Gearbox heat goes to the gearboxes' own oil coolers. Losses do
+   not depend on temperature.
+8. **Deferred aero items:** V-tail, conversion-segment aerodynamics, and
+   trim drag from the actual tail load.
+9. **Solver robustness.** Each coupled problem is solved by IPOPT from an
+   explicit list of starting points (Tier 22). Every start that converged
+   reached the same optimum, but some feature combinations take several
+   failed starts first.
 
 ## 7. Reproducing the results
 
 ```powershell
 uv sync
 uv run python -m unittest discover -s tests          # about 500 tests, 10–17 min
-uv run python -m examples.halo_sizing                # the reference (about 4 min from cold)
+uv run python -m examples.halo_sizing                # the reference (about 10 min from cold)
 ```
 
 Run a tier's notebook with Jupyter to reproduce that tier, e.g.
 `notebooks/tier19_thermal/thermal_verification.ipynb`.
 
 - **Earlier references:** the named sets in `examples/halo_sizing.py`
-  reproduce each previous reference. Examples: `requirements_plan027` with
-  `assumptions_plan027` gives 13,639 lb; `requirements_tier16` with
-  `assumptions_tier16` gives 13,760 lb.
+  reproduce each previous reference. Examples:
+  - `requirements_plan030` with `assumptions_plan030` gives 14,037 lb;
+  - `requirements_plan027` with `assumptions_plan027` gives 13,639 lb;
+  - `requirements_tier16` with `assumptions_tier16` gives 13,760 lb.
 - **Parallel runs:** set `OMP_NUM_THREADS=1` when running several solves
   at once. Threaded BLAS under contention makes IPOPT fail spuriously.
 

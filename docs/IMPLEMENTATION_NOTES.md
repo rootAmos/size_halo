@@ -1150,6 +1150,322 @@ The user approved it on 2026-10-04 ("yes").
 - **Solve time:** about 4 minutes from cold. The solve starts from the
   thermal-off solve, which starts from Scholz aero and the constant battery.
 
+## Tier 22: design-space practice
+
+Plan 029. Tooling around the Halo sizing solve; the sizing is unchanged.
+Studies use the plan 027 aircraft (`assumptions_plan027`, thermal model off,
+13,639 lb) to stay fast; sweeps use `aerodynamics_model="scholz"` (about 1 %
+in mass from AeroBuildup).
+
+- **Starting-point strategy** (`solve_halo_sizing_multistart`, called by
+  `solve_halo_sizing` when `initial` is None): an ordered, finite list of
+  candidate starts, each one independent coupled solve; the first that
+  converges is returned (or, with `select="best"`, the lowest objective of
+  all), with a `StartRecord` of every attempt on `result.start`. Order:
+  `caller` (a supplied design), `electrical_off` / `thermal_off`,
+  `mass_objective` (cost objective), `scholz_aero`, `constant_battery`,
+  `payload_continuation` (85 %), `perturbed_low` / `perturbed_high` (the
+  first precursor design x 0.85 / 1.15), `generic`. The first entries
+  reproduce the earlier hand rules, so every existing reference is unchanged.
+  Precursors run the same strategy without perturbation (bounded cost).
+- **Previously fragile cases now solved from cold:** the plan 026 900 kg
+  ECM case (constant-battery start fails, continuation converges, 14,247 lb);
+  the ECM maximum payload (constant-battery start fails, `perturbed_low`
+  converges: 1,753 kg, Scholz); the reference from cold (`scholz_aero`,
+  13,639 lb); and the Tier 15 open issue, AeroBuildup + electrical layer +
+  ECM at 900 kg (`assumptions_tier15`): `scholz_aero`, `constant_battery`,
+  `payload_continuation` and `electrical_off` fail, `perturbed_low`
+  converges at 6,862 kg (15,129 lb). That run took 2.5 h, nearly all in the
+  failing starts (the continuation precursor alone 1.8 h).
+- **Local-optimum spread:** zero. Scholz reference, all five default starts
+  converge to 13,702 lb (spread below 1e-4 kg); AeroBuildup reference,
+  `scholz_aero` and `perturbed_low` agree to 0.000 kg (`perturbed_high`
+  fails in restoration). The cost optimum is also reached from five starts.
+- **Freed trades** (flags `free_aspect_ratio_wing`, `free_altitude_cruise`,
+  `free_soc_reserve`):
+
+  | Case | MTOM | Change | Free value |
+  |---|---|---|---|
+  | Scholz reference | 13,702 lb | | AR 6.12, 10,000 ft, SOC 0.30 |
+  | aspect ratio | 13,629 lb | -73 lb | AR 7.11 |
+  | cruise altitude | 13,552 lb | -150 lb | 13,000 ft (the ceiling bound) |
+  | reserve SOC | 13,316 lb | -386 lb | 0.90 (upper bound) |
+  | AeroBuildup, all three | 13,078 lb | -560 lb | AR 6.81, 13,000 ft, SOC 0.90 |
+
+  The reserve SOC runs to its bound: the engine-out sag sizes the pack, so
+  starting the reserve hover fuller shrinks it (56 to 40 kWh) while the
+  turbines fly the mission. A reserve that high leaves almost no battery
+  for the mission; a real operating rule would set it. The battery series
+  count was tried first and dropped: with every limit per cell (window,
+  current), pack mass depends only on the cell count, so the series count
+  is a flat, degenerate trade until Tier 15 voltage-dependent masses
+  (machine and inverter windows, cables) are in the same problem.
+- **Cost objective** (`objective="cost"`, `CostModel` in
+  `mission/cost.py`; all prices labelled assumptions, anchored on
+  BloombergNEF 2024, EIA jet fuel and electricity): AeroBuildup mass optimum
+  USD 3,191 per mission at 13,639 lb, 163 kt; cost optimum USD 2,939 (-8 %)
+  at 14,176 lb, 210 kt. The USD 500/h time cost drives cruise to the 210 kt
+  bound; with no time cost the optimum is 173 kt. The cost optimum also stops
+  cycling the battery (battery wear USD 38 to 8.5) and recharges it in flight
+  (no ground electricity). The objective is scaled by USD 100; with USD 1,000
+  IPOPT reported local infeasibility from the mass optimum.
+- **Enumeration** (Scholz, 16 combinations of generator step-up, rotor
+  physics, wing model, battery): 8 close at 900 kg. Every on-shaft
+  generator combination except one fails at 900 kg; the converged maximum
+  payloads are 240-759 kg. Three ECM combinations converge neither way
+  (open, not proven infeasible).
+- **Sensitivity** (Scholz, +/- 15 %, take-off mass): calibration factors
+  dominate (powerplant -544/+545 lb, fuselage -540/+546, rotor -499/+551, wing
+  -313/+327), then cell power-density factor (+305/-103), end-of-life
+  capacity (+256/-67), fixed equipment (+/- 224), end-of-life resistance
+  (-88/+192), fittings drag (+/- 60) and machine torque density (+50/-42).
+- **Verification:** `tests/mission/test_cost.py`,
+  `tests/integration/test_halo_design_space.py`; Tier 22 notebook.
+- **Deferred:** optimization under uncertainty; cycle life as a function of
+  depth of discharge; a cost-mass Pareto front (the time-cost sweep stands in);
+  a cheaper start order (or an iteration cap per start) for slow failures.
+
+## Tier 18: redundancy
+
+Plan 032. A Halo option, `HaloAssumptions.redundancy`, **off by default**:
+the reference (900 kg, 210 kt, AeroBuildup, thermal on) stays at 14,037 lb.
+
+- **Architecture as multiplicity** (`RedundancyLayer` in
+  `build_series_hybrid`):
+  - N lane motors per rotor (rubber machines at 1/N of the torque) on a
+    combining gearbox input. The topology now has combiners and splitters
+    (`connect(..., combine=True)`: efforts equal, total flow conserved);
+  - B cross-strapped buses (`add_bus(..., count=B)`, lumped under symmetric
+    operation) with B - 1 normally open ties, each a Tier 15
+    `ProtectionUnit` plus a 2 m `Cable` rated at 125 % of one bus's
+    sources (its generators' electrical rating and its strings' discharge
+    rating) at the minimum bus voltage;
+  - S pack strings, each behind a `ProtectionUnit` at 125 % of a string's
+    discharge rating, in series with the pack (exact drop).
+  - With the linear torque-density mass model, N lanes at 1/N of the torque
+    weigh one machine and draw exactly one machine's losses in normal
+    operation; lanes cost mass through the failure cases (and, with the
+    Tier 15 layer, per-lane feeder overheads).
+- **Failure cases** are degraded flight points of the one problem, set by
+  `FlightCondition.active_lane_count`, `active_battery_string_count` and
+  `count_buses_failed` (also on `HoverSegment`). No loops:
+  - lane out: the active lanes share the gearbox torque; applied to both
+    rotors at once (symmetric multiplicity: conservative for power and heat,
+    no roll trim);
+  - bus out: its N/B lanes per rotor are lost; the tie carries the failed
+    bus's share of the motor demand at the bus voltage (first order); its
+    loss joins the bus demand and is a heat load; ties have margins only
+    when they carry current;
+  - string out: `battery_with_strings` scales the parallel count (capacity,
+    current rating, conductance and thermal mass; the thermal time constant
+    is unchanged). Margins and the thermal state use the degraded pack
+    (component overrides in `operating_margins` and
+    `evaluate_point_thermal`); the mission's SOC uses its capacity.
+- **Halo failure hovers:** 60 s at MTOM from the SOC floor (0.30) to the
+  emergency floor (0.10), thermal history from the end of the take-off
+  hover, polarization developed; lane out, bus out and string out (all
+  engines) by default; string out with an engine out and lane out with an
+  engine out as options. With one lane per rotor on each bus the bus out
+  covers the lane out (same lanes lost, plus the tie), so the lane-out
+  point is not repeated: the duplicate binding constraints made IPOPT fail
+  in restoration.
+- **Starting points:** the redundant problem starts from the non-redundant
+  solution (lane torque scaled by the lane ratio). With strings, a failed
+  solve is restarted from the same problem without the strings
+  (`staged_start`): bus out and string out together reached local
+  infeasibility from the single-lane design.
+
+**Result (sensible set 2 lanes / 2 buses / 2 strings, AeroBuildup, thermal
+on, 900 kg, 210 kt):** 6,506 kg = 14,342 lb, +139 kg (+305 lb) on the
+reference. AeroBuildup converged (no Scholz fallback needed).
+
+| Item (kg) | Reference | 2/2/2 |
+|---|---|---|
+| Motors (all lanes) | 116 | 157 |
+| Rotor gearboxes | 356 | 359 |
+| Battery | 412 | 434 |
+| Rotors | 611 | 628 |
+| String contactors | – | 4 |
+| Bus tie (contactor + cable) | – | 17 |
+| Heat exchanger | 133 | 133 |
+
+| Failure case | Lanes / strings / engines | SOC end | Lane torque / max | Motor end temperature | Binds |
+|---|---|---|---|---|---|
+| Bus out (covers lane out; tie 964 A, 0.27 kW loss) | 1 / 2 / 2 | 0.262 | 0.75 | 150 C | motor temperature |
+| String out | 2 / 1 / 2 | 0.215 | 0.39 | 113 C | no (margin 0.12) |
+
+- **What binds:** the surviving lane's temperature over the 60 s hover
+  (bus out, which is the lane out plus the tie): each lane needs about 0.68
+  of the old single-machine torque (motors +41 kg), and the growth carries
+  the battery, rotor and structure along. The string out does not bind (the
+  engine-out hover, with both strings, still sets the pack). The same
+  14,342 lb was reached with the lane-out point included (before the
+  coverage rule) and from the 2-lane/2-bus solution.
+- **Limiting case:** redundancy on with every count 1 and no cases gives
+  14,037 lb (identical problem).
+
+**Mass by architecture** (AeroBuildup, thermal on, 900 kg, 210 kt; each from
+the reference solution):
+
+| Architecture | Cases | Take-off mass | Change | Per-lane motor rating | Motors (all) |
+|---|---|---|---|---|---|
+| Reference (1 lane) | engine out | 6,367 kg (14,037 lb) | – | 570 kW | 116 kg |
+| 1 lane, option on, no cases | engine out | 6,367 kg (14,037 lb) | 0 | 570 kW | 116 kg |
+| 2 lanes | + lane out | 6,441 kg (14,201 lb) | +75 kg | 333 kW | 156 kg |
+| 3 lanes | + lane out | 6,380 kg (14,066 lb) | +13 kg | 190 kW | 120 kg |
+| 4 lanes | + lane out | 6,401 kg (14,112 lb) | +34 kg | 145 kW | 138 kg |
+| 2 lanes, 2 buses | + bus out (covers lane out) | 6,493 kg (14,314 lb) | +126 kg | 335 kW | 157 kg |
+| 2 strings | + string out | 6,379 kg (14,063 lb) | +12 kg | 571 kW | 116 kg |
+| 2 / 2 / 2 | + bus out, string out | 6,506 kg (14,342 lb) | +139 kg | 336 kW | 157 kg |
+| 2 / 2 / 2 + double failures | + string out & engine out, lane out & engine out | no converged solution | – | – | – |
+
+- More lanes: lower per-lane rating; 3 lanes (each surviving lane at
+  1.5x) costs far less than 2 (2x). The 4-lane result is heavier than 3
+  lanes (a local optimum or the high-speed power cap of the small lanes;
+  not investigated).
+- A failed lane is assumed declutched (a freewheel per lane): its spinning
+  losses vanish, so the active lanes' total loss can fall slightly while
+  their copper loss rises by N/(N-1).
+- The bus tie (17 kg) is rated for one bus's full source capability
+  (2.8 kA at 525 V); at the bus-out point it carries 964 A.
+- Double failures with an engine out did not converge from the 2/2/2
+  solution (IPOPT: infeasible). With the fixed engines the engine-out hover
+  already binds the battery end voltage; whether these cases are physically
+  infeasible is open.
+- **Solve time:** about 2-4 min from the reference; with the staged start
+  (strings) up to 9 min. The integration tests take about 17 min.
+
+## Plan 033: machine database and gearbox stages
+
+This refines Tier 13 at the user's direction (2026-10-04). The reference picked a 36:1 rotor reduction with motors
+at about 12,900 rpm, and the question was whether that was a modelling artefact.
+
+### The two options
+
+- **Data:** `data/machines/aerospace_motors.csv` has 21 machines:
+  - Evolito D1500 (1x3 and 2x3), D250 and E800;
+  - the Helix SPX242 demonstrator and its -50, -94, -175 and -175D variants;
+  - the H3X HPDM-250;
+  - magniX magni350 and magni650 (both the 2021 EPU pages and the current pages) and magniAIR;
+  - Siemens SP260D and SP200D;
+  - Safran ENGINeUS 45;
+  - EMRAX 228, 268 and 348.
+
+  Each row gives peak and continuous ratings where published, the inverter status (y, n or unknown), whether the
+  machine is stackable, and a source URL. Derived values are marked in the notes.
+- **`DatabaseMassModel`** (an interchangeable `mass_model`):
+  - continuous torque density tau = 11.79 N m/kg x (w / 500 rad/s)^-0.271, at base speed w = P_cont / T_cont;
+  - fitted by least squares in log space on the 15 bare or unknown-inverter rows with continuous ratings;
+  - RMS log residual 0.375 (a factor of 1.45);
+  - model mass / database mass per machine: D250 2.56, SP200D 1.79, SP260D 1.42, SPX242 demonstrator 1.05,
+    SPX242-50 0.73, -94 0.95, -175 0.95, -175D 0.99, magni350 0.52, magni650 1.03, magniAIR 0.78, ENGINeUS 45 1.02,
+    EMRAX 228 0.85, 268 0.83, 348 0.75;
+  - specific-power cap 20 kW/kg (the Tier 15 bare assumption, which the data do not constrain);
+  - for the Halo rubber machine, continuous torque = 0.5 x peak, so w is the peak-efficiency speed;
+  - the inverter: none when the Tier 15 layer is on (it is a separate component), else plus P / 20 kW/kg;
+  - stacks: a relaxed stack count with an optional per-stack overhead. The fit is linear in torque at fixed speed,
+    so stacking does not change the mass at the fitted level.
+
+  `TorqueDensityMassModel` is unchanged. In continuous terms it is 7.5 N m/kg integrated, which makes it heavier
+  than the database (with its inverter) below about 7,000 rpm base speed and lighter above (its cap is 10 kW/kg
+  integrated).
+- **`GearStageModel`:**
+  - stages = smooth ceil(ln r / ln 5), or the relaxed softplus max(1, x);
+  - efficiency 0.99 x 0.99^n;
+  - mass factor 1 + 0.3 (n - 1).
+
+  The AFDD00 drive is evaluated at the XV-15 ratio (35.4:1, three stages), where the transmission factor is
+  calibrated, and scaled by mass_factor(r) / mass_factor(35.4). The same model applies to the generator step-up
+  gearbox.
+
+### Switches and solve rule
+
+- **Switches:** `HaloAssumptions.machine_mass_model` (`"torque_density"` by default) and `gearbox_stages` (False by
+  default). `reduction_ratio_max` (40) bounds the ratio. The defaults leave the reference unchanged at 14,037 lb.
+- **Halo stage form:** Halo uses the relaxed (softplus) stage count by default (`gear_stage_model`). With the
+  database machines, the staircase does not solve through the AeroBuildup and thermal warm starts: it fails from
+  the Scholz solution and from the relaxed solution, even with step widths of 0.05 and 0.1.
+  - The database machines alone fail the AeroBuildup warm start from Scholz in the same way.
+  - The relaxed chain solves.
+- **Solve rule (staircase only):** the staircase has a local optimum per stage count. With no `initial`, the
+  innermost solve runs from two starting points, the generic guess and the relaxed-stage solution, and keeps the
+  lighter result.
+
+### Results
+
+**Reference with both options on** (thermal, AeroBuildup, AFDD wing, ECM battery; 900 kg, 210 kt; relaxed
+stages): 14,382 lb, 345 lb above 14,037.
+
+| | Both options on | Plan 030 reference |
+|---|---|---|
+| Motor speed at peak efficiency | 12,073 rpm (14,270 in take-off hover) | 12,935 rpm |
+| Rotor ratio | 32.1:1 (2.16 relaxed stages, 3 as built) | 36.3:1 |
+| Generators | 23,190 rpm, 19.2:1 step-up (1.83 relaxed, 2 as built) | |
+| Motors, both sides (with inverters) | 163 kg | 116 kg |
+| Rotor gearboxes | 373 kg | 357 kg |
+| Generators | 131 kg | |
+| Step-ups | 180 kg | |
+| Battery | 436 kg | |
+
+**Fast set** (`assumptions_plan027` with Scholz aerodynamics; 13,702 lb with both options off):
+
+| Case | MTOM | Motor | Rotor ratio | Generator | Masses, both sides |
+|---|---|---|---|---|---|
+| database only | 13,976 lb | 18,400 rpm | 40:1 (the bound) | 23,900 rpm (the bound) | |
+| stages only (staircase) | 14,058 lb | 12,800 rpm | 24.4:1 | 6,500 rpm, a one-stage step-up local optimum | |
+| both, relaxed | 13,978 lb | 19,100 rpm (the bound) | 36.4:1 | | |
+| both, staircase | 13,603 lb | 14,000 rpm | 24.6:1, 2 stages, at the 5^2 boundary | 23,900 rpm, 19.7:1 step-up, 2 stages | motors 175 kg, rotor gearboxes 290 kg |
+
+**Slow motors** (ratio cap, both on, staircase):
+
+| Cap | MTOM | Motor |
+|---|---|---|
+| 4.9:1 (1 stage) | 14,991 lb | 3,960 rpm |
+| 8:1 | 14,359 lb | 5,740 rpm |
+| 12:1 | 14,011 lb | 7,860 rpm |
+
+The notebook repeats this with relaxed stages and a 10 kW/kg cap.
+
+**What the data say:**
+
+- The optimizer does not pick a slow axial-flux motor at 7–10:1. With the database, one costs about 400–750 lb on
+  the fast set.
+- The data alone favour speed: the mass falls as w^-0.73 at fixed power.
+- The best low-speed machines (SP200D at 30 N m/kg, the Evolito D1500 at about 37 N m/kg peak) sit 1.5–1.8 times
+  above the fleet fit. A slow motor wins only with that technology level, or with a lower high-speed cap.
+- Machine speeds often reach the design-variable bounds (motor 2,000 rad/s, generator 2,500 rad/s). The 20 kW/kg
+  cap only binds near 2,600 rad/s base speed, beyond the data (the H3X runs at 2,100 rad/s).
+
+### Known issues
+
+- The staircase stage count is multimodal. On the fast set, the 24.9:1 ratio cap failed from both starts.
+- The generator step-up can sit on a one-stage step near 6,300 rpm.
+- With the database machines, the full reference solves only with relaxed stages.
+
+## Plan 035: final reference (real machine units, redundancy, drag corrections)
+
+The user decided on 2026-10-04: "best in class. no rubber motors";
+redundancy as the default, but switchable; drag corrections on; then wrap
+up.
+
+- **Machines are whole units of real products.**
+  - Each lane motor is n Evolito D1500 units: 40 kg, 1,500 N·m peak,
+    264 kW continuous, 2,500 rpm.
+  - Each generator is n Helix SPX242 units: 31.2 kg, 315 kW continuous,
+    17,000 rpm.
+  - The limits are n × the unit's ratings. The count is solved relaxed,
+    rounded up, then re-solved with the count fixed.
+- **Defaults now on:**
+  - drag corrections;
+  - redundancy (2 lanes, 2 buses, 2 strings, failure hovers);
+  - unit-built machines;
+  - gearbox stages.
+- **Reference:** 900 kg at 210 kt, 7,362 kg (16,231 lb), cruise L/D 9.3.
+  - 2 motor units per lane (8 in all), 3 generator units per generator.
+  - Rotor gearbox 5.0:1, a single stage. The rubber model had picked about
+    32:1.
+- **Legacy sets:** `pre_plan035` pins every named set to the plan 030
+  settings. `requirements_plan030` / `assumptions_plan030` keep 14,037 lb.
 ## Plan 031: OpenVSP geometry, aero cross-check and structure (Tier 23, partial)
 
 Asked for on 2026-10-04: "a very strong geometric module for the tiltrotor ... script OpenVSP ... internal
@@ -1326,7 +1642,7 @@ The reference is **13,038 lb** (+217 lb on plan 032).
 
 One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
 Tier 1 component physics, Tier 2 topology, Tier 3 compatibility margins, Tier 4 mass closure, Tier 5
-aerodynamics, Tier 6 stability and control, Tier 7 requirements, Tier 8 missions, Tier 9 coupled sizing, Tier 10 XV-15 mass validation, Tier 19 thermal, Tier 20 tiltrotor wing weights and Tier 21 aerodynamics. Outputs are kept so plots render
+aerodynamics, Tier 6 stability and control, Tier 7 requirements, Tier 8 missions, Tier 9 coupled sizing, Tier 10 XV-15 mass validation, Tier 13b machine database and gearbox stages, Tier 18 redundancy, Tier 19 thermal, Tier 20 tiltrotor wing weights and Tier 21 aerodynamics. Outputs are kept so plots render
 remotely.
 
 ## Next stage

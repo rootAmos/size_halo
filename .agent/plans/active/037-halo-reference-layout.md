@@ -1,4 +1,4 @@
-# Halo reference from the drawn layout (plan 032)
+# Halo reference from the drawn layout (plan 037; plan 032 on its branch before the merge)
 
 Status: APPROVED in parts, 2026-10-04.
 

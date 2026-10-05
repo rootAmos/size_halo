@@ -22,6 +22,10 @@ class HoverSegment:
     label: str = "hover"
     temperature_offset_K: Any = 0.0            # Tier 16: ISA + offset at the altitude
     active_generator_count: Any = None    # None: all; fewer models a turbogenerator out (Tier 17 reserve)
+    # Tier 18 failure states (see FlightCondition): lanes per rotor, battery strings, failed buses.
+    active_lane_count: Any = None
+    active_battery_string_count: Any = None
+    count_buses_failed: int = 0
 
     def duration_s(self):
         return self.duration_s_given
@@ -29,6 +33,9 @@ class HoverSegment:
     def flight_condition(self, soc):
         return FlightCondition(mode="hover", velocity_m_s=0.0, altitude_m=self.altitude_m, thrust_to_weight=1.0,
                                active_generator_count=self.active_generator_count,
+                               active_lane_count=self.active_lane_count,
+                               active_battery_string_count=self.active_battery_string_count,
+                               count_buses_failed=self.count_buses_failed,
                                soc=soc, hybridization_electric=self.hybridization_electric, label=self.label,
                                temperature_offset_K=self.temperature_offset_K)
 

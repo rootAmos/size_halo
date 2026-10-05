@@ -5,6 +5,34 @@
 AeroSandbox/CasADi framework for sizing an unmanned series-hybrid-electric
 tiltrotor together with its mission. Every discipline contributes equations to
 one `asb.Opti` problem; there are no hidden convergence loops or second
+solvers. The disciplines are configuration, powertrain, aerodynamics, mass,
+stability, mission, energy management, thermal and redundancy. Fidelity is
+added in tiers, each with a plan, tests and an executed verification notebook.
+The [fidelity roadmap](docs/FIDELITY_ROADMAP.md) lists the tiers. Models are
+validated against the Bell XV-15 and the full-scale JVX proprotor test.
+
+**Current reference (plan 035):** a Halo-class two-rotor series hybrid.
+
+- **Mission:** 900 kg payload, 445 nm, 210 kt at 10,000 ft, 13,000 ft
+  ceiling, hot-day hover, engine-out and electrical failure hovers.
+- **Engines:** two fixed off-the-shelf 1,120 hp turboshafts.
+- **Battery:** Samsung 50G-shaped equivalent-circuit pack.
+- **Wing:** NDARC tiltrotor wing with whirl-flutter margins.
+- **Aerodynamics:** AeroSandbox AeroBuildup with Scholz drag corrections and trim drag from the tail load.
+- **Thermal:** heat exchanger sized with the aircraft.
+- **Machines and drive:**
+  - redundant motors (2 lanes per rotor), 2 cross-strapped buses, 2 battery
+    strings;
+  - machines built from whole units of real products (Evolito-class motors,
+    Helix-class generators);
+  - a single-stage 5:1 rotor gearbox.
+- **Result:** 7,395 kg (16,303 lb) take-off weight.
+
+**For reviewers:**
+- [docs/RESULTS.md](docs/RESULTS.md): what the framework concludes, how it is
+  checked, and its limits.
+- [docs/ARCHITECTURE_DIAGRAMS.md](docs/ARCHITECTURE_DIAGRAMS.md): how the
+  framework is organized.
 solvers. Tiers 0–21 of the [fidelity roadmap](docs/FIDELITY_ROADMAP.md) are
 implemented apart from Tiers 15, 18 and 22, and Tier 23 (geometry) is partial. Tier 9 is a coupled problem that sizes the aircraft,
 optimizes its mission and allocates battery versus turbogenerator energy per
@@ -27,6 +55,67 @@ The reference has moved as fidelity was added; see the [results](docs/RESULTS.md
 
 All numbers are illustrative engineering inputs, not Archer or Halo data
 (see [reference assumptions](docs/HALO_REFERENCE.md)).
+
+## Results at a glance
+
+Figures from the executed tier notebooks (`notebooks/`) and the geometry
+export, copied to `docs/figures/`.
+
+**How the answer moved as fidelity was added.** Each bar is the reference
+aircraft re-solved with that tier's models. The jump at plan 035 comes from
+three changes: whole real machine units in place of idealized ("rubber")
+scaling, electrical redundancy, and drag corrections for excrescence and
+trim.
+
+![Take-off weight by fidelity step](docs/figures/fidelity_progression.png)
+
+**Geometry.** The OpenVSP outer mold line at three nacelle angles, and the
+structural layout used for the mass check. These are rendered from an
+earlier sized design (`examples/halo_openvsp.py`, `examples/halo_structure.py`).
+
+![Halo-class 3-view and nacelle conversion](docs/figures/halo_views.png)
+![Structural layout](docs/figures/halo_structure.png)
+
+**Aerodynamics.**
+- **Drag polar (Tier 21):** the simple model, AeroSandbox AeroBuildup and the
+  Scholz hand build-up compared. The old guessed drag area was most of the
+  drag.
+- **Cross-check on the same geometry:** OpenVSP VSPAERO (VLM and panel)
+  against AeroSandbox for lift, pitching moment, induced drag, and profile
+  drag by component.
+
+![Drag polar by model](docs/figures/drag_polar_models.png)
+![OpenVSP vs AeroSandbox](docs/figures/aero_compare_openvsp.png)
+
+**Validation against test data.**
+- **Rotor power model (Tier 12):** against full-scale JVX hover and
+  airplane-mode data. The D-2 hover data were held out of the fit.
+- **XV-15 wing weight (Tier 20):** the NDARC tiltrotor wing by component,
+  from the published wing modes.
+
+![JVX proprotor calibration](docs/figures/rotor_jvx_calibration.png)
+![XV-15 wing components](docs/figures/xv15_wing_components.png)
+
+**Battery and thermal.**
+- **Battery cell (Tier 17):** the 50G open-circuit voltage fit to the
+  digitized cell data.
+- **Thermal (Tier 19):** lumped machine temperature response, and the
+  short-time rating it permits from a cold start.
+
+![Battery OCV fit](docs/figures/battery_ocv_fit.png)
+![Thermal short-time rating](docs/figures/thermal_short_time_rating.png)
+
+**Trajectory optimization (Tier 14).** Minimum-energy transition and
+minimum time to climb, flown inside the conversion corridor, against a
+naive prescribed conversion. The minimum-energy transition uses about half
+the energy of the naive schedule.
+
+![Trajectories in the conversion corridor](docs/figures/trajectory_conversion_corridor.png)
+
+**Sensitivities (Tier 22).** Take-off mass change for ±15 % on each
+uncertain input. The XV-15 weight-calibration factors dominate.
+
+![Sensitivity tornado](docs/figures/sensitivity_tornado.png)
 
 ## What is in the package
 
@@ -154,6 +243,14 @@ uv run jupyter lab notebooks
 
 ## Status and next step
 
+All roadmap tiers are implemented (0–22). Open items, ranked by impact in
+[docs/RESULTS.md](docs/RESULTS.md):
+
+- drag calibration against XV-15 flight data;
+- weight calibration rests on one complete aircraft;
+- the electrical layer is implemented but not the default;
+- the trajectory model has no thermal or electrical states, and 6-DOF is
+  planned.
 Open items, roughly by impact:
 
 - **Airplane-mode rotor efficiency.** The cruise coefficient is the largest remaining assumption.

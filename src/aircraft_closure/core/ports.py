@@ -47,3 +47,11 @@ port_value_types = {
     Domain.ELECTRICAL: ElectricalPortValue,
     Domain.FUEL: FuelPortValue,
 }
+
+# Tier 18: the flow field of each domain (summed over copies at a combiner or splitter); the other fields are
+# efforts (equal across the junction).
+port_flow_fields = {
+    Domain.MECHANICAL: "torque_Nm",
+    Domain.ELECTRICAL: "current_A",
+    Domain.FUEL: "fuel_flow_kg_s",
+}
