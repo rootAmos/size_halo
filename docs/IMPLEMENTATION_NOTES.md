@@ -1229,6 +1229,36 @@ come from the weight models.
 - gauges tied to the AFDD breakdown in the FE decks;
 - an unattended full fuselage deck export.
 
+**CalculiX wing-box check** (`fe_wing.py`, `examples/halo_wing_fe.py`; CalculiX 2.22 from
+`calculix/CalculiX-Windows`, run 2026-10-04).
+- **Model:**
+  - the OpenVSP mesh of the as-sized constant-chord wing;
+  - AFDD-mapped gauges: torque-box wall area over the real box perimeter, cap area as four skin strips at the
+    spars, the fairing non-structural;
+  - rigid nacelles with the tip mass and the pylon pitch inertia.
+- **Runs:**
+  - modes free-free, with a rigid fuselage body carrying the rest of the mass (pitch and roll radii of gyration
+    3.3 and 0.6 m, assumed);
+  - jump take-off clamped over the fuselage width, at ultimate load.
+
+| Reference | Beam FE/AFDD | Chord FE/AFDD | Torsion FE/AFDD | Jump cap strain / allowable |
+|---|---|---|---|---|
+| Plan 030 (turbines at the tips) | 19.7 / 25.5 rad/s (0.77) | 38.8 / 32.0 (1.22) | 36.8 / 42.1 (0.87) | 0.00525 / 0.0047 (1.12) |
+| Plan 032 (turbines in the fuselage) | 23.3 / 33.2 (0.70) | 47.7 / 33.4 (1.43) | 40.3 / 44.1 (0.91) | 0.00608 / 0.0047 (1.29) |
+
+- **Cause:** AFDD places the caps the full thickness apart (t/c 0.23). The box between the 0.15 and 0.60 c spars
+  averages about 0.19 c. That explains the lower beam frequency and the over-strain; hand beam theory gives the
+  same strain.
+- **Plan 032 consequences:**
+  - The jump take-off now sizes the caps, about 29 % short in strain.
+  - Box walls of 0.67 mm are below any practical minimum gauge.
+  - Torsion is 9 % below AFDD's estimate, and the whirl-flutter torsion constraint is active, so the
+    whirl-flutter margin is probably not met.
+- **Not yet applied to the sizing:** a correction on AFDD's cap lever arm (or a layout-based wing model) and a
+  minimum gauge.
+- Mode classification uses the nacelle motion. Several antisymmetric "torsion" modes between 32 and 49 rad/s are
+  probably nacelle-pitch and local modes and are not compared.
+
 ## Plan 032: Halo reference from the drawn layout
 
 Three user decisions on 2026-10-04 bring plan 031's findings into the sizing. Every earlier named set

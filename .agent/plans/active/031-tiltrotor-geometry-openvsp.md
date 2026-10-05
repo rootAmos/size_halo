@@ -439,3 +439,11 @@ Each new margin is added to the Halo report. The new margins become constraints 
     intact). The full fuselage deck is therefore an unattended job.
   - **Render:** draws the rings by slicing the fuselage skin at the frame stations (the beams' path), and hides the
     old shell-disc frames.
+- 2026-10-04 (night): **CalculiX wing-box check**, at the user's request ("did we get any fea going?" and "yes, wing
+  box first").
+  - CalculiX 2.22 is installed at `C:\Users\alexa\Documents\Xenon\Software\CalculiX`.
+  - At the plan 032 reference, FE vs AFDD:
+    - beam 0.70x, chord 1.43x, torsion 0.91x;
+    - jump take-off cap strain 1.29x the allowable.
+  - The cause is AFDD's cap lever arm (full thickness against the real box depth). Details are in
+    IMPLEMENTATION_NOTES. The sizing is not yet corrected.

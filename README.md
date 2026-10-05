@@ -99,12 +99,18 @@ plain numbers) and check it from a different direction.
 | Outer mold line | The drawn Halo in OpenVSP: smooth bodies, a tapered wing, a V-tail, tip nacelles that tilt about the spindle, rotors. Writes `.vsp3` with hover, conversion and cruise Modes, STEP and STL per nacelle angle, and renders | `python -m examples.halo_openvsp` |
 | Aero cross-check | VSPAERO (vortex lattice and panel) and the OpenVSP parasite-drag build-up against AeroSandbox VLM and AeroBuildup on the same geometry. Compares lift slope, neutral point, induced and profile drag | `python -m examples.halo_aero_compare` |
 | Internal structure | Wing box (spars, ribs), fuselage (ring frames, bulkheads, floor) and V-tail as OpenVSP FEA structures. Writes CalculiX and Nastran decks, STL and a mass report, and renders the layout | `python -m examples.halo_structure` |
+| Wing FE check | Runs CalculiX on the OpenVSP wing-box mesh with AFDD-mapped gauges and rigid nacelles: free-free beam, chord and torsion frequencies vs AFDD, and the ultimate jump take-off strain | `python -m examples.halo_wing_fe` (needs CalculiX, `CCX`) |
 | Weight back-check | Sizes the primary-structure gauges on the drawn layout from simple ultimate loads and the AFDD stiffness requirements, then compares with the AFDD wing and Raymer tail and fuselage | `python -m examples.halo_structure_reference`, then `python -m examples.halo_structure_check` |
 
 Main findings so far:
 - The AFDD wing agrees with the layout to within about 10 %.
 - AeroBuildup is conservative on stability and induced drag compared with VSPAERO.
 - The XV-15 fuselage calibration overstated an uncrewed fuselage, which led to plan 032.
+- **The CalculiX wing check finds the AFDD wing optimistic for this layout** (the caps work over a shorter lever
+  arm in the real box):
+  - beam frequency is 0.70x AFDD's and torsion 0.91x;
+  - the jump take-off strain is 1.29x the allowable at the plan 032 reference;
+  - the whirl-flutter margin is therefore probably not met.
 
 Limits:
 - Fuselage FE meshing takes minutes per file type.
@@ -158,6 +164,9 @@ Open items, roughly by impact:
     for fly-by-wire.
 - **V-tail.** The sizing still uses a conventional tail; the V-tail is drawn only.
 - **Symbolic geometry layout (Tier 23).** Clearance and packaging constraints are still planned.
-- **Structure.** No FE solve has been run, and the gauges in the decks are placeholders.
+- **AFDD wing vs FE.** The CalculiX check finds the AFDD cap lever arm optimistic for this box: about 29 % over
+  strain in the jump take-off, torsion about 9 % low (whirl flutter is binding), and walls below minimum gauge.
+  The sizing is not yet corrected.
+- **FE models.** Only the wing box is checked. The fuselage and tail decks carry placeholder gauges.
 
 [Results](docs/RESULTS.md) has the full list and how the reference moved.
