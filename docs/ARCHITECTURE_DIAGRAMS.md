@@ -6,7 +6,8 @@ Four diagrams of how the framework is put together. They summarize
 [FIDELITY_ROADMAP.md](FIDELITY_ROADMAP.md); those documents remain the
 reference. Tier numbers and statuses follow the roadmap table. In every
 diagram, solid boxes and edges are implemented, and dashed boxes and edges are
-planned.
+planned. The diagrams read left to right: each column is one group, so they stay
+readable on a wide screen instead of scrolling down a single chain.
 
 ## 1. Repository organization and layering
 
@@ -18,51 +19,62 @@ constraints and objectives. Tests, per-tier notebooks, plans and CI sit
 beside the code and check it.
 
 ```mermaid
-flowchart TB
-    subgraph REPO["Code: dependencies point down only"]
+flowchart LR
+    subgraph L1["1 Orchestration<br/>examples/"]
         direction TB
-        subgraph L1["1 Orchestration: examples/"]
-            sizing["halo_sizing.py<br/>coupled_sizing.py"]
-            trajex["trajectory_optimization.py"]
-            calib["xv15_reference.py<br/>xv15_performance.py<br/>jvx_rotor_calibration.py"]
-        end
-        subgraph L2["2 Aircraft assembly: vehicle/"]
-            aircraft["Aircraft: wing, tails,<br/>fuselage, items"]
-            install["PowertrainInstallation"]
-        end
-        subgraph L3["3 Disciplines"]
-            aero["aerodynamics/"]
-            ctrl["controls/"]
-            perf["performance/<br/>flight points"]
-            mission["mission/"]
-            reqs["requirements/"]
-            traj["trajectory/"]
-        end
-        subgraph L4["4 Subsystem assemblies"]
-            topo["powertrain/topologies.py<br/>series hybrid"]
-            coreports["core/: typed ports,<br/>topology, margins"]
-        end
-        subgraph L5["5 Components: powertrain/components/"]
-            comps["Motor, Generator, Battery,<br/>EquivalentCircuitBattery,<br/>SimpleTurboshaft, Gearbox,<br/>ActuatorDiskPropulsor,<br/>MomentumProfileRotor"]
-        end
-        subgraph L6["6 Maps, decks, empirical data"]
-            afdd["weights/afdd.py"]
-            decks["powertrain/decks.py"]
-            rotordata["data/rotors/, data/batteries/<br/>JVX tests, 50G cell curves"]
-        end
-        L1 --> L2 --> L3 --> L4 --> L5 --> L6
+        sizing["halo_sizing.py<br/>coupled_sizing.py"]
+        trajex["trajectory_optimization.py"]
+        calib["xv15_reference.py<br/>xv15_performance.py<br/>jvx_rotor_calibration.py"]
     end
+    subgraph L2["2 Aircraft assembly<br/>vehicle/"]
+        direction TB
+        aircraft["Aircraft: wing, tails,<br/>fuselage, items"]
+        install["PowertrainInstallation"]
+    end
+    subgraph L3["3 Disciplines"]
+        direction TB
+        aero["aerodynamics/"]
+        ctrl["controls/"]
+        perf["performance/<br/>flight points"]
+        mission["mission/<br/>requirements/"]
+        traj["trajectory/"]
+    end
+    subgraph L4["4 Subsystem assemblies"]
+        direction TB
+        topo["powertrain/topologies.py<br/>series hybrid"]
+        coreports["core/: typed ports,<br/>topology, margins"]
+    end
+    subgraph L5["5 Components<br/>powertrain/components/"]
+        direction TB
+        comps["Motor, Generator,<br/>Battery, ECM battery,<br/>Turboshaft, Gearbox,<br/>rotors, cables,<br/>heat exchanger"]
+    end
+    subgraph L6["6 Maps, decks,<br/>empirical data"]
+        direction TB
+        afdd["weights/afdd.py"]
+        decks["powertrain/decks.py"]
+        rotordata["data/: JVX tests,<br/>50G cell curves"]
+    end
+    L1 --> L2 --> L3 --> L4 --> L5 --> L6
 
-    ASB[["AeroSandbox and CasADi<br/>asb.Opti, Atmosphere, MassProperties,<br/>AeroBuildup, dynamics classes"]]
-    REPO -- "builds equations with" --> ASB
+    subgraph EXPORT["After the solve<br/>export/openvsp/ (optional)"]
+        direction TB
+        geom["OpenVSP geometry,<br/>STEP, renders"]
+        checks["VSPAERO, parasite drag,<br/>weight back-check"]
+        fe["Structure decks,<br/>CalculiX wing check"]
+    end
+    L1 -. "solved numbers" .-> EXPORT
 
-    subgraph CHECK["Verification and governance"]
+    ASB[["AeroSandbox and CasADi<br/>asb.Opti, Atmosphere,<br/>MassProperties, AeroBuildup"]]
+    L3 -- "builds equations with" --> ASB
+
+    subgraph CHECK["Verification"]
+        direction TB
         tests["tests/"]
-        notebooks["notebooks/tierN_topic/<br/>one executed notebook per tier"]
-        plans["docs/ and .agent/plans/<br/>one ExecPlan per tier"]
-        ci[".github/workflows/<br/>tests on every push"]
+        notebooks["notebooks/tierN_topic/"]
+        plans["docs/ and .agent/plans/"]
+        ci[".github/workflows/"]
     end
-    CHECK -. "verifies" .-> REPO
+    CHECK -. "verifies" .-> L1
 ```
 
 ## 2. Fidelity scaling
@@ -85,55 +97,62 @@ flowchart LR
     caller -- "same operating inputs" --> iface
 
     subgraph DATA["Calibration and validation data"]
+        direction TB
         jvx["JVX proprotor tests<br/>NASA TM-2016-219070"]
         xv15["XV-15 group weights,<br/>lapse and hover data"]
         gasp["GASP turboshaft deck<br/>user-supplied"]
         cell["Samsung 50G cell data<br/>Paudel et al. 2025"]
     end
 
-    subgraph MODELS["Models: simplest kept, fidelity added behind the interface"]
+    subgraph POWER["Powertrain models"]
         direction TB
         subgraph ROTOR["Rotor: distinct classes"]
             direction LR
-            r0["ActuatorDiskPropulsor<br/>Tier 1"] -- "new class,<br/>needs rotor speed" --> r1["MomentumProfileRotor<br/>Tier 12"]
+            r0["ActuatorDisk<br/>Tier 1"] -- "needs rotor speed" --> r1["MomentumProfile<br/>Tier 12"]
             r1 -.-> r2["BEM rotor<br/>if needed"]:::planned
         end
         subgraph TURB["Turboshaft: submodels"]
             direction LR
-            t0["Constant efficiency<br/>Tier 1"] --> t1["Density lapse, Geiss,<br/>deck cubic, table<br/>Tiers 10b and 11a"]
-            t1 --> t2["Temperature lapse,<br/>ISA + offset<br/>Tier 16"]
+            t0["Constant efficiency<br/>Tier 1"] --> t1["Lapse, deck, table<br/>Tiers 10b, 11a"] --> t2["ISA + offset<br/>Tier 16"]
         end
-        subgraph MACH["Motor and generator: mass_model"]
+        subgraph MACH["Machines and battery"]
             direction LR
-            m0["Specific power,<br/>McDonald losses<br/>Tier 1"] --> m1["Torque density,<br/>gear ratio<br/>Tier 13"]
+            m0["Specific power<br/>Tier 1"] --> m1["Torque density<br/>Tier 13"]
+            b0["Energy capacity<br/>Tier 1"] -- "needs current" --> b1["Equivalent circuit<br/>Tier 17"]
         end
-        subgraph BATT["Battery"]
-            direction LR
-            b0["Energy and power<br/>capacity<br/>Tier 1"] -- "new class,<br/>needs current" --> b1["Equivalent circuit,<br/>sag and ageing<br/>Tier 17"]
-        end
+    end
+
+    subgraph AIRFRAME["Airframe models"]
+        direction TB
         subgraph AERO["Aerodynamics"]
             direction LR
-            a0["SimpleAerodynamics<br/>Tier 5"] -.-> a1["AeroBuildup primary,<br/>Scholz build-up<br/>Tier 21"]:::planned
+            a0["Simple<br/>Tier 5"] --> a1["AeroBuildup reference,<br/>Scholz check<br/>Tier 21"]
         end
         subgraph WTS["Weights"]
             direction LR
-            w0["Raymer GA and<br/>AFDD rotorcraft<br/>Tiers 4 and 10a"] -.-> w1["Tiltrotor wing,<br/>whirl flutter<br/>Tier 20"]
+            w0["Raymer GA, AFDD<br/>Tiers 4, 10a"] --> w1["Tiltrotor wing,<br/>whirl flutter<br/>Tier 20"] --> w2["Cap depth, min gauge,<br/>layout fuselage factor<br/>plans 032, 035"]
         end
-        subgraph NEW["New disciplines, same pattern"]
+        subgraph SYS["Systems layers"]
             direction LR
-            e1["Electrical layer<br/>Tier 15"]:::planned
-            th1["Thermal<br/>Tier 19"]:::planned
+            e1["Electrical<br/>Tier 15"]
+            th1["Thermal<br/>Tier 19"]
+            g1["Geometry checks<br/>Tier 23, partial"]
         end
     end
 
     subgraph VERIFY["Verification"]
+        direction TB
         unit["Unit tests: identities,<br/>limits, trends, symbolic"]
-        nb["Tier notebook<br/>executed, outputs kept"]
-        legacy["Legacy assumption sets<br/>reproduce earlier tiers"]
+        nb["Tier notebooks"]
+        legacy["Named legacy sets<br/>reproduce earlier tiers"]
+        fecheck["Independent checks:<br/>VSPAERO, CalculiX"]
     end
-    iface --> MODELS
-    DATA --> MODELS
-    MODELS --> VERIFY
+    iface --> POWER
+    iface --> AIRFRAME
+    DATA --> POWER
+    DATA --> AIRFRAME
+    POWER --> VERIFY
+    AIRFRAME --> VERIFY
 
     classDef planned fill:#f6f6f6,stroke:#888888,stroke-dasharray:5 5,color:#555555
 ```
@@ -153,42 +172,53 @@ be carried back by hand as better segment definitions or margins; sizing
 stays on quasi-steady segments.
 
 ```mermaid
-flowchart TB
-    subgraph MODELS["One set of physical models: src/aircraft_closure/"]
-        direction LR
-        pt["Powertrain components<br/>rotor, motor, generator,<br/>battery, turboshaft, gearbox"]
-        aero["Aerodynamics<br/>SimpleAerodynamics"]
-        veh["Vehicle geometry and<br/>MassProperties"]
+flowchart LR
+    subgraph MODELS["One set of physical models<br/>src/aircraft_closure/"]
+        direction TB
+        pt["Powertrain components<br/>rotor, machines, battery,<br/>turboshaft, gearbox"]
+        aero["Aerodynamics<br/>AeroBuildup"]
+        veh["Vehicle geometry<br/>and MassProperties"]
     end
 
-    subgraph SIZE["Sizing, mission and energy allocation: one asb.Opti, Tiers 9 to 13"]
-        direction LR
+    subgraph SIZE["Sizing, mission, energy<br/>one asb.Opti, Tiers 9-21"]
+        direction TB
         fp["Quasi-steady flight points<br/>requirements as points"]
         seg["Chained mission segments<br/>fuel burn and SOC"]
         clos["Mass closure, stability,<br/>operating margins"]
         fp --> seg --> clos
     end
 
-    subgraph TRAJ["Trajectory optimization: separate asb.Opti, Tier 14"]
-        direction LR
-        pm["DynamicsPointMass2DSpeedGamma<br/>collocated nodes"]
+    subgraph TRAJ["Trajectory optimization<br/>separate asb.Opti, Tier 14"]
+        direction TB
+        pm["Point-mass dynamics<br/>collocated nodes"]
         tro["Min-energy transition,<br/>min-time climb"]
         pm --> tro
     end
 
-    subgraph SIXDOF["6-DOF trajectory: planned, not implemented"]
-        direction LR
-        rb["DynamicsRigidBody3DBodyEuler<br/>or DynamicsRigidBody2DBody"]:::planned
-        mom["Rotor and aero moments,<br/>AeroBuildup, inertia"]:::planned
+    subgraph AFTER["Checks after the solve<br/>plan 031, numbers only"]
+        direction TB
+        vsp["OpenVSP geometry"]
+        vspaero["VSPAERO and<br/>parasite drag"]
+        ccx["CalculiX wing box,<br/>weight back-check"]
+        vsp --> vspaero
+        vsp --> ccx
+    end
+
+    subgraph SIXDOF["6-DOF trajectory<br/>planned"]
+        direction TB
+        rb["Rigid-body dynamics"]:::planned
+        mom["Rotor and aero<br/>moments, inertia"]:::planned
         rb -.-> mom
     end
 
     MODELS -- "steady points" --> SIZE
     MODELS -- "time nodes" --> TRAJ
     MODELS -. "forces and moments" .-> SIXDOF
-    SIZE -- "sized design<br/>HaloSizingResult.design" --> TRAJ
-    TRAJ -. "segment definitions,<br/>margins" .-> SIZE
-    TRAJ -. "add attitude states" .-> SIXDOF
+    SIZE -- "sized design" --> TRAJ
+    SIZE -- "solved numbers" --> AFTER
+    AFTER -. "findings become<br/>model options" .-> MODELS
+    TRAJ -. "segment definitions" .-> SIZE
+    TRAJ -. "attitude states" .-> SIXDOF
 
     classDef planned fill:#f6f6f6,stroke:#888888,stroke-dasharray:5 5,color:#555555
     style SIXDOF stroke-dasharray:5 5
@@ -206,43 +236,53 @@ destination (Tier 16) is solved in the same problem.
 ```mermaid
 flowchart LR
     subgraph DV["Design variables"]
+        direction TB
         dv1["Take-off mass"]
         dv2["Wing position and area,<br/>tail areas, disk area"]
-        dv3["Motor and generator torque,<br/>peak speeds, gear ratio"]
-        dv4["Turboshaft rating and mass,<br/>battery power and energy, fuel"]
+        dv3["Machine torques, speeds,<br/>gear ratio"]
+        dv4["Battery power and energy,<br/>fuel, heat exchanger"]
         dv5["Rotor solidity, tip speed"]
     end
 
-    subgraph MV["Mission and operating variables"]
+    subgraph MV["Mission and<br/>operating variables"]
+        direction TB
         mv1["Cruise and loiter speed"]
         mv2["Per point: rotor speed,<br/>battery current, generator<br/>torque, electric fraction"]
     end
 
     subgraph EQ["Equations from the models"]
+        direction TB
         eq1["Aircraft with installed<br/>series-hybrid powertrain"]
         eq2["Mission segments and<br/>requirement flight points"]
         eq3["Mass breakdown and CG"]
     end
 
     subgraph CON["Constraints"]
-        c1["Mass closure"]
-        c2["Requirements: hover,<br/>climb, speed, ceiling"]
-        c3["Mission: fuel with<br/>reserve, end SOC"]
-        c4["Engine-out hover<br/>SOC reserve"]
-        c5["Stability: static margin,<br/>Cn_beta, hover trim"]
-        c6["Operating margins: speed,<br/>torque, voltage, current"]
-        c7["Rotor clearance, stall"]
-        c8["Hot-day hover at<br/>destination"]
+        direction LR
+        subgraph CONA[" "]
+            direction TB
+            c1["Mass closure"]
+            c2["Requirements: hover,<br/>climb, speed, ceiling"]
+            c3["Mission: fuel, reserve,<br/>end SOC"]
+            c4["Engine-out hover"]
+            c8["Hot-day hover"]
+        end
+        subgraph CONB[" "]
+            direction TB
+            c5["Stability: static margin,<br/>Cn_beta, hover trim"]
+            c6["Operating margins: speed,<br/>torque, voltage, current"]
+            c9["Machine temperatures"]
+            c10["Whirl flutter per rev"]
+            c7["Rotor clearance, stall"]
+        end
     end
 
-    obj(["Objective: minimum take-off<br/>mass or maximum payload"])
-    solve{{"asb.Opti solve with IPOPT"}}
+    obj(["Objective: minimum<br/>take-off mass or<br/>maximum payload"])
+    solve{{"asb.Opti solve<br/>with IPOPT"}}
 
     DV --> EQ
     MV --> EQ
     EQ --> CON
     CON --> solve
     obj --> solve
-
-    classDef planned fill:#f6f6f6,stroke:#888888,stroke-dasharray:5 5,color:#555555
 ```

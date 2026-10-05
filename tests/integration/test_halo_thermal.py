@@ -2,12 +2,13 @@
 import unittest
 from dataclasses import replace
 
-from examples.halo_sizing import HaloAssumptions, HaloDesign, build_halo_aircraft, solve_halo_sizing
+from examples.halo_sizing import (HaloAssumptions, HaloDesign, assumptions_plan030, build_halo_aircraft,
+                                  requirements_plan030, solve_halo_sizing)
 
 # Plan 035 changed the defaults; these tests reproduce their tier on the plan 030 settings.
 from functools import partial  # noqa: E402
-from examples.halo_sizing import pre_plan035  # noqa: E402
-HaloAssumptions = partial(HaloAssumptions, **pre_plan035)
+from examples.halo_sizing import pre_layout, pre_plan035  # noqa: E402
+HaloAssumptions = partial(HaloAssumptions, **pre_plan035, **pre_layout)
 build_halo_aircraft = partial(build_halo_aircraft, assumptions=HaloAssumptions())
 solve_halo_sizing = partial(solve_halo_sizing, assumptions=HaloAssumptions())
 
@@ -49,7 +50,7 @@ class HaloThermalSwitchTests(unittest.TestCase):
 class HaloThermalSizingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.sized = solve_halo_sizing()                     # plan 030: the defaults are the thermal reference
+        cls.sized = solve_halo_sizing(requirements_plan030, assumptions=assumptions_plan030)    # the plan 030 thermal reference
 
     def test_closes_with_all_margins(self):
         self.assertGreater(self.sized.min_margin, -1e-6)

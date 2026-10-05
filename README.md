@@ -11,31 +11,33 @@ added in tiers, each with a plan, tests and an executed verification notebook.
 The [fidelity roadmap](docs/FIDELITY_ROADMAP.md) lists the tiers. Models are
 validated against the Bell XV-15 and the full-scale JVX proprotor test.
 
-**Current reference (plan 035):** a Halo-class two-rotor series hybrid.
+**Current reference:** a Halo-class two-rotor series hybrid with every model on.
 
 - **Mission:** 900 kg payload, 445 nm, 210 kt at 10,000 ft, 13,000 ft
   ceiling, hot-day hover, engine-out and electrical failure hovers.
-- **Engines:** two fixed off-the-shelf 1,120 hp turboshafts.
+- **Engines:** two fixed off-the-shelf 1,120 hp turboshafts, inside the fuselage.
 - **Battery:** Samsung 50G-shaped equivalent-circuit pack.
-- **Wing:** NDARC tiltrotor wing with whirl-flutter margins.
+- **Fuselage:** unpressurized and boxy (11 m long, 1.68 x 2.0 m). Its weight is raw Raymer GA x 1.70,
+  anchored to a layout-based structure estimate.
+- **Wing:** NDARC tiltrotor wing with whirl-flutter margins. Its spar caps sit at the real box depth, the
+  torque box has a 1 mm minimum gauge, and the nacelle pitch inertia is built from its components.
 - **Aerodynamics:** AeroSandbox AeroBuildup with Scholz drag corrections and trim drag from the tail load.
 - **Thermal:** heat exchanger sized with the aircraft.
 - **Machines and drive:**
-  - redundant motors (2 lanes per rotor), 2 cross-strapped buses, 2 battery
-    strings;
-  - machines built from whole units of real products (Evolito-class motors,
-    Helix-class generators);
-  - a single-stage 5:1 rotor gearbox.
-- **Result:** 7,395 kg (16,303 lb) take-off weight.
+  - redundant motors (2 lanes per rotor), 2 cross-strapped buses, 2 battery strings;
+  - machines built from whole units of real products (2 motor units and 3 generator units);
+  - a single-stage rotor gearbox.
+- **Result:** 6,885 kg (15,179 lb) take-off weight.
+
+Every earlier reference stays reproducible as a named assumption set (for example `assumptions_plan030`,
+`assumptions_plan037`, `assumptions_plan038`). All numbers are illustrative engineering inputs, not Archer or
+Halo data (see [reference assumptions](docs/HALO_REFERENCE.md)).
 
 **For reviewers:**
 - [docs/RESULTS.md](docs/RESULTS.md): what the framework concludes, how it is
   checked, and its limits.
 - [docs/ARCHITECTURE_DIAGRAMS.md](docs/ARCHITECTURE_DIAGRAMS.md): how the
   framework is organized.
-
-All numbers are illustrative engineering inputs, not Archer or Halo data
-(see [reference assumptions](docs/HALO_REFERENCE.md)).
 
 ## Results at a glance
 
@@ -111,6 +113,7 @@ uncertain input. The XV-15 weight-calibration factors dominate.
 | Requirements | `requirements/` | Hover, climb, speed and ceiling capability requirements |
 | Mission | `mission/` | Hover, climb, cruise, loiter, descent segments; missions with fuel burn and SOC |
 | Weights | `weights/` | AFDD rotorcraft weight equations (rotor, drive system, engine section) from NDARC |
+| Export | `export/openvsp/` | Numeric geometry snapshot of a solved aircraft; OpenVSP outer mold line (tilting nacelles, Modes), STEP/STL export, PyVista renders. Optional; never imported by sizing code |
 
 Lower layers never import higher ones; components build equations and callers
 own variables, constraints and objectives ([architecture](docs/ARCHITECTURE.md),
@@ -138,7 +141,53 @@ uv run python -m examples.cruise_closure          # Tier 5: cruise equilibrium i
 uv run python -m examples.aircraft_mass_closure   # Tier 4: mass and CG closure
 uv run python -m examples.series_hybrid_point     # Tiers 2-3: topology-coupled hover point
 uv run python -m examples.series_hybrid_point_explicit  # Tier 1: hand-coupled hover point
+uv run python -m examples.halo_openvsp            # Plan 031: Halo in OpenVSP (needs OpenVSP, see below)
+uv run python -m examples.halo_aero_compare       # Plan 031: VSPAERO and OpenVSP parasite drag vs AeroSandbox
 ```
+
+### Optional: OpenVSP geometry export
+
+The OpenVSP Python API ships with the OpenVSP release, not on PyPI. Install it
+into `.venv` from a release built for Python 3.13 (3.53.1 is used here), and
+the PyVista renderer from the `geometry` group:
+
+```powershell
+$vsp = "<OpenVSP-3.53.1-win64>\python"
+uv pip install --system-certs "$vsp\openvsp_config" "$vsp\utilities" "$vsp\degen_geom" "$vsp\vsp_airfoils" "$vsp\openvsp"
+uv sync --inexact --group geometry
+```
+
+These packages are outside the lockfile, so a plain `uv sync` removes them;
+use `uv sync --inexact`. Tests that need OpenVSP skip when it is absent.
+Outputs go to `output/` (not committed).
+
+## Geometry, aero cross-check and structure tools (plan 031)
+
+These are optional, they need OpenVSP, and nothing in the sizing depends on them. They take a solved aircraft (as
+plain numbers) and check it from a different direction.
+
+| Tool | What it does | Run |
+|---|---|---|
+| Outer mold line | The drawn Halo in OpenVSP: smooth bodies, a tapered wing, a V-tail, tip nacelles that tilt about the spindle, rotors. Writes `.vsp3` with hover, conversion and cruise Modes, STEP and STL per nacelle angle, and renders | `python -m examples.halo_openvsp` |
+| Aero cross-check | VSPAERO (vortex lattice and panel) and the OpenVSP parasite-drag build-up against AeroSandbox VLM and AeroBuildup on the same geometry. Compares lift slope, neutral point, induced and profile drag | `python -m examples.halo_aero_compare` |
+| Internal structure | Wing box (spars, ribs), fuselage (ring frames, bulkheads, floor) and V-tail as OpenVSP FEA structures. Writes CalculiX and Nastran decks, STL and a mass report, and renders the layout | `python -m examples.halo_structure` |
+| Wing FE check | Runs CalculiX on the OpenVSP wing-box mesh with AFDD-mapped gauges and rigid nacelles: free-free beam, chord and torsion frequencies vs AFDD, and the ultimate jump take-off strain | `python -m examples.halo_wing_fe` (needs CalculiX, `CCX`) |
+| Weight back-check | Sizes the primary-structure gauges on the drawn layout from simple ultimate loads and the AFDD stiffness requirements, then compares with the AFDD wing and Raymer tail and fuselage | `python -m examples.halo_structure_reference`, then `python -m examples.halo_structure_check` |
+
+Main findings so far:
+- The AFDD wing agrees with the layout to within about 10 %.
+- AeroBuildup is conservative on stability and induced drag compared with VSPAERO.
+- The XV-15 fuselage calibration overstated an uncrewed fuselage, which led to plan 037.
+- The CalculiX wing check found the AFDD wing optimistic for this layout, because the caps work over a shorter
+  lever arm in the real box. The jump take-off strain was 1.29x the allowable. Plan 038 corrects the model: the
+  FE re-check gives 1.10x, and beam frequency rises from 0.70x to 0.85x of the AFDD estimate.
+
+Limits:
+- Fuselage FE meshing takes minutes per file type.
+- The structural STEP export is off.
+- Only the wing box has been solved by FE; the fuselage and tail decks carry placeholder gauges.
+
+See [implementation notes](docs/IMPLEMENTATION_NOTES.md) (plans 031, 037 and 038) for numbers and OpenVSP quirks.
 
 ## Continuous integration
 
@@ -175,11 +224,14 @@ uv run jupyter lab notebooks
 
 ## Status and next step
 
-All roadmap tiers are implemented (0–22). Open items, ranked by impact in
-[docs/RESULTS.md](docs/RESULTS.md):
+All roadmap tiers 0-22 are implemented, and Tier 23 (geometry) is partial. Open items, roughly by impact (see
+[docs/RESULTS.md](docs/RESULTS.md)):
 
-- drag calibration against XV-15 flight data;
-- weight calibration rests on one complete aircraft;
-- the electrical layer is implemented but not the default;
-- the trajectory model has no thermal or electrical states, and 6-DOF is
-  planned.
+- **Drag calibration** against XV-15 flight data, and airplane-mode rotor efficiency.
+- **Weight calibration** rests on one complete aircraft.
+- **Wing:** the corrected wing is still 10 % over the strain allowable in the jump take-off by FE, and wing
+  torsion is not yet cleanly identified in the FE modes.
+- **Layout assumptions:** the turbogenerator station and the nacelle drive and cowling offsets.
+- **V-tail:** the sizing uses a conventional tail; the V-tail is drawn only.
+- **Geometry:** the symbolic layout with clearance and packaging constraints (Tier 23) is still planned.
+- **Trajectories:** the trajectory layer has no 6-DOF yet.

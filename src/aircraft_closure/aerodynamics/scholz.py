@@ -137,8 +137,8 @@ class ScholzAerodynamics(SimpleAerodynamics):
             surface("horizontal_tail", aircraft.horizontal_tail, aircraft.horizontal_tail.area_m2, q.horizontal_tail),
             surface("vertical_tail", aircraft.vertical_tail, aircraft.vertical_tail.area_m2, q.vertical_tail),
             ParasiteDragItem("fuselage", friction(fuselage.length_m)
-                             * form_factor_fuselage(fuselage.length_m / fuselage.diameter_m) * q.fuselage
-                             * area_wetted_fuselage_m2(fuselage.length_m, fuselage.diameter_m) / area_ref_m2),
+                             * form_factor_fuselage(fuselage.length_m / fuselage.diameter_equivalent_m()) * q.fuselage
+                             * area_wetted_fuselage_m2(fuselage.length_m, fuselage.diameter_equivalent_m()) / area_ref_m2),
         ]
         nacelles = aircraft.nacelles
         if nacelles is not None and getattr(nacelles, "length_m", None) is not None:

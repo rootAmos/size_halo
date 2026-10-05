@@ -1466,6 +1466,177 @@ up.
     32:1.
 - **Legacy sets:** `pre_plan035` pins every named set to the plan 030
   settings. `requirements_plan030` / `assumptions_plan030` keep 14,037 lb.
+## Plan 031: OpenVSP geometry, aero cross-check and structure (Tier 23, partial)
+
+Asked for on 2026-10-04: "a very strong geometric module for the tiltrotor ... script OpenVSP ... internal
+structural layout for export". Everything here is a check or an export. Nothing feeds the sizing, and nothing in
+`vehicle/` or the sizing imports it.
+
+**Optional dependencies.**
+- The OpenVSP 3.53.1 Python API, installed from the release folder (see README).
+- PyVista, for renders (`geometry` group).
+- Tests that need them skip when they are absent.
+
+**Geometry** (`export/openvsp/snapshot.py`, `model.py`).
+- **`GeometrySnapshot`** is a plain-float description of the aircraft: bodies as super-ellipse stations, surfaces,
+  tip nacelle, rotor, and a V-tail or conventional tails.
+- **`halo_plan027_snapshot()`** draws the plan 027 solution as Halo, from user-supplied stills:
+  - boxy 11 m fuselage;
+  - dorsal wing fairing;
+  - wing tapered 0.6 at the sized area and span (aesthetic);
+  - V-tail by the equal-projected-area rule;
+  - flat-sided tip nacelles.
+- **`build_openvsp_model`** follows the user's tiltrotor skeleton:
+  - smoothly skinned Fuselage geoms, with each section's tangents taken from its neighbours' slopes (the
+    blending the user asked for, after the Joby S4 and Kitty Hawk Heaviside models);
+  - the whole nacelle tilts on a Hinge about the spindle at the tip quarter chord;
+  - propellers from the sized solidity;
+  - a rotor tip-path auxiliary;
+  - hover, conversion and cruise Modes.
+- **`export_outer_mold_line`** writes `.vsp3`, plus STEP and STL per nacelle angle.
+- **`GeometrySnapshot.to_asb()`** gives AeroSandbox the same shape.
+- **`examples/halo_openvsp.py`** renders the outer mold line.
+
+**Aero cross-check** (`aero.py`, `examples/halo_aero_compare.py`; 210 kt, 10,000 ft, same geometry).
+
+| | VSPAERO VLM | VSPAERO VLM + panel bodies | VSPAERO panel | AeroSandbox VLM | AeroBuildup |
+|---|---|---|---|---|---|
+| CL_alpha (/deg) | 0.087 | 0.099 | 0.111 | 0.084 | 0.095 |
+| Neutral point x (m) | 4.87 | 4.67 | 4.70 | 4.94 | 4.60 |
+| Oswald e | 1.14 | — | — | 1.04 | 0.82 |
+
+- AeroBuildup has the most forward neutral point and about 25 % more induced drag than either vortex lattice, so
+  it is conservative on both.
+- Profile drag: OpenVSP parasite tool CD0 0.0205 vs AeroBuildup 0.0221. AeroBuildup counts buried body area.
+- Open: AeroBuildup's CL at 0 deg (zero-lift angle about 1 deg different) and its Cm offset.
+- An all-vortex-lattice model is singular, because a VLM body is a plate that coincides with the wing tip inside
+  the tip nacelle. Bodies are therefore panelled.
+
+**Structure** (`structure.py`, `examples/halo_structure.py`).
+- **Wing box:** spars at 0.15 and 0.60 c, 0.5 m ribs, fairing-attach and nacelle ribs.
+- **Fuselage:** 0.6 m ring frames (I-section beams along the skin), four bulkheads, floor.
+- **V-tail:** two spars, ribs.
+- Placeholder gauges.
+- Outputs: STL, CalculiX, Nastran and the OpenVSP mass report, plus a render.
+
+**Weight back-check** (`structure_check.py`, `examples/halo_structure_reference.py`, `halo_structure_check.py`).
+Gauges come from simple ultimate loads (4.5 g flight with elliptic lift and tip relief, the AFDD jump take-off,
+tail CL max at dive speed, fuselage bending) and the AFDD stiffness requirements, on the drawn layout. They do not
+come from the weight models.
+- **Wing:** the layout primary structure is 1.07x the AFDD primary (box + caps) as sized and 1.14x as drawn.
+  Root jump moment: 318 vs 310 kN m.
+- **Tails:** minimum gauge. The user keeps Raymer.
+- **Fuselage:** layout primary 310 kg + secondary 220 kg = 530 kg, i.e. 1.73x raw unpressurized Raymer GA.
+  - The XV-15 group calibration of 2.07 (a crewed fuselage) overstates it.
+  - This became plan 032's factor of 1.70.
+
+**OpenVSP 3.53.1 behaviour worth knowing.**
+- Exports keep the first export's tessellation of hinge children, so each nacelle angle is a fresh build.
+- `ComputeFeaMesh` writes one file type per call and re-meshes each time, whatever the export flags.
+- `FeaMeshAnalysis` never finished on this model.
+- The structural STEP export stalls (it is opt-in).
+- Fuselage meshing time grows quickly with the number of frames: minutes per file type.
+- On Windows, `timeout` on `.venv/Scripts/python` kills only the launcher; the child keeps running.
+
+**Not done (deferred):**
+- milestone A, the symbolic `TiltrotorLayout` with clearance and packaging constraints in `Opti`;
+- CalculiX runs;
+- nacelle, gear and fairing structure;
+- gauges tied to the AFDD breakdown in the FE decks;
+- an unattended full fuselage deck export.
+
+**CalculiX wing-box check** (`fe_wing.py`, `examples/halo_wing_fe.py`; CalculiX 2.22 from
+`calculix/CalculiX-Windows`, run 2026-10-04).
+- **Model:**
+  - the OpenVSP mesh of the as-sized constant-chord wing;
+  - AFDD-mapped gauges: torque-box wall area over the real box perimeter, cap area as four skin strips at the
+    spars, the fairing non-structural;
+  - rigid nacelles with the tip mass and the pylon pitch inertia.
+- **Runs:**
+  - modes free-free, with a rigid fuselage body carrying the rest of the mass (pitch and roll radii of gyration
+    3.3 and 0.6 m, assumed);
+  - jump take-off clamped over the fuselage width, at ultimate load.
+
+| Reference | Beam FE/AFDD | Chord FE/AFDD | Torsion FE/AFDD | Jump cap strain / allowable |
+|---|---|---|---|---|
+| Plan 030 (turbines at the tips) | 19.7 / 25.5 rad/s (0.77) | 38.8 / 32.0 (1.22) | 36.8 / 42.1 (0.87) | 0.00525 / 0.0047 (1.12) |
+| Plan 032 (turbines in the fuselage) | 23.3 / 33.2 (0.70) | 47.7 / 33.4 (1.43) | 40.3 / 44.1 (0.91) | 0.00608 / 0.0047 (1.29) |
+
+- **Cause:** AFDD places the caps the full thickness apart (t/c 0.23). The box between the 0.15 and 0.60 c spars
+  averages about 0.19 c. That explains the lower beam frequency and the over-strain; hand beam theory gives the
+  same strain.
+- **Plan 032 consequences:**
+  - The jump take-off now sizes the caps, about 29 % short in strain.
+  - Box walls of 0.67 mm are below any practical minimum gauge.
+  - Torsion is 9 % below AFDD's estimate, and the whirl-flutter torsion constraint is active, so the
+    whirl-flutter margin is probably not met.
+- **Not yet applied to the sizing:** a correction on AFDD's cap lever arm (or a layout-based wing model) and a
+  minimum gauge.
+- Mode classification uses the nacelle motion. Several antisymmetric "torsion" modes between 32 and 49 rad/s are
+  probably nacelle-pitch and local modes and are not compared.
+
+## Plan 032: Halo reference from the drawn layout
+
+Three user decisions on 2026-10-04 bring plan 031's findings into the sizing. Every earlier named set
+(including the new `assumptions_plan030`) pins the old values.
+
+| Step | Change | Take-off |
+|---|---|---|
+| Plan 030 | — | 14,037 lb |
+| 1 | Fuselage: raw Raymer GA (ΔP = 0) x 1.70, layout-anchored, replacing the XV-15 2.07 | 13,307 lb |
+| 2 | Turbogenerators, their gearboxes and the engine section in the fuselage; cowling stays at the tips | 13,170 lb |
+| 3 | Boxy section (1.68 x 2.0 m, super-ellipse 3.2) at the drawn 11 m length; tail root leading edge 9.8 m | **12,821 lb** |
+
+**Step 2 (turbogenerators):**
+- Torque box 86.5 -> 51.5 kg: less pitch inertia at the tip.
+- Jump spar caps 23.5 -> 36.9 kg: less tip relief.
+
+**Step 3 (boxy section):**
+- At 12.8 m the boxy section cost +782 lb (59.9 vs 50.3 m2 wetted).
+- At 11 m it has the round tube's wetted area (51.3 m2).
+- Tails grow to 4.66 / 2.49 m2 for the shorter arm.
+- Systems fall 451 -> 347 kg, because Raymer's flight-control mass scales with fuselage length^1.536. That
+  dependence is weak for an uncrewed fly-by-wire aircraft, so treat this part of the saving with care.
+
+**Solver:** the generic start chain can end in IPOPT restoration failure with the new fuselage factor.
+`solve_halo_sizing` then starts from the same problem with the XV-15 fuselage calibration
+(`start_from_fuselage_calibration`).
+
+**Open:**
+- The pylon radius of gyration still uses the XV-15 ratio, which assumed engines in the nacelle.
+- The turbogenerator station (1.0 m behind the wing quarter chord, z 0.5 m) is assumed.
+- The sizing keeps a conventional tail; the V-tail is drawn only.
+
+## Plan 035: AFDD wing cap depth and minimum gauge; pylon inertia
+
+These changes follow the plan 031 CalculiX check, which found the AFDD wing optimistic for the drawn box.
+- **Spar-cap depth:** AFDD's caps can be placed at the real depth between the spars (`ratio_depth_spar_cap`:
+  0.826 for NACA 2423 at 0.15/0.60 chord, from AeroSandbox `local_thickness`).
+- **Minimum gauge:** the torque box has a 1 mm minimum wall gauge (`thickness_min_torque_box_m`). Torsion is
+  realized from the final wall area.
+- **Pylon pitch inertia:** built from the tip components instead of the XV-15 engine-in-nacelle ratio: 0.84 vs
+  1.0 m.
+- **Turbogenerators:** sit by the layout, behind the rear spar and below the fuselage top.
+
+The reference is **13,038 lb** (+217 lb on plan 032).
+- Wing 319 -> 358.5 kg: torque box 50 -> 75 kg, stiffness caps 4 -> 16 kg, jump caps 35 -> 22 kg.
+- Whirl-flutter torsion at max speed rises from 1.09 to 1.49 per rev and is no longer binding.
+- Every earlier named set pins the NDARC values; `assumptions_plan032` reproduces 12,821 lb.
+
+**CalculiX re-check** of the plan 035 wing (2026-10-05):
+
+| | Plan 032 | Plan 035 |
+|---|---|---|
+| Beam frequency, FE / AFDD | 0.70 | 0.85 |
+| Chord frequency, FE / AFDD | 1.43 | 1.12 |
+| Jump-take-off cap strain / allowable | 1.29 | 1.10 |
+
+- **Torsion is unresolved.** Four modes at 48.8 rad/s with nacelle pitch (0.78 x AFDD) are probably nacelle-local.
+  Clean symmetric torsion modes sit at 57.3 rad/s (0.91x). Telling them apart needs the mode shapes.
+- **Panel modes:** the FE now ignores local modes, those with nacelle motion below 0.1 of the largest (18 of 30).
+- **Pylon inertia:** the FE now takes the sizing's own pylon radius of gyration from `reference.json`.
+- **Remaining 10 % strain margin:** not closed in the sizing. Candidates are AFDD's box skins still bending about
+  the full thickness, and the FE's root band (the clamp).
 
 ## Verification notebooks
 

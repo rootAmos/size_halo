@@ -205,10 +205,16 @@ class HaloAssumptions:
     speed_peak_motor_rad_s: float = 400.0
     speed_peak_generator_rad_s: float = 400.0
     aspect_ratio_wing: float = 6.12               # XV-15
-    length_fuselage_m: float = 42.1 * u.foot      # XV-15
-    diameter_fuselage_m: float = 5.5 * u.foot     # XV-15 (Tier 10a assumption)
+    # Plan 037 (user, 2026-10-04: "11 m, as drawn"): the Halo drawing's length; with the boxy section it has the
+    # wetted area of the round XV-15 tube (42.1 ft), on which the 1.70 fuselage factor was anchored.
+    length_fuselage_m: float = 11.0
+    diameter_fuselage_m: float = 5.5 * u.foot     # XV-15 (Tier 10a assumption); the width of a boxy section
+    # Plan 037 (user: "archer halo is not pressurized. that's why it's so boxy"): a super-ellipse section this deep
+    # and with this exponent (plan 031 drawing). None: the round XV-15 section, the reference until plan 037.
+    height_fuselage_m: Any = 2.0
+    shape_fuselage: float = 3.2
     clearance_rotor_fuselage_m: float = 0.3       # XV-15 ~1 ft
-    x_horizontal_tail_m: float = 11.4
+    x_horizontal_tail_m: float = 9.8              # tail root leading edge; ends inside the 11 m fuselage (11.4 before plan 037)
     drag_area_misc_m2: float = 0.8                # assumed: tip nacelles, spinners, gear fairings
     load_factor_ultimate: float = 4.5             # XV-15
     mass_equipment_kg: float = mass_equipment_from_items_kg(halo_equipment_items)  # 587 lb; itemised above
@@ -274,8 +280,30 @@ class HaloAssumptions:
     frequency_chord_wing_per_rev: float = Xv15Reference().frequency_chord_wing_per_rev
     thickness_to_chord_wing: float = 0.23                # NACA 2423 airfoil above (XV-15 64A223, V-22 23 %)
     wing_material: str = "graphite_epoxy"                # or "aluminium" (the XV-15's)
-    ratio_radius_gyration_pylon: float = 0.222           # pylon radius of gyration / rotor radius (XV-15)
-    turbogenerators_on_wing_tips: bool = True            # tip nacelles carry the turbogenerators (as the XV-15)
+    # Plan 038: None builds the pylon pitch inertia about the spindle from the tip components (rotor at the hub,
+    # motor and gearbox near it, cowling spread along the nacelle); a number is the pylon radius of gyration / rotor
+    # radius (0.222, the XV-15 with its engines in the nacelles: the reference until plan 038).
+    ratio_radius_gyration_pylon: Any = None
+    length_mast_m: float = 1.0                           # spindle to rotor hub (the plan 031 layout)
+    offset_drive_pylon_m: float = 0.6                    # spindle to the motor and rotor gearbox (assumed)
+    radius_gyration_cowling_m: float = 0.8               # cowling about the spindle (3.4 m nacelle, assumed)
+    # Plan 038 (the CalculiX check of plan 031): spar-cap separation / wing thickness. None: the wing airfoil's depth at
+    # the spars (AeroSandbox `local_thickness`, mean of the two stations); 1.0: NDARC.
+    ratio_depth_spar_cap: Any = None
+    fraction_chord_front_spar: float = 0.15
+    fraction_chord_rear_spar: float = 0.60
+    thickness_min_torque_box_m: float = 0.001            # minimum torque-box wall gauge (composite, assumed); 0: NDARC
+    # Plan 037 (user, 2026-10-04: "turbines are likely inside the fuselage"): False puts the turbogenerators, their
+    # gearboxes and the engine support and air induction in the fuselage behind the wing box; the tip nacelles keep
+    # the rotor, motor, rotor gearbox and cowling. True: the XV-15 arrangement, the reference until plan 037.
+    turbogenerators_on_wing_tips: bool = False
+    # Plan 038: None places the turbogenerators by the layout, their centre half an engine length (0.5 m, assumed)
+    # behind the wing rear spar and 0.35 m below the fuselage top; numbers are the plan 037 placement (1.0 m behind
+    # the wing quarter chord, z 0.5 m).
+    offset_x_turbogenerators_m: Any = None
+    z_turbogenerators_m: Any = None
+    length_half_turbogenerator_m: float = 0.5
+    depth_turbogenerator_below_top_m: float = 0.35
     load_factor_jump: float = 2.0
     smoothing_wing_tiltrotor: float = 0.01               # rounds the AFDD max(0, .) steps for IPOPT
     # ---- Tier 21 aerodynamics (plan 025) ----
@@ -310,6 +338,12 @@ class HaloAssumptions:
     fraction_trim_drag: float = 0.02                   # Scholz aero only; AeroBuildup trims from the tail load
     efficiency_tail: float = 0.9                       # tail dynamic-pressure ratio eta_H (Scholz ch. 11)
     angle_dihedral_tail_deg: float = 0.0               # 0: conventional horizontal tail
+    # ---- Fuselage mass (plan 037) ----
+    # Raw Raymer GA (unpressurized) times this factor. 1.70 anchors it to the plan 031 layout estimate of the
+    # uncrewed cargo fuselage (primary 310 + secondary 220 kg at the plan 030 reference, 1.73x raw Raymer; user
+    # chose "layout-anchored ~1.7" on 2026-10-04). None: the XV-15 group calibration (2.07, a crewed fuselage),
+    # the reference until plan 037.
+    mass_factor_fuselage: Any = 1.70
     # ---- Tier 19 thermal (plan 028) ----
     # True: heat loads from every loss go to a ram-air heat exchanger (mass from its rating, a design variable;
     # cooling drag in airplane mode, fan power in hover), and lumped motor and generator temperatures replace
@@ -511,7 +545,9 @@ def build_halo_electrical(motor, generator, battery, span_m, requirements=HaloRe
     length_nacelle_m = a.factor_routing_cable * span_m / 2
     cable_motor, protection_motor = feeder(length_nacelle_m, power_electric_rated_W(motor) / window.voltage_min_V,
                                            window.voltage_max_V)
-    cable_generator, protection_generator = feeder(length_nacelle_m,
+    # Generators at the tips feed along the wing; in the fuselage (plan 037) they sit next to the bus.
+    length_generator_m = length_nacelle_m if a.turbogenerators_on_wing_tips else a.length_cable_battery_m
+    cable_generator, protection_generator = feeder(length_generator_m,
                                                    power_electric_rated_W(generator) / window.voltage_min_V,
                                                    window.voltage_max_V)
     cable_battery, protection_battery = feeder(a.length_cable_battery_m, current_battery_max_A, pack_max_V)
@@ -746,9 +782,34 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                 + (electrical.inverter_generator.get_mass() if electrical is not None else 0.0)
                 + (generator_gearbox.get_mass() if generator_gearbox is not None else 0.0)) \
                 + nacelles.get_mass_properties().mass / a.count_rotors
+        else:
+            # Plan 037: only the cowling of the AFDD engine section stays at the tips.
+            mass_tip_kg = mass_tip_kg + factors.powerplant * afdd.mass_engine_cowling_afdd82_kg(
+                a.area_wetted_nacelles_m2) / a.count_rotors
+        if a.ratio_radius_gyration_pylon is not None:
+            radius_gyration_pylon_m = a.ratio_radius_gyration_pylon * radius_m
+        elif a.turbogenerators_on_wing_tips:
+            raise ValueError("Give `ratio_radius_gyration_pylon` with the turbogenerators at the tips.")
+        else:
+            # Plan 038: pitch inertia of the tilting nacelle about the spindle from its components.
+            mass_drive_kg = motor.get_mass() + gearbox.get_mass() + (
+                electrical.inverter_motor.get_mass() if electrical is not None else 0.0)
+            mass_cowling_kg = factors.powerplant * afdd.mass_engine_cowling_afdd82_kg(a.area_wetted_nacelles_m2) \
+                / a.count_rotors
+            inertia_pylon_kg_m2 = (mass_rotors_kg / a.count_rotors * a.length_mast_m**2
+                                   + mass_drive_kg * a.offset_drive_pylon_m**2
+                                   + mass_cowling_kg * a.radius_gyration_cowling_m**2)
+            radius_gyration_pylon_m = np.sqrt(inertia_pylon_kg_m2 / mass_tip_kg)
+        if a.ratio_depth_spar_cap is not None:
+            ratio_depth_spar_cap = a.ratio_depth_spar_cap
+        else:
+            depths = asb.Airfoil("naca2423").local_thickness(np.array([a.fraction_chord_front_spar,
+                                                                       a.fraction_chord_rear_spar]))
+            ratio_depth_spar_cap = float(np.mean(depths)) / a.thickness_to_chord_wing
         materials = dict(graphite_epoxy=graphite_epoxy_wing_material, aluminium=aluminium_wing_material)
         wing_mass = dict(mass_factor=factors.wing_tiltrotor, mass_model=TiltrotorWingMassModel(
-            mass_tip_kg=mass_tip_kg, radius_gyration_pylon_m=a.ratio_radius_gyration_pylon * radius_m,
+            mass_tip_kg=mass_tip_kg, radius_gyration_pylon_m=radius_gyration_pylon_m,
+            ratio_depth_spar_cap=ratio_depth_spar_cap, thickness_min_torque_box_m=a.thickness_min_torque_box_m,
             speed_rotor_design_rad_s=(d.speed_rotor_wing_design_rad_s if d.speed_rotor_wing_design_rad_s is not None
                                       else speed_rotor_design_rad_s),
             width_fuselage_m=a.diameter_fuselage_m, frequency_torsion_per_rev=a.frequency_torsion_wing_per_rev,
@@ -761,22 +822,32 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
     wing = Wing(area_m2=d.area_wing_m2, aspect_ratio=aspect_ratio_wing, taper_ratio=1.0, x_le_root_m=d.x_le_wing_m,
                 z_m=1.2, airfoil=asb.Airfoil("naca2423"), **wing_mass)
     x_rotor_m = d.x_le_wing_m + 0.25 * wing.chord_root_m()
-    z_rotor_m = wing.z_m + 1.0
-    locations = (InstalledInstance("turboshaft", x_m=x_rotor_m, z_m=wing.z_m),
-                 InstalledInstance("generator", x_m=x_rotor_m, z_m=wing.z_m),
+    z_rotor_m = wing.z_m + a.length_mast_m
+    if a.turbogenerators_on_wing_tips:
+        x_turbogenerator_m, z_turbogenerator_m = x_rotor_m, wing.z_m
+    else:
+        x_turbogenerator_m = (x_rotor_m + a.offset_x_turbogenerators_m if a.offset_x_turbogenerators_m is not None
+                              else d.x_le_wing_m + a.fraction_chord_rear_spar * wing.chord_root_m()
+                              + a.length_half_turbogenerator_m)
+        height_fuselage_m = a.height_fuselage_m if a.height_fuselage_m is not None else a.diameter_fuselage_m
+        z_turbogenerator_m = (a.z_turbogenerators_m if a.z_turbogenerators_m is not None
+                              else height_fuselage_m / 2 - a.depth_turbogenerator_below_top_m)
+    locations = (InstalledInstance("turboshaft", x_m=x_turbogenerator_m, z_m=z_turbogenerator_m),
+                 InstalledInstance("generator", x_m=x_turbogenerator_m, z_m=z_turbogenerator_m),
                  InstalledInstance("battery", x_m=x_rotor_m - 0.8, z_m=-0.2),
                  InstalledInstance("motor", x_m=x_rotor_m, z_m=z_rotor_m),
                  InstalledInstance("gearbox", x_m=x_rotor_m, z_m=z_rotor_m),
                  InstalledInstance("propulsor", x_m=x_rotor_m, z_m=z_rotor_m + 0.5))
     if generator_gearbox is not None:
-        locations = locations + (InstalledInstance("generator_gearbox", x_m=x_rotor_m, z_m=wing.z_m),)
+        locations = locations + (InstalledInstance("generator_gearbox", x_m=x_turbogenerator_m,
+                                                   z_m=z_turbogenerator_m),)
     if electrical is not None:
         # Inverters in the tip nacelles with their machines; nacelle feeders along the wing quarter chord;
         # protection at the bus next to the battery.
         x_bus_m, z_bus_m = x_rotor_m - 0.8, -0.2
         locations = locations + (
             InstalledInstance("inverter_motor", x_m=x_rotor_m, z_m=z_rotor_m),
-            InstalledInstance("inverter_generator", x_m=x_rotor_m, z_m=wing.z_m),
+            InstalledInstance("inverter_generator", x_m=x_turbogenerator_m, z_m=z_turbogenerator_m),
             InstalledInstance("cable_motor", x_m=x_rotor_m, z_m=wing.z_m),
             InstalledInstance("cable_generator", x_m=x_rotor_m, z_m=wing.z_m),
             InstalledInstance("cable_battery", x_m=x_bus_m, z_m=z_bus_m),
@@ -811,14 +882,17 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
         vertical_tail=VerticalTail(area_m2=d.area_vertical_tail_m2, aspect_ratio=2.33, taper_ratio=0.6,
                                    x_le_root_m=a.x_horizontal_tail_m, z_root_m=0.8, airfoil=asb.Airfoil("naca0009"),
                                    mass_factor=factors.tail),
-        fuselage=Fuselage(length_m=a.length_fuselage_m, diameter_m=a.diameter_fuselage_m, mass_factor=factors.fuselage),
+        fuselage=Fuselage(length_m=a.length_fuselage_m, diameter_m=a.diameter_fuselage_m,
+                          height_m=a.height_fuselage_m, shape=a.shape_fuselage,
+                          mass_factor=(a.mass_factor_fuselage if a.mass_factor_fuselage is not None
+                                       else factors.fuselage)),
         landing_gear=LandingGear(length_main_m=3.0 * u.foot, length_nose_m=3.0 * u.foot, x_main_m=x_rotor_m + 0.6,
                                  x_nose_m=1.5, z_m=-0.9, is_retractable=True, mass_factor=factors.alighting_gear),
         systems=Systems(mass_avionics_uninstalled_kg=0.0, x_m=3.0, mass_factor=factors.flight_controls),
         powertrain=PowertrainInstallation(topology, locations, cooling=cooling),
         payload=Payload(mass_kg=requirements.mass_payload_kg, x_m=x_rotor_m),
         fuel=FuelLoad(mass_kg=d.mass_fuel_kg, x_m=x_rotor_m, z_m=wing.z_m),
-        nacelles=replace(nacelles, x_m=x_rotor_m, z_m=wing.z_m, length_m=a.length_nacelle_m,
+        nacelles=replace(nacelles, x_m=x_turbogenerator_m, z_m=z_turbogenerator_m, length_m=a.length_nacelle_m,
                          diameter_m=a.diameter_nacelle_m, y_m=wing.span_m() / 2),
         equipment=FixedEquipment(mass_kg=a.mass_equipment_kg, x_m=3.5),
     )
@@ -1717,36 +1791,42 @@ def _precursor(problem, factors, max_iter, cache, allow_continuation):
 # settings plan 035 changed (drag corrections, redundancy, unit-built machines, gearbox stages) to their earlier
 # values for every set below.
 pre_plan035 = dict(drag_corrections=False, redundancy=False, machine_mass_model="torque_density", gearbox_stages=False)
+# Plans 037 and 038 (the drawn layout and the wing check): XV-15 fuselage calibration, turbogenerators at the tips,
+# round 12.8 m fuselage with the tail at 11.4 m, NDARC spar caps without a minimum gauge, XV-15 pylon ratio.
+pre_layout = dict(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None,
+                  length_fuselage_m=42.1 * u.foot, x_horizontal_tail_m=11.4, ratio_radius_gyration_pylon=0.222,
+                  ratio_depth_spar_cap=1.0, thickness_min_torque_box_m=0.0, offset_x_turbogenerators_m=1.0,
+                  z_turbogenerators_m=0.5)
 requirements_tier10c = HaloRequirements(mass_payload_kg=900.0, velocity_max_m_s=250 * u.knot, hover_hot_day=False)
 requirements_tier12b = HaloRequirements(mass_payload_kg=900.0, hover_hot_day=False)
 # Tiers 13-16 reference (plans 018-020): 900 kg with the constant-OCV battery (13,760 lb).
 requirements_tier16 = HaloRequirements(mass_payload_kg=900.0)
-assumptions_tier16 = HaloAssumptions(**pre_plan035, thermal_model=False, battery_model="constant",
+assumptions_tier16 = HaloAssumptions(**pre_plan035, **pre_layout, thermal_model=False, battery_model="constant",
                                      wing_weight_model="raymer",
                                      aerodynamics_model="simple")
 # Plan 022 reference: 780 kg with the equivalent-circuit battery and the Raymer wing (14,436 lb).
 requirements_plan022 = HaloRequirements(mass_payload_kg=780.0)
-assumptions_plan022 = HaloAssumptions(**pre_plan035, thermal_model=False, wing_weight_model="raymer",
+assumptions_plan022 = HaloAssumptions(**pre_plan035, **pre_layout, thermal_model=False, wing_weight_model="raymer",
                                       aerodynamics_model="simple")
 # Plan 026 reference: 900 kg, AFDD wing, SimpleAerodynamics (14,247 lb).
 requirements_plan026 = HaloRequirements(mass_payload_kg=900.0)
-assumptions_plan026 = HaloAssumptions(**pre_plan035, thermal_model=False, aerodynamics_model="simple")
-assumptions_tier12 = HaloAssumptions(**pre_plan035, thermal_model=False, battery_model="constant",
+assumptions_plan026 = HaloAssumptions(**pre_plan035, **pre_layout, thermal_model=False, aerodynamics_model="simple")
+assumptions_tier12 = HaloAssumptions(**pre_plan035, **pre_layout, thermal_model=False, battery_model="constant",
                                      wing_weight_model="raymer",
                                      aerodynamics_model="simple", power_rated_turboshaft_fixed_W=None,
                                      hybridization_electric_min=0.0, soc_floor_every_segment=False,
                                      machine_mass_by_torque=False)
 # Tier 12b reference (plan 017): fixed engines with the constant-OCV battery and Tier 12b machines.
-assumptions_tier12b = HaloAssumptions(**pre_plan035, thermal_model=False, battery_model="constant",
+assumptions_tier12b = HaloAssumptions(**pre_plan035, **pre_layout, thermal_model=False, battery_model="constant",
                                       wing_weight_model="raymer",
                                       aerodynamics_model="simple", machine_mass_by_torque=False)
 # Tier 17 (plan 021): the equivalent-circuit 50G-shaped pack at end of life, on the Raymer-wing aircraft.
-assumptions_tier17 = HaloAssumptions(**pre_plan035, thermal_model=False, battery_model="ecm",
+assumptions_tier17 = HaloAssumptions(**pre_plan035, **pre_layout, thermal_model=False, battery_model="ecm",
                                      wing_weight_model="raymer",
                                      aerodynamics_model="simple")
 assumptions_tier11a = replace(assumptions_tier12, rotor_speed_physics=False)
 # Tier 15 (plan 023): the reference with the electrical layer (756 V nominal pack, 1,200 V inverters).
-assumptions_tier15 = HaloAssumptions(**pre_plan035, electrical_layer=True, thermal_model=False)
+assumptions_tier15 = HaloAssumptions(**pre_plan035, **pre_layout, electrical_layer=True, thermal_model=False)
 standard_blocking_voltages_V = (650.0, 1200.0, 1700.0, 3300.0)
 
 
@@ -1825,17 +1905,27 @@ def enumerate_bus_voltage(voltages_nominal_V=(540.0, 756.0, 800.0, 1000.0), requ
                 pass
     return tuple(rows)
 # Tier 20 (plan 024): the AFDD tiltrotor wing (the default from plan 026).
-assumptions_tier20 = HaloAssumptions(**pre_plan035, thermal_model=False, wing_weight_model="afdd_tiltrotor",
+assumptions_tier20 = HaloAssumptions(**pre_plan035, **pre_layout, thermal_model=False, wing_weight_model="afdd_tiltrotor",
                                      aerodynamics_model="simple")
 # Plan 027 reference: 900 kg, AFDD wing, AeroBuildup, no thermal model (13,639 lb).
 requirements_plan027 = HaloRequirements(mass_payload_kg=900.0)
-assumptions_plan027 = HaloAssumptions(**pre_plan035, thermal_model=False)
+assumptions_plan027 = HaloAssumptions(**pre_plan035, **pre_layout, thermal_model=False)
 # Tier 18 (plan 032): the reference with the sensible redundancy set (2 lanes per rotor, 2 cross-strapped buses,
 # 2 battery strings; lane-out, bus-out and string-out hovers).
-assumptions_tier18 = HaloAssumptions(**dict(pre_plan035, redundancy=True))
+assumptions_tier18 = HaloAssumptions(**dict(pre_plan035, redundancy=True), **pre_layout)
 # Plan 030 reference: 900 kg, AFDD wing, AeroBuildup, thermal model, rubber machines (14,037 lb).
 requirements_plan030 = HaloRequirements(mass_payload_kg=900.0)
-assumptions_plan030 = HaloAssumptions(**pre_plan035)
+assumptions_plan030 = HaloAssumptions(**pre_plan035, **pre_layout)
+# Plan 037 reference (the drawn layout, plan 032 on its branch): layout-anchored fuselage, turbogenerators in the
+# fuselage, boxy 11 m fuselage; NDARC spar caps, no minimum gauge, XV-15 pylon ratio (12,821 lb).
+requirements_plan037 = HaloRequirements(mass_payload_kg=900.0)
+assumptions_plan037 = HaloAssumptions(**pre_plan035, ratio_radius_gyration_pylon=0.222, ratio_depth_spar_cap=1.0,
+                                      thickness_min_torque_box_m=0.0, offset_x_turbogenerators_m=1.0,
+                                      z_turbogenerators_m=0.5)
+# Plan 038 reference (plan 035 on its branch): plan 037 plus spar caps at the box depth, 1 mm minimum gauge, pylon
+# inertia from the tip components, turbogenerators by the layout (13,038 lb).
+requirements_plan038 = HaloRequirements(mass_payload_kg=900.0)
+assumptions_plan038 = HaloAssumptions(**pre_plan035)
 
 
 if __name__ == "__main__":

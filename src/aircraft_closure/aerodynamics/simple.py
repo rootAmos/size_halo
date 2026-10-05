@@ -92,7 +92,7 @@ class SimpleAerodynamics:
 
         fuselage = aircraft.fuselage.to_asb()
         reynolds_fuselage = density_kg_m3 * velocity_m_s * fuselage.length() / viscosity_Pa_s
-        fineness_ratio = aircraft.fuselage.length_m / aircraft.fuselage.diameter_m
+        fineness_ratio = aircraft.fuselage.length_m / aircraft.fuselage.diameter_equivalent_m()
         return (
             surface("wing", wing, self.interference_wing),
             surface("horizontal_tail", aircraft.horizontal_tail.to_asb(), self.interference_tail),

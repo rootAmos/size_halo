@@ -148,7 +148,8 @@ def wing_tiltrotor_afdd_masses(span_m, chord_m, thickness_to_chord, fraction_cho
                                load_factor_jump=2.0, thrust_max_rotor_N=None, fraction_fittings=0.0,
                                fraction_fold=0.0, efficiency_torque_box=1.0, efficiency_spar=1.0,
                                correction_spar_stiffness=1.0, correction_spar_strength=1.0,
-                               correction_moment_spar=1.0, smoothing=0.0):
+                               correction_moment_spar=1.0, smoothing=0.0, ratio_depth_spar_cap=1.0,
+                               thickness_min_torque_box_m=0.0):
     """AFDD tiltrotor wing (NDARC Theory, NASA/TP-2009-215402, sec. 19-1.1; Chappell and Peyran, SAWE 2107, 1992).
 
     Consistent SI, so NDARC's unit factor is 1. The torque box is sized by the torsion frequency, spar caps by the
@@ -158,6 +159,15 @@ def wing_tiltrotor_afdd_masses(span_m, chord_m, thickness_to_chord, fraction_cho
     one wing tip; its pitch inertia is `mass_tip_kg * radius_gyration_pylon_m**2`; f_tip counts `count_tips` tips.
     NDARC's two "replace by zero if negative" steps are max(0, .); `smoothing` > 0 rounds them with a scale of
     `smoothing` times the required stiffness or moment (for gradient-based sizing).
+
+    Plan 038 options (defaults reproduce NDARC):
+    - `ratio_depth_spar_cap`: spar-cap separation / wing thickness. NDARC puts the caps the full thickness apart;
+      a two-spar box has them at the airfoil depth at its spars (about 0.83 for a 23 % NACA section with spars at
+      0.15 and 0.60 chord). It scales the caps' bending lever arm (stiffness with its square, the jump-take-off
+      moment capacity linearly); the torque-box terms keep NDARC's form factors.
+    - `thickness_min_torque_box_m`: minimum wall gauge of the torque box, applied over its perimeter
+      (2 x (box chord + cap depth)); the frequency-sized wall area is at least that. A plan 031 CalculiX check found
+      the NDARC caps 29 % over-strained in the jump take-off and the box walls 0.67 mm on the Halo layout.
     """
     g_m_s2 = 9.80665
     thickness_m = thickness_to_chord * chord_m
@@ -175,6 +185,12 @@ def wing_tiltrotor_afdd_masses(span_m, chord_m, thickness_to_chord, fraction_cho
     # Torque box from the torsion frequency (ideal shape: a tube of radius t, J = F_T A t^2 / 4).
     stiffness_torsion_Nm2 = frequency_torsion_rad_s**2 * torsion_inertia_kg_m3
     area_torque_box_m2 = 4 * stiffness_torsion_Nm2 / (modulus_shear_torque_box_Pa * factor_torsion * thickness_m**2)
+    depth_cap_m = ratio_depth_spar_cap * thickness_m
+    if thickness_min_torque_box_m > 0:
+        area_min_m2 = thickness_min_torque_box_m * 2 * (chord_torque_box_m + depth_cap_m)
+        area_torque_box_m2 = area_min_m2 + _positive_part(area_torque_box_m2 - area_min_m2, smoothing * area_min_m2)
+        # Realized torsion stiffness of the (possibly thicker) box, for the frequency and whirl-flutter margins.
+        stiffness_torsion_Nm2 = modulus_shear_torque_box_Pa * factor_torsion * area_torque_box_m2 * thickness_m**2 / 4
 
     # Spar caps (beyond the torque box) for the chord and beam bending frequencies.
     stiffness_chord_req_Nm2 = frequency_chord_rad_s**2 * bending_mass_kg_m3
@@ -184,11 +200,11 @@ def wing_tiltrotor_afdd_masses(span_m, chord_m, thickness_to_chord, fraction_cho
                                               smoothing * stiffness_chord_req_Nm2)
     area_spar_chord_m2 = stiffness_chord_spar_Nm2 / (modulus_spar_Pa * chord_torque_box_m**2 / 4)
     stiffness_beam_box_Nm2 = modulus_torque_box_Pa * factor_beam * area_torque_box_m2 * thickness_m**2 / 4
-    stiffness_spar_cap_beam_Nm2 = modulus_spar_Pa * factor_spar_cap * area_spar_chord_m2 * thickness_m**2 / 4
+    stiffness_spar_cap_beam_Nm2 = modulus_spar_Pa * factor_spar_cap * area_spar_chord_m2 * depth_cap_m**2 / 4
     stiffness_beam_spar_Nm2 = _positive_part(
         stiffness_beam_req_Nm2 - stiffness_beam_box_Nm2 - stiffness_spar_cap_beam_Nm2,
         smoothing * stiffness_beam_req_Nm2)
-    area_spar_beam_m2 = stiffness_beam_spar_Nm2 / (modulus_spar_Pa * thickness_m**2 / 4)
+    area_spar_beam_m2 = stiffness_beam_spar_Nm2 / (modulus_spar_Pa * depth_cap_m**2 / 4)
     stiffness_spar_Nm2 = stiffness_spar_cap_beam_Nm2 + stiffness_beam_spar_Nm2
     area_spar_m2 = area_spar_chord_m2 + area_spar_beam_m2
 
@@ -211,10 +227,10 @@ def wing_tiltrotor_afdd_masses(span_m, chord_m, thickness_to_chord, fraction_cho
     moment_jump_ultimate_Nm = thrust_capability_N * length_wing_m * (
         0.75 * (1 - fraction_tip) - 0.375 * (length_wing_m / span_m) * (mass_wing_kg / mass_design_kg))
     moment_box_Nm = 2 * stiffness_beam_box_Nm2 * strain_ultimate / thickness_m
-    moment_spar_Nm = 2 * correction_moment_spar * stiffness_spar_Nm2 * strain_ultimate / thickness_m
+    moment_spar_Nm = 2 * correction_moment_spar * stiffness_spar_Nm2 * strain_ultimate / depth_cap_m
     moment_deficit_Nm = _positive_part(moment_jump_ultimate_Nm - moment_box_Nm - moment_spar_Nm,
                                        smoothing * moment_jump_ultimate_Nm)
-    area_spar_jump_m2 = 2 * moment_deficit_Nm / (strain_ultimate * modulus_spar_Pa * thickness_m)
+    area_spar_jump_m2 = 2 * moment_deficit_Nm / (strain_ultimate * modulus_spar_Pa * depth_cap_m)
     mass_spar_jump_kg = correction_spar_strength * area_spar_jump_m2 * density_spar_kg_m3 * span_m / efficiency_spar
 
     mass_fittings_kg = ratio_fittings * (mass_torque_box_kg + mass_spar_stiffness_kg + mass_spar_jump_kg
@@ -225,7 +241,7 @@ def wing_tiltrotor_afdd_masses(span_m, chord_m, thickness_to_chord, fraction_cho
     # Realized stiffness (jump caps add beam stiffness) and the frequencies they give.
     stiffness_chord_Nm2 = stiffness_chord_box_Nm2 + modulus_spar_Pa * area_spar_chord_m2 * chord_torque_box_m**2 / 4
     stiffness_beam_Nm2 = (stiffness_beam_box_Nm2 + stiffness_spar_Nm2
-                          + modulus_spar_Pa * area_spar_jump_m2 * thickness_m**2 / 4)
+                          + modulus_spar_Pa * area_spar_jump_m2 * depth_cap_m**2 / 4)
     return TiltrotorWingMasses(
         mass_torque_box_kg=mass_torque_box_kg, mass_spar_stiffness_kg=mass_spar_stiffness_kg,
         mass_spar_jump_kg=mass_spar_jump_kg, mass_fairing_kg=mass_fairing_kg,

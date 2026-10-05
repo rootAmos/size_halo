@@ -1,4 +1,4 @@
-"""Plan 035: the final Halo reference (all models on, whole real machine units, redundancy, drag corrections)."""
+"""The Halo default reference: every model on (whole real machine units, redundancy, drag corrections, drawn layout, wing corrections)."""
 import unittest
 
 import aerosandbox.tools.units as u
@@ -24,7 +24,7 @@ class Plan035ReferenceTests(unittest.TestCase):
         self.assertGreater(r.min_margin, -1e-6)
         self.assertLess(abs(r.closure_residual_kg), 1e-3)
         self.assertEqual(r.mass_payload_kg, 900.0)
-        self.assertAlmostEqual(r.mass_takeoff_kg / u.lbm, 16303, delta=20)
+        self.assertAlmostEqual(r.mass_takeoff_kg / u.lbm, 15179, delta=20)   # with the layout line (plans 037-038)
 
     def test_machines_are_whole_units_on_two_lanes(self):
         r = self.result
