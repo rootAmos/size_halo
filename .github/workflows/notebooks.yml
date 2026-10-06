@@ -34,9 +34,7 @@ jobs:
       - name: Install (locked, with notebooks group)
         run: uv sync --locked --group notebooks
       - name: Execute ${{ matrix.notebook }}
-        env:
-          MPLBACKEND: Agg
-        run: |
+        run: |                          # the kernel's inline backend embeds the plots
           uv run jupyter nbconvert --to notebook --execute "${{ matrix.notebook }}" --inplace \
             --ExecutePreprocessor.timeout=5400
       - name: Name the artifact
