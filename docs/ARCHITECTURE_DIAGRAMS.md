@@ -15,7 +15,7 @@ Code lives in `src/aircraft_closure/` (the library) and `examples/` (the
 problems that are solved). Dependencies point downward only: a lower layer
 never imports a higher one. Every layer builds expressions with AeroSandbox
 and CasADi; only the orchestration layer creates `asb.Opti` variables,
-constraints and objectives. Tests, per-tier notebooks, plans and CI sit
+constraints and objectives. Tests, discipline notebooks, plans and CI sit
 beside the code and check it.
 
 ```mermaid
@@ -70,7 +70,7 @@ flowchart LR
     subgraph CHECK["Verification"]
         direction TB
         tests["tests/"]
-        notebooks["notebooks/tierN_topic/"]
+        notebooks["notebooks/NN_discipline.ipynb"]
         plans["docs/ and .agent/plans/"]
         ci[".github/workflows/"]
     end
@@ -88,7 +88,7 @@ inputs change, a distinct class is added: `MomentumProfileRotor` needs rotor
 speed, so it sits beside `ActuatorDiskPropulsor` rather than replacing it.
 The simplest model is always kept, and named legacy assumption sets (for
 example `assumptions_tier12b`) reproduce earlier tiers. Calibration data enter
-at the bottom; tests and the tier notebook check each step.
+at the bottom; tests and the discipline notebooks check each step.
 
 ```mermaid
 flowchart LR

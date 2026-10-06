@@ -2,11 +2,30 @@ name: notebooks
 
 on:
   workflow_dispatch:
+    inputs:
+      notebooks:
+        description: "Glob of notebooks to execute (default: all)"
+        default: "notebooks/*.ipynb"
 
 jobs:
-  execute:
+  list:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    outputs:
+      notebooks: ${{ steps.find.outputs.notebooks }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: find
+        run: |
+          echo "notebooks=$(ls ${{ inputs.notebooks }} | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
+
+  execute:
+    needs: list
+    runs-on: ubuntu-latest
+    timeout-minutes: 90           # per notebook; each one is its own job
+    strategy:
+      fail-fast: false
+      matrix:
+        notebook: ${{ fromJson(needs.list.outputs.notebooks) }}
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -14,19 +33,16 @@ jobs:
           enable-cache: true
       - name: Install (locked, with notebooks group)
         run: uv sync --locked --group notebooks
-      - name: Execute every verification notebook
-        env:
-          MPLBACKEND: Agg
-        run: |
-          set -e
-          mkdir -p executed
-          for notebook in notebooks/tier*/*.ipynb; do
-            echo "::group::$notebook"
-            uv run jupyter nbconvert --to notebook --execute "$notebook" \
-              --output-dir executed --output "$(basename "$notebook")" --ExecutePreprocessor.timeout=1800
-            echo "::endgroup::"
-          done
+      - name: Execute ${{ matrix.notebook }}
+        run: |                          # the kernel's inline backend embeds the plots
+          uv run jupyter nbconvert --to notebook --execute "${{ matrix.notebook }}" --inplace \
+            --ExecutePreprocessor.timeout=5400
+      - name: Name the artifact
+        id: name
+        if: always()
+        run: echo "name=$(basename '${{ matrix.notebook }}' .ipynb)-$(basename "$(dirname '${{ matrix.notebook }}')")" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: executed-notebooks
-          path: executed/
+          name: ${{ steps.name.outputs.name }}
+          path: ${{ matrix.notebook }}

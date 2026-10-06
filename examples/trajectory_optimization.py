@@ -41,14 +41,18 @@ class HaloTrajectoryCase:
     corridor: Any
 
 
-def halo_trajectory_case(sizing=None, requirements=HaloRequirements(), assumptions=HaloAssumptions()):
-    """The sized Halo aircraft as a trajectory model (numeric design, no sizing variables)."""
+def halo_trajectory_case(sizing=None, requirements=HaloRequirements(), assumptions=HaloAssumptions(), corridor=None):
+    """The sized Halo aircraft as a trajectory model (numeric design, no sizing variables).
+
+    `corridor`: None flies the assumed XV-15-shaped `ConversionCorridor`; pass a `ComputedCorridor` (plan 039)
+    to fly the corridor computed from trim (`examples/halo_trajectory_computed_corridor.py`)."""
     r, a = requirements, assumptions
     sizing = sizing if sizing is not None else solve_halo_sizing(r, a)
     aerodynamics = build_halo_aerodynamics(r, a)   # the trajectory uses the unblown polar (no rotor state)
     model = TiltrotorPointMass(build_halo_aircraft(sizing.design, r, a), aerodynamics)
     mass_kg = sizing.mass_takeoff_kg
-    corridor = ConversionCorridor(velocity_stall_m_s=float(model.velocity_stall_m_s(mass_kg, 0.0)))
+    corridor = corridor if corridor is not None else ConversionCorridor(
+        velocity_stall_m_s=float(model.velocity_stall_m_s(mass_kg, 0.0)))
     return HaloTrajectoryCase(sizing, model, mass_kg, corridor)
 
 
@@ -196,7 +200,8 @@ def solve_prescribed_transition(case, duration_s=60.0, fraction_hold=0.25, count
                                 limits=TrajectoryLimits()):
     """Naive reference: level flight at constant acceleration over `duration_s`; nacelles held at 90 deg for
     the first `fraction_hold` of the time, then rotated linearly to 0 deg (a plain linear schedule from
-    t = 0 leaves the conversion corridor at low speed).
+    t = 0 leaves the conversion corridor at low speed). Assumed corridor only: inside the computed corridor no
+    level, constant-acceleration conversion exists (see `examples/halo_trajectory_computed_corridor.py`).
 
     Only the trim controls (alpha, thrust, rotor speed, power split) are solved, to fly the prescribed
     profile; they minimize the same energy, so the comparison isolates the profile. The end points are

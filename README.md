@@ -41,7 +41,7 @@ Halo data (see [reference assumptions](docs/HALO_REFERENCE.md)).
 
 ## Results at a glance
 
-Figures from the executed tier notebooks (`notebooks/`) and the geometry
+Figures from the executed notebooks (`notebooks/`) and the geometry
 export, copied to `docs/figures/`.
 
 **Where the empty mass goes.** The 15,179 lb reference: 5,049 kg empty, of
@@ -81,14 +81,13 @@ digitized cell data.
 
 ![Battery OCV fit](docs/figures/battery_ocv_fit.png)
 
-**Trajectory optimization (Tier 14).** Minimum-energy transition and
-minimum time to climb, flown inside an assumed XV-15-shaped conversion
-corridor (the computed corridor of plan 039 is in
-[Conversion corridor and trim](#conversion-corridor-and-trim-plan-039)), against a naive
-prescribed conversion. The minimum-energy transition uses about half
-the energy of the naive schedule.
+**Trajectory optimization (Tier 14).** Minimum-energy transition and minimum time to climb on the reference,
+flown inside the computed conversion corridor (see
+[Conversion corridor and trim](#conversion-corridor-and-trim-plan-039)). The transition rides the corridor's
+low-speed side and descends slightly through 15-90 kt; no level, constant-acceleration conversion fits inside the
+computed corridor.
 
-![Trajectories in the conversion corridor](docs/figures/trajectory_conversion_corridor.png)
+![Trajectories in the computed conversion corridor](docs/figures/trajectory_conversion_corridor.png)
 
 ## What is in the package
 
@@ -224,23 +223,19 @@ user-supplied local data in `data/` skip when it is absent.
 
 ## Verification notebooks
 
-One executed notebook per tier (outputs kept so plots render on GitHub):
+One executed notebook per discipline, on the current reference (outputs kept so plots render on GitHub). Each runs
+the 15,179 lb reference, then verifies the discipline's models with numbered checks:
 
-| Tier | Notebook |
+| Notebook | Contents |
 |---|---|
-| 0 | [Foundation](notebooks/tier0_foundation/foundation_verification.ipynb): environment, layout, governance, skills, conventions |
-| 1 | [Powertrain components](notebooks/tier1_powertrain_components/powertrain_verification.ipynb) and [McDonald machine losses](notebooks/tier1_powertrain_components/motor_loss_model_verification.ipynb) |
-| 2 | [Powertrain topology](notebooks/tier2_powertrain_topology/topology_verification.ipynb): ports, wiring rules, residuals, multiplicity |
-| 3 | [Compatibility margins](notebooks/tier3_compatibility_margins/compatibility_verification.ipynb): envelopes, operating and design margins |
-| 4 | [Vehicle mass closure](notebooks/tier4_vehicle_mass_closure/mass_closure_verification.ipynb): geometry, Raymer masses, CG, payload growth |
-| 5 | [Aerodynamics](notebooks/tier5_aerodynamics/aerodynamics_verification.ipynb): lift, parasite buildup, polar, AeroBuildup comparison |
-| 6 | [Stability and control](notebooks/tier6_stability_control/stability_control_verification.ipynb): neutral point, trim, Cn_beta, tail sizing |
-| 7 | [Requirements](notebooks/tier7_requirements/requirements_verification.ipynb): flight points, requirement feasibility, powertrain sizing |
-| 8 | [Missions](notebooks/tier8_missions/mission_verification.ipynb): segments, prescribed and semi-free missions |
-| 9 | [Coupled sizing](notebooks/tier9_coupled_sizing/coupled_sizing_verification.ipynb): simultaneous sizing, mission optimization and energy allocation |
-| 10a | [XV-15 mass validation](notebooks/tier10_xv15_reference/xv15_mass_validation.ipynb): AFDD weights, group-by-group comparison, calibration |
-| 10b | [XV-15 power validation](notebooks/tier10_xv15_reference/xv15_power_validation.ipynb): engine lapse, hover figure of merit and download, part-power sfc |
-| 10c | [Halo-class sizing](notebooks/tier10_halo_sizing/halo_sizing_verification.ipynb): two-rotor series hybrid, binding constraints, mission, sensitivities |
+| [Global sizing](notebooks/01_global_sizing.ipynb) | The reference, mass closure, binding constraints, empty-mass breakdown, mission and energy allocation; requirements, missions and coupled sizing building blocks |
+| [Powertrain](notebooks/02_powertrain.ipynb) | Machine units, failure cases and temperatures of the reference; machines and losses, supplier database, gearboxes, topology, margins, electrical layer, redundancy, thermal, turboshaft lapse, hot and high |
+| [Energy storage](notebooks/03_energy_storage.ipynb) | The pack through the mission and the engine-out hover; the 50G equivalent-circuit cell model |
+| [Aerodynamics and rotor](notebooks/04_aerodynamics_rotor.ipynb) | AeroBuildup and Scholz on the reference aircraft, XV-15 drag, blown wing, hover download; the JVX-calibrated proprotor; the simple model |
+| [Structures and weights](notebooks/05_structures_weights.ipynb) | Airframe groups, AFDD wing items and whirl flutter of the reference; XV-15 weight calibration; the AFDD tiltrotor wing |
+| [Dynamics and control](notebooks/06_dynamics_control.ipynb) | Static stability, the computed conversion corridor and trim, trajectories inside the corridor; trim and tail-sizing building blocks |
+
+The per-tier notebooks used while the framework was built are in the git history (before this change).
 
 ```powershell
 uv sync --group notebooks

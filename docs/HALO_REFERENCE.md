@@ -66,3 +66,7 @@ payload at 210 kt. These remain illustrative engineering inputs, not Archer data
 
 Plan 035 corrects the wing (spar caps at the real box depth, a 1 mm minimum gauge, pylon inertia from the tip
 components) and places the turbogenerators by the layout: **13,038 lb**.
+
+Those two figures are the layout line on its own settings. With every model on together (real machine units,
+redundancy, thermal sizing, drag corrections and trim from the tail load, plans 035–036), the combined reference
+is **15,179 lb (6,885 kg)**; see [RESULTS.md](RESULTS.md).
