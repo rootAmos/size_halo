@@ -265,3 +265,43 @@ def solve_corridor(model, stability, geometry, limits, *, mass_kg, altitude_m, s
                      for side in ("low", "high"))
         bounds.append(pair)
     return tuple(bounds)
+
+
+@dataclass(frozen=True)
+class ComputedCorridor:
+    """The computed corridor as airspeed limits against nacelle angle, for the trajectory layer.
+
+    Same interface as `ConversionCorridor` (the assumed XV-15 shape): `velocity_min_m_s(tilt_deg)` and
+    `velocity_max_m_s(tilt_deg)`, piecewise linear between the computed nacelle angles and symbolic in the
+    nacelle angle. `velocity_stall_m_s` is the airplane-mode stall speed, which sets the transition end speed.
+    The corridor is computed at one altitude and mass; using it elsewhere is an approximation.
+    """
+    tilts_deg: tuple
+    velocity_low_m_s: tuple
+    velocity_high_m_s: tuple
+    velocity_stall_m_s: float
+
+    @classmethod
+    def from_bounds(cls, corridor, velocity_stall_m_s):
+        """From `solve_corridor` pairs; nacelle angles without a trim on both sides are left out."""
+        pairs = sorted(((low, high) for low, high in corridor if low.trim is not None and high.trim is not None),
+                       key=lambda pair: pair[0].tilt_deg)
+        return cls(tuple(low.tilt_deg for low, _ in pairs), tuple(low.velocity_m_s for low, _ in pairs),
+                   tuple(high.velocity_m_s for _, high in pairs), velocity_stall_m_s)
+
+    def velocity_min_m_s(self, tilt_deg):
+        return _piecewise_linear(tilt_deg, self.tilts_deg, self.velocity_low_m_s)
+
+    def velocity_max_m_s(self, tilt_deg):
+        return _piecewise_linear(tilt_deg, self.tilts_deg, self.velocity_high_m_s)
+
+
+def _piecewise_linear(x, xp, fp):
+    """Linear interpolation through (xp, fp), constant outside, as a sum of hinges: elementwise on symbolic vectors
+    (`np.interp` takes one symbolic point at a time)."""
+    x = np.fmin(np.fmax(x, xp[0]), xp[-1])
+    slopes = [(fp[i + 1] - fp[i]) / (xp[i + 1] - xp[i]) for i in range(len(xp) - 1)]
+    value = fp[0] + slopes[0] * (x - xp[0])
+    for i in range(1, len(slopes)):
+        value = value + (slopes[i] - slopes[i - 1]) * np.fmax(x - xp[i], 0.0)
+    return value

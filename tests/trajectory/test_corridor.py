@@ -7,7 +7,7 @@ import aerosandbox.numpy as np
 
 from aircraft_closure.controls.stability import LongitudinalStability
 from aircraft_closure.performance.flight_point import acceleration_gravity_m_s2
-from aircraft_closure.trajectory.corridor import (CorridorLimits, TrimGeometry, moment_rotor_Nm, solve_corridor_bound,
+from aircraft_closure.trajectory.corridor import (ComputedCorridor, CorridorBound, CorridorLimits, TrimGeometry, moment_rotor_Nm, solve_corridor_bound,
                                                   solve_trim)
 from aircraft_closure.trajectory.tiltrotor import TiltrotorPointMass
 from examples.halo_sizing import (HaloAssumptions, HaloRequirements, build_halo_aerodynamics, build_halo_aircraft,
@@ -39,6 +39,47 @@ class RotorMomentTests(unittest.TestCase):
         thrust_N = opti.variable(init_guess=1.0)
         opti.subject_to(moment_rotor_Nm(thrust_N, 80.0, 75.0, geometry_level) == -2.0)
         self.assertAlmostEqual(float(opti.solve(verbose=False).value(thrust_N)), 2.0 / np.sind(5.0), places=5)
+
+
+class ComputedCorridorTests(unittest.TestCase):
+    """The computed corridor as trajectory limits: piecewise linear in nacelle angle, symbolic."""
+
+    def setUp(self):
+        trim = lambda v: type("Trim", (), {"velocity_m_s": v})()        # noqa: E731
+        bounds = [(CorridorBound(90.0, "low", trim(0.0), ()), CorridorBound(90.0, "high", trim(67.0), ())),
+                  (CorridorBound(0.0, "low", trim(61.0), ()), CorridorBound(0.0, "high", trim(113.0), ())),
+                  (CorridorBound(45.0, "low", trim(55.0), ()), CorridorBound(45.0, "high", None, ())),
+                  (CorridorBound(60.0, "low", trim(46.0), ()), CorridorBound(60.0, "high", trim(74.0), ()))]
+        self.corridor = ComputedCorridor.from_bounds(bounds, velocity_stall_m_s=50.0)
+
+    def test_nodes_sorted_and_untrimmed_angles_dropped(self):
+        self.assertEqual(self.corridor.tilts_deg, (0.0, 60.0, 90.0))
+
+    def test_node_recovery(self):
+        for tilt, low, high in zip(self.corridor.tilts_deg, self.corridor.velocity_low_m_s,
+                                   self.corridor.velocity_high_m_s):
+            self.assertAlmostEqual(float(self.corridor.velocity_min_m_s(tilt)), low)
+            self.assertAlmostEqual(float(self.corridor.velocity_max_m_s(tilt)), high)
+
+    def test_linear_between_nodes_and_clamped_outside(self):
+        self.assertAlmostEqual(float(self.corridor.velocity_min_m_s(75.0)), 23.0)
+        self.assertAlmostEqual(float(self.corridor.velocity_max_m_s(30.0)), 93.5)
+        self.assertAlmostEqual(float(self.corridor.velocity_max_m_s(95.0)), 67.0)
+
+    def test_symbolic(self):
+        opti = asb.Opti()
+        tilt_deg = opti.variable(init_guess=50.0, lower_bound=0.0, upper_bound=90.0)
+        opti.subject_to(self.corridor.velocity_min_m_s(tilt_deg) == 23.0)
+        self.assertAlmostEqual(float(opti.solve(verbose=False).value(tilt_deg)), 75.0, places=4)
+
+    def test_symbolic_vector(self):
+        opti = asb.Opti()
+        tilt_deg = opti.variable(init_guess=np.linspace(0.0, 90.0, 7))
+        opti.subject_to(tilt_deg == np.linspace(0.0, 90.0, 7))
+        values = opti.solve(verbose=False).value(self.corridor.velocity_max_m_s(tilt_deg))
+        expected = [float(self.corridor.velocity_max_m_s(t)) for t in np.linspace(0.0, 90.0, 7)]
+        for value, target in zip(np.asarray(values).ravel(), expected):
+            self.assertAlmostEqual(float(value), target, places=6)
 
 
 class CorridorTests(unittest.TestCase):

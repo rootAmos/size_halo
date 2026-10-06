@@ -3,8 +3,7 @@
 The aircraft is sized first (`solve_halo_sizing()`, the default reference); the corridor flies that numeric
 aircraft at take-off mass, sea level, hover rotor speed. Each nacelle angle gets the least and greatest
 level-flight trim airspeed inside `CorridorLimits`, with the limit that sets it, and a least-power trim schedule
-at the corridor's mid speed. The XV-15-shaped corridor the trajectory layer assumed (`ConversionCorridor`) is
-plotted for comparison.
+at the corridor's mid speed.
 
     python examples/halo_conversion_corridor.py            # writes output/corridor/corridor.png and .json
 """
@@ -16,7 +15,7 @@ import aerosandbox.tools.units as u
 
 from aircraft_closure.controls.stability import LongitudinalStability
 from aircraft_closure.trajectory.corridor import CorridorLimits, TrimGeometry, solve_corridor, solve_trim
-from aircraft_closure.trajectory.tiltrotor import ConversionCorridor, TiltrotorPointMass
+from aircraft_closure.trajectory.tiltrotor import TiltrotorPointMass
 from aircraft_closure.vehicle.condition import StructuralDesignCondition
 from examples.halo_sizing import (HaloAssumptions, HaloRequirements, build_halo_aerodynamics, build_halo_aircraft,
                                   solve_halo_sizing)
@@ -93,7 +92,6 @@ def plot_corridor(corridor, sizing, model, path):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    assumed = ConversionCorridor(velocity_stall_m_s=float(model.velocity_stall_m_s(sizing.mass_takeoff_kg, 0.0)))
     pairs = [(lo, hi) for lo, hi in corridor if lo.trim is not None and hi.trim is not None]
     tilt = [lo.tilt_deg for lo, _ in pairs]
     low = [lo.velocity_m_s / u.knot for lo, _ in pairs]
@@ -109,10 +107,6 @@ def plot_corridor(corridor, sizing, model, path):
                 offset = -3 if align == "right" else 3
                 ax.annotate(", ".join(n.replace("_", " ") for n in names), (bound.velocity_m_s / u.knot, bound.tilt_deg),
                             xytext=(offset, 4), textcoords="offset points", ha=align, fontsize=7, color="#333333")
-    grid = [i * 90 / 30 for i in range(31)]
-    ax.plot([float(assumed.velocity_min_m_s(t)) / u.knot for t in grid], grid, "--", color="#999999",
-            label="Assumed XV-15-shaped corridor (trajectory layer)")
-    ax.plot([float(assumed.velocity_max_m_s(t)) / u.knot for t in grid], grid, "--", color="#999999")
     ax.set_xlabel("True airspeed (kt)")
     ax.set_ylabel("Nacelle angle (deg, 90 = hover)")
     ax.set_title(f"Halo conversion corridor: level flight, {sizing.mass_takeoff_kg:.0f} kg, sea level")
