@@ -5,28 +5,100 @@
 AeroSandbox/CasADi framework for sizing an unmanned series-hybrid-electric
 tiltrotor together with its mission. Every discipline contributes equations to
 one `asb.Opti` problem; there are no hidden convergence loops or second
-solvers. Tiers 0–21 of the [fidelity roadmap](docs/FIDELITY_ROADMAP.md) are
-implemented apart from Tiers 15, 18 and 22, and Tier 23 (geometry) is partial. Tier 9 is a coupled problem that sizes the aircraft,
-optimizes its mission and allocates battery versus turbogenerator energy per
-segment. Tiers 10a and 10b check the mass models and the engine and hover models against
-the Bell XV-15. Tier 10c uses them to size a Halo-class two-rotor series
-hybrid: 18,740 lb take-off for 900 kg payload, 445 nm, 250 kt and a 13,000 ft
-ceiling (18,506 lb with the user-supplied turboshaft deck's part-power fuel curve,
-Tier 11a).
+solvers. The disciplines are configuration, powertrain, aerodynamics, mass,
+stability, mission, energy management, thermal and redundancy. Fidelity is
+added in tiers, each with a plan, tests and an executed verification notebook.
+The [fidelity roadmap](docs/FIDELITY_ROADMAP.md) lists the tiers. Models are
+validated against the Bell XV-15 and the full-scale JVX proprotor test.
 
-**Current reference (plan 035): 13,038 lb at take-off** with 900 kg of payload at 210 kt.
-- **Engines:** fixed at 2 x 1,120 hp, inside the fuselage.
-- **Battery:** a Samsung 50G-shaped equivalent-circuit battery.
-- **Wing:** the NDARC tiltrotor wing with whirl-flutter margins.
-- **Aerodynamics:** AeroSandbox AeroBuildup, with Scholz miscellaneous items.
-- **Thermal:** a thermal model with a ram-air heat exchanger.
-- **Fuselage:** an unpressurized boxy fuselage (11 m long, 1.68 x 2.0 m). Its weight is raw Raymer GA x 1.70,
+**Current reference:** a Halo-class two-rotor series hybrid with every model on.
+
+- **Mission:** 900 kg payload, 445 nm, 210 kt at 10,000 ft, 13,000 ft
+  ceiling, hot-day hover, engine-out and electrical failure hovers.
+- **Engines:** two fixed off-the-shelf 1,120 hp turboshafts, inside the fuselage.
+- **Battery:** Samsung 50G-shaped equivalent-circuit pack.
+- **Fuselage:** unpressurized and boxy (11 m long, 1.68 x 2.0 m). Its weight is raw Raymer GA x 1.70,
   anchored to a layout-based structure estimate.
+- **Wing:** NDARC tiltrotor wing with whirl-flutter margins. Its spar caps sit at the real box depth, the
+  torque box has a 1 mm minimum gauge, and the nacelle pitch inertia is built from its components.
+- **Aerodynamics:** AeroSandbox AeroBuildup with Scholz drag corrections and trim drag from the tail load.
+- **Thermal:** heat exchanger sized with the aircraft.
+- **Machines and drive:**
+  - redundant motors (2 lanes per rotor), 2 cross-strapped buses, 2 battery strings;
+  - machines built from whole units of real products (2 motor units and 3 generator units);
+  - a single-stage rotor gearbox.
+- **Result:** 6,885 kg (15,179 lb) take-off weight.
 
-The reference has moved as fidelity was added; see the [results](docs/RESULTS.md) for how and why.
+Every earlier reference stays reproducible as a named assumption set (for example `assumptions_plan030`,
+`assumptions_plan037`, `assumptions_plan038`). All numbers are illustrative engineering inputs, not Archer or
+Halo data (see [reference assumptions](docs/HALO_REFERENCE.md)).
 
-All numbers are illustrative engineering inputs, not Archer or Halo data
-(see [reference assumptions](docs/HALO_REFERENCE.md)).
+**For reviewers:**
+- [docs/RESULTS.md](docs/RESULTS.md): what the framework concludes, how it is
+  checked, and its limits.
+- [docs/ARCHITECTURE_DIAGRAMS.md](docs/ARCHITECTURE_DIAGRAMS.md): how the
+  framework is organized.
+
+## Results at a glance
+
+Figures from the executed tier notebooks (`notebooks/`) and the geometry
+export, copied to `docs/figures/`.
+
+**How the answer moved as fidelity was added.** Each bar is the reference
+aircraft re-solved with that tier's models. The jump at plan 035 comes from
+three changes: whole real machine units in place of idealized ("rubber")
+scaling, electrical redundancy, and drag corrections for excrescence and
+trim.
+
+![Take-off weight by fidelity step](docs/figures/fidelity_progression.png)
+
+**Geometry.** The OpenVSP outer mold line at three nacelle angles, and the
+structural layout used for the mass check. These are rendered from an
+earlier sized design (`examples/halo_openvsp.py`, `examples/halo_structure.py`).
+
+![Halo-class 3-view and nacelle conversion](docs/figures/halo_views.png)
+![Structural layout](docs/figures/halo_structure.png)
+
+**Aerodynamics.**
+- **Drag polar (Tier 21):** the simple model, AeroSandbox AeroBuildup and the
+  Scholz hand build-up compared. The old guessed drag area was most of the
+  drag.
+- **Cross-check on the same geometry:** OpenVSP VSPAERO (VLM and panel)
+  against AeroSandbox for lift, pitching moment, induced drag, and profile
+  drag by component.
+
+![Drag polar by model](docs/figures/drag_polar_models.png)
+![OpenVSP vs AeroSandbox](docs/figures/aero_compare_openvsp.png)
+
+**Validation against test data.**
+- **Rotor power model (Tier 12):** against full-scale JVX hover and
+  airplane-mode data. The D-2 hover data were held out of the fit.
+- **XV-15 wing weight (Tier 20):** the NDARC tiltrotor wing by component,
+  from the published wing modes.
+
+![JVX proprotor calibration](docs/figures/rotor_jvx_calibration.png)
+![XV-15 wing components](docs/figures/xv15_wing_components.png)
+
+**Battery and thermal.**
+- **Battery cell (Tier 17):** the 50G open-circuit voltage fit to the
+  digitized cell data.
+- **Thermal (Tier 19):** lumped machine temperature response, and the
+  short-time rating it permits from a cold start.
+
+![Battery OCV fit](docs/figures/battery_ocv_fit.png)
+![Thermal short-time rating](docs/figures/thermal_short_time_rating.png)
+
+**Trajectory optimization (Tier 14).** Minimum-energy transition and
+minimum time to climb, flown inside the conversion corridor, against a
+naive prescribed conversion. The minimum-energy transition uses about half
+the energy of the naive schedule.
+
+![Trajectories in the conversion corridor](docs/figures/trajectory_conversion_corridor.png)
+
+**Sensitivities (Tier 22).** Take-off mass change for ±15 % on each
+uncertain input. The XV-15 weight-calibration factors dominate.
+
+![Sensitivity tornado](docs/figures/sensitivity_tornado.png)
 
 ## What is in the package
 
@@ -37,6 +109,7 @@ All numbers are illustrative engineering inputs, not Archer or Halo data
 | Vehicle | `vehicle/` | Wing, tails, fuselage, gear, systems, payload, fuel, nacelles, interconnect shaft, fixed equipment, installed powertrain; Raymer GA and AFDD masses; mass and CG aggregation |
 | Aerodynamics | `aerodynamics/` | Linear lift, parasite buildup, induced drag, drag-increment hook |
 | Controls | `controls/` | Neutral point, static margin, elevator trim, Cn_beta, rudder for failed-rotor yaw |
+| Trajectory | `trajectory/` | Tiltrotor point mass, direct-collocation trajectories, computed conversion corridor and level-flight trim |
 | Performance | `performance/` | Quasi-steady flight points coupling aero and the whole powertrain |
 | Requirements | `requirements/` | Hover, climb, speed and ceiling capability requirements |
 | Mission | `mission/` | Hover, climb, cruise, loiter, descent segments; missions with fuel burn and SOC |
@@ -105,19 +178,49 @@ plain numbers) and check it from a different direction.
 Main findings so far:
 - The AFDD wing agrees with the layout to within about 10 %.
 - AeroBuildup is conservative on stability and induced drag compared with VSPAERO.
-- The XV-15 fuselage calibration overstated an uncrewed fuselage, which led to plan 032.
-- **The CalculiX wing check finds the AFDD wing optimistic for this layout** (the caps work over a shorter lever
-  arm in the real box):
-  - beam frequency is 0.70x AFDD's and torsion 0.91x;
-  - the jump take-off strain is 1.29x the allowable at the plan 032 reference;
-  - the whirl-flutter margin is therefore probably not met.
+- The XV-15 fuselage calibration overstated an uncrewed fuselage, which led to plan 037.
+- The CalculiX wing check found the AFDD wing optimistic for this layout, because the caps work over a shorter
+  lever arm in the real box. The jump take-off strain was 1.29x the allowable. Plan 038 corrects the model: the
+  FE re-check gives 1.10x, and beam frequency rises from 0.70x to 0.85x of the AFDD estimate.
 
 Limits:
 - Fuselage FE meshing takes minutes per file type.
 - The structural STEP export is off.
-- No FE solution is run yet.
+- Only the wing box has been solved by FE; the fuselage and tail decks carry placeholder gauges.
 
-See [implementation notes](docs/IMPLEMENTATION_NOTES.md) (plans 031 and 032) for numbers and OpenVSP quirks.
+See [implementation notes](docs/IMPLEMENTATION_NOTES.md) (plans 031, 037 and 038) for numbers and OpenVSP quirks.
+
+## Conversion corridor and trim (plan 039)
+
+`trajectory/corridor.py` computes where the sized aircraft can fly level at each nacelle angle, instead of assuming
+an XV-15-shaped corridor.
+
+- **Trim:** thrust, attitude, ruddervator and longitudinal cyclic balance the forces along and normal to the flight
+  path and the pitching moment about the CG. The spare freedom goes to least rotor power.
+- **Corridor:** at each nacelle angle, the least and greatest airspeed with a trim inside the limits. Each side
+  reports the limit that sets it.
+- **Limits:**
+  - pitch -5 to +12 deg;
+  - ruddervator +/-25 deg;
+  - cyclic +/-10 deg, washed out toward airplane mode;
+  - wing stall;
+  - edgewise advance ratio 0.28, a proxy for flapping and hub loads;
+  - rotor power, blade loading, and a placard at 1.1 x the 210 kt requirement.
+
+`python examples/halo_conversion_corridor.py` writes `output/corridor/corridor.png` and a trim schedule. Results for
+the reference (6,885 kg, sea level, hover tip speed):
+
+| Corridor (kt) | 90 deg | 75 deg | 60 deg | 45 deg | 30 deg | 0 deg |
+|---|---|---|---|---|---|---|
+| Low side | hover | hover | 89 (pitch) | 106 (pitch) | 112 (pitch) | 119 (pitch) |
+| High side | 130 (edgewise) | 134 (edgewise) | 144 (edgewise) | 174 (edgewise) | 231 (placard) | 219 (rotor power) |
+
+- **High side:** the edgewise limit sets it at high nacelle angles, close to the XV-15.
+- **Low side:** the attitude limit sets it, not wing stall.
+- **Pitch authority:** tightest in helicopter mode near 65 kt, where trim uses the full ruddervator and most of
+  the cyclic.
+- **Not modelled yet:** the rotor's in-plane force in edgewise flow (so the low side at 45-60 deg is conservative)
+  and an airplane-mode rotor speed schedule.
 
 ## Continuous integration
 
@@ -154,22 +257,15 @@ uv run jupyter lab notebooks
 
 ## Status and next step
 
-Open items, roughly by impact:
+All roadmap tiers 0-22 are implemented, and Tier 23 (geometry) is partial. Open items, roughly by impact (see
+[docs/RESULTS.md](docs/RESULTS.md)):
 
-- **Airplane-mode rotor efficiency.** The cruise coefficient is the largest remaining assumption.
-- **Plan 032 assumptions:**
-  - the turbogenerator station inside the fuselage;
-  - the XV-15 pylon radius of gyration, now without engines in the nacelle;
-  - Raymer's flight-control mass scaling with fuselage length, which gives 104 kg of the 11 m saving and is weak
-    for fly-by-wire.
-- **V-tail.** The sizing still uses a conventional tail; the V-tail is drawn only.
-- **Symbolic geometry layout (Tier 23).** Clearance and packaging constraints are still planned.
-- **AFDD wing vs FE.** The CalculiX check found the AFDD cap lever arm optimistic for this box: about 29 % over
-  strain in the jump take-off and torsion about 9 % low.
-  - Plan 035 corrects the sizing: caps at the real box depth, a 1 mm minimum gauge, and pylon inertia from the
-    tip components.
-  - The FE re-check of the corrected wing: beam 0.85x AFDD, jump strain 1.10x the allowable (was 1.29x).
-    Torsion identification is unresolved.
-- **FE models.** Only the wing box is checked. The fuselage and tail decks carry placeholder gauges.
-
-[Results](docs/RESULTS.md) has the full list and how the reference moved.
+- **Drag calibration** against XV-15 flight data, and airplane-mode rotor efficiency.
+- **Weight calibration** rests on one complete aircraft.
+- **Wing:** the corrected wing is still 10 % over the strain allowable in the jump take-off by FE, and wing
+  torsion is not yet cleanly identified in the FE modes.
+- **Layout assumptions:** the turbogenerator station and the nacelle drive and cowling offsets.
+- **V-tail:** the sizing uses a conventional tail; the V-tail is drawn only.
+- **Geometry:** the symbolic layout with clearance and packaging constraints (Tier 23) is still planned.
+- **Trajectories:** the trajectory layer has no 6-DOF yet. The computed corridor (plan 039) still needs the rotor
+  in-plane force and a rotor speed schedule. Linearized pitch models at its trim points are the next controls step.

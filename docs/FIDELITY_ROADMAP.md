@@ -24,12 +24,13 @@
 | 15 | Electrical layer: inverters, cables, protection, DC/DC; bus voltage as a discrete choice | Implemented |
 | 16 | Hot and high: ISA + delta-T atmosphere, temperature lapse, hover at destination after the mission | Implemented |
 | 17 | Battery equivalent circuit with sag and ageing: OCV(SOC), R(SOC, C-rate, T), end-of-life, cycle cost | Implemented |
-| 18 | Redundancy: lanes per rotor, cross-strapped buses, battery strings, multipoint failure cases | Planned |
+| 18 | Redundancy: lanes per rotor, cross-strapped buses, battery strings, multipoint failure cases (Halo option `redundancy`, off by default; lane out, bus out and string out hovers; symmetric degraded states) | Implemented |
 | 19 | Thermal: losses to heat-exchanger mass and cooling drag; short-time ratings from thermal mass (machines and pack; Halo option `thermal_model`, off by default; pack temperature into resistance deferred) | Implemented |
 | 20 | Tiltrotor airframe weights: AFDD wing with torsional stiffness and whirl flutter; second calibration aircraft | Implemented |
 | 21 | Aero: AeroBuildup model, Scholz hand check, compressibility, nacelle build-up, blown wing, download model (V-tail and conversion segments deferred) | Implemented |
-| 22 | Design-space practice: freed trades, multistart, cost objective, architecture enumeration, robustness | Planned |
+| 22 | Design-space practice: starting-point strategy (multistart), freed trades (aspect ratio, cruise altitude, reserve SOC), cost-per-mission objective, architecture enumeration, one-at-a-time sensitivity (optimization under uncertainty deferred) | Implemented |
 | 23 | Geometry: OpenVSP outer mold line (tilting nacelles), VSPAERO and parasite-drag cross-check, internal structure with FE decks, layout-based weight back-check (plan 031); symbolic layout with clearance and packaging constraints deferred | Partial |
+| 24 | Controls in conversion: computed corridor and level-flight trim with tail, cyclic, attitude, edgewise, power and placard limits (plan 039); rotor H-force, rotor speed schedule, linearized models and lateral trim deferred | Partial |
 
 Keep simple implementations when higher fidelity is introduced. Use AeroSandbox
 geometry, aero, weights and dynamics wherever suitable. Do not jump to a full
@@ -253,6 +254,14 @@ a new constraint inside the sizing Opti.
 - **Ratings:** short-time emergency ratings.
 - **Removed:** the fixed-wing failed-propulsor yaw helper is dropped for
   tiltrotors.
+
+Implemented in plan 032 as the Halo option `HaloAssumptions.redundancy`
+(off by default): lane motors on a combining gearbox input, cross-strapped
+buses with normally open ties, isolated pack strings, and lane-out, bus-out
+and string-out hovers (double failures with an engine out optional) as extra
+points of the sizing problem. Degraded states are symmetric (both rotors);
+roll trim by differential collective, a genset out at landing and inverter
+short-time ratings are deferred.
 
 ### 19 Thermal (review item 3)
 

@@ -89,6 +89,11 @@ Declarations live in `powertrain/ports.py` (`port_specs_for`), not on the
 component classes. `powertrain/topologies.py` provides
 `build_series_hybrid(..., count_rotors=n)`. Multiplicity is symmetric: n copies
 share one set of port values; asymmetric or failed instances are deferred.
+Tier 18 adds combiners and splitters (`connect(a, b, combine=True)`: counts
+may differ by an integer multiple; efforts equal, total flow conserved,
+`port_flow_fields` names the flow per domain) and bus copies
+(`add_bus(name, count=n)`); failed instances are flight-point inputs (see
+"Redundancy (Tier 18)").
 
 ## Compatibility margins (Tier 3)
 
@@ -488,6 +493,48 @@ assumption values.
   `speed_peak_generator_rad_s`.
 - **Legacy set:** `assumptions_tier12b` reproduces Tier 12b.
 
+### Machine database and gearbox stages (plan 033)
+
+- **`motor.DatabaseMassModel(...)`:** an interchangeable `mass_model` for
+  `Motor` and `Generator`.
+  - Parameters: `torque_density_ref_Nm_kg=11.79`, `speed_ref_rad_s=500`,
+    `exponent_speed=0.271`, `specific_power_max_W_kg=2e4`,
+    `ratio_torque_continuous_peak=0.5`, `specific_power_inverter_W_kg=None`,
+    `torque_continuous_max_stack_Nm=None`, `mass_overhead_stack_kg=0`,
+    `smoothing_kg=2`.
+  - The machine's continuous torque is T = ratio x `max_torque_Nm`. Its base
+    speed is w = `power_rated_W` / T.
+  - `mass_kg(machine)` = softmax(T / tau(w), P / p_max)
+    + overhead x `count_stacks(machine)` + P / p_inverter (if set), with
+    tau(w) = tau_ref (w / w_ref)^-a.
+  - None for `specific_power_inverter_W_kg` gives a bare machine.
+  - Also: `torque_density_Nm_kg(w)`, `count_stacks(machine)` (relaxed
+    T / T_stack_max), `mass_bare_kg` and `mass_inverter_kg`.
+- **`powertrain.machine_database`:**
+  - `MachineRecord`;
+  - `load_machine_database(path=data/machines/aerospace_motors.csv)`;
+  - `fit_torque_density(records, speed_ref_rad_s=500)`, which returns a
+    `TorqueDensityFit` (tau_ref, exponent, per-machine residuals and the RMS
+    log residual).
+- **`gearbox.GearStageModel(...)`:**
+  - Parameters: `ratio_max_stage=5`, `loss_stage=0.01`,
+    `efficiency_fixed=0.99`, `fraction_mass_stage=0.3`, `staircase=True`,
+    `width_step=0.02`, `width_relaxed=0.05`, `count_stages_max=6`.
+  - `count_stages(ratio)`, `efficiency(ratio)` and `mass_factor(ratio)`. The
+    ratio is fast / slow, at least 1.
+- **`HaloAssumptions`:**
+  - `machine_mass_model` (`"torque_density"` default, or `"database"`);
+  - `torque_density_database_Nm_kg`, `speed_ref_database_rad_s` and
+    `exponent_speed_database`;
+  - `gearbox_stages` (default False) and `gear_stage_model` (default `GearStageModel(staircase=False)`, the
+    relaxed count);
+  - `reduction_ratio_max` (40, the upper bound of the rotor gear ratio).
+- **`examples.halo_sizing`:**
+  - `ratio_reference_gear_stages()`: the XV-15 ratio, 35.4;
+  - `stage_mass_ratio(model, ratio)`;
+  - `solve_halo_sizing(..., stage_fallback=True)`: with a staircase stage model and no `initial`, it tries two
+    starting points (generic and relaxed) and keeps the lighter result.
+
 ## Trajectory optimization (Tier 14)
 
 `aircraft_closure.trajectory.tiltrotor` flies a **fixed, already-sized** aircraft through a
@@ -833,6 +880,42 @@ Plan 028. Every value may be an Opti expression; nothing iterates.
   `HaloDesign.power_rated_heat_exchanger_W` and `power_rated_gearbox_W`;
   `HaloSizingResult.thermal_trace` and `heat_exchanger`.
 
+## Redundancy (Tier 18)
+
+No new component class: the architecture is multiplicity plus Tier 15
+`ProtectionUnit` and `Cable` instances.
+
+- `powertrain/topologies.py`: `RedundancyLayer(count_lanes, count_buses,
+  count_strings_battery, protection_string, protection_bus_tie,
+  cable_bus_tie)` and `build_series_hybrid(..., redundancy=None)`. `motor` is
+  then one lane motor (count rotors x lanes) on a combining gearbox input;
+  the bus has `count_buses` copies and `count_buses - 1` normally open ties
+  (`protection_bus_tie` -> `cable_bus_tie`, outer ports unconnected); the
+  pack splits into `count_strings_battery` string contactors. All ones (the
+  default) builds the plain topology. Lanes must be a multiple of buses.
+- `powertrain/redundancy.py`: `redundancy_counts(topology)`,
+  `degraded_state(topology, condition)` (validated active lanes per rotor,
+  active strings, failed buses), `battery_with_strings(battery,
+  fraction_active)` (parallel count, or capacity, power ratings and
+  conductance, scaled) and `battery_for_condition(topology, condition)`.
+- `FlightCondition.active_lane_count` (per rotor, None = all),
+  `active_battery_string_count` (None = all), `count_buses_failed` (0); the
+  same fields on `HoverSegment`. `FlightPoint.redundancy`:
+  `RedundancyPointResult(count_lanes_active, count_strings_active,
+  count_buses_failed, torque_gearbox_input_Nm, current_string_A,
+  power_loss_strings_W, current_tie_A, power_loss_tie_W)` (None for the
+  plain topology). `FlightPoint.torque_motor_Nm` is per lane.
+- `operating_margins(..., components=None)` and
+  `evaluate_point_thermal(..., components=None)` take per-point component
+  overrides (the pack with a string isolated).
+- Degraded states apply to every rotor alike (symmetric multiplicity). Tie
+  current = failed buses x motor-feeder demand / (bus count x bus voltage);
+  tie loss joins the bus demand; ties have no margins in normal operation.
+- Halo: `HaloAssumptions.redundancy` (default False) with `count_lanes_motor`,
+  `count_buses`, `count_strings_battery`, `length_cable_bus_tie_m` and the
+  failure flags; `build_halo_redundancy`, `failure_hover_cases`,
+  `halo_failure_hovers`, `HaloSizingResult.count_lanes_motor` and
+  `failure_cases`; `assumptions_tier18`.
 ## Geometry export and cross-checks (plan 031)
 
 These functions are optional (they need the OpenVSP API, and PyVista for renders). They read numbers only and are

@@ -9,6 +9,13 @@ from examples.halo_sizing import (HaloAssumptions, HaloRequirements, assumptions
 from aircraft_closure.aerodynamics.simple import SimpleAerodynamics
 from aircraft_closure.performance.flight_point import FlightCondition, build_flight_point
 
+# Plan 035 changed the defaults; these tests reproduce Tier 15 on the plan 030 settings.
+from functools import partial  # noqa: E402
+from examples.halo_sizing import pre_layout, pre_plan035  # noqa: E402
+HaloAssumptions = partial(HaloAssumptions, **pre_plan035, **pre_layout)
+build_halo_aircraft = partial(build_halo_aircraft, assumptions=HaloAssumptions())
+solve_halo_sizing = partial(solve_halo_sizing, assumptions=HaloAssumptions())
+
 electrical_names = ("inverter_motor", "inverter_generator", "cable_motor", "cable_generator", "cable_battery",
                     "protection_motor", "protection_generator", "protection_battery")
 
@@ -53,7 +60,7 @@ class HaloElectricalLayerTests(unittest.TestCase):
 
     def test_flight_point_energy_balance(self):
         """Sources minus sinks at the machine terminals equal the electrical-layer losses (exact identity)."""
-        aircraft = build_halo_aircraft(self.on.design, HaloRequirements(), self.assumptions)
+        aircraft = build_halo_aircraft(self.on.design, HaloRequirements(), assumptions=self.assumptions)
         opti = asb.Opti()
         point = build_flight_point(opti, aircraft, SimpleAerodynamics(), FlightCondition(
             mode="airplane", velocity_m_s=100.0, altitude_m=3000.0, soc=0.6, hybridization_electric=0.2),

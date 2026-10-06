@@ -1,26 +1,38 @@
-"""Plan 035: AFDD spar-cap depth and minimum gauge, pylon inertia build-up, layout turbogenerator station."""
+"""The Halo default reference: every model on (whole real machine units, redundancy, drag corrections, drawn layout, wing corrections)."""
 import unittest
 
 import aerosandbox.tools.units as u
 
-from examples.halo_sizing import HaloAssumptions, HaloRequirements, build_halo_aircraft, solve_halo_sizing
+from examples.halo_sizing import HaloAssumptions, HaloRequirements, assumptions_plan030, solve_halo_sizing
 
 
 class Plan035ReferenceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.sized = solve_halo_sizing()                     # the defaults are the plan 035 reference
-        cls.wing_model = build_halo_aircraft(cls.sized.design, HaloRequirements(), HaloAssumptions()).wing.mass_model
+        cls.result = solve_halo_sizing()
 
-    def test_closes_with_all_margins(self):
-        self.assertGreater(self.sized.min_margin, -1e-6)
-        self.assertLess(abs(self.sized.closure_residual_kg), 1e-3)
-        self.assertAlmostEqual(self.sized.mass_takeoff_kg / u.lbm, 13038, delta=10)
+    def test_defaults(self):
+        a = HaloAssumptions()
+        self.assertTrue(a.drag_corrections and a.redundancy and a.gearbox_stages and a.thermal_model)
+        self.assertEqual(a.machine_mass_model, "units")
+        self.assertEqual(HaloRequirements().mass_payload_kg, 900.0)
+        self.assertFalse(assumptions_plan030.redundancy)
+        self.assertEqual(assumptions_plan030.machine_mass_model, "torque_density")
 
-    def test_wing_options_take_the_layout_values(self):
-        self.assertAlmostEqual(self.wing_model.ratio_depth_spar_cap, 0.826, delta=0.002)
-        self.assertEqual(self.wing_model.thickness_min_torque_box_m, 0.001)
-        self.assertAlmostEqual(float(self.wing_model.radius_gyration_pylon_m), 0.842, delta=0.01)
+    def test_closes_at_900_kg(self):
+        r = self.result
+        self.assertGreater(r.min_margin, -1e-6)
+        self.assertLess(abs(r.closure_residual_kg), 1e-3)
+        self.assertEqual(r.mass_payload_kg, 900.0)
+        self.assertAlmostEqual(r.mass_takeoff_kg / u.lbm, 15179, delta=20)   # with the layout line (plans 037-038)
+
+    def test_machines_are_whole_units_on_two_lanes(self):
+        r = self.result
+        self.assertEqual(r.count_lanes_motor, 2)
+        for name, (count, fixed) in r.machine_units.items():
+            self.assertIsInstance(fixed, int, msg=name)
+            self.assertAlmostEqual(count, fixed, places=9, msg=name)
+        self.assertLessEqual(r.design.reduction_ratio, 5.2)        # low-speed units: a single gear stage
 
 
 if __name__ == "__main__":

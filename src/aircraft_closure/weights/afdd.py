@@ -160,7 +160,7 @@ def wing_tiltrotor_afdd_masses(span_m, chord_m, thickness_to_chord, fraction_cho
     NDARC's two "replace by zero if negative" steps are max(0, .); `smoothing` > 0 rounds them with a scale of
     `smoothing` times the required stiffness or moment (for gradient-based sizing).
 
-    Plan 035 options (defaults reproduce NDARC):
+    Plan 038 options (defaults reproduce NDARC):
     - `ratio_depth_spar_cap`: spar-cap separation / wing thickness. NDARC puts the caps the full thickness apart;
       a two-spar box has them at the airfoil depth at its spars (about 0.83 for a 23 % NACA section with spars at
       0.15 and 0.60 chord). It scales the caps' bending lever arm (stiffness with its square, the jump-take-off

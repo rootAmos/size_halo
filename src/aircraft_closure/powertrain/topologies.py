@@ -32,21 +32,60 @@ class ElectricalLayer:
     dcdc: Any = None
 
 
+@dataclass(frozen=True)
+class RedundancyLayer:
+    """Tier 18 redundancy architecture (a description; failure states are flight-point inputs).
+
+    - `count_lanes`: lane motors per rotor (each with its own feeder when the Tier 15 layer is on), on a
+      combining gearbox input: equal speed, torques add.
+    - `count_buses`: identical cross-strapped DC buses, each feeding count_lanes / count_buses lanes per rotor
+      and an equal share of the sources; `count_buses - 1` normally open ties, each `protection_bus_tie` +
+      `cable_bus_tie` (its ports are boundaries: no current in normal operation).
+    - `count_strings_battery`: the pack split into isolated parallel strings, each behind its own
+      `protection_string` contactor (a splitter from the pack).
+    Hardware is only added for counts above one, so all ones build the plain topology.
+    """
+    count_lanes: int = 1
+    count_buses: int = 1
+    count_strings_battery: int = 1
+    protection_string: Any = None
+    protection_bus_tie: Any = None
+    cable_bus_tie: Any = None
+
+    def __post_init__(self):
+        for name in ("count_lanes", "count_buses", "count_strings_battery"):
+            value = getattr(self, name)
+            if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+                raise ValueError(f"{name} must be a positive integer, got {value!r}.")
+        if self.count_lanes % self.count_buses != 0:
+            raise ValueError(f"Each bus feeds an equal share of the lanes: count_lanes {self.count_lanes} must be a "
+                             f"multiple of count_buses {self.count_buses}.")
+        if self.count_strings_battery > 1 and self.protection_string is None:
+            raise ValueError("Battery strings need a protection_string contactor.")
+        if self.count_buses > 1 and (self.protection_bus_tie is None or self.cable_bus_tie is None):
+            raise ValueError("Cross-strapped buses need a protection_bus_tie and a cable_bus_tie.")
+
+
 def build_series_hybrid(motor, generator, battery, turboshaft, gearbox, propulsor, count_rotors=1,
-                        count_turbogenerators=1, generator_gearbox=None, electrical=None):
+                        count_turbogenerators=1, generator_gearbox=None, electrical=None, redundancy=None):
     """m x (turboshaft [-> generator_gearbox] -> generator) -> bus <- battery; bus -> n x (motor -> gearbox -> rotor).
 
     The turboshaft fuel port is left unconnected as a boundary port. `generator_gearbox` (optional) is a
     step-up gearbox between the engine output shaft and the generator (reduction_ratio < 1). `electrical`
     (optional `ElectricalLayer`, Tier 15) inserts inverters, cables, protection and an optional DC/DC
     converter between the machines, the battery and the bus; None connects them to the bus directly.
+    `redundancy` (optional `RedundancyLayer`, Tier 18): `motor` is then one lane motor (count_rotors x
+    count_lanes copies), the bus has `count_buses` copies with their ties, and the pack feeds the bus
+    through its string contactors.
     """
+    r = redundancy if redundancy is not None else RedundancyLayer()
+    count_motors = count_rotors * r.count_lanes
     topology = Topology()
     topology.add("turboshaft", turboshaft, port_specs_for(turboshaft), count=count_turbogenerators)
     topology.add("generator", generator, port_specs_for(generator), count=count_turbogenerators)
     topology.add("battery", battery, port_specs_for(battery))
-    topology.add_bus("bus")
-    topology.add("motor", motor, port_specs_for(motor), count=count_rotors)
+    topology.add_bus("bus", count=r.count_buses)
+    topology.add("motor", motor, port_specs_for(motor), count=count_motors)
     topology.add("gearbox", gearbox, port_specs_for(gearbox), count=count_rotors)
     topology.add("propulsor", propulsor, port_specs_for(propulsor), count=count_rotors)
     if generator_gearbox is None:
@@ -55,20 +94,34 @@ def build_series_hybrid(motor, generator, battery, turboshaft, gearbox, propulso
         topology.add("generator_gearbox", generator_gearbox, port_specs_for(generator_gearbox), count=count_turbogenerators)
         topology.connect("turboshaft.shaft", "generator_gearbox.shaft_in")
         topology.connect("generator_gearbox.shaft_out", "generator.shaft")
+    battery_port, battery_combine = "battery.electrical", False
+    if r.count_strings_battery > 1:
+        topology.add("protection_string", r.protection_string, port_specs_for(r.protection_string),
+                     count=r.count_strings_battery)
+        topology.connect("battery.electrical", "protection_string.input", combine=True)
+        battery_port, battery_combine = "protection_string.output", True
+    if r.count_buses > 1:
+        # Normally open ties: the outer ports stay unconnected (boundaries) in normal operation.
+        topology.add("protection_bus_tie", r.protection_bus_tie, port_specs_for(r.protection_bus_tie),
+                     count=r.count_buses - 1)
+        topology.add("cable_bus_tie", r.cable_bus_tie, port_specs_for(r.cable_bus_tie), count=r.count_buses - 1)
+        topology.connect("protection_bus_tie.output", "cable_bus_tie.input")
     if electrical is None:
         topology.connect("generator.electrical", "bus")
-        topology.connect("battery.electrical", "bus")
+        topology.connect(battery_port, "bus")
         topology.connect("motor.electrical", "bus")
     else:
-        _add_electrical_layer(topology, electrical, count_rotors, count_turbogenerators)
-    topology.connect("motor.shaft", "gearbox.shaft_in")
+        _add_electrical_layer(topology, electrical, count_motors, count_turbogenerators, battery_port,
+                              battery_combine)
+    topology.connect("motor.shaft", "gearbox.shaft_in", combine=r.count_lanes > 1)
     topology.connect("gearbox.shaft_out", "propulsor.shaft")
     return topology
 
 
-def _add_electrical_layer(topology, e, count_rotors, count_turbogenerators):
-    for name, count in (("protection_motor", count_rotors), ("cable_motor", count_rotors),
-                        ("inverter_motor", count_rotors), ("cable_generator", count_turbogenerators),
+def _add_electrical_layer(topology, e, count_motors, count_turbogenerators, battery_port="battery.electrical",
+                          battery_combine=False):
+    for name, count in (("protection_motor", count_motors), ("cable_motor", count_motors),
+                        ("inverter_motor", count_motors), ("cable_generator", count_turbogenerators),
                         ("protection_generator", count_turbogenerators), ("protection_battery", 1),
                         ("cable_battery", 1)):
         component = getattr(e, name)
@@ -82,7 +135,7 @@ def _add_electrical_layer(topology, e, count_rotors, count_turbogenerators):
     topology.connect("inverter_generator.dc", "cable_generator.input")
     topology.connect("cable_generator.output", "protection_generator.input")
     topology.connect("protection_generator.output", "bus")
-    topology.connect("battery.electrical", "protection_battery.input")
+    topology.connect(battery_port, "protection_battery.input", combine=battery_combine)
     topology.connect("protection_battery.output", "cable_battery.input")
     if e.dcdc is None:
         topology.connect("cable_battery.output", "bus")

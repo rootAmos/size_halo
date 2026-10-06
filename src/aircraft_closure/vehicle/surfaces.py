@@ -196,8 +196,8 @@ class TiltrotorWingMassModel:
     frequency_chord_per_rev: Any = 0.825
     thickness_to_chord: Any = 0.23
     fraction_chord_torque_box: Any = 0.45
-    ratio_depth_spar_cap: Any = 1.0                      # plan 035; 1.0 is NDARC
-    thickness_min_torque_box_m: Any = 0.0                # plan 035; 0 is NDARC
+    ratio_depth_spar_cap: Any = 1.0                      # plan 038; 1.0 is NDARC
+    thickness_min_torque_box_m: Any = 0.0                # plan 038; 0 is NDARC
     material: Any = field(default_factory=aluminium_wing_material)
     fraction_area_control_surfaces: Any = 0.185          # XV-15 flaps 11.0 + flaperons 20.2 ft2 of 169 ft2
     unit_mass_fairing_kg_m2: Any = 10.92                 # XV-15: 108 lb on 48.3 ft2
