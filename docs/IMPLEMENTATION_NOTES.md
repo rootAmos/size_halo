@@ -1681,10 +1681,10 @@ the one with zero normalized margin. Each bound solves in about 3 s.
 
 ## Verification notebooks
 
-One executed notebook per tier under `notebooks/`: Tier 0 foundation checks,
-Tier 1 component physics, Tier 2 topology, Tier 3 compatibility margins, Tier 4 mass closure, Tier 5
-aerodynamics, Tier 6 stability and control, Tier 7 requirements, Tier 8 missions, Tier 9 coupled sizing, Tier 10 XV-15 mass validation, Tier 13b machine database and gearbox stages, Tier 18 redundancy, Tier 19 thermal, Tier 20 tiltrotor wing weights and Tier 21 aerodynamics. Outputs are kept so plots render
-remotely.
+Six executed notebooks under `notebooks/`, one per discipline (global sizing, powertrain, energy storage,
+aerodynamics and rotor, structures and weights, dynamics and control). Each solves the current reference and then
+verifies its discipline's models; the component-level sections come from the per-tier notebooks used while the
+tiers were built (in the git history). Outputs are kept so plots render remotely.
 
 ## Next stage
 

@@ -5,7 +5,7 @@ on:
     inputs:
       notebooks:
         description: "Glob of notebooks to execute (default: all)"
-        default: "notebooks/tier*/*.ipynb"
+        default: "notebooks/*.ipynb"
 
 jobs:
   list:
