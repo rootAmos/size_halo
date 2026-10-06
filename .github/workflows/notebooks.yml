@@ -39,6 +39,7 @@ jobs:
             --ExecutePreprocessor.timeout=5400
       - name: Name the artifact
         id: name
+        if: always()
         run: echo "name=$(basename '${{ matrix.notebook }}' .ipynb)-$(basename "$(dirname '${{ matrix.notebook }}')")" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         if: always()
