@@ -44,13 +44,10 @@ Halo data (see [reference assumptions](docs/HALO_REFERENCE.md)).
 Figures from the executed tier notebooks (`notebooks/`) and the geometry
 export, copied to `docs/figures/`.
 
-**How the answer moved as fidelity was added.** Each bar is the reference
-aircraft re-solved with that tier's models. The jump at plan 035 comes from
-three changes: whole real machine units in place of idealized ("rubber")
-scaling, electrical redundancy, and drag corrections for excrescence and
-trim.
+**Where the empty mass goes.** The 15,179 lb reference: 5,049 kg empty, of
+which the powertrain is 2,871 kg (57 %).
 
-![Take-off weight by fidelity step](docs/figures/fidelity_progression.png)
+![Empty mass breakdown](docs/figures/oew_breakdown.png)
 
 **Geometry.** The OpenVSP outer mold line at three nacelle angles, and the
 structural layout used for the mass check. These are rendered from an
@@ -60,9 +57,9 @@ earlier sized design (`examples/halo_openvsp.py`, `examples/halo_structure.py`).
 ![Structural layout](docs/figures/halo_structure.png)
 
 **Aerodynamics.**
-- **Drag polar (Tier 21):** the simple model, AeroSandbox AeroBuildup and the
-  Scholz hand build-up compared. The old guessed drag area was most of the
-  drag.
+- **Drag polar (Tier 21):** AeroSandbox AeroBuildup and the Scholz hand
+  build-up on the reference aircraft agree within about 3 % in drag at
+  cruise lift.
 - **Cross-check on the same geometry:** OpenVSP VSPAERO (VLM and panel)
   against AeroSandbox for lift, pitching moment, induced drag, and profile
   drag by component.
@@ -79,26 +76,18 @@ earlier sized design (`examples/halo_openvsp.py`, `examples/halo_structure.py`).
 ![JVX proprotor calibration](docs/figures/rotor_jvx_calibration.png)
 ![XV-15 wing components](docs/figures/xv15_wing_components.png)
 
-**Battery and thermal.**
-- **Battery cell (Tier 17):** the 50G open-circuit voltage fit to the
-  digitized cell data.
-- **Thermal (Tier 19):** lumped machine temperature response, and the
-  short-time rating it permits from a cold start.
+**Battery cell (Tier 17).** The 50G open-circuit voltage fit to the
+digitized cell data.
 
 ![Battery OCV fit](docs/figures/battery_ocv_fit.png)
-![Thermal short-time rating](docs/figures/thermal_short_time_rating.png)
 
 **Trajectory optimization (Tier 14).** Minimum-energy transition and
-minimum time to climb, flown inside the conversion corridor, against a
-naive prescribed conversion. The minimum-energy transition uses about half
+minimum time to climb, flown inside an assumed XV-15-shaped conversion
+corridor (the computed corridor of plan 039 is below), against a naive
+prescribed conversion. The minimum-energy transition uses about half
 the energy of the naive schedule.
 
 ![Trajectories in the conversion corridor](docs/figures/trajectory_conversion_corridor.png)
-
-**Sensitivities (Tier 22).** Take-off mass change for ±15 % on each
-uncertain input. The XV-15 weight-calibration factors dominate.
-
-![Sensitivity tornado](docs/figures/sensitivity_tornado.png)
 
 ## What is in the package
 
