@@ -23,7 +23,7 @@ flowchart LR
     subgraph L1["1 Orchestration<br/>examples/"]
         direction TB
         sizing["halo_sizing.py<br/>coupled_sizing.py"]
-        trajex["trajectory_optimization.py"]
+        trajex["trajectory_optimization.py<br/>halo_conversion_corridor.py"]
         calib["xv15_reference.py<br/>xv15_performance.py<br/>jvx_rotor_calibration.py"]
     end
     subgraph L2["2 Aircraft assembly<br/>vehicle/"]
@@ -117,7 +117,7 @@ flowchart LR
         end
         subgraph MACH["Machines and battery"]
             direction LR
-            m0["Specific power<br/>Tier 1"] --> m1["Torque density<br/>Tier 13"]
+            m0["Specific power<br/>Tier 1"] --> m1["Torque density<br/>Tier 13"] --> m2["Whole real units,<br/>gear stages<br/>plans 033, 035"]
             b0["Energy capacity<br/>Tier 1"] -- "needs current" --> b1["Equivalent circuit<br/>Tier 17"]
         end
     end
@@ -130,11 +130,12 @@ flowchart LR
         end
         subgraph WTS["Weights"]
             direction LR
-            w0["Raymer GA, AFDD<br/>Tiers 4, 10a"] --> w1["Tiltrotor wing,<br/>whirl flutter<br/>Tier 20"] --> w2["Cap depth, min gauge,<br/>layout fuselage factor<br/>plans 032, 035"]
+            w0["Raymer GA, AFDD<br/>Tiers 4, 10a"] --> w1["Tiltrotor wing,<br/>whirl flutter<br/>Tier 20"] --> w2["Cap depth, min gauge,<br/>layout fuselage factor<br/>plans 037, 038"]
         end
         subgraph SYS["Systems layers"]
             direction LR
             e1["Electrical<br/>Tier 15"]
+            rd1["Redundancy<br/>Tier 18"]
             th1["Thermal<br/>Tier 19"]
             g1["Geometry checks<br/>Tier 23, partial"]
         end
@@ -163,7 +164,9 @@ The same component and discipline equations feed three kinds of problem.
 Sizing, the mission and the energy allocation are solved together in one
 `asb.Opti` on quasi-steady flight points (Tiers 9 to 13). Trajectory
 optimization is a separate `asb.Opti` on an already-sized aircraft, with
-AeroSandbox point-mass dynamics and direct collocation (Tier 14). A 6-DOF
+AeroSandbox point-mass dynamics and direct collocation (Tier 14). The
+conversion corridor is computed from level-flight trims of the sized aircraft,
+each a small `asb.Opti` (plan 039). A 6-DOF
 level is not implemented: it is the planned next fidelity step of the
 trajectory layer, using AeroSandbox rigid-body dynamics with the same rotor,
 aerodynamic and mass models, extended to moments and inertia. The coupling is
@@ -180,7 +183,7 @@ flowchart LR
         veh["Vehicle geometry<br/>and MassProperties"]
     end
 
-    subgraph SIZE["Sizing, mission, energy<br/>one asb.Opti, Tiers 9-21"]
+    subgraph SIZE["Sizing, mission, energy<br/>one asb.Opti, Tiers 9-22"]
         direction TB
         fp["Quasi-steady flight points<br/>requirements as points"]
         seg["Chained mission segments<br/>fuel burn and SOC"]
@@ -192,7 +195,9 @@ flowchart LR
         direction TB
         pm["Point-mass dynamics<br/>collocated nodes"]
         tro["Min-energy transition,<br/>min-time climb"]
+        trim["Corridor and level trim<br/>plan 039"]
         pm --> tro
+        pm --> trim
     end
 
     subgraph AFTER["Checks after the solve<br/>plan 031, numbers only"]
@@ -264,7 +269,7 @@ flowchart LR
             c1["Mass closure"]
             c2["Requirements: hover,<br/>climb, speed, ceiling"]
             c3["Mission: fuel, reserve,<br/>end SOC"]
-            c4["Engine-out hover"]
+            c4["Failure hovers: engine,<br/>bus, lane, string"]
             c8["Hot-day hover"]
         end
         subgraph CONB[" "]

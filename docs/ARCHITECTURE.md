@@ -230,7 +230,10 @@ Sizing concerns:
 - elevator sizing
 - rudder sizing
 
-V-tail is deferred.
+V-tail is deferred in the sizing: the Halo's V-tail is drawn (plan 031), and the conversion-corridor trim
+(plan 039) limits its pitch deflection to ±25 deg, but the sizing still uses a conventional tail. Pitch trim in
+conversion (thrust, attitude, tail deflection, cyclic) is computed outside the sizing by
+`trajectory/corridor.py`.
 
 Later V-tail support should transform required pitch/yaw authority into:
 

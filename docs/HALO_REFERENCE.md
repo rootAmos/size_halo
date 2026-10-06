@@ -50,10 +50,10 @@ cells, redundant flight controls and an oxygen system. TM X-62407 warns that
 these weigh more than the concept needs, so its calibration factors are applied
 to an unmanned aircraft with stated adjustments, not wholesale.
 
-## Drawn Halo layout and plan 032 reference (2026-10-04)
+## Drawn Halo layout and plan 037 reference (2026-10-04)
 
-The Halo is uncrewed and unpressurized. Plan 032 uses these user statements and the plan 031 drawing, made from
-public stills:
+The Halo is uncrewed and unpressurized. Plan 037 (numbered 032 on its branch) uses these user statements and the
+plan 031 drawing, made from public stills:
 
 - turbines in the fuselage;
 - whole tip nacelles that tilt;
@@ -64,5 +64,12 @@ The sized aircraft is 11 m long, 1.68 m wide and 2.0 m deep (super-ellipse 3.2).
 x 1.70, anchored to a layout estimate of an uncrewed cargo fuselage. It weighs 12,821 lb at take-off with 900 kg
 payload at 210 kt. These remain illustrative engineering inputs, not Archer data.
 
-Plan 035 corrects the wing (spar caps at the real box depth, a 1 mm minimum gauge, pylon inertia from the tip
-components) and places the turbogenerators by the layout: **13,038 lb**.
+Plan 038 (numbered 035 on its branch) corrects the wing (spar caps at the real box depth, a 1 mm minimum gauge,
+pylon inertia from the tip components) and places the turbogenerators by the layout: 13,038 lb.
+
+## Combined reference (2026-10-05)
+
+The layout line (plans 031, 037, 038) was merged with the main line (real machine units, redundancy, drag
+corrections and tail-load trim drag, plans 033-036), taking the highest-fidelity version of each model. With every
+model on, the reference weighs **6,885 kg (15,179 lb)** at 900 kg payload and 210 kt. The named sets
+`assumptions_plan037` and `assumptions_plan038` reproduce the two layout-line references above.

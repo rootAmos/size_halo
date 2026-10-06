@@ -1,5 +1,8 @@
 # Plan 039: computed conversion corridor and trim
 
+Status: PARTIAL 2026-10-05. Corridor and trim implemented and merged to `main`; linearized models, rotor H-force and
+rotor speed schedule open (roadmap Tier 24).
+
 ## Goal
 
 Replace the assumed XV-15-shaped conversion corridor with one computed from the sized aircraft: at each nacelle

@@ -1,6 +1,6 @@
 # Halo reference from the drawn layout (plan 037; plan 032 on its branch before the merge)
 
-Status: APPROVED in parts, 2026-10-04.
+Status: COMPLETE. Approved in parts 2026-10-04; merged to `main` with the main line on 2026-10-05 (combined reference 15,179 lb).
 
 - **Items 2 and 3** were approved as plan 032 when plan 031 was approved: "yes yes yes" to "turbogenerators into
   the fuselage and the boxy fuselage section become the Halo reference".

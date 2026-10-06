@@ -1227,8 +1227,8 @@ in mass from AeroBuildup).
 
 ## Tier 18: redundancy
 
-Plan 032. A Halo option, `HaloAssumptions.redundancy`, **off by default**:
-the reference (900 kg, 210 kt, AeroBuildup, thermal on) stays at 14,037 lb.
+Plan 032. A Halo option, `HaloAssumptions.redundancy`. It was off by default when added, so the reference
+(900 kg, 210 kt, AeroBuildup, thermal on) stayed at 14,037 lb; plan 035 turned it on by default.
 
 - **Architecture as multiplicity** (`RedundancyLayer` in
   `build_series_hybrid`):
@@ -1466,6 +1466,7 @@ up.
     32:1.
 - **Legacy sets:** `pre_plan035` pins every named set to the plan 030
   settings. `requirements_plan030` / `assumptions_plan030` keep 14,037 lb.
+
 ## Plan 031: OpenVSP geometry, aero cross-check and structure (Tier 23, partial)
 
 Asked for on 2026-10-04: "a very strong geometric module for the tiltrotor ... script OpenVSP ... internal
@@ -1528,7 +1529,7 @@ come from the weight models.
 - **Tails:** minimum gauge. The user keeps Raymer.
 - **Fuselage:** layout primary 310 kg + secondary 220 kg = 530 kg, i.e. 1.73x raw unpressurized Raymer GA.
   - The XV-15 group calibration of 2.07 (a crewed fuselage) overstates it.
-  - This became plan 032's factor of 1.70.
+  - This became plan 037's factor of 1.70.
 
 **OpenVSP 3.53.1 behaviour worth knowing.**
 - Exports keep the first export's tessellation of hinge children, so each nacelle angle is a fresh build.
@@ -1560,12 +1561,12 @@ come from the weight models.
 | Reference | Beam FE/AFDD | Chord FE/AFDD | Torsion FE/AFDD | Jump cap strain / allowable |
 |---|---|---|---|---|
 | Plan 030 (turbines at the tips) | 19.7 / 25.5 rad/s (0.77) | 38.8 / 32.0 (1.22) | 36.8 / 42.1 (0.87) | 0.00525 / 0.0047 (1.12) |
-| Plan 032 (turbines in the fuselage) | 23.3 / 33.2 (0.70) | 47.7 / 33.4 (1.43) | 40.3 / 44.1 (0.91) | 0.00608 / 0.0047 (1.29) |
+| Plan 037 (turbines in the fuselage) | 23.3 / 33.2 (0.70) | 47.7 / 33.4 (1.43) | 40.3 / 44.1 (0.91) | 0.00608 / 0.0047 (1.29) |
 
 - **Cause:** AFDD places the caps the full thickness apart (t/c 0.23). The box between the 0.15 and 0.60 c spars
   averages about 0.19 c. That explains the lower beam frequency and the over-strain; hand beam theory gives the
   same strain.
-- **Plan 032 consequences:**
+- **Plan 037 consequences:**
   - The jump take-off now sizes the caps, about 29 % short in strain.
   - Box walls of 0.67 mm are below any practical minimum gauge.
   - Torsion is 9 % below AFDD's estimate, and the whirl-flutter torsion constraint is active, so the
@@ -1575,7 +1576,9 @@ come from the weight models.
 - Mode classification uses the nacelle motion. Several antisymmetric "torsion" modes between 32 and 49 rad/s are
   probably nacelle-pitch and local modes and are not compared.
 
-## Plan 032: Halo reference from the drawn layout
+## Plan 037: Halo reference from the drawn layout
+
+Numbered plan 032 on its branch; renumbered when the layout line was merged with `main`.
 
 Three user decisions on 2026-10-04 bring plan 031's findings into the sizing. Every earlier named set
 (including the new `assumptions_plan030`) pins the old values.
@@ -1607,7 +1610,9 @@ Three user decisions on 2026-10-04 bring plan 031's findings into the sizing. Ev
 - The turbogenerator station (1.0 m behind the wing quarter chord, z 0.5 m) is assumed.
 - The sizing keeps a conventional tail; the V-tail is drawn only.
 
-## Plan 035: AFDD wing cap depth and minimum gauge; pylon inertia
+## Plan 038: AFDD wing cap depth and minimum gauge; pylon inertia
+
+Numbered plan 035 on its branch; renumbered in the merge.
 
 These changes follow the plan 031 CalculiX check, which found the AFDD wing optimistic for the drawn box.
 - **Spar-cap depth:** AFDD's caps can be placed at the real depth between the spars (`ratio_depth_spar_cap`:
@@ -1618,14 +1623,15 @@ These changes follow the plan 031 CalculiX check, which found the AFDD wing opti
   1.0 m.
 - **Turbogenerators:** sit by the layout, behind the rear spar and below the fuselage top.
 
-The reference is **13,038 lb** (+217 lb on plan 032).
+The layout-line reference is **13,038 lb** (+217 lb on plan 037).
 - Wing 319 -> 358.5 kg: torque box 50 -> 75 kg, stiffness caps 4 -> 16 kg, jump caps 35 -> 22 kg.
 - Whirl-flutter torsion at max speed rises from 1.09 to 1.49 per rev and is no longer binding.
-- Every earlier named set pins the NDARC values; `assumptions_plan032` reproduces 12,821 lb.
+- Every earlier named set pins the NDARC values; `assumptions_plan037` reproduces 12,821 lb and
+  `assumptions_plan038` 13,038 lb.
 
-**CalculiX re-check** of the plan 035 wing (2026-10-05):
+**CalculiX re-check** of the plan 038 wing (2026-10-05):
 
-| | Plan 032 | Plan 035 |
+| | Plan 037 | Plan 038 |
 |---|---|---|
 | Beam frequency, FE / AFDD | 0.70 | 0.85 |
 | Chord frequency, FE / AFDD | 1.43 | 1.12 |
@@ -1637,6 +1643,23 @@ The reference is **13,038 lb** (+217 lb on plan 032).
 - **Pylon inertia:** the FE now takes the sizing's own pylon radius of gyration from `reference.json`.
 - **Remaining 10 % strain margin:** not closed in the sizing. Candidates are AFDD's box skins still bending about
   the full thickness, and the FE's root band (the clamp).
+
+## Combined reference: main line and layout line merged (2026-10-05)
+
+The user asked that features "should not conflict and take the highest fidelity version". The main line (plans
+033-036: machine database, real machine units, redundancy, drag corrections, tail-load trim drag) was merged with
+the layout line (plans 031, 037, 038). Every model is on by default.
+
+- **Reference:** 6,885 kg (15,179 lb) at 900 kg and 210 kt; empty 5,049 kg, of which the powertrain is 2,871 kg.
+  Wing 23.3 m2, span 11.9 m, rotor diameter 9.7 m, rotor gearbox 4.5:1, cruise 165 kt at L/D 9.07.
+- **Against plan 036 (16,303 lb):** the layout fuselage, the turbogenerators in the fuselage and the shorter boxy
+  fuselage save about 1,120 lb on the full-feature aircraft.
+- **Binding:** the engine-out hover (battery end voltage, turboshaft power, generator torque), the bus-out motor
+  torque, the hot-day heat exchanger, the rotor radius cap, static margin and Cn_beta. Whirl flutter has margin
+  (1.57 torsion per rev at the maximum speed).
+- **Legacy sets:** `pre_plan035` pins the main-line features off, and `pre_layout` pins the layout-line values (XV-15
+  fuselage calibration, turbogenerators at the tips, round 12.8 m fuselage, NDARC spar caps, XV-15 pylon ratio).
+  Sets from before plan 037 use both. `tests/integration/test_halo_plan035.py` pins 15,179 lb.
 
 ## Plan 039: computed conversion corridor and trim
 
@@ -1688,12 +1711,13 @@ remotely.
 
 ## Next stage
 
-Tier 11 candidates:
+Open items, roughly by impact:
 
-- airplane-mode rotor efficiency and cruise-power validation (the largest
-  remaining assumption);
-- compressibility drag (cruise is about Mach 0.4);
-- the conversion corridor (computed in plan 039; H-force and rotor speed schedule open);
-- dual-wound motor and rotor-loss modelling;
-- engine decks;
-- BEM rotors.
+- drag calibration against XV-15 flight data, and airplane-mode rotor efficiency (the largest remaining
+  assumptions);
+- the corridor's rotor H-force and rotor speed schedule, then linearized pitch models at its trim points
+  (plan 039);
+- the remaining 10 % jump take-off strain margin and the wing torsion mode in the FE check (plan 038);
+- the symbolic layout with clearance and packaging constraints (plan 031, milestone A);
+- V-tail sizing in place of the conventional tail;
+- BEM rotors, if needed.

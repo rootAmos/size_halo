@@ -135,7 +135,7 @@ times a dimensionless `mass_factor` (default 1).
 |---|---|---|---|
 | Wing, HorizontalTail | area_m2, aspect_ratio, taper_ratio, x_le_root_m, z_m, airfoil | raymer mass_wing / mass_hstab (Wing: or `mass_model`, Tier 20) | 40 % MAC |
 | VerticalTail | area_m2, aspect_ratio (h^2/S), taper_ratio, x_le_root_m, z_root_m | raymer mass_vstab | 40 % MAC, 40 % height |
-| Fuselage | length_m, diameter_m (the width), optional height_m and shape (super-ellipse, plan 032), nose/tail fractions, x_nose_m | raymer mass_fuselage (needs wing-to-tail arm; unpressurized) | 45 % length |
+| Fuselage | length_m, diameter_m (the width), optional height_m and shape (super-ellipse, plan 037), nose/tail fractions, x_nose_m | raymer mass_fuselage (needs wing-to-tail arm; unpressurized) | 45 % length |
 | LandingGear | gear lengths, x_main_m, x_nose_m | raymer main + nose, fixed | mass-weighted |
 | Systems | mass_avionics_uninstalled_kg, x_m | raymer flight controls + avionics | stated |
 | Payload | mass_kg, x_m, z_m | given | stated |
@@ -335,7 +335,7 @@ plus the V-22 and Bell D266 cross-checks, using `data/weights/`.
 
 **`examples/halo_sizing.py`:**
 
-- `HaloAssumptions.wing_weight_model` (default "raymer") and the wing
+- `HaloAssumptions.wing_weight_model` ("afdd_tiltrotor" default since plan 026, or "raymer") and the wing
   frequency, material, pylon, tip and jump fields;
 - `HaloDesign.speed_rotor_wing_design_rad_s` (an Opti variable with the
   AFDD wing);
@@ -523,10 +523,10 @@ assumption values.
   - `count_stages(ratio)`, `efficiency(ratio)` and `mass_factor(ratio)`. The
     ratio is fast / slow, at least 1.
 - **`HaloAssumptions`:**
-  - `machine_mass_model` (`"torque_density"` default, or `"database"`);
+  - `machine_mass_model` (`"units"` default since plan 035, `"torque_density"` or `"database"`);
   - `torque_density_database_Nm_kg`, `speed_ref_database_rad_s` and
     `exponent_speed_database`;
-  - `gearbox_stages` (default False) and `gear_stage_model` (default `GearStageModel(staircase=False)`, the
+  - `gearbox_stages` (default True since plan 035) and `gear_stage_model` (default `GearStageModel(staircase=False)`, the
     relaxed count);
   - `reduction_ratio_max` (40, the upper bound of the rotor gear ratio).
 - **`examples.halo_sizing`:**
@@ -566,6 +566,27 @@ examples are `examples/trajectory_optimization.py`:
 - `solve_min_energy_transition`;
 - `solve_prescribed_transition`;
 - `solve_min_time_climb`.
+
+### Computed conversion corridor and trim (plan 039)
+
+`aircraft_closure.trajectory.corridor` replaces the assumed `ConversionCorridor` shape with one computed from the
+sized aircraft. Each solve is its own small `asb.Opti`.
+
+| Class / function | Role | Inputs | Outputs |
+|---|---|---|---|
+| `CorridorLimits` | Trim limits | pitch band (-5, +12 deg), tail deflection (25 deg), cyclic (10 deg), edgewise advance ratio (0.28), placard speed, blade loading, rotor shaft power (None: the rotor's own) | |
+| `TrimGeometry` | Positions for the moment balance (x aft, z up) | CG, spindle, mast length | |
+| `moment_rotor_Nm` | Nose-up moment of the rotor thrust at the hubs about the CG | total thrust, shaft and tip-path angles, `TrimGeometry` | expression |
+| `build_trim` | Adds one level-flight trim to a caller's `opti`: F_x = F_z = M_y = 0; variables pitch, thrust, tail deflection, cyclic fraction | `opti`, `TiltrotorPointMass`, `LongitudinalStability`, geometry, limits, mass, airspeed and tilt (numbers or Opti variables), altitude, rotor speed | `TrimPoint` (expressions; `margins` normalized, `binding()`) |
+| `solve_trim` | Least-power trim at a given airspeed and tilt | as `build_trim` | solved `TrimPoint`; raises `RuntimeError` if none exists |
+| `solve_corridor_bound` | Least ("low") or greatest ("high") trimmed airspeed at one tilt | as `build_trim`, `side` | `CorridorBound` (trim, binding limit names; `trim` None when no trim exists) |
+| `solve_corridor` | Both bounds at each tilt | tilts (default 0-90 deg by 15) | tuple of (low, high) `CorridorBound` pairs |
+
+- Cyclic tilts the thrust only (gimballed rotor, no hub moment) and washes out as sin(tilt) toward airplane mode.
+- Stall is limited on the unblown wing at the free-stream angle; the blown wing's local angle is reported.
+- Not modelled: rotor H-force, rotor speed scheduling, CG travel with the nacelles, the tail in the rotor wake,
+  lateral trim.
+- Example: `examples/halo_conversion_corridor.py`; tests: `tests/trajectory/test_corridor.py`.
 
 ## Hot and high (Tier 16)
 
@@ -716,8 +737,13 @@ min and max terminal voltage.
     AFDD wing, 900 kg).
   - `requirements_plan027` with `assumptions_plan027` (thermal off,
     13,639 lb).
-  - Since plan 030 the defaults are the ECM pack, the AFDD tiltrotor wing,
-    AeroBuildup aerodynamics and the thermal model, at 900 kg (14,037 lb).
+  - `requirements_plan030` with `assumptions_plan030` (ECM pack, AFDD
+    tiltrotor wing, AeroBuildup and thermal model; 14,037 lb).
+  - `requirements_plan037` / `assumptions_plan037` (12,821 lb) and
+    `requirements_plan038` / `assumptions_plan038` (13,038 lb): the layout line.
+  - The defaults have every model on: the above plus real machine units,
+    redundancy, gearbox stages, drag corrections and the drawn layout, at
+    900 kg (15,179 lb). `pre_plan035` and `pre_layout` pin the older values.
 - **Trajectory** (`build_tiltrotor_trajectory`):
   - accepts either battery;
   - the motors see the terminal voltage;
@@ -817,8 +843,8 @@ aero=None)`, `lift_curve_slope_per_rad`, `surface_lift_curve_slope_per_rad`,
 - **Vehicle:** `Nacelles(length_m=None, diameter_m=None, y_m=0.0)`,
   `Nacelles.to_asb()` (two bodies of revolution, spinner as the nose);
   `Aircraft.to_asb()` appends them.
-- **Halo:** `HaloAssumptions.aerodynamics_model` ("simple" default, "buildup",
-  "scholz"), `length_nacelle_m` (9 ft), `diameter_nacelle_m` (3.3 ft),
+- **Halo:** `HaloAssumptions.aerodynamics_model` ("buildup" default since plan 027,
+  "simple", "scholz"), `length_nacelle_m` (9 ft), `diameter_nacelle_m` (3.3 ft),
   `drag_area_misc_buildup_m2` (3.00 ft2), `blown_wing` (True);
   `build_halo_aerodynamics(requirements, assumptions)`.
 
@@ -911,7 +937,7 @@ No new component class: the architecture is multiplicity plus Tier 15
 - Degraded states apply to every rotor alike (symmetric multiplicity). Tie
   current = failed buses x motor-feeder demand / (bus count x bus voltage);
   tie loss joins the bus demand; ties have no margins in normal operation.
-- Halo: `HaloAssumptions.redundancy` (default False) with `count_lanes_motor`,
+- Halo: `HaloAssumptions.redundancy` (default True since plan 035) with `count_lanes_motor`,
   `count_buses`, `count_strings_battery`, `length_cable_bus_tie_m` and the
   failure flags; `build_halo_redundancy`, `failure_hover_cases`,
   `halo_failure_hovers`, `HaloSizingResult.count_lanes_motor` and
@@ -955,12 +981,24 @@ never imported by the sizing.
 **`export.openvsp.render`**
 - `render_sheet(views, path_png)` and `render_structure(paths_stl, path_airframe_stl, path_png, x_ring_frames_m)`.
 
-## Halo plan 032 fields
+## Halo plan 037 and 038 fields (the drawn layout and the wing check)
 
-`HaloAssumptions` gains these fields; each earlier named set pins the value in brackets:
+`HaloAssumptions` gains these fields, shown with their defaults. `pre_layout` pins the earlier values for the named
+sets from before plan 037.
+
+Plan 037 (numbered 032 on its branch):
 - `mass_factor_fuselage` (1.70; None means the XV-15 calibration);
-- `turbogenerators_on_wing_tips` (False), with `offset_x_turbogenerators_m` and `z_turbogenerators_m`;
+- `turbogenerators_on_wing_tips` (False);
 - `height_fuselage_m` (2.0) and `shape_fuselage` (3.2);
 - `length_fuselage_m` (11.0) and `x_horizontal_tail_m` (9.8).
+
+Plan 038 (numbered 035 on its branch):
+- `ratio_depth_spar_cap` (None: the airfoil depth at the spars, `fraction_chord_front_spar` 0.15 and
+  `fraction_chord_rear_spar` 0.60; 1.0 is NDARC);
+- `thickness_min_torque_box_m` (0.001; 0 is NDARC);
+- `ratio_radius_gyration_pylon` (None: built from the tip components with `length_mast_m`, `offset_drive_pylon_m`
+  and `radius_gyration_cowling_m`; 0.222 is the XV-15 ratio);
+- `offset_x_turbogenerators_m` and `z_turbogenerators_m` (None: placed by the layout behind the rear spar, with
+  `length_half_turbogenerator_m` and `depth_turbogenerator_below_top_m`).
 
 `solve_halo_sizing(..., start_from_fuselage_calibration=True)`.

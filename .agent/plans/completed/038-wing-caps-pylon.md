@@ -1,6 +1,6 @@
 # AFDD wing cap depth and minimum gauge; pylon inertia and turbogenerator station (plan 038; plan 035 on its branch)
 
-Status: implemented 2026-10-04. The user asked to "tackle 1 and 2" after the plan 031 CalculiX check.
+Status: COMPLETE. Implemented 2026-10-04; merged to `main` on 2026-10-05 (combined reference 15,179 lb). The user asked to "tackle 1 and 2" after the plan 031 CalculiX check.
 - **Item 1** is the AFDD wing, found optimistic for the drawn box.
 - **Item 2** is the open plan 032 assumptions.
 

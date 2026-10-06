@@ -95,9 +95,9 @@ the energy of the naive schedule.
 | Layer | Package | Contents |
 |---|---|---|
 | Core | `core/` | Typed ports, topology with buses and multiplicity, connection residuals, normalized margins |
-| Powertrain | `powertrain/` | Motor and generator (McDonald AIAA 2015-1676 losses), battery, turboshaft, gearbox, actuator-disk rotor; port declarations, compatibility margins, series-hybrid builders including rubber sizing |
+| Powertrain | `powertrain/` | Motor and generator (McDonald AIAA 2015-1676 losses), battery and equivalent-circuit battery, turboshaft with deck, gearbox, actuator-disk and momentum-profile rotors, inverters, cables, protection, heat exchanger and thermal ratings; port declarations, compatibility margins, machine database, redundancy (lanes, buses, strings), series-hybrid builders including rubber sizing |
 | Vehicle | `vehicle/` | Wing, tails, fuselage, gear, systems, payload, fuel, nacelles, interconnect shaft, fixed equipment, installed powertrain; Raymer GA and AFDD masses; mass and CG aggregation |
-| Aerodynamics | `aerodynamics/` | Linear lift, parasite buildup, induced drag, drag-increment hook |
+| Aerodynamics | `aerodynamics/` | Simple linear lift, parasite and induced drag; AeroSandbox AeroBuildup wrapper; Scholz hand build-up; slipstream (blown wing), hover download, trim drag from the tail load |
 | Controls | `controls/` | Neutral point, static margin, elevator trim, Cn_beta, rudder for failed-rotor yaw |
 | Trajectory | `trajectory/` | Tiltrotor point mass, direct-collocation trajectories, computed conversion corridor and level-flight trim |
 | Performance | `performance/` | Quasi-steady flight points coupling aero and the whole powertrain |
@@ -249,7 +249,7 @@ uv run jupyter lab notebooks
 
 ## Status and next step
 
-All roadmap tiers 0-22 are implemented, and Tier 23 (geometry) is partial. Open items, roughly by impact (see
+All roadmap tiers 0-22 are implemented. Tier 23 (geometry) and Tier 24 (controls in conversion) are partial. Open items, roughly by impact (see
 [docs/RESULTS.md](docs/RESULTS.md)):
 
 - **Drag calibration** against XV-15 flight data, and airplane-mode rotor efficiency.

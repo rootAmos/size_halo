@@ -45,7 +45,7 @@ Diagrams of the layering, the fidelity scaling and the solve levels:
 
 | Check | What it shows |
 |---|---|
-| About 560 unit tests (`uv run python -m unittest discover -s tests`) | Closed-form identities, limiting cases, sign conventions and trends for every model. Every model is also exercised symbolically inside `asb.Opti` (CasADi compatibility). Integration tests pin each reference result. |
+| About 650 unit tests (`uv run python -m unittest discover -s tests`) | Closed-form identities, limiting cases, sign conventions and trends for every model. Every model is also exercised symbolically inside `asb.Opti` (CasADi compatibility). Integration tests pin each reference result. |
 | One executed notebook per tier (`notebooks/`) | Each tier's claims as numbered checks with plots. Each notebook also runs the full test suite. |
 | Tier 0 governance notebook | Repository rules: unit-suffixed names, no plain NumPy in models, every component documented, roadmap and plan bookkeeping. |
 | CI (`.github/workflows/tests.yml`) | The test suite on every push. |
@@ -101,50 +101,54 @@ Diagrams of the layering, the fidelity scaling and the solve levels:
 GASP deck). The engines are not sized, because a non-OEM cannot add
 turbine power. The battery supplements hover and is recharged in flight.
 
-### Reference result (`solve_halo_sizing()`, plans 035–036)
+### Reference result (`solve_halo_sizing()`, every model on)
+
+The default combines the two lines that branched from plan 030: real machine units, redundancy and drag
+corrections (plans 035–036), and the drawn layout with the wing corrections (plans 037–038).
 
 | Quantity | Value |
 |---|---|
-| Take-off mass | **7,395 kg (16,303 lb)** |
-| Empty mass | 5,522 kg |
-| Fuel (with reserve) | 973 kg |
-| Battery | 81.8 kWh, 556 kg, 2 isolated strings (end-of-life rating) |
-| Wing | 24.7 m², span 12.3 m (tiltrotor wing, whirl-flutter sized) |
-| Rotors | 2 × 10.0 m diameter; disk loading 47 kg/m² (9.6 lb/ft²) |
+| Take-off mass | **6,885 kg (15,179 lb)** |
+| Empty mass | 5,049 kg |
+| Fuel (with reserve) | 936 kg |
+| Battery | 70.0 kWh, 475 kg, 2 isolated strings (end-of-life rating) |
+| Fuselage | unpressurized, boxy, 11 m long, 1.68 × 2.0 m; turbogenerators inside |
+| Wing | 23.3 m², span 11.9 m (tiltrotor wing; spar caps at the box depth, 1 mm minimum gauge) |
+| Rotors | 2 × 9.7 m diameter; disk loading 47 kg/m² (9.6 lb/ft²) |
 | Motors | 2 lanes per rotor; each lane is 2 Evolito D1500-class units (528 kW continuous), 8 units in all |
 | Generators | each is 3 Helix SPX242-class units |
-| Rotor gearbox | 5.0:1, one stage |
+| Rotor gearbox | 4.5:1, one stage |
 | Turboshafts | 2 × 835 kW (1,120 hp), fixed |
-| Cruise | 166 kt at 10,000 ft, L/D 9.25 |
-| Heat exchanger | 140 kg ram-air unit, fans in hover |
-| Cost per mission | about USD 3,420 (Tier 22 cost model; prices are labelled assumptions) |
+| Cruise | 165 kt at 10,000 ft, L/D 9.07 |
+| Heat exchanger | 127 kg ram-air unit, fans in hover |
+| Cost per mission | about USD 3,310 (Tier 22 cost model; prices are labelled assumptions) |
 
 **Mass breakdown (kg):**
 
 | Group | Mass |
 |---|---|
-| Powertrain | 3,057 |
-| Fuselage | 663 |
-| Systems | 552 |
-| Wing | 453 |
-| Landing gear | 272 |
+| Powertrain | 2,871 |
+| Fuselage | 560 |
+| Wing | 408 |
+| Systems | 407 |
 | Equipment | 266 |
+| Landing gear | 258 |
 | Nacelles | 195 |
-| Tails | 63 |
+| Tails | 83 |
 
 Within the powertrain:
 
 | Item | Mass |
 |---|---|
-| Rotors | 739 |
-| Battery | 556 |
+| Rotors | 675 |
+| Battery | 475 |
 | Motors with inverters | 426 |
 | Turboshafts | 422 |
-| Rotor gearboxes | 319 |
+| Rotor gearboxes | 292 |
 | Generators with inverters | 282 |
 | Generator gearboxes | 144 |
-| Heat exchanger | 140 |
-| Bus tie and string protection | 31 |
+| Heat exchanger | 127 |
+| Bus tie and string protection | 28 |
 
 ### What sizes the aircraft
 
@@ -155,10 +159,14 @@ These are the constraints active at the optimum:
   Battery voltage, not energy, sizes it.
 - **Motors: the bus-out hover.** One bus lost; the surviving lane in each
   rotor carries the torque.
-- **Wing: whirl-flutter torsion stiffness** at the 210 kt rotor speed.
+- **Turboshafts: fully used.** Their power binds in the engine-out and
+  hot-day hovers. They are fixed, so this is what sizes the battery and the
+  rotors.
 - **Rotors and drive:** hover at 4,000 ft. The rotor radius is capped by the
   span.
 - **Heat exchanger:** the hot-day hover.
+- **Wing:** whirl flutter is no longer binding (torsion 1.57 per rev at the
+  maximum speed) once the torque box has its 1 mm minimum gauge (plan 038).
 - **Tails:** static margin and directional stability.
 
 ## 4. How the answer moved as fidelity was added
@@ -173,10 +181,13 @@ These are the constraints active at the optimum:
 | Plan 026 | 900 kg | 14,247 lb | NDARC tiltrotor wing replaces the light-aircraft wing equations |
 | Plan 027 | 900 kg | 13,639 lb | AeroBuildup aerodynamics: the guessed 0.8 m² miscellaneous drag area was most of the aircraft's drag |
 | Plan 030 | 900 kg | 14,037 lb | Thermal model: heat exchanger +133 kg; short-time ratings save 63 kg of machines |
-| Plan 035 | 900 kg | 16,231 lb | **Real machine units instead of idealized ("rubber") scaling; redundancy (2 lanes, 2 buses, 2 strings); drag corrections for excrescence and trim** |
-| **Plan 036** | **900 kg** | **16,303 lb** | **Trim drag from the tail load (η_H 0.9, cos tail dihedral, Scholz downwash) replaces the flat 2 %** |
+| Plan 035 | 900 kg | 16,231 lb | Real machine units instead of idealized ("rubber") scaling; redundancy (2 lanes, 2 buses, 2 strings); drag corrections for excrescence and trim |
+| Plan 036 | 900 kg | 16,303 lb | Trim drag from the tail load (η_H 0.9, cos tail dihedral, Scholz downwash) replaces the flat 2 % |
+| Plan 037 | 900 kg | 12,821 lb | From plan 030 on a separate line: the drawn layout. Fuselage raw Raymer × 1.70 (layout-anchored), turbogenerators in the fuselage, boxy 11 m fuselage |
+| Plan 038 | 900 kg | 13,038 lb | Spar caps at the real box depth, 1 mm torque-box gauge, pylon inertia from the tip components (after the CalculiX check) |
+| **Combined** | **900 kg** | **15,179 lb** | **Both lines merged, every model on (plans 035–038)** |
 
-Two outcomes stand out:
+Three outcomes stand out:
 
 - **Fixed engines cap the speed.** With two 1,120 hp engines, payload
   falls to zero near 228 kt, so 250 kt is unreachable at any size.
@@ -194,11 +205,13 @@ Two outcomes stand out:
 
 ## 5. Trajectory optimization (Tier 14)
 
-Since plan 036 the trajectory model flies the current reference. It
+Since plan 036 the trajectory model flies the full-feature aircraft. It
 carries machine and battery temperature states with short-time ratings,
-cooling drag and fan power, and the lane motors.
+cooling drag and fan power, and the lane motors. It flies inside an assumed
+XV-15-shaped conversion corridor.
 
-On the plan 035 reference (16,231 lb; the plan 036 trim change is small):
+On the plan 035 reference (16,231 lb; not yet re-flown on the 15,179 lb
+combined reference):
 
 - **Minimum-energy conversion** from hover at 500 ft to 1.3 × the
   airplane-mode stall speed: 22.5 s and 10.5 kWh.
@@ -211,6 +224,30 @@ conversion took 21.5 s and 8.5 kWh. A naive linear-nacelle,
 constant-acceleration schedule took 60 s and 17.1 kWh, so the optimized
 path uses about half the energy.
 
+### Computed conversion corridor (plan 039)
+
+`trajectory/corridor.py` trims the sized aircraft in level flight (thrust,
+attitude, ruddervator, cyclic). At each nacelle angle it finds the least
+and greatest airspeed inside the limits:
+
+- pitch −5 to +12 deg, ruddervator ±25 deg;
+- cyclic ±10 deg, washed out toward airplane mode;
+- edgewise advance ratio 0.28 (a flapping and hub-load proxy);
+- rotor power, unblown-wing stall, and a placard at 1.1 × 210 kt.
+
+On the 15,179 lb reference at sea level:
+
+| Corridor (kt) | 90 deg | 75 deg | 60 deg | 45 deg | 30 deg | 0 deg |
+|---|---|---|---|---|---|---|
+| Low side | hover | hover | 89 (pitch) | 106 (pitch) | 112 (pitch) | 119 (pitch) |
+| High side | 130 (edgewise) | 134 (edgewise) | 144 (edgewise) | 174 (edgewise) | 231 (placard) | 219 (rotor power) |
+
+- The high side is edgewise-limited from 45 deg up, close to the XV-15.
+- The low side is attitude-limited, not stall-limited.
+- Pitch authority is tightest in helicopter mode near 65 kt.
+- The rotor in-plane force is not modelled, so the low side at 45–60 deg
+  is conservative.
+
 ## 6. Limits and open items, roughly by impact
 
 1. **Drag calibration.** The excrescence factor is calibrated so the
@@ -220,9 +257,11 @@ path uses about half the energy.
    (0.9) and downwash, about 2 % of drag at cruise. Neither is checked against XV-15 flight data, and drag
    strongly drives payload headroom.
 2. **Weight calibration rests on one complete aircraft.** The XV-15 is the
-   only complete weight statement. Two groups need large factors because
-   the light-aircraft equations underpredict them: fuselage about 2×,
-   flight controls about 4×. These are group factors, not aircraft mass.
+   only complete weight statement. Flight controls need a factor of about
+   4×, because the light-aircraft equations underpredict them. The XV-15
+   fuselage factor (about 2×) was replaced in plan 037 by 1.70 on raw
+   Raymer, anchored to a layout estimate of an uncrewed fuselage. These are
+   group factors, not aircraft mass.
    The calibration factors are also the largest sensitivities (Tier 22:
    about ±540 lb each for ±15 %).
 3. **The electrical layer (Tier 15) is implemented but not the default.**
@@ -237,15 +276,20 @@ path uses about half the energy.
    battery string or a lane, plus an engine) did not converge, and they are
    not proven infeasible. Degraded states are applied to both rotors at
    once, so roll trim is not modelled.
-6. **The trajectory model is point-mass.** It has no thermal,
-   electrical-layer or redundancy states, so it flies the plan 027
-   aircraft. 6-DOF is planned, not built (see the architecture diagrams).
-7. **Thermal simplifications.** The battery chiller's power is not
+6. **The trajectory model is point-mass.** It has no electrical-layer
+   states, and 6-DOF is planned, not built (see the architecture diagrams).
+   The computed corridor (plan 039) still lacks the rotor in-plane force, a
+   rotor speed schedule, lateral trim and linearized models.
+7. **Wing strength by FE.** The CalculiX check of the plan 038 wing still
+   shows 1.10× the allowable strain in the jump take-off, and wing torsion
+   is not cleanly identified among the FE modes. Only the wing box has been
+   solved by FE.
+8. **Thermal simplifications.** The battery chiller's power is not
    modelled. Gearbox heat goes to the gearboxes' own oil coolers. Losses do
    not depend on temperature.
-8. **Deferred aero items:** V-tail, conversion-segment aerodynamics, and
-   trim drag from the actual tail load.
-9. **Solver robustness.** Each coupled problem is solved by IPOPT from an
+9. **Deferred aero items:** the V-tail is drawn but sized as a
+   conventional tail; conversion-segment aerodynamics.
+10. **Solver robustness.** Each coupled problem is solved by IPOPT from an
    explicit list of starting points (Tier 22). Every start that converged
    reached the same optimum, but some feature combinations take several
    failed starts first.
@@ -254,7 +298,7 @@ path uses about half the energy.
 
 ```powershell
 uv sync
-uv run python -m unittest discover -s tests          # about 500 tests, 10–17 min
+uv run python -m unittest discover -s tests          # about 650 tests, 10–17 min
 uv run python -m examples.halo_sizing                # the reference (about 10 min from cold)
 ```
 
@@ -263,6 +307,8 @@ Run a tier's notebook with Jupyter to reproduce that tier, e.g.
 
 - **Earlier references:** the named sets in `examples/halo_sizing.py`
   reproduce each previous reference. Examples:
+  - `requirements_plan038` with `assumptions_plan038` gives 13,038 lb;
+  - `requirements_plan037` with `assumptions_plan037` gives 12,821 lb;
   - `requirements_plan030` with `assumptions_plan030` gives 14,037 lb;
   - `requirements_plan027` with `assumptions_plan027` gives 13,639 lb;
   - `requirements_tier16` with `assumptions_tier16` gives 13,760 lb.
@@ -278,4 +324,6 @@ Run a tier's notebook with Jupyter to reproduce that tier, e.g.
 | How a flight point couples the powertrain | `src/aircraft_closure/performance/flight_point.py` |
 | Validation against the XV-15 | `notebooks/tier10_xv15_reference/` |
 | Trajectory optimization | `examples/trajectory_optimization.py`, `notebooks/tier14_trajectory/` |
+| Conversion corridor and trim | `src/aircraft_closure/trajectory/corridor.py`, `examples/halo_conversion_corridor.py` |
+| Geometry, aero cross-check and FE | `src/aircraft_closure/export/openvsp/`, `examples/halo_openvsp.py`, `examples/halo_wing_fe.py` |
 | Decisions and their reasons | `.agent/plans/completed/` (one plan per tier, with a progress log) |

@@ -24,8 +24,8 @@
 | 15 | Electrical layer: inverters, cables, protection, DC/DC; bus voltage as a discrete choice | Implemented |
 | 16 | Hot and high: ISA + delta-T atmosphere, temperature lapse, hover at destination after the mission | Implemented |
 | 17 | Battery equivalent circuit with sag and ageing: OCV(SOC), R(SOC, C-rate, T), end-of-life, cycle cost | Implemented |
-| 18 | Redundancy: lanes per rotor, cross-strapped buses, battery strings, multipoint failure cases (Halo option `redundancy`, off by default; lane out, bus out and string out hovers; symmetric degraded states) | Implemented |
-| 19 | Thermal: losses to heat-exchanger mass and cooling drag; short-time ratings from thermal mass (machines and pack; Halo option `thermal_model`, off by default; pack temperature into resistance deferred) | Implemented |
+| 18 | Redundancy: lanes per rotor, cross-strapped buses, battery strings, multipoint failure cases (Halo option `redundancy`, on by default since plan 035; lane out, bus out and string out hovers; symmetric degraded states) | Implemented |
+| 19 | Thermal: losses to heat-exchanger mass and cooling drag; short-time ratings from thermal mass (machines and pack; Halo option `thermal_model`, on by default since plan 030; pack temperature into resistance deferred) | Implemented |
 | 20 | Tiltrotor airframe weights: AFDD wing with torsional stiffness and whirl flutter; second calibration aircraft | Implemented |
 | 21 | Aero: AeroBuildup model, Scholz hand check, compressibility, nacelle build-up, blown wing, download model (V-tail and conversion segments deferred) | Implemented |
 | 22 | Design-space practice: starting-point strategy (multistart), freed trades (aspect ratio, cruise altitude, reserve SOC), cost-per-mission objective, architecture enumeration, one-at-a-time sensitivity (optimization under uncertainty deferred) | Implemented |
@@ -256,7 +256,7 @@ a new constraint inside the sizing Opti.
   tiltrotors.
 
 Implemented in plan 032 as the Halo option `HaloAssumptions.redundancy`
-(off by default): lane motors on a combining gearbox input, cross-strapped
+(off by default when added; on since plan 035): lane motors on a combining gearbox input, cross-strapped
 buses with normally open ties, isolated pack strings, and lane-out, bus-out
 and string-out hovers (double failures with an engine out optional) as extra
 points of the sizing problem. Degraded states are symmetric (both rotors);
@@ -271,7 +271,7 @@ short-time ratings are deferred.
   battery.
 
 Implemented in plan 028 as the Halo option `HaloAssumptions.thermal_model`
-(off by default). Named heat loads per flight point, a ram-air heat
+(off by default when added; on since plan 030). Named heat loads per flight point, a ram-air heat
 exchanger rated by a design variable (mass per watt at a reference
 temperature difference, ram cooling drag, hover fan power), and lumped motor,
 generator and pack temperatures propagated through every segment. The
@@ -286,7 +286,7 @@ pack temperature's coupling into resistance is deferred.
 - **Uncrewed adjustments:** explicit and itemised.
 
 Implemented in plan 024. The AFDD wing is an option (`wing_weight_model`), and
-the Raymer wing remains the default. Public V-22 and AW609 group statements
+the Raymer wing remained the default until plan 026. Public V-22 and AW609 group statements
 were not found, so the second aircraft is the V-22 FSD wing plus the Bell D266
 design statement.
 
@@ -328,9 +328,9 @@ hand check. `SimpleAerodynamics` stays as the simplest model.
 (AeroBuildup plus Scholz interference, fittings drag area, fuselage Oswald
 factor, transition, blown wing, geometric download), `ScholzAerodynamics`
 (level-0 hand check with Korn-Lock wave drag and Nita-Scholz e) and
-`HaloAssumptions.aerodynamics_model` ("simple" stays the default). Deferred:
+`HaloAssumptions.aerodynamics_model` ("simple" stayed the default until plan 027). Deferred:
 V-tail, conversion segments, the blown wing in conversion (trajectories use
-the unblown polar), trim drag. See IMPLEMENTATION_NOTES "Tier 21".
+the unblown polar), trim drag (added from the tail load in plan 036). See IMPLEMENTATION_NOTES "Tier 21".
 
 ### 22 Design-space practice (review items 9 and 10)
 
