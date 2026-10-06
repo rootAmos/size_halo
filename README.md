@@ -83,7 +83,8 @@ digitized cell data.
 
 **Trajectory optimization (Tier 14).** Minimum-energy transition and
 minimum time to climb, flown inside an assumed XV-15-shaped conversion
-corridor (the computed corridor of plan 039 is below), against a naive
+corridor (the computed corridor of plan 039 is in
+[Conversion corridor and trim](#conversion-corridor-and-trim-plan-039)), against a naive
 prescribed conversion. The minimum-energy transition uses about half
 the energy of the naive schedule.
 
@@ -203,6 +204,8 @@ the reference (6,885 kg, sea level, hover tip speed):
 |---|---|---|---|---|---|---|
 | Low side | hover | hover | 89 (pitch) | 106 (pitch) | 112 (pitch) | 119 (pitch) |
 | High side | 130 (edgewise) | 134 (edgewise) | 144 (edgewise) | 174 (edgewise) | 231 (placard) | 219 (rotor power) |
+
+![Computed conversion corridor](docs/figures/conversion_corridor.png)
 
 - **High side:** the edgewise limit sets it at high nacelle angles, close to the XV-15.
 - **Low side:** the attitude limit sets it, not wing stall.
