@@ -34,16 +34,7 @@ and every model is checked against public tiltrotor data before it is trusted.
 | Drive | per rotor, 2 motor lanes of stacked axial-flux units behind one 4.5:1 stage; two cross-strapped DC buses |
 | Fuselage | 36.1 ft long, unpressurized box section 5.5 × 6.6 ft |
 
-**Empty weight breakdown (lb):**
-
-| Powertrain | | Airframe and systems | |
-|---|---|---|---|
-| Rotors and gearboxes | 2,450 | Wing, nacelles, tails | 1,511 |
-| Motors and generators (with inverters) | 1,559 | Systems and equipment | 1,485 |
-| Battery | 1,047 | Fuselage | 1,235 |
-| Turboshafts | 930 | Landing gear | 570 |
-| Heat exchanger, protection, bus tie | 343 | | |
-| **Total powertrain** | **6,329** | **Total airframe and systems** | **4,801** |
+The empty-weight breakdown is in the pie chart under [Performance](#performance).
 
 The model works in SI internally; [docs/RESULTS.md](docs/RESULTS.md) gives the SI values alongside.
 
