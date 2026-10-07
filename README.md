@@ -245,14 +245,13 @@ flowchart LR
   - the motors: the bus-out hover.
 
 **Doesn't do**
-- The electrical layer (inverters, cables, protection) is built but off by default. With it on, the full problem
-  converges only through multistart.
 - Failures are single and symmetric. Double failures did not converge, and roll trim is not modelled.
 - One catalogue product per machine role.
 - No battery chiller power, and losses do not depend on temperature.
 
 **Next**
-- The electrical layer on by default, with problem scaling and continuation.
+- Turn on the electrical layer (inverter losses, DC cables, protection), which is already built, with problem
+  scaling and continuation so the full model converges from one start.
 - Asymmetric and double failures, including an interconnect shaft against electrical cross-strapping.
 - Mixed machine catalogues.
 
