@@ -59,10 +59,12 @@ def plot(case, results, path):
     ax.plot(high, tilts, color="#1d5c8f", lw=1.2)
     colors = {"minimum-energy transition": "#2a78d6", "prescribed transition": "#eb6834",
               "minimum time to climb": "#1baf7a"}
+    # Each leg's end points, from the problem definitions in examples/trajectory_optimization.py.
+    legs = {"minimum-energy transition": "hover at 500 ft to 1.3 x stall in airplane mode, level",
+            "minimum time to climb": "hover at sea level to 10,000 ft at 165 kt"}
     for result in results:
-        altitudes_ft = [round(result.altitude_m[i] / u.foot, -2) for i in (0, -1)]
-        label = (f"{result.label}, {altitudes_ft[0]:,.0f} to {altitudes_ft[1]:,.0f} ft "
-                 f"({result.energy_bus_J[-1] / 3.6e6:.1f} kWh, {result.duration_s:.0f} s)")
+        leg = f": {legs[result.label]}" if result.label in legs else ""
+        label = f"{result.label}{leg} ({result.energy_bus_J[-1] / 3.6e6:.1f} kWh, {result.duration_s:.0f} s)"
         ax.plot(result.velocity_m_s / u.knot, result.tilt_deg, color=colors.get(result.label, "#333333"), lw=2,
                 label=label)
     ax.set(xlabel="true airspeed [kt]", ylabel="nacelle tilt [deg]", xlim=(0, 240), ylim=(0, 92),
