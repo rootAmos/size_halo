@@ -161,13 +161,14 @@ package** that kicks off the specialist team. Approach and effort: [docs/NEXT_ST
 
 **Limits**
 - Performance is computed at the design mission only; there is no payload-range diagram or endurance yet.
-- The baseline carries no weight margin: it is sized to the estimate.
+- The baseline carries no weight margin: it is sized to the basic estimate, without growth allowance.
 
 **Work package: weights and performance**
 - **Weights:**
   - Run weight control from the item table below.
   - Allocate a not-to-exceed weight to each item.
-  - Carry each item's margin inside the sizing, so the aircraft is sized to its 99 % value, not to the estimate.
+  - Carry each item's growth allowance and uncertainty inside the sizing, so the aircraft is sized to its 99 %
+    value, not to the basic estimate.
 - **Performance:**
   - Secure the installed turbine power with the engine supplier, and set the maximum take-off weight from what it
     delivers in the critical hover.
@@ -177,38 +178,55 @@ package** that kicks off the specialist team. Approach and effort: [docs/NEXT_ST
 
 ![Empty mass breakdown](docs/figures/oew_breakdown.png)
 
-**Empty-weight uncertainty: the chance of meeting the weight target.** Each item of the empty-weight build-up
-carries an uncertainty and growth allowance (one sigma), set by how its mass is estimated:
-- catalogue engines and machine units are tight;
-- calibrated handbook groups carry about ±15 % at 95 % confidence, widened where the calibration is weakest;
-- lightly modelled items are wide.
+**Empty-weight prediction: growth allowance, uncertainty and the chance of meeting the target.** Each item of
+the empty-weight build-up carries two separate quantities:
+- **Growth allowance:** the growth expected as the design matures, set by how mature the item's weight is. The
+  structure follows AIAA S-120A and SAWE mass-growth practice; the percentages are program defaults for the weights
+  team to set:
 
-The items are combined as independent normal errors into an OEW distribution. The target is a not-to-exceed
-weight: the design should carry enough margin that its 99 % value comes in at or below it. Today the estimate is
-the target itself, so the chance of meeting it is 50 %, and the 99 % value is 651 lb over. The spread is at a fixed
-take-off weight: weight growth through re-sizing, and correlated errors between items, would widen it.
+  | Maturity | Allowance |
+  |---|---|
+  | Vendor hardware | 2 % |
+  | Vendor data | 5 % |
+  | Calculated or layout | 8 % |
+  | Calibrated parametric | 10 % |
+  | Estimated | 15 % |
+
+  The allowances add up: predicted OEW = basic OEW + Σ allowances.
+- **Uncertainty (1σ):** the spread from how the item's mass is estimated. Catalogue hardware is tight; calibrated
+  handbook groups carry about ±15 % at 95 %, widened where the calibration is weakest; lightly modelled items are
+  wide. The items are independent, so the OEW spread is the root sum of squares.
+
+The target is a not-to-exceed weight, and the design should carry enough margin that its 99 % value comes in at or
+below it. With the target at today's basic OEW (11,130 lb):
+- the growth allowance moves the prediction to 12,092 lb;
+- the chance of meeting the target is effectively zero;
+- the 99 % value is 1,613 lb over.
+
+This is the size of the margin the weights team has to manage. The spread is at a fixed take-off weight:
+weight growth through re-sizing, and correlated errors between items, would widen it.
 
 ![Empty-weight uncertainty](docs/figures/oew_distribution.png)
 
-| Item | Weight (lb) | Uncertainty and growth allowance, 1σ (%) | Uncertainty and growth allowance, 1σ (lb) | Basis |
-|---|---|---|---|---|
-| Rotors | 1,488 | 7.5 | 112 | AFDD blades and hubs, XV-15 calibrated |
-| Battery | 1,047 | 7.5 | 79 | 50G cell data; 70 % cell-to-pack mass assumed |
-| Motors (with inverters) | 938 | 5.0 | 47 | Whole catalogue units plus inverter allowance |
-| Turboshafts | 930 | 2.5 | 23 | Fixed off-the-shelf engines plus installation |
-| Rotor gearboxes | 645 | 10.0 | 64 | AFDD drive system |
-| Generators (with inverters) | 621 | 5.0 | 31 | Whole catalogue units plus inverter allowance |
-| Generator gearboxes | 318 | 10.0 | 32 | AFDD drive system |
-| Heat exchanger | 280 | 15.0 | 42 | Thermal model, mass per watt assumed |
-| Protection and bus tie | 63 | 20.0 | 13 | Simple ratings-based estimate |
-| Fuselage | 1,235 | 10.0 | 123 | Raymer x 1.70, anchored to the drawn layout |
-| Wing | 899 | 10.0 | 90 | AFDD tiltrotor wing x 1.33 (XV-15); strength at ultimate not demonstrated |
-| Systems | 898 | 15.0 | 135 | Raymer; flight controls carry an XV-15 factor of about 4 |
-| Fixed equipment | 587 | 10.0 | 59 | Assumed allowance |
-| Landing gear | 570 | 7.5 | 43 | Raymer |
-| Nacelles | 430 | 10.0 | 43 | AFDD-class estimate |
-| Tails | 183 | 10.0 | 18 | Raymer x XV-15 factor |
-| **OEW** | **11,130** | **2.5** | **280** | Root sum of squares, items independent |
+| Item | Basic weight (lb) | Maturity | Growth allowance (%) | Growth allowance (lb) | Uncertainty, 1σ (%) | Uncertainty, 1σ (lb) | Predicted weight (lb) | Basis |
+|---|---|---|---|---|---|---|---|---|
+| Rotors | 1,488 | Calibrated parametric | 10 | 149 | 7.5 | 112 | 1,637 | AFDD blades and hubs, XV-15 calibrated |
+| Battery | 1,047 | Calculated / layout | 8 | 84 | 7.5 | 79 | 1,131 | 50G cell data; 70 % cell-to-pack mass assumed |
+| Motors (with inverters) | 938 | Vendor data | 5 | 47 | 5.0 | 47 | 985 | Whole catalogue units plus inverter allowance |
+| Turboshafts | 930 | Vendor hardware | 2 | 19 | 2.5 | 23 | 948 | Fixed off-the-shelf engines plus installation |
+| Rotor gearboxes | 645 | Calibrated parametric | 10 | 64 | 10.0 | 64 | 709 | AFDD drive system |
+| Generators (with inverters) | 621 | Vendor data | 5 | 31 | 5.0 | 31 | 652 | Whole catalogue units plus inverter allowance |
+| Generator gearboxes | 318 | Calibrated parametric | 10 | 32 | 10.0 | 32 | 350 | AFDD drive system |
+| Heat exchanger | 280 | Estimated | 15 | 42 | 15.0 | 42 | 322 | Thermal model, mass per watt assumed |
+| Protection and bus tie | 63 | Estimated | 15 | 9 | 20.0 | 13 | 72 | Simple ratings-based estimate |
+| Fuselage | 1,235 | Calculated / layout | 8 | 99 | 10.0 | 123 | 1,334 | Raymer x 1.70, anchored to the drawn layout |
+| Wing | 899 | Calibrated parametric | 10 | 90 | 10.0 | 90 | 989 | AFDD tiltrotor wing x 1.33 (XV-15); strength at ultimate not demonstrated |
+| Systems | 898 | Calibrated parametric | 10 | 90 | 15.0 | 135 | 988 | Raymer; flight controls carry an XV-15 factor of about 4 |
+| Fixed equipment | 587 | Estimated | 15 | 88 | 10.0 | 59 | 675 | Assumed allowance |
+| Landing gear | 570 | Calibrated parametric | 10 | 57 | 7.5 | 43 | 627 | Raymer x XV-15 factor |
+| Nacelles | 430 | Calibrated parametric | 10 | 43 | 10.0 | 43 | 472 | AFDD-class estimate |
+| Tails | 183 | Calibrated parametric | 10 | 18 | 10.0 | 18 | 201 | Raymer x XV-15 factor |
+| **OEW** | **11,130** | | **8.6** | **962** | **2.5** | **280** | **12,092** | Growth summed; uncertainty root sum of squares, items independent |
 
 **Mission profiles.** Airspeed, turbine shaft power against battery power, and altitude, for the design mission
 (first 15 min on the left, the whole mission on the right):
