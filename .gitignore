@@ -18,3 +18,4 @@ data/propellers/
 
 # Generated exports (OpenVSP models, CAD, meshes)
 output/
+.mcp.json

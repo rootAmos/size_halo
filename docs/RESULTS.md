@@ -29,7 +29,7 @@ and CasADi.
   `get_mass`, `get_limits` and `evaluate`. Higher fidelity is added behind
   that interface, and the simpler model is always kept.
 - **Fidelity is added in tiers.** Each tier has:
-  - a written plan in `.agent/plans/completed/`;
+  - a written plan in `docs/decisions/`;
   - unit tests;
   - checks in the discipline's executed notebook in `notebooks/`.
   Named legacy settings keep every earlier tier's result reproducible.
@@ -118,7 +118,7 @@ line (plans 031–038).
 | Generators | each is 3 Helix SPX242-class units |
 | Rotor gearbox | 4.5:1, one stage |
 | Turboshafts | 2 × 835 kW (1,120 hp), fixed, in the fuselage |
-| Cruise | 166 kt at 10,000 ft, L/D 9.07 |
+| Cruise | 165 kt at 10,000 ft, L/D 9.07 |
 | Heat exchanger | 127 kg ram-air unit, fans in hover |
 | Cost per mission | about USD 3,310 (Tier 22 cost model; prices are labelled assumptions) |
 
@@ -293,4 +293,4 @@ Run a discipline notebook with Jupyter to reproduce its checks, e.g.
 | How a flight point couples the powertrain | `src/aircraft_closure/performance/flight_point.py` |
 | Validation against the XV-15 | `notebooks/05_structures_weights.ipynb` (weights), `notebooks/04_aerodynamics_rotor.ipynb` (drag), `notebooks/02_powertrain.ipynb` (engine and hover) |
 | Trajectory optimization | `examples/trajectory_optimization.py`, `examples/halo_trajectory_computed_corridor.py`, `notebooks/06_dynamics_control.ipynb` |
-| Decisions and their reasons | `.agent/plans/completed/` (one plan per tier, with a progress log) |
+| Decisions and their reasons | `docs/decisions/` (one plan per tier, with a progress log) |

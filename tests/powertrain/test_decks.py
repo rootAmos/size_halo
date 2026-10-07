@@ -72,7 +72,7 @@ class DeckLoaderTests(unittest.TestCase):
         for throttle, published, model in part_power_sfc_ratios(part_power_model=deck_1120hp_part_power_model()):
             self.assertLess(abs(model / published - 1), 0.03, msg=f"throttle {throttle:.3f}")
 
-    @unittest.skipUnless(raw_deck_path.exists(), "raw user deck not present (not committed, plan 014)")
+    @unittest.skipUnless(raw_deck_path.exists(), "raw engine deck not present (not committed, plan 014)")
     def test_embedded_table_rederives_from_raw_deck(self):
         curve = part_power_curve(load_gasp_turboshaft_deck(raw_deck_path), list(deck_1120hp_power_fraction))
         for value, expected in zip(curve.sfc_ratio_median, deck_1120hp_sfc_ratio):

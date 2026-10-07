@@ -1,6 +1,6 @@
 """OpenVSP outer mold line of a tiltrotor from a numeric `GeometrySnapshot`.
 
-The model tree follows the user-supplied tiltrotor skeleton (plan 031):
+The model tree follows the author-supplied tiltrotor skeleton (plan 031):
 
     Fuselage (smoothly skinned Fuselage geom)
     |- WingFairing (dorsal fairing, optional)

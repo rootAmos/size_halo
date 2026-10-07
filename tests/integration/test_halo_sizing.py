@@ -60,7 +60,7 @@ class HaloSizingTests(unittest.TestCase):
         self.assertGreaterEqual(lift_N, self.base.mass_takeoff_kg * 9.80665 * (1 - 1e-6))
 
     def test_halo_class_weight_band(self):
-        """1x,xxx lb class (user's expectation); loose regression band on the reference case."""
+        """1x,xxx lb class (author's expectation); loose regression band on the reference case."""
         self.assertTrue(5000 < self.base.mass_takeoff_kg < 11000)
 
     def test_mission_is_flown_and_engine_out_uses_the_battery(self):

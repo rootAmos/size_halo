@@ -1,6 +1,6 @@
 """Tier 1 explicit coupling: every connection equation written by hand.
 
-Kept as the simplest reference (AGENTS rule 10). The topology-based equivalent is
+Kept as the simplest reference (project rule 10, docs/CODING_CONVENTIONS.md). The topology-based equivalent is
 `series_hybrid_point.py`. Illustrative, not an aircraft sizing or mission model.
 """
 import aerosandbox as asb

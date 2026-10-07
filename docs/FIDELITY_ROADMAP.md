@@ -15,7 +15,7 @@
 | 10a | AFDD tiltrotor weights, XV-15 group-weight validation and calibration | Implemented |
 | 10b | Turboshaft lapse and part-power submodels, hover download, XV-15 hover-power check | Implemented |
 | 10c | Two-rotor Halo-class series hybrid sized to XV-15-derived requirements (13,000 ft ceiling) | Implemented |
-| 11a | Turboshaft deck part-power fuel curve (user-supplied GASP deck) | Implemented |
+| 11a | Turboshaft deck part-power fuel curve (author-supplied GASP deck) | Implemented |
 | 11b | Continuous integration: tests on every push; notebook execution on demand | Implemented |
 | 12 | Rotor speed physics: induced plus profile power, propeller-mode efficiency in J and tip Mach | Implemented |
 | 12b | Fixed off-the-shelf turboshafts (2 x 1,120 hp deck engine), battery-assisted hover, in-flight recharge | Implemented |
@@ -53,7 +53,7 @@ architecture sound. It ranked these gaps by how much they move the answer:
 10. optimization practice is narrow.
 
 The tiers below address them in dependency order. Each tier gets its own
-ExecPlan, verification notebook and dashboard refresh, and keeps its simpler
+plan, verification notebook and dashboard refresh, and keeps its simpler
 predecessor available.
 
 ### 11b Continuous integration
@@ -80,24 +80,24 @@ predecessor available.
 - **Calibration and validation data:**
   - **Primary, hover and airplane mode:** C. W. Acree, "Assessment of JVX
     Proprotor Performance Data in Hover and Airplane-Mode Flight
-    Conditions", NASA/TM-2016-219070 (user-supplied 2026-10-02),
+    Conditions", NASA/TM-2016-219070 (author-supplied 2026-10-02),
     https://ntrs.nasa.gov/citations/20160004035. It contains full-scale
     V-22-class proprotor data: OARF hover tests and NFAC 40x80 airplane-mode
     tests at advance ratios up to about 0.56, with measured propulsive
     efficiency. It also gives polynomial hover regressions (Table 4) and the
     full test data in Appendix D (digital text, parseable).
   - **Secondary, hover:** full-scale XV-15 hover test, NASA TM 86833
-    (user-supplied; scanned, rotated appendix tables).
+    (author-supplied; scanned, rotated appendix tables).
   - **Cross-check:** XV-15 power required against airspeed, TM X-62407
     fig. A-12.
-  - **Not used for proprotors:** the user's GASP general-aviation propeller
+  - **Not used for proprotors:** the author's GASP general-aviation propeller
     map stops at J <= 1.6, so it is kept only as a generic propeller map.
 - **Result:** "optimum-speed rotor" becomes a real trade, and the fixed
   0.67 / 0.87 coefficients are removed.
 
 ### 13 Electric machines sized by torque (review item 2)
 
-- **Distinct power sizing (user, 2026-10-03):** motor power, generator power
+- **Distinct power sizing (decided 2026-10-03):** motor power, generator power
   and turbine power are sized separately; they are linked through the
   efficiency chain and the battery share. The constraint diagram shows each
   requirement in one colour, with line style for the component it sizes:
@@ -115,7 +115,7 @@ predecessor available.
 - **Result:** the cruise-torque trap and the direct-drive decision appear in
   the solution.
 
-### 14 Trajectory optimization (user-requested 2026-10-02; moved up to Tier 14 on 2026-10-03)
+### 14 Trajectory optimization (requested 2026-10-02; moved up to Tier 14 on 2026-10-03)
 
 **First problems:**
 
@@ -134,7 +134,7 @@ This is separate from sizing. It is a stand-alone optimal-control problem on
 a fixed aircraft taken from a sizing result (`HaloSizingResult.design`), not
 a new constraint inside the sizing Opti.
 
-- **Principle (user, 2026-10-02): lean on AeroSandbox.**
+- **Principle (decided 2026-10-02): lean on AeroSandbox.**
   - Dynamics: `asb.DynamicsPointMass2DSpeedGamma` (longitudinal),
     `DynamicsPointMass3DSpeedGammaTrack` for ground tracks, and
     `DynamicsRigidBody2DBody` if pitch dynamics are needed. Each one's
@@ -217,7 +217,7 @@ a new constraint inside the sizing Opti.
     3 kW/kg pack and roughly 12C for engine-out hover, the engine-out power
     reserve is expected to dominate battery mass. A power cell (or a
     cell-chemistry trade) becomes a design question for this tier.
-- **Scaling decision (user, 2026-10-02):** take the *shape* of the discharge
+- **Scaling decision (decided 2026-10-02):** take the *shape* of the discharge
   behaviour from the 50G data. That means OCV(SOC), and the trends of R
   with SOC and temperature. Scale the resistance (and with it the power
   capability) by an explicit factor so that the cell is as power-dense as
@@ -292,7 +292,7 @@ design statement.
 
 ### 21 Aerodynamics (review item 8)
 
-**Principle (user, 2026-10-02): lean heavily on AeroSandbox's built-in
+**Principle (decided 2026-10-02): lean heavily on AeroSandbox's built-in
 aerodynamics.** `asb.AeroBuildup` on the `Aircraft.to_asb()` geometry is the
 primary model: wing, tail and fuselage forces, its own compressibility and
 form-factor treatment, and stall. That includes any nacelle or spinner
@@ -302,7 +302,7 @@ landing-gear drag, slipstream corrections) and serves as an independent
 hand check. `SimpleAerodynamics` stays as the simplest model.
 
 - **Level-0 drag build-up:** Scholz, *Aircraft Design*, ch. 13 "Drag
-  Prediction" (HAW Hamburg lecture notes, user-suggested 2026-10-02),
+  Prediction" (HAW Hamburg lecture notes, suggested 2026-10-02),
   https://www.fzt.haw-hamburg.de/pers/Scholz/HOOU/AircraftDesign_13_Drag.pdf.
   - Component method: C_D0 = sum(C_f FF Q S_wet) / S_ref + C_D,misc +
     C_D,L+P.

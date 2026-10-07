@@ -651,7 +651,7 @@ plan 021) is a distinct class. `Battery` stays the simplest model.
   - Fitted to all 308 discharge DCIR points: rms 4.7 %.
   - Below SOC 0.2 the rise continues; above 0.8 the high term is held.
 - **`factor_power_density`:** divides the resistances and multiplies the
-  current rating (the user's explicit assumption). Mass is unchanged.
+  current rating (the author's explicit assumption). Mass is unchanged.
 - **Ageing:** `factor_resistance_ageing` and `factor_capacity_ageing`.
 
 `evaluate(current_A, soc, duration_s=0, voltage_rc_start_V=None,

@@ -52,7 +52,7 @@ to an unmanned aircraft with stated adjustments, not wholesale.
 
 ## Drawn Halo layout and plan 032 reference (2026-10-04)
 
-The Halo is uncrewed and unpressurized. Plan 032 uses these user statements and the plan 031 drawing, made from
+The Halo is uncrewed and unpressurized. Plan 032 uses these author statements and the plan 031 drawing, made from
 public stills:
 
 - turbines in the fuselage;
