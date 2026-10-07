@@ -141,10 +141,47 @@ Approach and effort for each next step: [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)
 - No payload-range diagram and no maximum endurance. Performance is computed at the design mission only.
 
 **Next**
+- **Margin bottom up:** carry each item's weight margin inside the sizing, so the optimizer sizes to the 99 % value
+  rather than the estimate.
+- **Maximum take-off weight from the turbine power that can be secured:** set the take-off weight limit from the
+  power the fixed engines deliver in the critical hover, and size payload, battery and margin within it.
 - A payload-range diagram and endurance: re-solve the fixed aircraft at off-design payload.
 - An energy-flow diagram per segment from the solved powers and losses.
 
 ![Empty mass breakdown](docs/figures/oew_breakdown.png)
+
+**Empty-weight uncertainty: how likely is the weight target?** Each item of the empty-weight build-up carries a
+one-sigma uncertainty set by how its mass is estimated:
+- catalogue engines and machine units are tight;
+- calibrated handbook groups carry about ±15 % at 95 % confidence, widened where the calibration is weakest;
+- lightly modelled items are wide.
+
+The items are combined as independent normal errors into an OEW distribution. The target is a not-to-exceed
+weight: the design should carry enough margin that its 99 % value comes in at or below it. Today the estimate is
+the target itself, so the chance of meeting it is 50 %, and the 99 % value is 651 lb over. The spread is at a fixed
+take-off weight: weight growth through re-sizing, and correlated errors between items, would widen it.
+
+![Empty-weight uncertainty](docs/figures/oew_distribution.png)
+
+| Item | Weight (lb) | 1σ (%) | 1σ (lb) | Share of OEW variance | Basis |
+|---|---|---|---|---|---|
+| Rotors | 1,488 | 7.5 | 112 | 16 % | AFDD blades and hubs, XV-15 calibrated |
+| Battery | 1,047 | 7.5 | 79 | 8 % | 50G cell data; 70 % cell-to-pack mass assumed |
+| Motors (with inverters) | 938 | 5.0 | 47 | 3 % | Whole catalogue units plus inverter allowance |
+| Turboshafts | 930 | 2.5 | 23 | 1 % | Fixed off-the-shelf engines plus installation |
+| Rotor gearboxes | 645 | 10.0 | 64 | 5 % | AFDD drive system |
+| Generators (with inverters) | 621 | 5.0 | 31 | 1 % | Whole catalogue units plus inverter allowance |
+| Generator gearboxes | 318 | 10.0 | 32 | 1 % | AFDD drive system |
+| Heat exchanger | 280 | 15.0 | 42 | 2 % | Thermal model, mass per watt assumed |
+| Protection and bus tie | 63 | 20.0 | 13 | 0 % | Simple ratings-based estimate |
+| Fuselage | 1,235 | 10.0 | 123 | 19 % | Raymer x 1.70, anchored to the drawn layout |
+| Wing | 899 | 10.0 | 90 | 10 % | AFDD tiltrotor wing x 1.33 (XV-15); strength at ultimate not demonstrated |
+| Systems | 898 | 15.0 | 135 | 23 % | Raymer; flight controls carry an XV-15 factor of about 4 |
+| Fixed equipment | 587 | 10.0 | 59 | 4 % | Assumed allowance |
+| Landing gear | 570 | 7.5 | 43 | 2 % | Raymer |
+| Nacelles | 430 | 10.0 | 43 | 2 % | AFDD-class estimate |
+| Tails | 183 | 10.0 | 18 | 0 % | Raymer x XV-15 factor |
+| **OEW** | **11,130** | **2.5** | **280** | 100 % | Root sum of squares, items independent |
 
 **Mission profiles.** Airspeed, turbine shaft power against battery power, and altitude, for the design mission
 (first 15 min on the left, the whole mission on the right):
