@@ -123,13 +123,14 @@ interface, and the simpler version is kept, so the effect of each model on the a
 
 Work moves up in fidelity only where the answer depends on it. Every level feeds its result back to the level
 below as a calibration factor, a performance map or a weight, so the sizing loop stays fast enough to run trades
-in minutes. High-fidelity tools come late and are aimed at specific parts of the design, never wrapped around the
-whole aircraft at the start.
+in minutes. High-fidelity tools come late, are aimed at specific parts of the design, and are never wrapped around
+the whole aircraft at the start. They start only once the lower levels show exactly what is worth optimizing: which
+region, which objective, and which design variables.
 
 | Discipline | In the sizing loop now (seconds to minutes) | Next: fast checks (minutes to hours) | Later: targeted high fidelity (days) |
 |---|---|---|---|
-| Aerodynamics | AeroBuildup with Scholz corrections | VSPAERO vortex lattice and panel, validated against the XV-15 | ADflow RANS on specific regions: wing-nacelle junction, nacelle in conversion, intakes |
-| Proprotor | Momentum plus profile, fitted to JVX | XROTOR blade-element theory with XFOIL polars; OpenVSP prop modeling for rotor-wing interaction | CFD of the rotor-wing interaction in hover and conversion, only if download or blown-wing loads drive the design |
+| Aerodynamics | AeroBuildup with Scholz corrections | VSPAERO vortex lattice and panel, validated against the XV-15 | ADflow RANS on airframe regions once the objective is defined: wing and wing-nacelle junction, fuselage aft body |
+| Proprotor | Momentum plus profile, fitted to JVX | XROTOR blade-element theory with XFOIL polars; OpenVSP prop modeling for rotor-wing interaction | CFD with the rotor modelled (actuator disk or rotating blades) for the prop blowing over the wing: download in hover, blown wing in conversion |
 | Powertrain | Component models with generic and scaled inputs | Supplier data sheets and efficiency maps | Hardware test data |
 | Thermal | Heat exchanger by mass per watt | ESDU intake and duct sizing; cooling loops by temperature level | CFD of the chosen intake and exhaust installation |
 | Structures | AFDD and Raymer weights with calibration factors | Nastran strength and buckling from the exported decks | Nastran flutter (SOL 145) and coupled rotor-wing whirl flutter |
@@ -261,9 +262,13 @@ take-off weight: weight growth through re-sizing, and correlated errors between 
      validation case.
    - Use OpenVSP's prop modeling in VSPAERO for rotor-wing interaction: download in hover and the blown wing in
      cruise.
-3. **Targeted CFD, later.** Bring in the University of Michigan MDO Lab's ADflow (with pyGeo, pyHyp and IDWarp
-   for shape changes) only for the specific regions where the cheaper methods disagree or a decision depends on
-   them: the wing-nacelle junction, the nacelle in conversion, the intakes.
+3. **Targeted CFD, later, once it is clear exactly what to optimize** (which region, objective and design
+   variables):
+   - **Airframe:** the University of Michigan MDO Lab's ADflow, with pyGeo, pyHyp and IDWarp for shape changes, on
+     the wing, the wing-nacelle junction or the fuselage aft body. ADflow is for wings and bodies, not rotors.
+   - **Prop blowing over the wing:** CFD with the rotor modelled, as an actuator disk or with rotating blades, for
+     the download in hover and the blown wing in conversion. This is where the panel-method interaction model is
+     least reliable.
 
 ![Drag polar by model](docs/figures/drag_polar_models.png)
 ![JVX proprotor calibration](docs/figures/rotor_jvx_calibration.png)
