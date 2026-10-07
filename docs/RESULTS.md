@@ -261,9 +261,11 @@ On the baseline design (v3.6), flown inside the computed conversion corridor
    explicit list of starting points (Tier 22). Every start that converged
    reached the same optimum, but some feature combinations take several
    failed starts first.
-10. **Wing finite-element check.** The CalculiX check of the wing box puts the
-   jump take-off strain at 1.10 of the allowable after the spar-cap
-   correction, and the torsion mode is not cleanly identified.
+10. **Wing strength at ultimate is not demonstrated.** The linear CalculiX
+   check of the wing box (v3.3.5) puts the peak spar-cap strain in the jump
+   take-off 10 % above the ultimate allowable, a negative margin. Buckling is
+   not analysed, and the torsion mode is not cleanly identified. See
+   [next steps](NEXT_STEPS.md) for the diagnosis.
 
 ## 7. Reproducing the results
 

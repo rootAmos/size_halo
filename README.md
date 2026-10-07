@@ -7,21 +7,28 @@ and every model is checked against public tiltrotor data before it is trusted.
 > All numbers are illustrative engineering inputs drawn from public sources. Nothing here is Archer or Halo data.
 > See [assumptions](docs/HALO_REFERENCE.md).
 
-## The baseline design (v3.6)
+## Requirements
+
+| | |
+|---|---|
+| Payload and range | 1,984 lb (900 kg) over 445 nm, plus a 20 min reserve loiter |
+| Maximum speed | 210 kt sustained at 10,000 ft |
+| Ceiling | 13,000 ft |
+| Hover | out of ground effect at 4,000 ft (T/W 1.05), including a 95 °F day (ISA + 50 °F) at the destination |
+| Failure hovers | 60 s after losing a turbogenerator, a bus or a battery string |
+| Stall | at or below 120 kt in airplane mode |
+| Stability | static margin and directional stability (Cn_β) margins |
+| Fixed input | two off-the-shelf 1,120 hp turboshafts. A non-OEM cannot add turbine power, so the engines are not a design variable |
+
+## The sized aircraft: baseline design v3.6
 
 | | |
 |---|---|
 | **Take-off weight** | **15,179 lb** (6,885 kg) |
-| Payload | 1,984 lb (900 kg) |
 | Empty weight (OEW) | 11,130 lb (5,049 kg), of which powertrain 6,329 lb (57 %) |
 | Fuel / battery | 2,065 lb, 10 % reserve included / 70 kWh, 1,047 lb, two isolated strings |
-| Maximum speed | 210 kt sustained at 10,000 ft |
-| Design range | 445 nm with 1,984 lb payload, plus a 20 min reserve loiter |
 | Mission cruise | 165 kt at 10,000 ft, L/D 9.1 (cruise speed is optimized for weight; 210 kt is a dash capability) |
-| Ceiling | 13,000 ft |
-| Hover | out of ground effect at 4,000 ft, including a 95 °F day (ISA + 50 °F) at the destination |
-| Failure hovers | 60 s after losing a turbogenerator, a bus or a battery string |
-| Turboshafts | 2 × 1,120 hp, fixed off-the-shelf engines in the fuselage |
+| Turboshafts | 2 × 1,120 hp in the fuselage |
 | Rotors | 2 × 31.7 ft diameter, disk loading 9.6 lb/ft², tip speed 782 ft/s; rotor radius capped by the span |
 | Wing | 251 ft², 39.2 ft span, wing loading 60.5 lb/ft² |
 | Drive | per rotor, 2 motor lanes of stacked axial-flux units behind one 4.5:1 stage; two cross-strapped DC buses |
@@ -40,14 +47,9 @@ and every model is checked against public tiltrotor data before it is trusted.
 
 The model works in SI internally; [docs/RESULTS.md](docs/RESULTS.md) gives the SI values alongside.
 
-Not computed yet: maximum range at reduced payload (the payload-range curve) and maximum endurance.
-
 ![Empty mass breakdown](docs/figures/oew_breakdown.png)
 
 ![Halo-class 3-view and nacelle conversion](docs/figures/halo_views.png)
-
-**Fixed inputs:** two off-the-shelf 1,120 hp turboshafts. A non-OEM cannot add turbine power, so the engines are an
-input, not a design variable.
 
 **What sizes the aircraft** (the active constraints at the optimum):
 
@@ -100,21 +102,113 @@ failure cases ─┘
 - **Geometry and structure exports.** The sized aircraft goes to OpenVSP (outer mold line, internal structure,
   STEP/STL), VSPAERO and CalculiX as independent checks; nothing in the sizing depends on them.
 
-| Discipline | Model |
-|---|---|
-| Rotor | Momentum + profile power with tip-Mach rise; propeller-mode efficiency in J. Fitted to full-scale JVX data |
-| Machines | McDonald loss model; mass from torque; built from whole units of real products (motor and generator database) |
-| Battery | Samsung 50G-shaped equivalent circuit with sag and end-of-life rating |
-| Turboshaft | Fixed 1,120 hp deck; lapse in density and temperature; part-power fuel curve |
-| Aerodynamics | AeroSandbox AeroBuildup with Scholz corrections; trim drag from the tail load; hover download |
-| Weights | AFDD rotorcraft equations (rotor, drive, engine section); NDARC tiltrotor wing with whirl-flutter frequency margins; Raymer GA elsewhere, anchored to a drawn structural layout |
-| Thermal | Heat exchanger sized with the aircraft; short-time machine ratings from thermal mass |
-| Stability and control | Neutral point, static margin, elevator trim, Cn_β, rudder for a failed rotor; conversion corridor from trim with ruddervator, rotor disc tilt, attitude, edgewise-flow, power and placard limits |
-| Redundancy | Lane-out, bus-out and string-out hovers |
+## Status by discipline
+
+For each model type: what the tool can do, what the sizing uses, what is wrong or unproven today, and what comes
+next. Approach and effort for the next steps are in [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md).
+
+### Structures and weights
+
+- **Can do:** handbook mass for every group. Also a drawn structural layout in OpenVSP (spars, ribs, frames),
+  exported to CalculiX and Nastran. A CalculiX check of the wing box gives its modal frequencies and a linear static
+  jump take-off at ultimate load.
+- **Used in sizing:** handbook and parametric mass only. These are:
+  - the NDARC/AFDD tiltrotor wing, sized for stiffness, whirl-flutter frequency margins and the jump take-off,
+    times 1.33 from the XV-15 calibration;
+  - AFDD rotor, drive and engine-section equations;
+  - Raymer GA for the fuselage times 1.70, anchored once by hand to the drawn layout;
+  - Raymer for the tails.
+
+  Finite-element results never feed the sizing.
+- **Wrong or unproven:**
+  - **Wing strength at ultimate load is not demonstrated.** On v3.3.5 (13,038 lb) the linear finite-element check
+    puts the peak front spar-cap strain in the jump take-off **10 % above the ultimate allowable, a negative
+    margin**. The check models the raw AFDD gauges, without the 1.33 calibration material the sizing books, under
+    an idealized full clamp at the root. It has not been re-run on the baseline.
+  - **Buckling is not analysed at all.** Plate estimates suggest the unstiffened 1 mm covers and webs would buckle
+    well below ultimate.
+  - Wing torsion is not cleanly separated from nacelle modes.
+  - Whirl flutter is a frequency margin (the NDARC practice), not a coupled rotor-wing stability constraint.
+  - Weight calibration rests on one complete aircraft. Flight controls carry a factor of about 4, and the calibration
+    factors are the largest sensitivities (about ±540 lb each for ±15 %).
+- **Next:**
+  - close the wing: support the finite-element root on fittings, model the calibrated structure, add a CalculiX
+    buckling step, size stiffened covers and webs, and enforce a cap-strain margin of at least zero in the sizing;
+  - whirl flutter as a coupled rotor-pylon-wing stability model in CasADi, inside the optimization;
+  - a second weight anchor, ideally an uncrewed fly-by-wire aircraft.
+
+![Structural layout](docs/figures/halo_structure.png)
+
+### Powertrain and energy storage
+
+- **Can do:** a typed series-hybrid network (shafts, DC buses, multiplicity) with:
+  - McDonald-loss machines built from whole units of real products, with a supplier database;
+  - gearboxes with stage counts;
+  - a Samsung 50G-shaped equivalent-circuit battery with sag and end-of-life rating;
+  - a fixed turboshaft deck with lapse and a part-power fuel curve;
+  - a momentum-plus-profile rotor fitted to full-scale JVX data;
+  - thermal ratings and a heat exchanger;
+  - lane-out, bus-out and string-out failure hovers;
+  - an electrical layer (inverters, cables, protection).
+- **Used in sizing:** all of it except the electrical layer. The battery is sized by its cell voltage cutoff in the
+  engine-out hover, the generators by the engine-out hover, and the motors by the bus-out hover.
+- **Wrong or unproven:**
+  - Airplane-mode rotor efficiency is fitted to the JVX test, not checked against flight data.
+  - The electrical layer is built but off by default. It adds about 730 lb (330 kg) and 3 % losses, and with every
+    option on the problem converges only through the multistart strategy.
+  - Failures are single and symmetric. Double failures did not converge (not shown infeasible), and degraded states
+    apply to both rotors.
+  - One catalogue product per machine role.
+  - Battery chiller power is not modelled.
+- **Next:** the electrical layer on by default, with problem scaling and continuation; asymmetric and double
+  failures, including an interconnect shaft against electrical cross-strapping; cruise rotor efficiency against
+  flight data.
+
+![JVX proprotor calibration](docs/figures/rotor_jvx_calibration.png)
+
+### Aerodynamics
+
+- **Can do:**
+  - AeroSandbox AeroBuildup, a Scholz hand build-up and a simple linear model;
+  - compressibility, the blown wing and hover download;
+  - trim drag from the tail load;
+  - an OpenVSP VSPAERO and parasite-drag cross-check on the same geometry.
+- **Used in sizing:** AeroBuildup with Scholz excrescence corrections, trim drag from the tail load, and hover
+  download. AeroBuildup and Scholz agree within about 2 % in CD0.
+- **Wrong or unproven:**
+  - Drag is not anchored to flight data. The excrescence factor matches NASA NDARC's XV-15 estimate, and drag drives
+    payload headroom more than anything else.
+  - The sizing uses a conventional tail; the V-tail is only drawn.
+  - There is no conversion-mode aerodynamics.
+- **Next:** anchor drag to the XV-15 power-required curve; V-tail in the sizing.
+
+![Drag polar by model](docs/figures/drag_polar_models.png)
+![OpenVSP vs AeroSandbox](docs/figures/aero_compare_openvsp.png)
+
+### Trajectory, stability and control
+
+- **Can do:**
+  - static stability: neutral point, static margin, elevator trim, Cn_β, rudder for a failed rotor;
+  - a conversion corridor computed by trimming the sized aircraft at every nacelle angle (ruddervator, rotor disc
+    tilt, attitude, edgewise-flow, power and placard limits);
+  - point-mass direct-collocation trajectories inside that corridor (minimum-energy transition, time to climb).
+- **Used in sizing:** static stability and hover trim only. The sizing flies quasi-steady mission segments and
+  requirement points. The corridor and the trajectories are separate solves on the sized aircraft, so the coupling
+  is one-way.
+- **Wrong or unproven:**
+  - The trajectories are point-mass, with no rotor disc tilt and no 6-DOF.
+  - The corridor has no rotor in-plane force or rotor-speed schedule.
+  - There is no lateral trim.
+- **Next:** rotor in-plane force, a rotor-speed schedule and rotor disc tilt in the trajectory model, then linearized
+  models at the corridor trim points as the first control-law step.
 
 ![Computed conversion corridor](docs/figures/conversion_corridor.png)
-
 ![Trajectories in the computed conversion corridor](docs/figures/trajectory_conversion_corridor.png)
+
+### Across disciplines
+
+Propagate the calibration factors to a take-off-weight band instead of a single number. Not computed yet: the
+payload-range curve and maximum endurance.
 
 ## How it is checked
 
@@ -144,47 +238,6 @@ failure cases ─┘
   back-check of the weight equations, and a CalculiX finite-element check of the wing box.
 
 ![JVX proprotor calibration](docs/figures/rotor_jvx_calibration.png)
-
-## What it does not do yet
-
-In rough order of how much each could move the answer:
-
-1. **Whirl flutter is a frequency margin, not a stability analysis.** It enters the sizing as wing torsion and beam
-   frequencies per rev (the NDARC practice), not as a coupled rotor-wing stability constraint.
-2. **Drag is not anchored to flight data.** The excrescence factor matches NASA NDARC's XV-15 estimate, not flight
-   test. Drag drives payload headroom more than anything else.
-3. **Weight calibration rests on one complete aircraft.** The fuselage needs a factor of about 2 and flight controls
-   about 4. These are the largest sensitivities (about ±540 lb each for ±15 %).
-4. **The wing is not closed structurally.** The finite-element check puts jump take-off spar-cap strain at 1.10 of
-   the allowable, and wing torsion is not cleanly separated from nacelle modes. The check was last run on an
-   earlier version (v3.3.5, 13,038 lb), not the baseline.
-5. **The electrical layer is built but off by default.** Inverters, cables and protection add about 730 lb (330 kg) and 3 %
-   losses; with every option on, the problem converges only through the multistart strategy.
-6. **Failures are single and symmetric.** Double failures did not converge (not shown infeasible), and degraded
-   states apply to both rotors, so roll trim is not modelled.
-7. **Simplifications still in the baseline:** a conventional tail in sizing (the V-tail is only drawn);
-   point-mass trajectories with no rotor disc tilt and no 6-DOF; no rotor in-plane force or rotor-speed schedule
-   in the conversion corridor; battery chiller power not modelled.
-
-## Where I would take it next
-
-Approach and effort for each are in [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md).
-
-1. **Whirl flutter inside the optimization:** a coupled rotor-pylon-wing stability model written in CasADi, so the
-   optimizer trades wing thickness, spar caps, nacelle station and pylon inertia directly against flutter speed.
-2. **Close the wing:** re-run the finite-element check on the baseline, fold the cap-depth and skin corrections
-   into the sizing, and identify torsion from mode shapes.
-3. **Anchor drag** to the XV-15 power-required curve, then airplane-mode rotor efficiency.
-4. **A second weight anchor** for the fuselage and flight controls, ideally an uncrewed fly-by-wire aircraft, to
-   replace the 2× and 4× factors.
-5. **Electrical layer on by default,** with problem scaling and continuation so the full model converges from one
-   start.
-6. **Asymmetric and double failures,** including the trade between an interconnect shaft and electrical
-   cross-strapping.
-7. **Uncertainty on the answer:** propagate the calibration factors to a take-off-weight band instead of a single
-   number.
-8. **Conversion controls:** rotor in-plane force, a rotor-speed schedule and rotor disc tilt in the trajectory model,
-   then linearized models at the corridor trim points as the first control-law step; V-tail in the sizing.
 
 ## Running it
 

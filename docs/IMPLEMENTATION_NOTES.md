@@ -1635,8 +1635,12 @@ The reference is **13,038 lb** (+217 lb on plan 032).
   Clean symmetric torsion modes sit at 57.3 rad/s (0.91x). Telling them apart needs the mode shapes.
 - **Panel modes:** the FE now ignores local modes, those with nacelle motion below 0.1 of the largest (18 of 30).
 - **Pylon inertia:** the FE now takes the sizing's own pylon radius of gyration from `reference.json`.
-- **Remaining 10 % strain margin:** not closed in the sizing. Candidates are AFDD's box skins still bending about
-  the full thickness, and the FE's root band (the clamp).
+- **Peak cap strain 10 % above the ultimate allowable (negative margin):** not acceptable, and not closed in the
+  sizing. Diagnosis (2026-10-07, see NEXT_STEPS section 2):
+  - It is not torsion: the strains are unchanged with the load at mid-box.
+  - With the 1.33 calibration material in the walls and caps, the peak falls to 0.83.
+  - The full clamp gives root shear lag at the front spar.
+  - Buckling is not analysed.
 
 ## Plan 039: computed conversion corridor and trim
 

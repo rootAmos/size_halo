@@ -38,10 +38,22 @@ mode check.
 
 ## 2. Structures: close the loop on the wing
 
-**Why.** The finite-element check of the wing box puts the jump take-off strain at 1.10 of the allowable after the
-spar-cap correction, and the torsion mode is not cleanly identified.
+**Why.** Wing strength at ultimate load is not demonstrated. Even after the spar-cap correction, the linear
+finite-element check (on v3.3.5) puts the peak front spar-cap strain in the jump take-off 10 % above the ultimate
+allowable: a negative margin. Buckling is not analysed, and the torsion mode is not cleanly identified.
 
-**How.** Gauges sized in the finite-element model from every mission and failure load case, returned to the weight
+Diagnosis so far:
+- **Not torsion.** Moving the load from the spindle to mid-box leaves the strains unchanged.
+- **The finite-element model is lighter than the booked wing.** It models the raw AFDD gauges, without the 1.33
+  XV-15 calibration material. With that material in the box walls and caps, the peak falls to 0.83 of the allowable.
+  How much of the calibration mass is really load-carrying is an open question.
+- **Root shear lag.** Under the idealized full root clamp, the thin covers concentrate strain at the front spar
+  (front 1.7 times the rear, against 1.2 from beam theory).
+- **Buckling.** Plate estimates suggest the unstiffened 1 mm covers and webs buckle well below ultimate.
+
+**How.** Support the root on fittings, model the calibrated structure, and add a CalculiX buckling step. Size
+stiffened covers and webs, and enforce a cap-strain margin of at least zero in the sizing. Then size gauges in the
+finite-element model from every mission and failure load case, and return them to the weight
 model as calibration factors (outside the loop, like the existing checks); then fuselage and tail checks.
 **Effort:** 2-3 days.
 
