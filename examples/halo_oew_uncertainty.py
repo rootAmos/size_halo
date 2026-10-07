@@ -171,12 +171,10 @@ def plot_distribution(distribution, path, title, target_lb=None):
     peak = pdf.max()
     # The design rule: the 99 % value must sit at or below the not-to-exceed target.
     if d.value_99_lb > target_lb:
-        ax.annotate("", xy=(target_lb, peak * 0.30), xytext=(d.value_99_lb, peak * 0.30),
-                    arrowprops=dict(arrowstyle="<->", color=orange, lw=1.3))
-        ax.text(0.5 * (target_lb + d.value_99_lb), peak * 0.33,
-                f"{d.value_99_lb - target_lb:,.0f} lb over:\n99 % value must be\nat or below the target",
-                ha="center", va="bottom", fontsize=8.5, color=orange,
-                bbox=dict(facecolor="white", edgecolor="none", alpha=0.85, pad=1.5))
+        ax.annotate("", xy=(target_lb, -peak * 0.06), xytext=(d.value_99_lb, -peak * 0.06),
+                    arrowprops=dict(arrowstyle="<->", color=orange, lw=1.3), annotation_clip=False)
+        ax.plot([], [], color=orange, lw=1.3,
+                label=f"99 % value: {d.value_99_lb - target_lb:,.0f} lb over the target")
     for value, label, color, style, side, height in (
             (target_lb, "target (not to exceed)\n= basic OEW", ink, "-", 1, 1.02),
             (d.mean_lb, "predicted\n(basic + growth)", blue, "-.", -1, 1.02),
@@ -191,11 +189,12 @@ def plot_distribution(distribution, path, title, target_lb=None):
     ax.set_title(f"{title}\nbasic {d.basic_lb:,.0f} lb + growth allowance {d.growth_lb:,.0f} lb "
                  f"({100 * d.growth_lb / d.basic_lb:.1f} %); uncertainty σ = {d.sigma_lb:,.0f} lb "
                  f"({100 * d.sigma_lb / d.basic_lb:.1f} %)", fontsize=10.5)
-    ax.set_ylim(0, peak * 1.45)
+    ax.set_ylim(-peak * 0.12, peak * 1.45)
     ax.set_yticks([])
-    ax.spines[["top", "right", "left"]].set_visible(False)
+    ax.spines[["top", "right", "left", "bottom"]].set_visible(False)
+    ax.axhline(0, color=ink, lw=0.8)
     ax.grid(axis="x", alpha=0.3)
-    ax.legend(loc="upper left", frameon=False, fontsize=9)
+    ax.legend(loc="upper left", fontsize=9, frameon=True, facecolor="white", edgecolor="none", framealpha=1.0)
     fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)
