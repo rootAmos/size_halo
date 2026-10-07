@@ -117,7 +117,8 @@ interface, and the simpler version is kept, so the effect of each model on the a
 
 ## By discipline
 
-Approach and effort for each next step: [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md).
+Each discipline ends with a **hand-off**: the kickoff brief for the specialist team that takes it from here, with
+the inputs to gather and the tools to bring. Approach and effort: [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md).
 
 ### Performance
 
@@ -140,13 +141,17 @@ Approach and effort for each next step: [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)
 **Doesn't do**
 - No payload-range diagram and no maximum endurance. Performance is computed at the design mission only.
 
-**Next**
-- **Margin bottom up:** carry each item's weight margin inside the sizing, so the optimizer sizes to the 99 % value
-  rather than the estimate.
-- **Maximum take-off weight from the turbine power that can be secured:** set the take-off weight limit from the
-  power the fixed engines deliver in the critical hover, and size payload, battery and margin within it.
-- A payload-range diagram and endurance: re-solve the fixed aircraft at off-design payload.
-- An energy-flow diagram per segment from the solved powers and losses.
+**Hand-off: weights and performance**
+- **Weights:**
+  - Run weight control from the item table below.
+  - Allocate a not-to-exceed weight to each item.
+  - Carry each item's margin inside the sizing, so the aircraft is sized to its 99 % value, not to the estimate.
+- **Performance:**
+  - Secure the installed turbine power with the engine supplier, and set the maximum take-off weight from what it
+    delivers in the critical hover.
+  - Size payload, battery and margin within that limit.
+  - Re-solve the fixed aircraft off-design for the payload-range diagram and endurance.
+  - Draw the energy flow per segment from the solved powers and losses.
 
 ![Empty mass breakdown](docs/figures/oew_breakdown.png)
 
@@ -225,11 +230,19 @@ take-off weight: weight growth through re-sizing, and correlated errors between 
   in cruise its power keeps falling as the rotor slows. The cruise rotor speed is therefore set by the model's
   validity bounds (advance ratio at most 0.6, blade loading), not by physics.
 
-**Next**
-- Anchor drag and cruise rotor efficiency to the XV-15 power-required curve.
-- A blade-element (BEM) proprotor with blade stall, so the physics, not the validity bounds, sets the cruise rotor
-  speed, and the twist and chord trade between hover and cruise becomes visible. JVX stays the validation case.
-- Size the V-tail with its effectiveness factor.
+**Hand-off: aerodynamics and proprotor**
+- **Aerodynamics:**
+  - Validate the existing panel methods (VSPAERO vortex lattice and panel, AeroBuildup) against XV-15 wind-tunnel
+    and flight data, and anchor drag to the XV-15 power-required curve.
+  - Then bring detailed design into the loop with the University of Michigan MDO Lab's open-source stack: ADflow
+    RANS CFD with pyGeo, pyHyp and IDWarp (MACH-Aero) for shape optimization. OpenAeroStruct, or MPhys with TACS,
+    covers aerostructural coupling in OpenMDAO.
+  - Size the V-tail with its effectiveness factor.
+- **Proprotor:**
+  - Define a blade (twist, chord, airfoils) and generate performance data in hover, conversion and cruise,
+    including stall, with XROTOR and XFOIL polars.
+  - Feed it back as a rotor performance map in place of the analytic model, with the JVX test kept as the
+    validation case.
 
 ![Drag polar by model](docs/figures/drag_polar_models.png)
 ![JVX proprotor calibration](docs/figures/rotor_jvx_calibration.png)
@@ -313,11 +326,23 @@ flowchart LR
 - One catalogue product per machine role.
 - No battery chiller power, and losses do not depend on temperature.
 
-**Next**
-- Turn on the electrical layer (inverter losses, DC cables, protection), which is already built, with problem
-  scaling and continuation so the full model converges from one start.
-- Asymmetric and double failures, including an interconnect shaft against electrical cross-strapping.
-- Mixed machine catalogues.
+**Hand-off: propulsion, electrical and thermal management**
+- **Propulsion and electrical:**
+  - Obtain supplier data sheets for each component:
+    - motors and generators: efficiency maps, continuous and peak ratings, thermal limits, mass;
+    - inverters, gearboxes and cells or packs;
+    - the installed turboshaft deck.
+  - Feed them into the component models in place of the generic and scaled inputs.
+  - Turn on the electrical layer (inverter losses, DC cables, protection), which is already built, with the real
+    data.
+  - Use the existing failure framework for architecture studies: asymmetric and double failures, and an
+    interconnect shaft against electrical cross-strapping.
+- **Thermal management:**
+  - Size the ram-air intakes, ducts and exits with ESDU methods (pressure recovery, spillage and cooling drag), in
+    place of the heat exchanger's mass-per-watt assumption.
+  - Lay out the cooling loops by temperature level. Separate the battery loop (coolest), the power-electronics loop
+    and the motor and generator loop (warmest), so each runs at its own temperature and the heat exchangers are
+    sized per loop.
 
 ![Battery OCV fit](docs/figures/battery_ocv_fit.png)
 
@@ -339,10 +364,15 @@ flowchart LR
 - **Whirl flutter is a frequency margin, not a stability analysis.**
 - **Weights calibrate on one aircraft (the XV-15).** Flight controls carry a factor of about 4.
 
-**Next:**
-- Close the wing: realistic root support, the calibrated structure in the finite-element model, a CalculiX
-  buckling step, stiffened panels, and a strain margin of at least zero enforced in the sizing.
-- Then a coupled rotor-wing whirl-flutter model inside the optimization.
+**Hand-off: stress and aeroelasticity**
+- **Wing strength:**
+  - Start from the Nastran decks the tool already exports.
+  - Model the real fittings and stiffened covers.
+  - Run strength and buckling (SOL 101 and 105), and size the panels to a margin of at least zero at ultimate load.
+  - Return the result to the sizing as calibrated wing weights.
+- **Flutter:**
+  - Set up the flutter analysis in Nastran (SOL 145) with the nacelle and pylon mass and the rotor-pylon modes.
+  - Then whirl flutter with rotor aerodynamics, to replace the frequency-placement margins the sizing uses today.
 
 ![Structural layout](docs/figures/halo_structure.png)
 
@@ -361,10 +391,10 @@ flowchart LR
 - The trajectory model has no rotor disc tilt, so it is stricter than the trim: no level, constant-acceleration
   conversion fits the computed corridor, and the optimized conversion descends slightly through 15-90 kt.
 
-**Next:**
-- Rotor in-plane force, a rotor-speed schedule and rotor disc tilt in the trajectory model.
-- Linearized models at the corridor trim points as the first control-law step.
-- Then 6-DOF.
+**Hand-off: flight dynamics and control**
+- Extend the trim and trajectory models with the rotor in-plane force, a rotor-speed schedule and rotor disc tilt.
+- Linearize at the corridor trim points and start control-law design: conversion scheduling, pitch and speed hold.
+- Move to a 6-DOF tiltrotor simulation for handling qualities and failure transients.
 
 ![Computed conversion corridor](docs/figures/conversion_corridor.png)
 ![Trajectories in the computed conversion corridor](docs/figures/trajectory_conversion_corridor.png)
