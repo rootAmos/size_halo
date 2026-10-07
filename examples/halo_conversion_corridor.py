@@ -22,6 +22,8 @@ from examples.halo_sizing import (HaloAssumptions, HaloRequirements, build_halo_
 
 ratio_placard_speed = 1.1           # airplane-mode limit speed over the required maximum speed (assumed)
 tilts_deg = (0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0)
+# Plot labels for the limit names in `CorridorLimits` margins; others print with underscores as spaces.
+labels_limit = {"disc_tilt": "rotor pitch limit", "pitch_max": "attitude max", "pitch_min": "attitude min"}
 
 
 def halo_corridor_case(sizing, requirements=HaloRequirements(), assumptions=HaloAssumptions()):
@@ -105,7 +107,8 @@ def plot_corridor(corridor, sizing, model, path):
             names = [n for n in bound.binding if n not in ("hover",)]
             if names:
                 offset = -3 if align == "right" else 3
-                ax.annotate(", ".join(n.replace("_", " ") for n in names), (bound.velocity_m_s / u.knot, bound.tilt_deg),
+                ax.annotate(", ".join(labels_limit.get(n, n.replace("_", " ")) for n in names),
+                            (bound.velocity_m_s / u.knot, bound.tilt_deg),
                             xytext=(offset, 4), textcoords="offset points", ha=align, fontsize=7, color="#333333")
     ax.set_xlabel("True airspeed (kt)")
     ax.set_ylabel("Nacelle angle (deg, 90 = hover)")
@@ -113,7 +116,7 @@ def plot_corridor(corridor, sizing, model, path):
     ax.set_xlim(left=0)
     ax.set_ylim(-3, 95)
     ax.grid(alpha=0.3)
-    ax.legend(loc="lower left", fontsize=8)
+    ax.legend(loc="upper right", fontsize=8)
     fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)
