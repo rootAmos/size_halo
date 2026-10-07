@@ -234,9 +234,11 @@ Approach and effort for each next step: [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)
 **Doesn't do**
 - The corridor and trajectories are not part of the sizing; they are flown on the sized aircraft afterwards.
 - No 6-DOF and no lateral trim. No rotor in-plane force or rotor-speed schedule in the corridor.
+- The trajectory model has no cyclic, so it is stricter than the trim: no level, constant-acceleration conversion
+  fits the computed corridor, and the optimized conversion descends slightly through 15-90 kt.
 
 **Next:**
-- Rotor in-plane force and a rotor-speed schedule.
+- Rotor in-plane force, a rotor-speed schedule and cyclic in the trajectory model.
 - Linearized models at the corridor trim points as the first control-law step.
 - Then 6-DOF.
 
@@ -269,8 +271,6 @@ Approach and effort for each next step: [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)
   - **Drag:** AeroBuildup and an independent Scholz hand build-up agree within about 2 % in CD0.
 - **Cross-checks from another direction:** OpenVSP geometry and VSPAERO against AeroSandbox, a structural layout
   back-check of the weight equations, and a CalculiX finite-element check of the wing box.
-
-![JVX proprotor calibration](docs/figures/rotor_jvx_calibration.png)
 
 ## Running it
 
