@@ -69,8 +69,36 @@ input, not a design variable.
 - In conversion, the optimized transition rides the low-speed side of the computed corridor; no level,
   constant-acceleration conversion fits inside it.
 
-Every aircraft sized during development is a numbered version and stays reproducible:
-[aircraft versions](docs/AIRCRAFT_VERSIONS.md).
+## Aircraft versions
+
+Every aircraft sized during development is a numbered version and stays reproducible from a named
+requirement and assumption set. A major version means a new definition (configuration or requirements), and a minor
+version means the same definition re-sized with better models. Patch versions are side studies or a parallel line.
+The table below shows the main line plus the layout line that merged into the baseline; the full list, with how to
+reproduce each version, is in [aircraft versions](docs/AIRCRAFT_VERSIONS.md).
+
+**Requirements used to size each version.** Every version carries 1,984 lb (900 kg) over 445 nm, a 13,000 ft
+ceiling, a 4,000 ft out-of-ground-effect hover, a 60 s engine-out hover, stall at or below 120 kt and a 20 min
+reserve loiter, except where the table says otherwise.
+
+| Version | Take-off weight | Requirements used to size it | What changed |
+|---|---|---|---|
+| v1.0 | 18,740 lb | 250 kt; engines sized freely | First Halo-class sizing: two-rotor series hybrid, actuator-disk rotor |
+| v1.1 | 18,506 lb | as v1.0 | Supplied 1,120 hp deck part-power fuel curve |
+| v1.2 | 17,228 lb | as v1.0 | Rotor-speed physics calibrated on JVX proprotor data |
+| v2.0 | 14,877 lb | **210 kt; engines fixed at 2 × 1,120 hp** (250 kt is infeasible with them) | Battery-assisted hover, in-flight recharge |
+| v2.1 | 13,760 lb | as v2.0 | Electric machines sized by torque; machine speed and gear ratio as design variables |
+| v3.0 | 13,760 lb | as v2.0, **plus a hot-day hover at the destination** (4,000 ft, ISA + 50 °F) | Temperature lapse; the hot day is not yet binding |
+| v3.0.2 | 14,436 lb | as v3.0, but **1,720 lb (780 kg) payload** | Equivalent-circuit battery; 1,984 lb (900 kg) did not close with the light-aircraft wing equations |
+| v3.0.3 | 13,546 lb | as v3.0.2 | NDARC/AFDD tiltrotor wing with whirl-flutter margins |
+| v3.1 | 14,247 lb | as v3.0 (payload back to 1,984 lb) | Equivalent-circuit battery and AFDD wing on the full payload |
+| v3.2 | 13,639 lb | as v3.0 | AeroBuildup aerodynamics replace the simple polar and a guessed drag area |
+| v3.3 | 14,037 lb | as v3.0 | Thermal model: heat exchanger, cooling drag, short-time machine ratings |
+| v3.3.4 | 12,821 lb | as v3.0 | Layout line: fuselage anchored to the drawn layout, turbogenerators in the fuselage, boxy 36 ft fuselage |
+| v3.3.5 | 13,038 lb | as v3.0 | Layout line: AFDD spar caps at the real box depth, 1 mm minimum gauge, nacelle inertia from components |
+| v3.4 | 16,231 lb | as v3.0, **plus bus-out and string-out failure hovers** | Whole units of real machines, 2 lanes/2 buses/2 strings redundancy, gearbox stages, drag corrections |
+| v3.5 | 16,303 lb | as v3.4 | Trim drag from the tail load |
+| **v3.6 (baseline)** | **15,179 lb** | as v3.4 (the baseline table above) | Layout line (v3.3.4, v3.3.5) merged into v3.5, with every model on |
 
 ## What it does
 
@@ -155,9 +183,11 @@ In rough order of how much each could move the answer:
    test. Drag drives payload headroom more than anything else.
 3. **Weight calibration rests on one complete aircraft.** The fuselage needs a factor of about 2 and flight controls
    about 4. These are the largest sensitivities (about ±540 lb each for ±15 %).
-4. **The wing is not closed structurally.** The finite-element check puts jump take-off spar-cap strain at 1.10 of
-   the allowable, and wing torsion is not cleanly separated from nacelle modes. The check was last run on an
-   earlier version (v3.3.5, 13,038 lb), not the baseline.
+4. **Wing strength at ultimate load is not demonstrated.** The linear finite-element check (run on v3.3.5,
+   13,038 lb, not yet on the baseline) puts the peak front spar-cap strain in the jump take-off 10 % above the
+   ultimate allowable: a negative margin. It is not torsion; with the 1.33 XV-15 calibration material modelled the
+   peak falls to 0.83 of the allowable; the idealized root clamp adds shear lag at the front spar; buckling of the
+   unstiffened 1 mm covers is not analysed, and the torsion mode is not cleanly identified.
 5. **The electrical layer is built but off by default.** Inverters, cables and protection add about 730 lb (330 kg) and 3 %
    losses; with every option on, the problem converges only through the multistart strategy.
 6. **Failures are single and symmetric.** Double failures did not converge (not shown infeasible), and degraded
@@ -172,8 +202,9 @@ Approach and effort for each are in [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md).
 
 1. **Whirl flutter inside the optimization:** a coupled rotor-pylon-wing stability model written in CasADi, so the
    optimizer trades wing thickness, spar caps, nacelle station and pylon inertia directly against flutter speed.
-2. **Close the wing:** re-run the finite-element check on the baseline, fold the cap-depth and skin corrections
-   into the sizing, and identify torsion from mode shapes.
+2. **Close the wing:** support the root on fittings, model the calibrated structure and add a buckling step; size
+   stiffened covers and webs and enforce a cap-strain margin of at least zero in the sizing; re-run on the
+   baseline and identify torsion from mode shapes.
 3. **Anchor drag** to the XV-15 power-required curve, then airplane-mode rotor efficiency.
 4. **A second weight anchor** for the fuselage and flight controls, ideally an uncrewed fly-by-wire aircraft, to
    replace the 2× and 4× factors.
