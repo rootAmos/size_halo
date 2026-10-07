@@ -151,8 +151,11 @@ Approach and effort for each next step: [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)
 **Does**
 - AeroSandbox AeroBuildup in the sizing, with Scholz excrescence corrections, trim drag from the tail load, the blown
   wing and hover download. An independent Scholz hand build-up agrees within about 2 % in CD0.
-- Proprotor: momentum plus profile power with tip-Mach rise, fitted to full-scale JVX data (figure of merit within
-  0.012, cruise efficiency within 0.013).
+- Proprotor: an analytic momentum-plus-profile-power model (neither an actuator disk nor a deck). One blade drag
+  polar covers hover and airplane mode, with an airplane-mode increment and tip-Mach limits. It is fitted by least
+  squares to the full-scale JVX proprotor test,
+  [NASA/TM-2016-219070](https://ntrs.nasa.gov/citations/20160004035): figure of merit within 0.012, cruise
+  efficiency within 0.013. The simpler actuator-disk rotor is kept as an option.
 - Cross-check of the same geometry in OpenVSP VSPAERO (vortex lattice and panel) and its parasite-drag build-up.
 
 **Doesn't do**
@@ -163,9 +166,15 @@ Approach and effort for each next step: [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)
   scales its pitch effectiveness in the trim-drag model, and Scholz's V-tail interference factor applies to its
   drag. The baseline, however, sets the dihedral to 0° and sizes a conventional horizontal and vertical tail; the
   V-tail is only drawn.
-- Airplane-mode rotor efficiency comes from the JVX test, not flight data.
+- Airplane-mode rotor efficiency comes from the JVX test, not flight data. The rotor model has no blade stall, so
+  in cruise its power keeps falling as the rotor slows. The cruise rotor speed is therefore set by the model's
+  validity bounds (advance ratio at most 0.6, blade loading), not by physics.
 
-**Next:** anchor drag and cruise rotor efficiency to the XV-15 power-required curve, then size the V-tail.
+**Next**
+- Anchor drag and cruise rotor efficiency to the XV-15 power-required curve.
+- A blade-element (BEM) proprotor with blade stall, so the physics, not the validity bounds, sets the cruise rotor
+  speed, and the twist and chord trade between hover and cruise becomes visible. JVX stays the validation case.
+- Size the V-tail with its effectiveness factor.
 
 ![Drag polar by model](docs/figures/drag_polar_models.png)
 ![JVX proprotor calibration](docs/figures/rotor_jvx_calibration.png)
