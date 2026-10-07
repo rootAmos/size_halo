@@ -234,11 +234,11 @@ Approach and effort for each next step: [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)
 **Doesn't do**
 - The corridor and trajectories are not part of the sizing; they are flown on the sized aircraft afterwards.
 - No 6-DOF and no lateral trim. No rotor in-plane force or rotor-speed schedule in the corridor.
-- The trajectory model has no cyclic, so it is stricter than the trim: no level, constant-acceleration conversion
-  fits the computed corridor, and the optimized conversion descends slightly through 15-90 kt.
+- The trajectory model has no rotor disc tilt, so it is stricter than the trim: no level, constant-acceleration
+  conversion fits the computed corridor, and the optimized conversion descends slightly through 15-90 kt.
 
 **Next:**
-- Rotor in-plane force, a rotor-speed schedule and cyclic in the trajectory model.
+- Rotor in-plane force, a rotor-speed schedule and rotor disc tilt in the trajectory model.
 - Linearized models at the corridor trim points as the first control-law step.
 - Then 6-DOF.
 
