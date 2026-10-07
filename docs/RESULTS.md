@@ -45,8 +45,8 @@ Diagrams of the layering, the fidelity scaling and the solve levels:
 
 | Check | What it shows |
 |---|---|
-| About 560 unit tests (`uv run python -m unittest discover -s tests`) | Closed-form identities, limiting cases, sign conventions and trends for every model. Every model is also exercised symbolically inside `asb.Opti` (CasADi compatibility). Integration tests pin each reference result. |
-| Six executed discipline notebooks (`notebooks/`) | The reference and each discipline's models as numbered checks with plots. |
+| 658 unit tests (`uv run python -m unittest discover -s tests`) | Closed-form identities, limiting cases, sign conventions and trends for every model. Every model is also exercised symbolically inside `asb.Opti` (CasADi compatibility). Integration tests pin each reference result. |
+| Six executed discipline notebooks (`notebooks/`) | The baseline design and each discipline's models as numbered checks with plots. |
 | CI (`.github/workflows/tests.yml`) | The test suite on every push. |
 
 ### External validation
@@ -100,11 +100,11 @@ Diagrams of the layering, the fidelity scaling and the solve levels:
 GASP deck). The engines are not sized, because a non-OEM cannot add
 turbine power. The battery supplements hover and is recharged in flight.
 
-### Reference result (`solve_halo_sizing()`, every model on)
+### Baseline design, v3.6 (`solve_halo_sizing()`, every model on)
 
-The combined reference: plans 035–036 (real machine units, redundancy, drag
+The baseline design, v3.6: v3.5 (real machine units, redundancy, drag
 corrections, trim from the tail load) together with the geometry and layout
-line (plans 031–038).
+line (v3.3.4 and v3.3.5). See [aircraft versions](AIRCRAFT_VERSIONS.md).
 
 | Quantity | Value |
 |---|---|
@@ -169,19 +169,19 @@ These are the constraints active at the optimum:
 
 ## 4. How the answer moved as fidelity was added
 
-| Step | Payload | Take-off mass | What changed |
+| Version | Payload | Take-off mass | What changed |
 |---|---|---|---|
-| Tier 10c | 900 kg at 250 kt | 18,740 lb | Engines sized freely; actuator-disk rotor |
-| Tier 12 | 900 kg at 250 kt | 17,228 lb | Rotor-speed physics (JVX-calibrated) |
-| Tier 12b | 900 kg at 210 kt | 14,877 lb | Engines fixed at 2 × 1,120 hp; 250 kt is infeasible with them (payload reaches zero near 228 kt) |
-| Tiers 13–16 | 900 kg | 13,760 lb | Torque-sized machines and gear ratio; hot-and-high hover |
-| Plan 022 | 780 kg | 14,436 lb | Equivalent-circuit battery: the realistic pack cannot carry 900 kg with the light-aircraft wing equations |
-| Plan 026 | 900 kg | 14,247 lb | NDARC tiltrotor wing replaces the light-aircraft wing equations |
-| Plan 027 | 900 kg | 13,639 lb | AeroBuildup aerodynamics: the guessed 0.8 m² miscellaneous drag area was most of the aircraft's drag |
-| Plan 030 | 900 kg | 14,037 lb | Thermal model: heat exchanger +133 kg; short-time ratings save 63 kg of machines |
-| Plan 035 | 900 kg | 16,231 lb | **Real machine units instead of idealized ("rubber") scaling; redundancy (2 lanes, 2 buses, 2 strings); drag corrections for excrescence and trim** |
-| Plan 036 | 900 kg | 16,303 lb | Trim drag from the tail load (η_H 0.9, cos tail dihedral, Scholz downwash) replaces the flat 2 % |
-| **Combined** | **900 kg** | **15,179 lb** | **Geometry and layout line merged (plans 031–038): fuselage weight anchored to a drawn structural layout, turbogenerators in the fuselage, AFDD spar caps at the real box depth with a minimum gauge, nacelle inertia built from components. Lighter mainly in the fuselage and systems groups** |
+| v1.0 | 900 kg at 250 kt | 18,740 lb | Engines sized freely; actuator-disk rotor |
+| v1.2 | 900 kg at 250 kt | 17,228 lb | Rotor-speed physics (JVX-calibrated) |
+| v2.0 | 900 kg at 210 kt | 14,877 lb | Engines fixed at 2 × 1,120 hp; 250 kt is infeasible with them (payload reaches zero near 228 kt) |
+| v2.1, v3.0 | 900 kg | 13,760 lb | Torque-sized machines and gear ratio; hot-and-high hover |
+| v3.0.2 | 780 kg | 14,436 lb | Equivalent-circuit battery: the realistic pack cannot carry 900 kg with the light-aircraft wing equations |
+| v3.1 | 900 kg | 14,247 lb | NDARC tiltrotor wing replaces the light-aircraft wing equations |
+| v3.2 | 900 kg | 13,639 lb | AeroBuildup aerodynamics: the guessed 0.8 m² miscellaneous drag area was most of the aircraft's drag |
+| v3.3 | 900 kg | 14,037 lb | Thermal model: heat exchanger +133 kg; short-time ratings save 63 kg of machines |
+| v3.4 | 900 kg | 16,231 lb | **Real machine units instead of idealized ("rubber") scaling; redundancy (2 lanes, 2 buses, 2 strings); drag corrections for excrescence and trim** |
+| v3.5 | 900 kg | 16,303 lb | Trim drag from the tail load (η_H 0.9, cos tail dihedral, Scholz downwash) replaces the flat 2 % |
+| **v3.6 (baseline)** | **900 kg** | **15,179 lb** | **Geometry and layout line (v3.3.4, v3.3.5) merged: fuselage weight anchored to a drawn structural layout, turbogenerators in the fuselage, AFDD spar caps at the real box depth with a minimum gauge, nacelle inertia built from components. Lighter mainly in the fuselage and systems groups** |
 
 Two outcomes stand out:
 
@@ -195,18 +195,18 @@ Two outcomes stand out:
     13,000 rpm behind a roughly 32:1 gearbox.
   - Built from whole units of real best-in-class products, it chooses slow,
     stacked axial-flux motors behind a single 5:1 stage.
-  - A 21-machine supplier database (plan 033) shows torque density falls
+  - A 21-machine supplier database shows torque density falls
     only weakly with speed across the fleet. The best low-speed machines
     (Evolito, Siemens SP200D) sit 1.5–1.8× above that trend.
 
 ## 5. Trajectory optimization (Tier 14)
 
-Since plan 036 the trajectory model flies the current reference. It
+Since v3.5 the trajectory model flies the current design. It
 carries machine and battery temperature states with short-time ratings,
 cooling drag and fan power, and the lane motors.
 
-On the 15,179 lb reference, flown inside the computed conversion corridor
-(plan 039; `examples/halo_trajectory_computed_corridor.py`):
+On the baseline design (v3.6), flown inside the computed conversion corridor
+(`examples/halo_trajectory_computed_corridor.py`):
 
 - **Minimum-energy conversion** from hover at 500 ft to 1.3 × the
   airplane-mode stall speed: 21.9 s and 9.6 kWh. It rides the corridor's
@@ -226,7 +226,7 @@ On the 15,179 lb reference, flown inside the computed conversion corridor
 1. **Drag calibration.** The excrescence factor is calibrated so the
    XV-15 components match NASA NDARC's drag (1.27 on AeroBuildup, plan
    034). Trim drag comes from the tail load needed for zero moment about
-   the CG (plan 036): AeroBuildup's moment, Scholz's tail efficiency
+   the CG: AeroBuildup's moment, Scholz's tail efficiency
    (0.9) and downwash, about 2 % of drag at cruise. Neither is checked against XV-15 flight data, and drag
    strongly drives payload headroom.
 2. **Weight calibration rests on one complete aircraft.** The XV-15 is the
@@ -270,17 +270,17 @@ On the 15,179 lb reference, flown inside the computed conversion corridor
 ```powershell
 uv sync
 uv run python -m unittest discover -s tests          # about 500 tests, 10–17 min
-uv run python -m examples.halo_sizing                # the reference (about 10 min from cold)
+uv run python -m examples.halo_sizing                # the baseline design (about 10 min from cold)
 ```
 
 Run a discipline notebook with Jupyter to reproduce its checks, e.g.
 `notebooks/02_powertrain.ipynb`.
 
-- **Earlier references:** the named sets in `examples/halo_sizing.py`
-  reproduce each previous reference. Examples:
-  - `requirements_plan030` with `assumptions_plan030` gives 14,037 lb;
-  - `requirements_plan027` with `assumptions_plan027` gives 13,639 lb;
-  - `requirements_tier16` with `assumptions_tier16` gives 13,760 lb.
+- **Earlier versions:** the named sets in `examples/halo_sizing.py`
+  reproduce each earlier aircraft version ([aircraft versions](AIRCRAFT_VERSIONS.md)). Examples:
+  - `requirements_plan030` with `assumptions_plan030` gives v3.3, 14,037 lb;
+  - `requirements_plan027` with `assumptions_plan027` gives v3.2, 13,639 lb;
+  - `requirements_tier16` with `assumptions_tier16` gives v3.0, 13,760 lb.
 - **Parallel runs:** set `OMP_NUM_THREADS=1` when running several solves
   at once. Threaded BLAS under contention makes IPOPT fail spuriously.
 

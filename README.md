@@ -7,7 +7,7 @@ and every model is checked against public tiltrotor data before it is trusted.
 > All numbers are illustrative engineering inputs drawn from public sources. Nothing here is Archer or Halo data.
 > See [assumptions](docs/HALO_REFERENCE.md).
 
-## The baseline design (VERSION_BASELINE)
+## The baseline design (v3.6)
 
 | | |
 |---|---|
@@ -154,7 +154,7 @@ In rough order of how much each could move the answer:
    about 4. These are the largest sensitivities (about ±540 lb each for ±15 %).
 4. **The wing is not closed structurally.** The finite-element check puts jump take-off spar-cap strain at 1.10 of
    the allowable, and wing torsion is not cleanly separated from nacelle modes. The check was last run on an
-   earlier version (FE_VERSION, 13,038 lb), not the baseline.
+   earlier version (v3.3.5, 13,038 lb), not the baseline.
 5. **The electrical layer is built but off by default.** Inverters, cables and protection add about 330 kg and 3 %
    losses; with every option on, the problem converges only through the multistart strategy.
 6. **Failures are single and symmetric.** Double failures did not converge (not shown infeasible), and degraded
