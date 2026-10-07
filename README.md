@@ -71,8 +71,36 @@ The model works in SI internally; [docs/RESULTS.md](docs/RESULTS.md) gives the S
 - In conversion, the optimized transition rides the low-speed side of the computed corridor; no level,
   constant-acceleration conversion fits inside it.
 
-Every aircraft sized during development is a numbered version and stays reproducible:
-[aircraft versions](docs/AIRCRAFT_VERSIONS.md).
+## Aircraft versions
+
+Every aircraft sized during development is a numbered version and stays reproducible from a named
+requirement and assumption set. A major version means a new definition (configuration or requirements), and a minor
+version means the same definition re-sized with better models. Patch versions are side studies or a parallel line.
+The table below shows the main line plus the layout line that merged into the baseline; the full list, with how to
+reproduce each version, is in [aircraft versions](docs/AIRCRAFT_VERSIONS.md).
+
+**Requirements used to size each version.** Every version carries 1,984 lb (900 kg) over 445 nm, a 13,000 ft
+ceiling, a 4,000 ft out-of-ground-effect hover, a 60 s engine-out hover, stall at or below 120 kt and a 20 min
+reserve loiter, except where the table says otherwise.
+
+| Version | Take-off weight | Requirements used to size it | What changed |
+|---|---|---|---|
+| v1.0 | 18,740 lb | 250 kt; engines sized freely | First Halo-class sizing: two-rotor series hybrid, actuator-disk rotor |
+| v1.1 | 18,506 lb | as v1.0 | Supplied 1,120 hp deck part-power fuel curve |
+| v1.2 | 17,228 lb | as v1.0 | Rotor-speed physics calibrated on JVX proprotor data |
+| v2.0 | 14,877 lb | **210 kt; engines fixed at 2 × 1,120 hp** (250 kt is infeasible with them) | Battery-assisted hover, in-flight recharge |
+| v2.1 | 13,760 lb | as v2.0 | Electric machines sized by torque; machine speed and gear ratio as design variables |
+| v3.0 | 13,760 lb | as v2.0, **plus a hot-day hover at the destination** (4,000 ft, ISA + 50 °F) | Temperature lapse; the hot day is not yet binding |
+| v3.0.2 | 14,436 lb | as v3.0, but **1,720 lb (780 kg) payload** | Equivalent-circuit battery; 900 kg did not close with light-aircraft wing equations |
+| v3.0.3 | 13,546 lb | as v3.0.2 | NDARC/AFDD tiltrotor wing with whirl-flutter margins |
+| v3.1 | 14,247 lb | as v3.0 (payload back to 1,984 lb) | Equivalent-circuit battery and AFDD wing on the full payload |
+| v3.2 | 13,639 lb | as v3.0 | AeroBuildup aerodynamics replace the simple polar and a guessed drag area |
+| v3.3 | 14,037 lb | as v3.0 | Thermal model: heat exchanger, cooling drag, short-time machine ratings |
+| v3.3.4 | 12,821 lb | as v3.0 | Layout line: fuselage anchored to the drawn layout, turbogenerators in the fuselage, boxy 36 ft fuselage |
+| v3.3.5 | 13,038 lb | as v3.0 | Layout line: AFDD spar caps at the real box depth, 1 mm minimum gauge, nacelle inertia from components |
+| v3.4 | 16,231 lb | as v3.0, **plus bus-out and string-out failure hovers** | Whole units of real machines, 2 lanes/2 buses/2 strings redundancy, gearbox stages, drag corrections |
+| v3.5 | 16,303 lb | as v3.4 | Trim drag from the tail load |
+| **v3.6 (baseline)** | **15,179 lb** | as v3.4 (the requirements table above) | Layout line (v3.3.4, v3.3.5) merged into v3.5, with every model on |
 
 ## What it does
 
