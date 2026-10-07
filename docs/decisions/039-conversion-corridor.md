@@ -4,7 +4,7 @@
 
 Replace the assumed XV-15-shaped conversion corridor with one computed from the sized aircraft: at each nacelle
 angle, the airspeeds for which a level-flight trim exists inside stated limits, the limit that sets each side, and
-a trim schedule (attitude, tail deflection, cyclic, thrust, power) through it. This is the first controls product
+a trim schedule (attitude, tail deflection, disc tilt, thrust, power) through it. This is the first controls product
 for the transition and the input a control-law or 6-DOF study would start from.
 
 ## Scope
@@ -17,7 +17,7 @@ flapping dynamics, CG travel with nacelle angle, the corridor as a sizing constr
 ## Model
 
 Unknowns per trim: thrust per rotor T, attitude alpha (= pitch, zero flight-path angle), tail deflection delta,
-cyclic fraction f (tip-path-plane tilt theta = f theta_max sin(tau), washed out toward airplane mode).
+disc-tilt fraction f (tip-path-plane tilt theta = f theta_max sin(tau), washed out toward airplane mode).
 Equations: F_x = 0, F_z = 0 (wind axes), M_y = 0 about the CG. Forces from `TiltrotorPointMass` with the thrust
 along the tip-path plane; tail-deflection lift and aerodynamic moment from `LongitudinalStability`; rotor moment
 from the thrust at the hub (`moment_rotor_Nm`). The free freedom is spent on least rotor power.
@@ -31,7 +31,7 @@ equations and limits as constraints. The binding limit is the one with zero norm
 |---|---|---|
 | Pitch attitude | -5 to +12 deg | low side (wing-borne, and forward thrust at mid nacelle angles) |
 | Ruddervator deflection | +/- 25 deg | trim authority |
-| Longitudinal cyclic | +/- 10 deg x sin(tau) | trim authority in helicopter mode |
+| Rotor disc tilt | +/- 10 deg x sin(tau) | trim authority in helicopter mode |
 | Wing stall (free stream, above 10 m/s) | model alpha_stall | low side |
 | Edgewise advance ratio V sin(alpha + tau) / (Omega R) | 0.28 | high side at high nacelle angles (flapping, hub and pylon loads proxy) |
 | Rotor shaft power | rotor drive rating | high side |
@@ -50,9 +50,9 @@ reported, not limited; near hover it is the download, which the force model alre
 
 ## Tests (`tests/trajectory/test_corridor.py`)
 
-Rotor-moment signs, zero moment through the spindle, cyclic moment identity, symbolic solve; hover trim
-(level, no cyclic, n T (1 - f_dl) = W); hover CG offset needs cyclic atan(dx / h) and equal nose-up pitch;
-helicopter-mode high side at mu_max; airplane-mode low side at the attitude limit with cyclic washed out and high
+Rotor-moment signs, zero moment through the spindle, disc-tilt moment identity, symbolic solve; hover trim
+(level, no disc tilt, n T (1 - f_dl) = W); hover CG offset needs disc tilt atan(dx / h) and equal nose-up pitch;
+helicopter-mode high side at mu_max; airplane-mode low side at the attitude limit with disc tilt washed out and high
 side at the placard; trends with nacelle angle and with the edgewise limit; tail sign.
 
 ## Progress

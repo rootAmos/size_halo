@@ -29,8 +29,8 @@ class RotorMomentTests(unittest.TestCase):
         for tilt_deg in (0.0, 30.0, 75.0, 90.0):
             self.assertAlmostEqual(moment_rotor_Nm(1e4, tilt_deg, tilt_deg, geometry_level), 0.0, places=6)
 
-    def test_cyclic_tilt_at_the_hub(self):
-        """In hover, cyclic theta at a hub h above the CG: M = T h sin(theta) (thrust tilted forward pitches down)."""
+    def test_disc_tilt_at_the_hub(self):
+        """In hover, disc tilt theta at a hub h above the CG: M = T h sin(theta) (thrust tilted forward pitches down)."""
         moment_Nm = moment_rotor_Nm(1e4, 90.0, 85.0, geometry_level)
         self.assertAlmostEqual(moment_Nm, -1e4 * 1.0 * np.sind(5.0), places=6)
 
@@ -103,22 +103,22 @@ class CorridorTests(unittest.TestCase):
                                     side=side, **self.common)
 
     def test_hover_trim(self):
-        """At V = 0, tilt 90 deg with the CG under the spindle: level attitude, no cyclic, n T (1 - f_dl) = W."""
+        """At V = 0, tilt 90 deg with the CG under the spindle: level attitude, no disc tilt, n T (1 - f_dl) = W."""
         trim = solve_trim(self.model, self.stability, self.geometry, self.limits, velocity_m_s=0.0, tilt_deg=90.0,
                           **self.common)
         self.assertAlmostEqual(trim.pitch_deg, 0.0, places=4)
-        self.assertAlmostEqual(trim.cyclic_deg, 0.0, places=4)
+        self.assertAlmostEqual(trim.tilt_disc_deg, 0.0, places=4)
         self.assertAlmostEqual(2 * trim.thrust_per_rotor_N * (1 - trim.download_fraction),
                                6000.0 * acceleration_gravity_m_s2, delta=1.0)
 
-    def test_hover_cg_offset_needs_cyclic(self):
-        """CG 0.2 m aft of the spindle in hover, the tail powerless: the thrust must pass through the CG, so cyclic
+    def test_hover_cg_offset_needs_disc_tilt(self):
+        """CG 0.2 m aft of the spindle in hover, the tail powerless: the thrust must pass through the CG, so the disc
         tilts it forward by atan(0.2 / h) at a hub h = 1.6 m above the CG, and the fuselage pitches nose-up by the
         same angle to keep the thrust vertical."""
         aft = replace(self.geometry, x_cg_m=self.geometry.x_cg_m + 0.2)
         trim = solve_trim(self.model, self.stability, aft, self.limits, velocity_m_s=0.0, tilt_deg=90.0, **self.common)
-        self.assertAlmostEqual(trim.cyclic_deg, -np.degrees(np.arctan(0.2 / 1.6)), places=3)
-        self.assertAlmostEqual(trim.pitch_deg, -trim.cyclic_deg, places=3)
+        self.assertAlmostEqual(trim.tilt_disc_deg, -np.degrees(np.arctan(0.2 / 1.6)), places=3)
+        self.assertAlmostEqual(trim.pitch_deg, -trim.tilt_disc_deg, places=3)
 
     def test_helicopter_mode_high_side_is_edgewise(self):
         """At 90 deg the high side is the edgewise advance-ratio limit: V cos(alpha) = mu_max Omega R."""
@@ -131,10 +131,10 @@ class CorridorTests(unittest.TestCase):
                                self.limits.advance_ratio_edgewise_max * tip_m_s, delta=1.0)
 
     def test_airplane_mode_bounds(self):
-        """At 0 deg cyclic is washed out; the low side is the attitude (wing-borne) limit, the high side the placard."""
+        """At 0 deg disc tilt is washed out; the low side is the attitude (wing-borne) limit, the high side the placard."""
         low, high = self.bound(0.0, "low"), self.bound(0.0, "high")
         self.assertIn("pitch_max", low.binding)
-        self.assertAlmostEqual(low.trim.cyclic_deg, 0.0, places=6)
+        self.assertAlmostEqual(low.trim.tilt_disc_deg, 0.0, places=6)
         self.assertIn("placard_speed", high.binding)
         self.assertAlmostEqual(high.velocity_m_s, 120.0, places=2)
 

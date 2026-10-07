@@ -1643,7 +1643,7 @@ The reference is **13,038 lb** (+217 lb on plan 032).
 `aircraft_closure.trajectory.corridor`.
 
 **Level-flight trim:**
-- Unknowns: thrust per rotor, attitude, tail deflection, and a cyclic fraction. The tip-path-plane tilt is
+- Unknowns: thrust per rotor, attitude, tail deflection, and a disc-tilt fraction. The tip-path-plane tilt is
   theta = f theta_max sin(tau).
 - Equations: F_x = 0, F_z = 0 and M_y = 0 about the CG, built in a caller's Opti (`build_trim`).
 - Forces come from `TiltrotorPointMass` with the thrust along the tip-path plane. The tail lift from deflection
@@ -1661,12 +1661,12 @@ the one with zero normalized margin. Each bound solves in about 3 s.
 
 **Mid-corridor trim schedule:**
 - Pitch 4-8 deg and tail -4 to -5 deg from 0 to 60 deg.
-- At 90 deg and 65 kt, the tail is at -25 deg (its limit) and cyclic at -8.5 deg.
+- At 90 deg and 65 kt, the tail is at -25 deg (its limit) and disc tilt at -8.5 deg.
 
 **Decisions:**
 - Stall is limited only on the unblown wing at the free-stream angle, above 10 m/s. The blown wing's local angle
   is reported; near hover it is the download, which the force model already carries.
-- Cyclic washes out toward airplane mode (XV-15 practice). Without the washout it acted as free thrust vectoring.
+- Disc tilt washes out toward airplane mode (XV-15 practice). Without the washout it acted as free thrust vectoring.
 - The placard is 1.1 x the required maximum speed. The first run used the solved cruise speed (182 kt), which is
   too low.
 

@@ -8,12 +8,12 @@ normal to the velocity and the pitching moment about the CG vanish:
     M_y = M_aero(alpha, delta) + M_rotor(T, tau, theta)                       = 0
 
 with four unknowns: thrust per rotor T, attitude alpha (= pitch; zero flight-path angle), tail deflection delta
-and longitudinal cyclic theta, the tilt of the rotor tip-path plane (and so the thrust) from the shaft. One
+and disc tilt theta, the tilt of the rotor tip-path plane (and so the thrust) from the shaft. One
 freedom is left; the trim takes the least rotor power. The corridor at each nacelle angle is the least and the
 greatest V for which a trim exists inside the limits; the limit at its bound is reported as the binding one.
 
 Forces: `TiltrotorPointMass` (rotor, wing lift and drag, download), evaluated with the thrust along the tip-path
-plane (nacelle angle + cyclic). The tail deflection adds lift q S eta (S_H / S) a_H tau_e delta; the aerodynamic
+plane (nacelle angle + disc tilt). The tail deflection adds lift q S eta (S_H / S) a_H tau_e delta; the aerodynamic
 pitching moment is `LongitudinalStability`'s (wing, fuselage, tail with the deflection). The rotor moment acts at
 the hub, a mast length from the spindle along the shaft:
 
@@ -24,7 +24,8 @@ Limits (`CorridorLimits`):
   nacelle angle the forward thrust can only be cancelled by drag or by pitching nose-up;
 * wing stall at the free-stream angle of attack (the unblown outboard wing; the blown inboard part's local angle
   of attack is reported, not limited: near hover it sees the rotor downwash, which the download model carries);
-* tail deflection (+/- 25 deg ruddervator) and cyclic travel, which washes out as sin(tau) toward airplane mode;
+* tail deflection (+/- 25 deg ruddervator) and disc tilt, a trim-authority limit rather than a structural
+  stop, which washes out as sin(tau) toward airplane mode;
 * the high-speed side: edgewise advance ratio mu = V |sin(alpha + tau)| / (Omega R), the first-order measure of
   flapping and hub and pylon loads that bound the XV-15 corridor at high nacelle angles; rotor shaft power (the
   drive rating); blade loading C_T / sigma; an airplane-mode placard speed.
@@ -32,7 +33,7 @@ Limits (`CorridorLimits`):
 
 Approximations: the rotor's edgewise flow does not change its power (as `TiltrotorPointMass`); the tail sees the
 free stream (no rotor wake or wing downwash change in conversion); the CG does not move with the nacelles; a
-gimballed rotor carries no hub moment, so cyclic acts only by tilting the thrust; the rotor's in-plane (H) force
+gimballed rotor carries no hub moment, so disc tilt acts only by tilting the thrust; the rotor's in-plane (H) force
 in edgewise flow is not modelled, which makes the low-speed side at mid nacelle angles conservative (that drag
 would help cancel the forward thrust).
 """
@@ -51,7 +52,7 @@ class CorridorLimits:
     pitch_min_deg: float = -5.0
     pitch_max_deg: float = 12.0
     deflection_max_tail_deg: float = 25.0            # ruddervator travel (decided 2026-10-05)
-    cyclic_max_deg: float = 10.0                     # longitudinal cyclic (assumed, XV-15 class)
+    tilt_max_disc_deg: float = 10.0                  # disc tilt available to trim (assumed, XV-15 class)
     advance_ratio_edgewise_max: float = 0.28         # flapping and hub-load proxy (assumed)
     velocity_placard_m_s: Any = None                 # airplane-mode limit speed; None: no placard
     blade_loading_max: Any = None                    # None: the rotor's own limit
@@ -72,7 +73,7 @@ def moment_rotor_Nm(thrust_total_N, angle_shaft_deg, angle_tip_path_deg, geometr
     """Nose-up pitching moment about the CG of the rotors' thrust acting at the hubs.
 
     `angle_shaft_deg`: nacelle angle from the fuselage x-axis (90 deg hover); `angle_tip_path_deg`: the thrust's
-    angle (shaft + cyclic). Thrust up ahead of the CG or forward below it pitches nose-up.
+    angle (shaft + disc tilt). Thrust up ahead of the CG or forward below it pitches nose-up.
     """
     forward_hub_m = (geometry.x_cg_m - geometry.x_spindle_m) + geometry.length_mast_m * np.cosd(angle_shaft_deg)
     up_hub_m = (geometry.z_spindle_m - geometry.z_cg_m) + geometry.length_mast_m * np.sind(angle_shaft_deg)
@@ -87,7 +88,7 @@ class TrimPoint:
     pitch_deg: Any
     thrust_per_rotor_N: Any
     deflection_tail_deg: Any
-    cyclic_deg: Any
+    tilt_disc_deg: Any
     power_shaft_rotor_W: Any
     blade_loading: Any
     advance_ratio_edgewise: Any
@@ -95,7 +96,7 @@ class TrimPoint:
     alpha_local_blown_deg: Any
     download_fraction: Any
     lift_wing_N: Any
-    fraction_cyclic: Any            # cyclic as a fraction of its travel at this nacelle angle
+    fraction_tilt_disc: Any         # disc tilt as a fraction of its authority at this nacelle angle
     margins: dict                   # limit name -> margin (>= 0 inside, normalized by the limit)
 
     def binding(self, tolerance=1e-3):
@@ -105,7 +106,7 @@ class TrimPoint:
 
 def build_trim(opti, model, stability, geometry, limits, *, mass_kg, velocity_m_s, tilt_deg, altitude_m,
                speed_rotor_rad_s, thrust_guess_N=None):
-    """Add one level-flight trim to `opti` (variables: pitch, thrust, tail deflection, cyclic).
+    """Add one level-flight trim to `opti` (variables: pitch, thrust, tail deflection, disc tilt).
 
     `velocity_m_s` and `tilt_deg` may themselves be Opti variables (the corridor bounds). Returns the `TrimPoint`
     of expressions; every limit is constrained.
@@ -120,11 +121,11 @@ def build_trim(opti, model, stability, geometry, limits, *, mass_kg, velocity_m_
     thrust_per_rotor_N = opti.variable(init_guess=thrust_guess_N, scale=weight_N / count_rotors, lower_bound=0.0)
     deflection_tail_deg = opti.variable(init_guess=0.0, scale=10.0, lower_bound=-limits.deflection_max_tail_deg,
                                         upper_bound=limits.deflection_max_tail_deg)
-    # Cyclic travel washes out toward airplane mode (XV-15 practice): theta = f theta_max sin(tau), |f| <= 1.
-    fraction_cyclic = opti.variable(init_guess=0.0, scale=0.5, lower_bound=-1.0, upper_bound=1.0)
-    cyclic_deg = fraction_cyclic * limits.cyclic_max_deg * np.sind(tilt_deg)
+    # Disc-tilt authority washes out toward airplane mode (XV-15 practice): theta = f theta_max sin(tau), |f| <= 1.
+    fraction_tilt_disc = opti.variable(init_guess=0.0, scale=0.5, lower_bound=-1.0, upper_bound=1.0)
+    tilt_disc_deg = fraction_tilt_disc * limits.tilt_max_disc_deg * np.sind(tilt_deg)
 
-    angle_tip_path_deg = tilt_deg + cyclic_deg
+    angle_tip_path_deg = tilt_deg + tilt_disc_deg
     forces = model.evaluate(velocity_m_s, altitude_m, pitch_deg, angle_tip_path_deg,
                             thrust_per_rotor_N=thrust_per_rotor_N, speed_rotor_rad_s=speed_rotor_rad_s)
 
@@ -164,7 +165,7 @@ def build_trim(opti, model, stability, geometry, limits, *, mass_kg, velocity_m_
         "pitch_min": (pitch_deg - limits.pitch_min_deg) / 10.0,
         "tail_deflection": (limits.deflection_max_tail_deg ** 2 - deflection_tail_deg ** 2)
         / limits.deflection_max_tail_deg ** 2,
-        "cyclic": 1 - fraction_cyclic ** 2,
+        "disc_tilt": 1 - fraction_tilt_disc ** 2,
         "wing_stall": (forces.alpha_stall_deg - pitch_deg) / 10.0,
         "edgewise_advance_ratio": (mu_max ** 2 - advance_ratio_edgewise ** 2) / mu_max ** 2,
         "rotor_power": 1 - forces.rotor.shaft_power_W / power_max_W,
@@ -176,7 +177,7 @@ def build_trim(opti, model, stability, geometry, limits, *, mass_kg, velocity_m_
     # The wing stall limit is meaningless without dynamic pressure; it applies above the coefficient floor speed.
     margins["wing_stall"] = margins["wing_stall"] + np.fmax(model.velocity_coefficient_min_m_s - velocity_m_s, 0.0)
     for name, margin in margins.items():
-        if name in ("pitch_max", "pitch_min", "cyclic"):
+        if name in ("pitch_max", "pitch_min", "disc_tilt"):
             continue                       # variable bounds
         opti.subject_to(margin >= 0)
 
@@ -188,11 +189,11 @@ def build_trim(opti, model, stability, geometry, limits, *, mass_kg, velocity_m_
 
     return TrimPoint(velocity_m_s=velocity_m_s, tilt_deg=tilt_deg, pitch_deg=pitch_deg,
                      thrust_per_rotor_N=thrust_per_rotor_N, deflection_tail_deg=deflection_tail_deg,
-                     cyclic_deg=cyclic_deg, power_shaft_rotor_W=forces.rotor.shaft_power_W,
+                     tilt_disc_deg=tilt_disc_deg, power_shaft_rotor_W=forces.rotor.shaft_power_W,
                      blade_loading=forces.rotor.blade_loading, advance_ratio_edgewise=advance_ratio_edgewise,
                      alpha_stall_deg=forces.alpha_stall_deg, alpha_local_blown_deg=alpha_local_blown_deg,
                      download_fraction=forces.download_fraction, lift_wing_N=forces.lift_N,
-                     fraction_cyclic=fraction_cyclic, margins=margins)
+                     fraction_tilt_disc=fraction_tilt_disc, margins=margins)
 
 
 def _solved(sol, point):
@@ -203,7 +204,7 @@ def _solved(sol, point):
 
 def _power_objective(point, model):
     rotor = model.instance("propulsor")
-    return point.power_shaft_rotor_W / rotor.max_shaft_power_W + 1e-3 * point.fraction_cyclic ** 2
+    return point.power_shaft_rotor_W / rotor.max_shaft_power_W + 1e-3 * point.fraction_tilt_disc ** 2
 
 
 def solve_trim(model, stability, geometry, limits, *, mass_kg, velocity_m_s, tilt_deg, altitude_m,

@@ -9,7 +9,7 @@ Finding: the minimum-energy transition rides the corridor's low-speed side from 
 (flight-path angle down to about -10 deg, inside the +/-30 m altitude band) through 15-90 kt. No level,
 constant-acceleration conversion exists inside the computed corridor: with the nacelles high enough for the
 corridor, accelerating needs a nose-down attitude beyond the trajectory model's -10 deg angle-of-attack limit (the
-trajectory model has no cyclic to tilt the thrust, unlike the trim that computes the corridor). So the naive
+trajectory model has no rotor disc tilt, unlike the trim that computes the corridor). So the naive
 prescribed transition of `examples/trajectory_optimization.py` is not flown here.
 
     python examples/halo_trajectory_computed_corridor.py   # writes output/trajectory/computed_corridor.png

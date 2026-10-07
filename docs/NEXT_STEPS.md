@@ -95,13 +95,13 @@ band, using the sensitivities CasADi already provides at the optimum, then a sam
   45-60° nacelle is conservative (89 kt at 60° against about 40-60 kt on the XV-15).
 - **An airplane-mode rotor-speed schedule.** Hover tip speed is used throughout, which is why the 0° top speed
   (219 kt) falls below the 30° one (231 kt).
-- **Cyclic in the trajectory model.** Without it the trajectory model is stricter than the trim: no level,
+- **Rotor disc tilt in the trajectory model.** Without it the trajectory model is stricter than the trim: no level,
   constant-acceleration conversion fits the computed corridor, and the optimized conversion descends slightly
   through 15-90 kt.
 
 **Then:** linearized pitch models at each trim point from CasADi Jacobians of the same equations (the plant for
 control-law design and handling-qualities checks), lateral-directional trim, and later 6-DOF dynamics with control
-allocation. **Effort:** H-force, rotor-speed schedule and cyclic about 2 days; linearized models about 1 day.
+allocation. **Effort:** H-force, rotor-speed schedule and disc tilt about 2 days; linearized models about 1 day.
 
 ## 9. Configuration and layout
 

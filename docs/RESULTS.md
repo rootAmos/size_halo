@@ -250,7 +250,7 @@ On the baseline design (v3.6), flown inside the computed conversion corridor
 6. **The trajectory model is point-mass.** 6-DOF is planned, not built
    (see the architecture diagrams). The computed conversion corridor (plan
    039) leaves out the rotor's in-plane force in edgewise flow and an
-   airplane-mode rotor-speed schedule. The trajectory model has no cyclic,
+   airplane-mode rotor-speed schedule. The trajectory model has no disc tilt,
    so it is stricter than the trim that computes the corridor.
 7. **Thermal simplifications.** The battery chiller's power is not
    modelled. Gearbox heat goes to the gearboxes' own oil coolers. Losses do

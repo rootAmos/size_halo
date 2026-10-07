@@ -68,11 +68,11 @@ def run(sizing=None, directory="output/corridor", plot=True):
     for low, high in corridor:
         text = lambda b: "-" if b.trim is None else f"{b.velocity_m_s / u.knot:7.1f}"  # noqa: E731
         print(f"{low.tilt_deg:5.0f} {text(low)}  {', '.join(low.binding):<34} {text(high)}  {', '.join(high.binding)}")
-    print(f"\nMid-corridor trim schedule\n{'tilt':>5} {'kt':>6} {'pitch':>6} {'tail':>6} {'cyclic':>7} "
+    print(f"\nMid-corridor trim schedule\n{'tilt':>5} {'kt':>6} {'pitch':>6} {'tail':>6} {'disc':>7} "
           f"{'CT/s':>6} {'mu_e':>5} {'kW/rotor':>9}")
     for t in schedule:
         print(f"{t.tilt_deg:5.0f} {t.velocity_m_s / u.knot:6.1f} {t.pitch_deg:6.1f} {t.deflection_tail_deg:6.1f} "
-              f"{t.cyclic_deg:7.1f} {t.blade_loading:6.3f} {t.advance_ratio_edgewise:5.2f} "
+              f"{t.tilt_disc_deg:7.1f} {t.blade_loading:6.3f} {t.advance_ratio_edgewise:5.2f} "
               f"{t.power_shaft_rotor_W / 1e3:9.0f}")
 
     os.makedirs(directory, exist_ok=True)

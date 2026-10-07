@@ -30,7 +30,7 @@
 | 21 | Aero: AeroBuildup model, Scholz hand check, compressibility, nacelle build-up, blown wing, download model (V-tail and conversion segments deferred) | Implemented |
 | 22 | Design-space practice: starting-point strategy (multistart), freed trades (aspect ratio, cruise altitude, reserve SOC), cost-per-mission objective, architecture enumeration, one-at-a-time sensitivity (optimization under uncertainty deferred) | Implemented |
 | 23 | Geometry: OpenVSP outer mold line (tilting nacelles), VSPAERO and parasite-drag cross-check, internal structure with FE decks, layout-based weight back-check (plan 031); symbolic layout with clearance and packaging constraints deferred | Partial |
-| 24 | Controls in conversion: computed corridor and level-flight trim with tail, cyclic, attitude, edgewise, power and placard limits (plan 039); rotor H-force, rotor speed schedule, linearized models and lateral trim deferred | Partial |
+| 24 | Controls in conversion: computed corridor and level-flight trim with tail, disc tilt, attitude, edgewise, power and placard limits (plan 039); rotor H-force, rotor speed schedule, linearized models and lateral trim deferred | Partial |
 
 Keep simple implementations when higher fidelity is introduced. Use AeroSandbox
 geometry, aero, weights and dynamics wherever suitable. Do not jump to a full

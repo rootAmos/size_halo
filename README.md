@@ -106,7 +106,7 @@ failure cases ─┘
 | Aerodynamics | AeroSandbox AeroBuildup with Scholz corrections; trim drag from the tail load; hover download |
 | Weights | AFDD rotorcraft equations (rotor, drive, engine section); NDARC tiltrotor wing with whirl-flutter frequency margins; Raymer GA elsewhere, anchored to a drawn structural layout |
 | Thermal | Heat exchanger sized with the aircraft; short-time machine ratings from thermal mass |
-| Stability and control | Neutral point, static margin, elevator trim, Cn_β, rudder for a failed rotor; conversion corridor from trim with ruddervator, cyclic, attitude, edgewise-flow, power and placard limits |
+| Stability and control | Neutral point, static margin, elevator trim, Cn_β, rudder for a failed rotor; conversion corridor from trim with ruddervator, rotor disc tilt, attitude, edgewise-flow, power and placard limits |
 | Redundancy | Lane-out, bus-out and string-out hovers |
 
 ![Computed conversion corridor](docs/figures/conversion_corridor.png)
@@ -160,8 +160,8 @@ In rough order of how much each could move the answer:
 6. **Failures are single and symmetric.** Double failures did not converge (not shown infeasible), and degraded
    states apply to both rotors, so roll trim is not modelled.
 7. **Simplifications still in the baseline:** a conventional tail in sizing (the V-tail is only drawn);
-   point-mass trajectories with no cyclic and no 6-DOF; no rotor in-plane force or rotor-speed schedule in the
-   conversion corridor; battery chiller power not modelled.
+   point-mass trajectories with no rotor disc tilt and no 6-DOF; no rotor in-plane force or rotor-speed schedule
+   in the conversion corridor; battery chiller power not modelled.
 
 ## Where I would take it next
 
@@ -180,8 +180,8 @@ Approach and effort for each are in [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md).
    cross-strapping.
 7. **Uncertainty on the answer:** propagate the calibration factors to a take-off-weight band instead of a single
    number.
-8. **Conversion controls:** rotor in-plane force, a rotor-speed schedule and cyclic in the trajectory model, then
-   linearized models at the corridor trim points as the first control-law step; V-tail in the sizing.
+8. **Conversion controls:** rotor in-plane force, a rotor-speed schedule and rotor disc tilt in the trajectory model,
+   then linearized models at the corridor trim points as the first control-law step; V-tail in the sizing.
 
 ## Running it
 
