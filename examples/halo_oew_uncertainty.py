@@ -95,15 +95,15 @@ def oew_distribution(items):
 
 
 def markdown_table(items, distribution):
-    rows = ["| Item | Weight (lb) | 1σ (%) | 1σ (lb) | Share of OEW variance | Basis |", "|---|---|---|---|---|---|"]
-    variance = distribution.sigma_lb ** 2
+    """Item build-up with each item's uncertainty and growth allowance (one sigma), and the OEW total."""
+    rows = ["| Item | Weight (lb) | Uncertainty and growth allowance, 1σ (%) | Uncertainty and growth allowance, 1σ (lb) "
+            "| Basis |", "|---|---|---|---|---|"]
     for group in ("Powertrain", "Airframe and systems"):
         for item in sorted((i for i in items if i.group == group), key=lambda i: -i.mass_kg):
-            sigma_lb = item.sigma_fraction * item.mass_kg / u.lbm
             rows.append(f"| {item.label} | {item.mass_kg / u.lbm:,.0f} | {100 * item.sigma_fraction:.1f} | "
-                        f"{sigma_lb:,.0f} | {100 * sigma_lb ** 2 / variance:.0f} % | {item.basis} |")
+                        f"{item.sigma_fraction * item.mass_kg / u.lbm:,.0f} | {item.basis} |")
     rows.append(f"| **OEW** | **{distribution.mean_lb:,.0f}** | **{100 * distribution.sigma_lb / distribution.mean_lb:.1f}**"
-                f" | **{distribution.sigma_lb:,.0f}** | 100 % | Root sum of squares, items independent |")
+                f" | **{distribution.sigma_lb:,.0f}** | Root sum of squares, items independent |")
     return "\n".join(rows)
 
 
