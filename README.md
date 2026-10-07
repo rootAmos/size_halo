@@ -50,16 +50,6 @@ The model works in SI internally; [docs/RESULTS.md](docs/RESULTS.md) gives the S
 - **Heat exchanger:** the hot-day hover.
 - **Tails:** static margin and directional stability.
 
-**Findings worth knowing:**
-
-- With these engines, payload goes to zero near 228 kt, so 250 kt is out of reach at any size.
-- A realistic (equivalent-circuit) battery costs about 510 lb (230 kg) of payload against an ideal one.
-- Real catalogue machines change the architecture, not just the mass. A freely scalable motor wants about
-  13,000 rpm behind a 32:1 gearbox; whole units of real products want slow, stacked axial-flux motors behind a
-  single stage.
-- In conversion, the optimized transition rides the low-speed side of the computed corridor; no level,
-  constant-acceleration conversion fits inside it.
-
 ## Aircraft versions
 
 Every aircraft sized during development is a numbered version and stays reproducible from a named
@@ -91,33 +81,39 @@ reserve loiter, except where the table says otherwise.
 | v3.5 | 16,303 lb | as v3.4 | Trim drag from the tail load |
 | **v3.6 (baseline)** | **15,179 lb** | as v3.4 (the requirements table above) | Layout line (v3.3.4, v3.3.5) merged into v3.5, with every model on |
 
-## What it does
+## Modules overview: What it does
 
-```
-requirements ──┐
-mission ───────┤      components return equations and residuals,
-powertrain ────┤      never variables or loops
-aero / rotor ──┼──►  ONE asb.Opti problem  ──►  IPOPT  ──►  sized aircraft + mission + energy split
-weights ───────┤      caller owns every variable, constraint
-stability ─────┤      and the objective
-thermal ───────┤
-failure cases ─┘
+```mermaid
+flowchart LR
+    REQ["<b>requirements/</b><br/>payload, range, speed,<br/>hover, failure cases"]
+    subgraph MODELS["Discipline modules: each returns equations, none solves"]
+        direction TB
+        AERO["<b>aerodynamics/</b><br/>AeroBuildup, Scholz,<br/>download, trim drag"]
+        PT["<b>powertrain/</b> + <b>core/</b><br/>rotor, motors, generators,<br/>battery, turboshaft, gearboxes<br/>joined by typed ports"]
+        WT["<b>vehicle/</b> + <b>weights/</b><br/>AFDD, Raymer,<br/>mass and CG"]
+        CTRL["<b>controls/</b><br/>static margin, trim"]
+        TH["<b>thermal/</b><br/>heat exchanger,<br/>short-time ratings"]
+    end
+    PERF["<b>performance/</b> + <b>mission/</b><br/>flight points and<br/>mission segments"]
+    OPTI{{"ONE asb.Opti problem<br/>IPOPT"}}
+    OUT["<b>Sized aircraft</b><br/>mission and energy split,<br/>named binding constraints"]
+    TRAJ["<b>trajectory/</b><br/>conversion corridor,<br/>trajectories"]
+    EXP["<b>export/openvsp/</b><br/>OpenVSP, VSPAERO,<br/>CalculiX"]
+
+    REQ --> PERF
+    MODELS -- "equations and residuals" --> PERF
+    PERF -- "constraints: mass closure, power balance,<br/>state of charge, margins" --> OPTI
+    OPTI -- "design variables: mass, wing, rotor,<br/>machines, battery, fuel, per-point operation" --> MODELS
+    OPTI --> OUT
+    OUT -. "checks after sizing" .-> TRAJ
+    OUT -. "checks after sizing" .-> EXP
 ```
 
-- **One problem, no hidden loops.** Mass closure, mission fuel and state of charge, battery-versus-generator energy
-  allocation and every failure case are constraints in the same problem. Derivatives come from CasADi automatic
-  differentiation.
-- **Typed powertrain network.** Components connect through ports (shaft, DC bus) with multiplicity, so "two lanes
-  per rotor, two buses, two strings" is a topology, not hand-written bookkeeping. Speed, torque, voltage, current
-  and power compatibility are checked as normalized margins.
-- **Named binding constraints.** Every margin has a name, so the solver reports *what* sizes the aircraft.
-- **Fidelity in layers.** Each model sits behind a simple interface, and the simple version is kept, so the effect
-  of each model on the answer is traceable
-  ([how the answer moved](docs/RESULTS.md#4-how-the-answer-moved-as-fidelity-was-added)).
-- **Conversion and trajectories.** The sized aircraft is trimmed at every nacelle angle to compute its conversion
-  corridor, then flown by direct collocation (minimum-energy transition, time to climb) inside it.
-- **Geometry and structure exports.** The sized aircraft goes to OpenVSP (outer mold line, internal structure,
-  STEP/STL), VSPAERO and CalculiX as independent checks; nothing in the sizing depends on them.
+The loop is solved all at once, not iterated. Every module returns equations in the design variables, and IPOPT
+closes mass, power, energy and every margin together, with derivatives from CasADi. The dashed modules run on
+the sized aircraft afterwards, and nothing in the sizing depends on them. Each model sits behind a simple
+interface, and the simpler version is kept, so the effect of each model on the answer is traceable
+([how the answer moved](docs/RESULTS.md#4-how-the-answer-moved-as-fidelity-was-added)).
 
 ## By discipline
 
@@ -134,11 +130,15 @@ Approach and effort for each next step: [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)
 - Point performance as requirements: hover at 4,000 ft and on a hot day, ceiling, maximum speed, stall, and 60 s
   failure hovers.
 - Mass closure with a full breakdown, and a cost per mission (about $3,300, with labelled price assumptions).
+- **Typed ports.** Each flight point is built from components connected through typed ports (shaft, DC bus)
+  with multiplicity. "Two lanes per rotor, two buses, two strings" is a topology declaration rather than
+  hand-written bookkeeping. Each connection adds its speed, torque, voltage, current and power balance as named
+  constraints.
+- **Named binding constraints.** Every margin has a name, so the solver reports *what* sizes the aircraft: for
+  example the engine-out hover battery voltage, the bus-out motor torque, or the hot-day heat rejection.
 
 **Doesn't do**
 - No payload-range diagram and no maximum endurance. Performance is computed at the design mission only.
-- No energy-flow (Sankey) diagram from fuel and battery to the rotors, although the per-segment powers and losses
-  are already in the solution.
 
 **Next**
 - A payload-range diagram and endurance: re-solve the fixed aircraft at off-design payload.
@@ -158,7 +158,11 @@ Approach and effort for each next step: [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)
 **Doesn't do**
 - Drag is not anchored to flight data. The excrescence factor matches NASA NDARC's XV-15 estimate, and drag drives
   payload headroom more than anything else.
-- No conversion-mode aerodynamics. The V-tail is drawn, but the sizing uses a conventional tail.
+- No conversion-mode aerodynamics.
+- The V-tail is not in the baseline sizing. A V-tail effectiveness factor exists: the cosine of the tail dihedral
+  scales its pitch effectiveness in the trim-drag model, and Scholz's V-tail interference factor applies to its
+  drag. The baseline, however, sets the dihedral to 0° and sizes a conventional horizontal and vertical tail; the
+  V-tail is only drawn.
 - Airplane-mode rotor efficiency comes from the JVX test, not flight data.
 
 **Next:** anchor drag and cruise rotor efficiency to the XV-15 power-required curve, then size the V-tail.
@@ -169,13 +173,70 @@ Approach and effort for each next step: [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)
 ### Powertrain
 
 **Does**
-- A typed series-hybrid network of ports and buses, with multiplicity: 2 motor lanes per rotor, 2 cross-strapped
-  buses, 2 battery strings.
+- A typed series-hybrid network, declared as components joined through ports, with multiplicity: 2 motor lanes per
+  rotor, 2 cross-strapped buses, 2 battery strings.
+
+```mermaid
+flowchart LR
+    subgraph TG["2 x turbogenerator"]
+        direction LR
+        TS["Turboshaft<br/>1,120 hp, fixed"] -- "shaft" --> GBG["Step-up<br/>gearbox"] -- "shaft" --> GEN["Generator<br/>3 units"]
+    end
+    subgraph PACK["Battery: 2 isolated strings"]
+        S1["String 1"]
+        S2["String 2"]
+    end
+    BUSA[["DC bus A"]]
+    BUSB[["DC bus B"]]
+    GEN -- "DC" --> BUSA
+    GEN -- "DC" --> BUSB
+    S1 -- "DC" --> BUSA
+    S2 -- "DC" --> BUSB
+    BUSA <-. "tie, normally open" .-> BUSB
+    subgraph ROTOR["2 x rotor"]
+        direction LR
+        LA["Motor lane 1<br/>2 units"]
+        LB["Motor lane 2<br/>2 units"]
+        GBR["Combining gearbox<br/>4.5:1"]
+        PR["Proprotor"]
+        LA -- "shaft" --> GBR
+        LB -- "shaft" --> GBR
+        GBR -- "shaft" --> PR
+    end
+    BUSA -- "DC" --> LA
+    BUSB -- "DC" --> LB
+```
+
+  **Ports.** Every component declares typed ports: a shaft port carries speed and torque, a DC port voltage and
+  current, a fuel port fuel flow. The network is written as a topology of connections with counts ("2 lanes per
+  rotor, 2 buses, 2 strings"), not as hand-written equations. From that declaration the framework does three things:
+  - it rejects wrong wiring before any solve, such as a shaft port joined to a DC port;
+  - it writes the connection equations as constraints (shared speed and torque across a shaft, the power balance on
+    each bus);
+  - it checks speed, torque, voltage, current and power compatibility as named, normalized margins.
+
+  A failure case reuses the same network with fewer active units (a lane, a bus or a string out), so redundancy
+  is a topology choice instead of new bookkeeping.
 - Components:
-  - McDonald-loss machines built from whole units of real products, chosen from a supplier database;
+  - electric machines with the loss model of McDonald, "Modeling of Electric Motor Driven Propellers for Conceptual
+    Aircraft Design", [AIAA 2015-1676](https://doi.org/10.2514/6.2015-1676). They are built from whole units of
+    real products, taken from a cited database of 21 aerospace machines
+    ([`data/machines/aerospace_motors.csv`](data/machines/aerospace_motors.csv)). The baseline uses one product per
+    role: [Evolito D1500](https://evolito.aero/axial-flux-motors/)-class motors and
+    [Helix SPX242](https://www.ehelix.com/products/spx242/)-class generators;
   - gearboxes with stage counts;
-  - a Samsung 50G-shaped equivalent-circuit battery with sag and an end-of-life rating;
-  - the fixed 1,120 hp turboshaft deck with lapse and a part-power fuel curve;
+  - an equivalent-circuit battery (open-circuit voltage, resistance and two RC pairs) fitted to the Samsung
+    INR21700-50G cell data of Paudel et al., [*Batteries* 2025, 11, 313](https://doi.org/10.3390/batteries11080313)
+    ([`data/batteries/`](data/batteries/)). Scaling used in the baseline:
+    - **power:** resistance divided by 5 and current rating multiplied by 5 (10C continuous), a more power-dense
+      cell of the same shape;
+    - **energy:** not scaled. The cell is 4.9 Ah and 69 g (about 255 Wh/kg); cells are 70 % of pack mass;
+    - **end of life:** 80 % of capacity and 1.5 times the resistance;
+    - **pack:** 210 cells in series (756 V nominal), two isolated strings, cells held at 77 °F (25 °C);
+  - the fixed 1,120 hp turboshaft, from a user-supplied GASP_TS-derived engine deck (`MAPS_1120hp.eng`, not
+    committed), with density and temperature lapse and a part-power fuel curve fitted to the deck. The loader is in
+    [`powertrain/decks.py`](src/aircraft_closure/powertrain/decks.py), and the fit and its checks are in
+    [design log 014](docs/decisions/014-turboshaft-deck-part-power.md);
   - a heat exchanger and short-time thermal ratings.
 - Speed, torque, voltage, current and power compatibility checked as named margins.
 - What sizes it:
