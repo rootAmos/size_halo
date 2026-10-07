@@ -146,6 +146,24 @@ Approach and effort for each next step: [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)
 
 ![Empty mass breakdown](docs/figures/oew_breakdown.png)
 
+**Mission profiles.** Airspeed, turbine shaft power against battery power, and altitude, for the design mission
+(first 15 min on the left, the whole mission on the right):
+
+- **Design mission, as sized.** Each segment is one solved operating point, so the profile is a series of steps.
+  In the take-off hover the turbines give 1,833 hp and the battery 134 hp. In cruise the turbines carry everything
+  and recharge the pack.
+
+![Design mission profile](docs/figures/mission_profile.png)
+
+- **Same mission with an optimized take-off and climb.** The minimum-time climb from hover to 10,000 ft at cruise
+  speed, flown by direct collocation inside the computed conversion corridor, replaces the take-off hover and the
+  prescribed climb.
+  - The turbines run at their full 2,240 hp while the battery tops up to about 520 hp.
+  - It reaches cruise in 3.8 min instead of 9.5 min, on about half the fuel (65 lb against 135 lb).
+  - The aircraft is the same v3.6 design, not re-sized.
+
+![Mission profile with optimized take-off](docs/figures/mission_profile_optimized_takeoff.png)
+
 ### Aerodynamics
 
 **Does**

@@ -1357,6 +1357,10 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
                             battery_kWh=value(s.energy_battery_chemical_J) / 3.6e6, soc_end=value(s.soc_end),
                             hybridization=value(s.point.hybridization_electric),
                             power_rotors_W=value(a.count_rotors * s.point.power_shaft_rotor_W),
+                            power_turboshafts_W=value((s.point.condition.active_generator_count
+                                                       or a.count_turbogenerators) * s.point.engine.power_shaft_W),
+                            power_battery_W=value(s.point.power_battery_W),
+                            velocity_m_s=value(s.point.condition.velocity_m_s),
                             speed_motor_rad_s=value(s.point.speed_motor_rad_s),
                             torque_motor_Nm=value(s.point.torque_motor_Nm),
                             altitude_start_m=h[0], altitude_end_m=h[1],
