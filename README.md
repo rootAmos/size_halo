@@ -11,31 +11,34 @@ and every model is checked against public tiltrotor data before it is trusted.
 
 | | |
 |---|---|
-| **Take-off weight** | **6,885 kg (15,179 lb)** |
-| Payload | 900 kg (1,984 lb) |
-| Empty weight (OEW) | 5,049 kg (11,130 lb), of which powertrain 2,871 kg (57 %) |
-| Fuel / battery | 936 kg (10 % reserve included) / 70 kWh, 475 kg, two isolated strings |
+| **Take-off weight** | **15,179 lb** (6,885 kg) |
+| Payload | 1,984 lb (900 kg) |
+| Empty weight (OEW) | 11,130 lb (5,049 kg), of which powertrain 6,329 lb (57 %) |
+| Fuel / battery | 2,065 lb, 10 % reserve included / 70 kWh, 1,047 lb, two isolated strings |
 | Maximum speed | 210 kt sustained at 10,000 ft |
-| Design range | 445 nm with 900 kg, plus a 20 min reserve loiter |
-| Mission cruise | 165 kt at 10,000 ft, L/D 9.1 (cruise speed is optimized for mass; 210 kt is a dash capability) |
+| Design range | 445 nm with 1,984 lb payload, plus a 20 min reserve loiter |
+| Mission cruise | 165 kt at 10,000 ft, L/D 9.1 (cruise speed is optimized for weight; 210 kt is a dash capability) |
 | Ceiling | 13,000 ft |
-| Hover | out of ground effect at 4,000 ft, including an ISA + 27.7 K day at the destination |
+| Hover | out of ground effect at 4,000 ft, including a 95 °F day (ISA + 50 °F) at the destination |
 | Failure hovers | 60 s after losing a turbogenerator, a bus or a battery string |
-| Turboshafts | 2 × 835 kW (1,120 hp), fixed off-the-shelf engines in the fuselage |
-| Rotors | 2 × 9.7 m, disk loading 47 kg/m² (9.6 lb/ft²), rotor radius capped by the span |
-| Wing | 23.3 m², 11.9 m span |
+| Turboshafts | 2 × 1,120 hp, fixed off-the-shelf engines in the fuselage |
+| Rotors | 2 × 31.7 ft diameter, disk loading 9.6 lb/ft², tip speed 782 ft/s; rotor radius capped by the span |
+| Wing | 251 ft², 39.2 ft span, wing loading 60.5 lb/ft² |
 | Drive | per rotor, 2 motor lanes of stacked axial-flux units behind one 4.5:1 stage; two cross-strapped DC buses |
-| Fuselage | 11 m, unpressurized box section 1.68 × 2.0 m |
+| Fuselage | 36.1 ft long, unpressurized box section 5.5 × 6.6 ft |
 
-**Empty weight breakdown (kg):**
+**Empty weight breakdown (lb):**
 
 | Powertrain | | Airframe and systems | |
 |---|---|---|---|
-| Rotors and gearboxes | 1,111 | Wing, nacelles, tails | 686 |
-| Motors and generators (with inverters) | 707 | Systems and equipment | 674 |
-| Battery | 475 | Fuselage | 560 |
-| Turboshafts | 422 | Landing gear | 258 |
-| Heat exchanger, protection, bus tie | 155 | | |
+| Rotors and gearboxes | 2,450 | Wing, nacelles, tails | 1,511 |
+| Motors and generators (with inverters) | 1,559 | Systems and equipment | 1,485 |
+| Battery | 1,047 | Fuselage | 1,235 |
+| Turboshafts | 930 | Landing gear | 570 |
+| Heat exchanger, protection, bus tie | 343 | | |
+| **Total powertrain** | **6,329** | **Total airframe and systems** | **4,801** |
+
+The model works in SI internally; [docs/RESULTS.md](docs/RESULTS.md) gives the SI values alongside.
 
 Not computed yet: maximum range at reduced payload (the payload-range curve) and maximum endurance.
 
@@ -59,7 +62,7 @@ input, not a design variable.
 **Findings worth knowing:**
 
 - With these engines, payload goes to zero near 228 kt, so 250 kt is out of reach at any size.
-- A realistic (equivalent-circuit) battery costs about 230 kg of payload against an ideal one.
+- A realistic (equivalent-circuit) battery costs about 510 lb (230 kg) of payload against an ideal one.
 - Real catalogue machines change the architecture, not just the mass. A freely scalable motor wants about
   13,000 rpm behind a 32:1 gearbox; whole units of real products want slow, stacked axial-flux motors behind a
   single stage.
@@ -155,7 +158,7 @@ In rough order of how much each could move the answer:
 4. **The wing is not closed structurally.** The finite-element check puts jump take-off spar-cap strain at 1.10 of
    the allowable, and wing torsion is not cleanly separated from nacelle modes. The check was last run on an
    earlier version (v3.3.5, 13,038 lb), not the baseline.
-5. **The electrical layer is built but off by default.** Inverters, cables and protection add about 330 kg and 3 %
+5. **The electrical layer is built but off by default.** Inverters, cables and protection add about 730 lb (330 kg) and 3 %
    losses; with every option on, the problem converges only through the multistart strategy.
 6. **Failures are single and symmetric.** Double failures did not converge (not shown infeasible), and degraded
    states apply to both rotors, so roll trim is not modelled.

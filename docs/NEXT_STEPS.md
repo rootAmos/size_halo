@@ -65,7 +65,7 @@ calibrations. **Effort:** a day, once the data source is in hand.
 
 ## 5. Electrical layer on by default
 
-**Why.** Inverters, cables, protection and partial-discharge insulation are modelled (about 330 kg and 3 % losses)
+**Why.** Inverters, cables, protection and partial-discharge insulation are modelled (about 730 lb, 330 kg, and 3 % losses)
 but off by default, because with every option on the problem converges only through the multistart strategy.
 
 **How.** Better problem scaling and a continuation start (solve without the layer, then switch it on from that
