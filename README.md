@@ -47,8 +47,6 @@ and every model is checked against public tiltrotor data before it is trusted.
 
 The model works in SI internally; [docs/RESULTS.md](docs/RESULTS.md) gives the SI values alongside.
 
-![Empty mass breakdown](docs/figures/oew_breakdown.png)
-
 ![Halo-class 3-view and nacelle conversion](docs/figures/halo_views.png)
 
 **What sizes the aircraft** (the active constraints at the optimum):
@@ -134,6 +132,29 @@ failure cases ─┘
 
 Approach and effort for each next step: [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md).
 
+### Performance
+
+**Does**
+- Mission analysis inside the sizing:
+  - take-off hover, climb, cruise, 20 min reserve loiter, descent and landing hover;
+  - fuel burn and battery state of charge through every segment;
+  - the battery-versus-generator energy split, optimized per segment;
+  - cruise speed optimized for weight (165 kt; 210 kt is a dash capability).
+- Point performance as requirements: hover at 4,000 ft and on a hot day, ceiling, maximum speed, stall, and 60 s
+  failure hovers.
+- Mass closure with a full breakdown, and a cost per mission (about $3,300, with labelled price assumptions).
+
+**Doesn't do**
+- No payload-range diagram and no maximum endurance. Performance is computed at the design mission only.
+- No energy-flow (Sankey) diagram from fuel and battery to the rotors, although the per-segment powers and losses
+  are already in the solution.
+
+**Next**
+- A payload-range diagram and endurance: re-solve the fixed aircraft at off-design payload.
+- An energy-flow diagram per segment from the solved powers and losses.
+
+![Empty mass breakdown](docs/figures/oew_breakdown.png)
+
 ### Aerodynamics
 
 **Does**
@@ -153,6 +174,37 @@ Approach and effort for each next step: [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md)
 
 ![Drag polar by model](docs/figures/drag_polar_models.png)
 ![JVX proprotor calibration](docs/figures/rotor_jvx_calibration.png)
+
+### Powertrain
+
+**Does**
+- A typed series-hybrid network of ports and buses, with multiplicity: 2 motor lanes per rotor, 2 cross-strapped
+  buses, 2 battery strings.
+- Components:
+  - McDonald-loss machines built from whole units of real products, chosen from a supplier database;
+  - gearboxes with stage counts;
+  - a Samsung 50G-shaped equivalent-circuit battery with sag and an end-of-life rating;
+  - the fixed 1,120 hp turboshaft deck with lapse and a part-power fuel curve;
+  - a heat exchanger and short-time thermal ratings.
+- Speed, torque, voltage, current and power compatibility checked as named margins.
+- What sizes it:
+  - the battery: its cell voltage cutoff in the engine-out hover;
+  - the generators: the engine-out hover;
+  - the motors: the bus-out hover.
+
+**Doesn't do**
+- The electrical layer (inverters, cables, protection) is built but off by default. With it on, the full problem
+  converges only through multistart.
+- Failures are single and symmetric. Double failures did not converge, and roll trim is not modelled.
+- One catalogue product per machine role.
+- No battery chiller power, and losses do not depend on temperature.
+
+**Next**
+- The electrical layer on by default, with problem scaling and continuation.
+- Asymmetric and double failures, including an interconnect shaft against electrical cross-strapping.
+- Mixed machine catalogues.
+
+![Battery OCV fit](docs/figures/battery_ocv_fit.png)
 
 ### Structures
 
