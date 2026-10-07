@@ -108,48 +108,48 @@ line (v3.3.4 and v3.3.5). See [aircraft versions](AIRCRAFT_VERSIONS.md).
 
 | Quantity | Value |
 |---|---|
-| Take-off mass | **6,885 kg (15,179 lb)** |
-| Empty mass | 5,049 kg |
-| Fuel (with reserve) | 936 kg |
-| Battery | 70.0 kWh, 475 kg, 2 isolated strings (end-of-life rating) |
-| Wing | 23.3 m², span 11.9 m (NDARC tiltrotor wing, whirl-flutter margins) |
-| Rotors | 2 × 9.7 m diameter; disk loading 47 kg/m² (9.6 lb/ft²); tip speed 238 m/s |
-| Motors | 2 lanes per rotor; each lane is 2 Evolito D1500-class units (528 kW continuous) |
+| Take-off weight | **15,179 lb** (6,885 kg) |
+| Empty weight | 11,130 lb (5,049 kg) |
+| Fuel (with reserve) | 2,065 lb (936 kg) |
+| Battery | 70.0 kWh, 1,047 lb (475 kg), 2 isolated strings (end-of-life rating) |
+| Wing | 251 ft² (23.3 m²), span 39.2 ft (11.9 m) (NDARC tiltrotor wing, whirl-flutter margins) |
+| Rotors | 2 × 31.7 ft (9.7 m) diameter; disk loading 9.6 lb/ft² (47 kg/m²); tip speed 782 ft/s (238 m/s) |
+| Motors | 2 lanes per rotor; each lane is 2 Evolito D1500-class units (708 hp, 528 kW continuous) |
 | Generators | each is 3 Helix SPX242-class units |
 | Rotor gearbox | 4.5:1, one stage |
-| Turboshafts | 2 × 835 kW (1,120 hp), fixed, in the fuselage |
+| Turboshafts | 2 × 1,120 hp (835 kW), fixed, in the fuselage |
 | Cruise | 165 kt at 10,000 ft, L/D 9.07 |
-| Heat exchanger | 127 kg ram-air unit, fans in hover |
+| Heat exchanger | 280 lb (127 kg) ram-air unit, fans in hover |
 | Cost per mission | about USD 3,310 (Tier 22 cost model; prices are labelled assumptions) |
 
-**Empty-mass breakdown (kg):**
+**Empty-weight breakdown:**
 
-![Empty mass breakdown](figures/oew_breakdown.png)
+![Empty weight breakdown](figures/oew_breakdown.png)
 
-| Group | Mass |
-|---|---|
-| Powertrain | 2,871 |
-| Fuselage | 560 |
-| Wing | 408 |
-| Systems | 407 |
-| Equipment | 266 |
-| Landing gear | 258 |
-| Nacelles | 195 |
-| Tails | 83 |
+| Group | lb | kg |
+|---|---|---|
+| Powertrain | 6,329 | 2,871 |
+| Fuselage | 1,235 | 560 |
+| Wing | 899 | 408 |
+| Systems | 898 | 407 |
+| Equipment | 587 | 266 |
+| Landing gear | 570 | 258 |
+| Nacelles | 430 | 195 |
+| Tails | 183 | 83 |
 
 Within the powertrain:
 
-| Item | Mass |
-|---|---|
-| Rotors | 675 |
-| Battery | 475 |
-| Motors with inverters | 426 |
-| Turboshafts | 422 |
-| Rotor gearboxes | 292 |
-| Generators with inverters | 282 |
-| Generator gearboxes | 144 |
-| Heat exchanger | 127 |
-| Bus tie and string protection | 28 |
+| Item | lb | kg |
+|---|---|---|
+| Rotors | 1,488 | 675 |
+| Battery | 1,047 | 475 |
+| Motors with inverters | 938 | 426 |
+| Turboshafts | 930 | 422 |
+| Rotor gearboxes | 645 | 292 |
+| Generators with inverters | 621 | 282 |
+| Generator gearboxes | 318 | 144 |
+| Heat exchanger | 280 | 127 |
+| Bus tie and string protection | 63 | 28 |
 
 ### What sizes the aircraft
 
