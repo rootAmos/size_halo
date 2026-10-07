@@ -442,6 +442,10 @@ flowchart LR
 ![Computed conversion corridor](docs/figures/conversion_corridor.png)
 ![Trajectories in the computed conversion corridor](docs/figures/trajectory_conversion_corridor.png)
 
+The two trajectories fly different legs. The minimum-energy transition goes from hover at 500 ft to 1.3 × stall in
+airplane mode and stays near 500 ft (22 s). The minimum time to climb goes from hover at sea level to level flight
+at 10,000 ft and the 165 kt cruise speed, so most of its 228 s is the climb. The corridor is computed at sea level.
+
 ## How it is checked
 
 - **658 unit tests:** closed-form identities, limiting cases, sign conventions and trends, and every model exercised

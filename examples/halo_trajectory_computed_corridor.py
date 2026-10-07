@@ -60,15 +60,17 @@ def plot(case, results, path):
     colors = {"minimum-energy transition": "#2a78d6", "prescribed transition": "#eb6834",
               "minimum time to climb": "#1baf7a"}
     for result in results:
-        label = f"{result.label} ({result.energy_bus_J[-1] / 3.6e6:.1f} kWh, {result.duration_s:.0f} s)"
+        altitudes_ft = [round(result.altitude_m[i] / u.foot, -2) for i in (0, -1)]
+        label = (f"{result.label}, {altitudes_ft[0]:,.0f} to {altitudes_ft[1]:,.0f} ft "
+                 f"({result.energy_bus_J[-1] / 3.6e6:.1f} kWh, {result.duration_s:.0f} s)")
         ax.plot(result.velocity_m_s / u.knot, result.tilt_deg, color=colors.get(result.label, "#333333"), lw=2,
                 label=label)
     ax.set(xlabel="true airspeed [kt]", ylabel="nacelle tilt [deg]", xlim=(0, 240), ylim=(0, 92),
            title="Trajectories inside the computed conversion corridor")
     ax.grid(alpha=0.3)
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=2, frameon=False, fontsize=8)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=1, frameon=False, fontsize=8)
     fig.tight_layout()
-    fig.savefig(path, dpi=110)
+    fig.savefig(path, dpi=110, bbox_inches="tight")
     plt.close(fig)
 
 
