@@ -30,7 +30,7 @@ the RC state explicitly from point to point (starting from rest).
 
 Cell resistance: R_k(SOC, T) = R_k,ref x exp(a x + b x^2) x (1 + c e^(-(s - s_lo)/w_lo)
 + d e^((s - s_hi)/w_hi)), x = T_ref / T - 1 (temperature in kelvin). Pack
-resistance is divided by `factor_power_density` (the user's explicit scaling
+resistance is divided by `factor_power_density` (the author's explicit scaling
 assumption: shape from the 50G, magnitude as power-dense as the design needs)
 and multiplied by `factor_resistance_ageing` (end of life). The current
 rating scales with `factor_power_density` too.

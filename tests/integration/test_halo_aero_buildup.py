@@ -16,7 +16,7 @@ buildup = replace(assumptions_plan027, aerodynamics_model="buildup")    # therma
 
 class HaloAerodynamicsSwitchTests(unittest.TestCase):
     def test_default_is_buildup(self):
-        """Plan 027 (user, 2026-10-04)."""
+        """Plan 027 (decided 2026-10-04)."""
         self.assertEqual(HaloAssumptions().aerodynamics_model, "buildup")
         r = HaloRequirements()
         self.assertIsInstance(build_halo_aerodynamics(r, replace(buildup, aerodynamics_model="simple")),

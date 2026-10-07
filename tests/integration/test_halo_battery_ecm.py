@@ -22,7 +22,7 @@ class HaloEquivalentCircuitBatteryTests(unittest.TestCase):
                                        objective="payload", initial=cls.ecm)
 
     def test_plan022_reference_reproduces(self):
-        """Plan 022 (user decision 2026-10-03: take a lower payload): 780 kg, Raymer wing."""
+        """Plan 022 (decision 2026-10-03: take a lower payload): 780 kg, Raymer wing."""
         self.assertEqual(HaloAssumptions().battery_model, "ecm")
         self.assertEqual(requirements_plan022.mass_payload_kg, 780.0)
         r = self.reference

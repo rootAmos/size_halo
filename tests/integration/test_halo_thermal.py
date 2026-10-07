@@ -27,7 +27,7 @@ def numeric_design():
 
 class HaloThermalSwitchTests(unittest.TestCase):
     def test_on_by_default_and_off_switch(self):
-        """Plan 030 (user-approved 2026-10-04) makes the thermal model the default."""
+        """Plan 030 (adopted 2026-10-04) makes the thermal model the default."""
         self.assertTrue(HaloAssumptions().thermal_model)
         aircraft = build_halo_aircraft(numeric_design(), assumptions=HaloAssumptions(thermal_model=False))
         self.assertIsNone(aircraft.powertrain.cooling)

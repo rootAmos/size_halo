@@ -3,9 +3,9 @@
 ## Delivered scope
 
 Tier 0 supplies pyproject metadata, Python 3.13 selection, a uv dependency lock,
-six repository-local skills, engineering governance, interfaces and a staged
+engineering conventions, interfaces and a staged
 roadmap. `uv sync` creates the editable local environment automatically. Runtime
-dependency: AeroSandbox; dev dependency: PyYAML for skill validation. Tests use
+dependency: AeroSandbox; dev dependency: PyYAML. Tests use
 standard-library unittest. The verified environment resolves AeroSandbox 4.2.10
 and CasADi 3.8.1. Source compatibility is declared for Python >=3.10; execution
 has been verified on Windows with Python 3.13.3 only.
@@ -42,7 +42,7 @@ tests use actual Opti solves. The example specifies 5000 N hover thrust and a 20
 battery fraction of motor electrical input, obtaining approximately 89.286 kW
 rotor shaft power, 18.653 kW battery terminal power and 0.005852 kg/s fuel flow.
 Power residuals are reported and tested explicitly. All six manual examples
-execute, and all six skill files pass the bundled skill validator.
+execute.
 
 CasADi 3.8.1 emits a NumPy compatibility FutureWarning through the installed
 AeroSandbox stack during symbolic evaluation. Tests pass with its default mode;
@@ -276,7 +276,7 @@ The Tier 9 formulation, re-baselined on the XV-15:
   relation as an explicit equality;
 - Tier 10b lapse, part-power and hover models.
 
-Requirements (user-approved): 900 kg payload, 445 nm, 250 kt at 10,000 ft,
+Requirements (adopted): 900 kg payload, 445 nm, 250 kt at 10,000 ft,
 13,000 ft ceiling, OGE hover at 4,000 ft with T/W 1.05, engine-out hover on
 one turbogenerator plus battery, stall at or below 120 kt.
 
@@ -312,13 +312,13 @@ Verification: 230 unittest cases (13 new) and the Tier 10c notebook's
 
 ## Tier 11a: turboshaft deck part-power curve
 
-The user supplied a GASP_TS 1,120 hp turboshaft deck: a full 13 Mach x
+The author supplied a GASP_TS 1,120 hp turboshaft deck: a full 13 Mach x
 10 altitude x 16 throttle grid.
 
 **The deck's altitude scaling is not physical.** Under the usual
 correction, maximum power falls 20 % by 1,500 ft and stays flat at about
 900 hp to 10,000 ft. It reads 953 hp at 15,000 ft and 612 hp at 17,500 ft.
-This was reported to the user, so the XV-15-fitted lapse stays.
+So the XV-15-fitted lapse stays.
 
 **The normalised part-power curve is sound.** sfc / sfc_max against power
 fraction does not depend on the correction convention:
@@ -394,10 +394,10 @@ Verification: 261 unittest cases (19 new).
 
 ## Tier 12b: fixed engines, battery-assisted hover, in-flight recharge
 
-User rules (2026-10-03):
+Rules (2026-10-03):
 
 - turbine power required never exceeds power available;
-- engines are fixed at the user's 1,120 hp deck engine (a non-OEM cannot
+- engines are fixed at the author's 1,120 hp deck engine (a non-OEM cannot
   raise power);
 - the battery supplements hover and is recharged in flight;
 - downsize the aircraft if needed.
@@ -640,7 +640,7 @@ digitized into `data/batteries/`:
 - OCV: a degree-7 polynomial at 30 C.
 - Resistance: R0 + 2 RC (8 s, 43 s), with smooth R(SOC, T) fitted by an
   `asb.Opti` least squares to all discharge DCIR, 4.7 % rms.
-- A power-density factor F: resistance / F, current rating x F (user
+- A power-density factor F: resistance / F, current rating x F (author
   decision).
 - End-of-life capacity 0.8 and resistance 1.5; cell/pack mass 0.7.
 
@@ -681,12 +681,12 @@ the ECM pack (`assumptions_tier17`, F = 5, end of life, 25 C), 900 kg at
   At F = 5 the engine-out end voltage still binds; from F = 8 the reserve
   SOC binds. The table above and the Tier 17 notebook stay pinned to the
   Tier 12b aircraft.
-- **User decision (2026-10-03):** take the lower payload. Plan 022 makes
+- **Decision (2026-10-03):** take the lower payload. Plan 022 makes
   this pack the reference.
 
 ## Plan 022: equivalent-circuit battery as the reference
 
-The user chose "take a lower payload", noting there is "not much more we
+The author chose "take a lower payload", noting there is "not much more we
 can do to stretch the cells".
 
 - **Defaults:** `battery_model="ecm"` and `mass_payload_kg=780` (the maximum
@@ -821,7 +821,7 @@ Verification: 392 unittest cases (39 new) and the Tier 20 notebook's checks.
 
 ## Plan 026: AFDD tiltrotor wing as the reference
 
-The user approved the switch on 2026-10-03.
+The switch was approved on 2026-10-03.
 
 - **Defaults:** `wing_weight_model="afdd_tiltrotor"`, payload back to
   900 kg.
@@ -840,7 +840,7 @@ The user approved the switch on 2026-10-03.
 
 ## Tier 21: aerodynamics
 
-Plan 025. User direction: lean on AeroSandbox; Scholz fills the gaps and is
+Plan 025. Direction: lean on AeroSandbox; Scholz fills the gaps and is
 the hand check; `SimpleAerodynamics` stays (and stays the Halo default,
 `HaloAssumptions.aerodynamics_model = "simple"`).
 
@@ -1028,7 +1028,7 @@ IPOPT report local infeasibility).
 
 ## Plan 027: AeroBuildup aerodynamics as the reference
 
-The user decided on 2026-10-04: "aerobuild up as default".
+Decided on 2026-10-04: "aerobuild up as default".
 
 - **Default:** `aerodynamics_model="buildup"`. Requirements stay at 900 kg
   and 210 kt.
@@ -1137,7 +1137,7 @@ from the thermal-off design and from the thermal Scholz design.
 
 ## Plan 030: thermal model as the reference
 
-The user approved it on 2026-10-04 ("yes").
+Approved on 2026-10-04 ("yes").
 
 - **Default:** `thermal_model=True`.
 - **Reference:** 900 kg at 210 kt, 14,037 lb.
@@ -1337,7 +1337,7 @@ the reference solution):
 
 ## Plan 033: machine database and gearbox stages
 
-This refines Tier 13 at the user's direction (2026-10-04). The reference picked a 36:1 rotor reduction with motors
+This refines Tier 13 at the author's direction (2026-10-04). The reference picked a 36:1 rotor reduction with motors
 at about 12,900 rpm, and the question was whether that was a modelling artefact.
 
 ### The two options
@@ -1444,7 +1444,7 @@ The notebook repeats this with relaxed stages and a 10 kW/kg cap.
 
 ## Plan 035: final reference (real machine units, redundancy, drag corrections)
 
-The user decided on 2026-10-04: "best in class. no rubber motors";
+Decided on 2026-10-04: "best in class. no rubber motors";
 redundancy as the default, but switchable; drag corrections on; then wrap
 up.
 
@@ -1486,9 +1486,9 @@ structural layout for export". Everything here is a check or an export. Nothing 
   - wing tapered 0.6 at the sized area and span (aesthetic);
   - V-tail by the equal-projected-area rule;
   - flat-sided tip nacelles.
-- **`build_openvsp_model`** follows the user's tiltrotor skeleton:
+- **`build_openvsp_model`** follows the author's tiltrotor skeleton:
   - smoothly skinned Fuselage geoms, with each section's tangents taken from its neighbours' slopes (the
-    blending the user asked for, after the Joby S4 and Kitty Hawk Heaviside models);
+    blending the author asked for, after the Joby S4 and Kitty Hawk Heaviside models);
   - the whole nacelle tilts on a Hinge about the spindle at the tip quarter chord;
   - propellers from the sized solidity;
   - a rotor tip-path auxiliary;
@@ -1525,7 +1525,7 @@ tail CL max at dive speed, fuselage bending) and the AFDD stiffness requirements
 come from the weight models.
 - **Wing:** the layout primary structure is 1.07x the AFDD primary (box + caps) as sized and 1.14x as drawn.
   Root jump moment: 318 vs 310 kN m.
-- **Tails:** minimum gauge. The user keeps Raymer.
+- **Tails:** minimum gauge. The author keeps Raymer.
 - **Fuselage:** layout primary 310 kg + secondary 220 kg = 530 kg, i.e. 1.73x raw unpressurized Raymer GA.
   - The XV-15 group calibration of 2.07 (a crewed fuselage) overstates it.
   - This became plan 032's factor of 1.70.
@@ -1577,7 +1577,7 @@ come from the weight models.
 
 ## Plan 032: Halo reference from the drawn layout
 
-Three user decisions on 2026-10-04 bring plan 031's findings into the sizing. Every earlier named set
+Three author decisions on 2026-10-04 bring plan 031's findings into the sizing. Every earlier named set
 (including the new `assumptions_plan030`) pins the old values.
 
 | Step | Change | Take-off |

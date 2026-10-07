@@ -12,7 +12,7 @@ from examples.halo_sizing import (HaloAssumptions, HaloRequirements, assumptions
 
 class DefaultsTests(unittest.TestCase):
     def test_default_wing_model_is_afdd_at_900_kg(self):
-        """Plan 026 (user-approved 2026-10-03)."""
+        """Plan 026 (adopted 2026-10-03)."""
         self.assertEqual(HaloAssumptions().wing_weight_model, "afdd_tiltrotor")
         self.assertEqual(HaloRequirements().mass_payload_kg, 900.0)
         self.assertEqual(assumptions_tier20.wing_weight_model, "afdd_tiltrotor")

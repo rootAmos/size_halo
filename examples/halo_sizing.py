@@ -4,7 +4,7 @@ The Tier 9 formulation, re-baselined on the Bell XV-15 (plans 011-013):
 two tip-mounted rotors, two turbogenerators on one bus with a battery, and the
 validated Tier 10 models.
 
-Requirements (user-approved 2026-10-02, revised 2026-10-03): 900 kg payload (780 kg in plan 022, back to
+Requirements (adopted 2026-10-02, revised 2026-10-03): 900 kg payload (780 kg in plan 022, back to
 900 kg with the AFDD tiltrotor wing in plan 026), 445 nm mission, 210 kt at 10,000 ft, 13,000 ft ceiling, OGE hover at 4,000 ft, engine-out
 hover on one turbogenerator plus battery, stall at most 120 kt.
 
@@ -136,7 +136,7 @@ class HaloRequirements:
     range_m: float = 445 * 1852.0
     altitude_cruise_m: float = 10000 * u.foot
     # 210 kt (plan 017): the most the fixed 2 x 1,120 hp turboshafts sustain with 900 kg over 445 nm (max
-    # payload 935 kg); 250 kt is infeasible at any size with these engines. Pending the user's choice.
+    # payload 935 kg); 250 kt is infeasible at any size with these engines. Pending the author's choice.
     velocity_max_m_s: float = 210 * u.knot
     altitude_hover_m: float = 4000 * u.foot
     thrust_to_weight_hover: float = 1.05
@@ -182,7 +182,7 @@ class HaloAssumptions:
     # Tier 12: momentum + profile rotor calibrated on JVX (rotor speed, solidity and tip speed matter); False
     # restores the Tier 10c actuator disk with the two constant coefficients above.
     rotor_speed_physics: bool = True
-    # Plan 017 (user, 2026-10-03): off-the-shelf turboshafts, power fixed by the engine deck (1,120 hp SLS, the
+    # Plan 017 (decided 2026-10-03): off-the-shelf turboshafts, power fixed by the engine deck (1,120 hp SLS, the
     # user-supplied GASP_TS deck); a non-OEM cannot raise power available. None restores a sized (rubber) engine.
     power_rated_turboshaft_fixed_W: Any = 1120 * u.hp
     # The battery supplements the turbines (hover) and is recharged by the generators on free-split segments
@@ -205,11 +205,11 @@ class HaloAssumptions:
     speed_peak_motor_rad_s: float = 400.0
     speed_peak_generator_rad_s: float = 400.0
     aspect_ratio_wing: float = 6.12               # XV-15
-    # Plan 037 (user, 2026-10-04: "11 m, as drawn"): the Halo drawing's length; with the boxy section it has the
+    # Plan 037 (2026-10-04: "11 m, as drawn"): the Halo drawing's length; with the boxy section it has the
     # wetted area of the round XV-15 tube (42.1 ft), on which the 1.70 fuselage factor was anchored.
     length_fuselage_m: float = 11.0
     diameter_fuselage_m: float = 5.5 * u.foot     # XV-15 (Tier 10a assumption); the width of a boxy section
-    # Plan 037 (user: "archer halo is not pressurized. that's why it's so boxy"): a super-ellipse section this deep
+    # Plan 037 (author: "archer halo is not pressurized. that's why it's so boxy"): a super-ellipse section this deep
     # and with this exponent (plan 031 drawing). None: the round XV-15 section, the reference until plan 037.
     height_fuselage_m: Any = 2.0
     shape_fuselage: float = 3.2
@@ -221,7 +221,7 @@ class HaloAssumptions:
     area_wetted_nacelles_m2: float = 2 * 95 * u.foot**2
     resistance_energy_product_ohm_J: float = 1.8e6
     battery_mass_smoothing_kg: float = 10.0
-    # Part-power fuel curve: the user-supplied 1,120 hp GASP deck (plan 014); GeissPartPowerModel() is the
+    # Part-power fuel curve: the author-supplied 1,120 hp GASP deck (plan 014); GeissPartPowerModel() is the
     # XV-15-validated alternative (within 1 % of it above 50 % power).
     part_power_model: Any = field(default_factory=deck_1120hp_part_power_model)
     # Tier 16: turboshaft lapse in density and temperature (XV-15 95 F fit); identical to sigma^n on a standard
@@ -232,7 +232,7 @@ class HaloAssumptions:
     # "constant": the Tier 1 constant-OCV Battery sized by energy and power (the reference for Tiers 10c-16).
     # The ECM pack is the reference from plan 022 (it cannot carry 900 kg at 210 kt on the fixed engines).
     battery_model: str = "ecm"
-    # User decision 2026-10-02: resistance / factor and current rating x factor (more power-dense 50G-shaped cell).
+    # Decision 2026-10-02: resistance / factor and current rating x factor (more power-dense 50G-shaped cell).
     # 5: 10C continuous; below about 5 battery power sizes the pack, above about 8 the reserve energy does (plan 021).
     factor_power_density_battery: float = 5.0
     count_series_battery: int = 210               # 756 V nominal; 525-882 V window inside the 400-900 V machines
@@ -269,7 +269,7 @@ class HaloAssumptions:
     specific_power_dcdc_W_kg: float = 12000.0          # assumed
     efficiency_dcdc: float = 0.98                      # assumed
     # ---- Tier 20 wing weight (plan 024) ----
-    # "afdd_tiltrotor" (the reference from plan 026, user-approved 2026-10-03): the AFDD tiltrotor wing
+    # "afdd_tiltrotor" (the reference from plan 026, adopted 2026-10-03): the AFDD tiltrotor wing
     # (NDARC 19-1.1) x its own XV-15 factor, built for the wing design rotor speed (a design variable) and checked
     # by whirl-flutter frequency margins at every airplane-mode point.
     # "raymer": Raymer GA wing x the XV-15 wing factor (the reference until plan 026).
@@ -293,7 +293,7 @@ class HaloAssumptions:
     fraction_chord_front_spar: float = 0.15
     fraction_chord_rear_spar: float = 0.60
     thickness_min_torque_box_m: float = 0.001            # minimum torque-box wall gauge (composite, assumed); 0: NDARC
-    # Plan 037 (user, 2026-10-04: "turbines are likely inside the fuselage"): False puts the turbogenerators, their
+    # Plan 037 (2026-10-04: "turbines are likely inside the fuselage"): False puts the turbogenerators, their
     # gearboxes and the engine support and air induction in the fuselage behind the wing box; the tip nacelles keep
     # the rotor, motor, rotor gearbox and cowling. True: the XV-15 arrangement, the reference until plan 037.
     turbogenerators_on_wing_tips: bool = False
@@ -310,7 +310,7 @@ class HaloAssumptions:
     # "simple": SimpleAerodynamics with `drag_area_misc_m2` and the constant download (the reference until plan 027);
     # "buildup": AeroSandbox AeroBuildup plus Scholz interference, the misc. drag area below, blown wing and the
     # geometric hover download; "scholz": the Scholz level-0 hand check (linear lift, no blown wing).
-    aerodynamics_model: str = "buildup"   # plan 027 (user, 2026-10-04); "simple" until then
+    aerodynamics_model: str = "buildup"   # plan 027 (decided 2026-10-04); "simple" until then
     length_nacelle_m: float = 9.0 * u.foot        # assumed; with the diameter, ~95 ft2 wetted (cowling mass)
     diameter_nacelle_m: float = 3.3 * u.foot
     drag_area_misc_buildup_m2: float = 3.00 * u.foot**2  # XV-15 "fuselage fittings & fixtures" (NDARC, Johnson 2010)
@@ -332,7 +332,7 @@ class HaloAssumptions:
     # Plan 034: drag AeroBuildup and the Scholz build-up leave out. Excrescence, leakage and protuberance as a factor
     # on component drag, calibrated so the XV-15 components match NDARC's 6.25 ft2 (Johnson 2010, Table 1); trim
     # drag as a fraction of parasite + induced drag (assumed 2 %, within the 1-5 % usual for an aft tail at cruise).
-    drag_corrections: bool = True   # plan 035 default (user, 2026-10-04); False before
+    drag_corrections: bool = True   # plan 035 default (decided 2026-10-04); False before
     factor_excrescence_buildup: float = 1.27
     factor_excrescence_scholz: float = 1.17
     fraction_trim_drag: float = 0.02                   # Scholz aero only; AeroBuildup trims from the tail load
@@ -340,7 +340,7 @@ class HaloAssumptions:
     angle_dihedral_tail_deg: float = 0.0               # 0: conventional horizontal tail
     # ---- Fuselage mass (plan 037) ----
     # Raw Raymer GA (unpressurized) times this factor. 1.70 anchors it to the plan 031 layout estimate of the
-    # uncrewed cargo fuselage (primary 310 + secondary 220 kg at the plan 030 reference, 1.73x raw Raymer; user
+    # uncrewed cargo fuselage (primary 310 + secondary 220 kg at the plan 030 reference, 1.73x raw Raymer; author
     # chose "layout-anchored ~1.7" on 2026-10-04). None: the XV-15 group calibration (2.07, a crewed fuselage),
     # the reference until plan 037.
     mass_factor_fuselage: Any = 1.70
@@ -349,7 +349,7 @@ class HaloAssumptions:
     # cooling drag in airplane mode, fan power in hover), and lumped motor and generator temperatures replace
     # their power ratings (hover and engine-out peaks may exceed the continuous rating for their duration). The
     # rotor gearbox is then rated separately (`HaloDesign.power_rated_gearbox_W`). True is the reference from plan 030
-    # (user-approved 2026-10-04); False: the reference until then (`assumptions_plan027`).
+    # (adopted 2026-10-04); False: the reference until then (`assumptions_plan027`).
     thermal_model: bool = True
     specific_power_heat_exchanger_W_kg: float = 1000.0   # at the 40 K reference (Kellermann 2021, Potamiti 2024)
     delta_temperature_ref_heat_exchanger_C: float = 40.0
@@ -372,7 +372,7 @@ class HaloAssumptions:
     # isolated pack strings (a contactor each), and the failure hovers below as extra points of the sizing problem.
     # True is the default from plan 035. False: the single-lane aircraft. With True, all counts 1 and no failure cases the
     # problem is the same as with False.
-    redundancy: bool = True   # plan 035 default (user, 2026-10-04); False before
+    redundancy: bool = True   # plan 035 default (decided 2026-10-04); False before
     count_lanes_motor: int = 2
     count_buses: int = 2
     count_strings_battery: int = 2
@@ -391,7 +391,7 @@ class HaloAssumptions:
     # data/machines/aerospace_motors.csv). The database model is a bare-machine fit: with the electrical layer
     # the inverter is the separate component; without it the model adds rated power / specific_power_inverter_W_kg.
     # The cap is specific_power_max_machine_bare_W_kg in both modes.
-    machine_mass_model: str = "units"   # plan 035 default (user, 2026-10-04); "torque_density" before
+    machine_mass_model: str = "units"   # plan 035 default (decided 2026-10-04); "torque_density" before
     torque_density_database_Nm_kg: float = 11.79       # at speed_ref_database_rad_s (fit, plan 033)
     speed_ref_database_rad_s: float = 500.0
     exponent_speed_database: float = 0.271
@@ -399,12 +399,12 @@ class HaloAssumptions:
     # and efficiency per stage (GearStageModel). The AFDD drive mass is evaluated at the XV-15 calibration ratio
     # (20,000 / 565 rpm) and scaled by mass_factor(ratio) / mass_factor(XV-15 ratio). False: AFDD with its own
     # mild ratio exponent and a constant 0.97 efficiency (the reference until plan 035).
-    gearbox_stages: bool = True   # plan 035 default (user, 2026-10-04); False before
+    gearbox_stages: bool = True   # plan 035 default (decided 2026-10-04); False before
     # Relaxed (softplus) stage count: the smooth staircase (GearStageModel(staircase=True)) solves on the fast set
     # but not through the AeroBuildup and thermal starts with the database machines (plan 033).
     gear_stage_model: Any = field(default_factory=lambda: GearStageModel(staircase=False))
     reduction_ratio_max: float = 40.0                  # upper bound on the rotor gear ratio (slow-motor trades)
-    # ---- Plan 035: machines from whole units of real best-in-class products ("no rubber motors", user 2026-10-04) --
+    # ---- Plan 035: machines from whole units of real best-in-class products ("no rubber motors", author 2026-10-04) --
     # machine_mass_model "units": each lane motor is `count_units_motor` stacked units of a low-speed axial-flux
     # machine, each generator `count_units_generator` units of a high-speed radial machine. None: the relaxed count,
     # then (`integer_units`) rounded up and re-solved. Unit data from data/machines/aerospace_motors.csv.

@@ -70,7 +70,7 @@ class CubicPartPowerModel:
         return 1 + a * x + b * x**2 + c * x**3
 
 
-# Median normalised sfc of the user-supplied GASP_TS 1,120 hp deck (`MAPS_1120hp.eng`) over all 130 Mach x
+# Median normalised sfc of the author-supplied GASP_TS 1,120 hp deck (`MAPS_1120hp.eng`) over all 130 Mach x
 # altitude rows, derived 2026-10-02 with `decks.part_power_curve`; row spread about +/-10-15 % (plan 014).
 deck_1120hp_power_fraction = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
 deck_1120hp_sfc_ratio = (3.0374, 1.945, 1.5388, 1.3355, 1.2206, 1.1432, 1.0871, 1.0495, 1.0211, 1.0)

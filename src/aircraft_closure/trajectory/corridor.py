@@ -50,7 +50,7 @@ from aircraft_closure.performance.flight_point import acceleration_gravity_m_s2
 class CorridorLimits:
     pitch_min_deg: float = -5.0
     pitch_max_deg: float = 12.0
-    deflection_max_tail_deg: float = 25.0            # ruddervator travel (user, 2026-10-05)
+    deflection_max_tail_deg: float = 25.0            # ruddervator travel (decided 2026-10-05)
     cyclic_max_deg: float = 10.0                     # longitudinal cyclic (assumed, XV-15 class)
     advance_ratio_edgewise_max: float = 0.28         # flapping and hub-load proxy (assumed)
     velocity_placard_m_s: Any = None                 # airplane-mode limit speed; None: no placard

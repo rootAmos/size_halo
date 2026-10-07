@@ -1,258 +1,215 @@
-# Halo-inspired aircraft closure
+# size_halo: sizing a Halo-class hybrid tiltrotor from scratch
 
-[![tests](https://github.com/rootAmos/size_halo/actions/workflows/tests.yml/badge.svg)](https://github.com/rootAmos/size_halo/actions/workflows/tests.yml)
+How I would size an unmanned, series-hybrid-electric tiltrotor starting from a clean sheet. The aircraft, its
+powertrain and its mission are sized together in **one gradient-based optimization** (AeroSandbox, CasADi, IPOPT),
+and every model is checked against public tiltrotor data before it is trusted.
 
-AeroSandbox/CasADi framework for sizing an unmanned series-hybrid-electric
-tiltrotor together with its mission. Every discipline contributes equations to
-one `asb.Opti` problem; there are no hidden convergence loops or second
-solvers. The disciplines are configuration, powertrain, aerodynamics, mass,
-stability, mission, energy management, thermal and redundancy. Fidelity is
-added in tiers, each with a plan, tests and an executed verification notebook.
-The [fidelity roadmap](docs/FIDELITY_ROADMAP.md) lists the tiers. Models are
-validated against the Bell XV-15 and the full-scale JVX proprotor test.
+> All numbers are illustrative engineering inputs drawn from public sources. Nothing here is Archer or Halo data.
+> See [assumptions](docs/HALO_REFERENCE.md).
 
-**Current reference:** a Halo-class two-rotor series hybrid with every model on.
+## The baseline design (v3.6)
 
-- **Mission:** 900 kg payload, 445 nm, 210 kt at 10,000 ft, 13,000 ft
-  ceiling, hot-day hover, engine-out and electrical failure hovers.
-- **Engines:** two fixed off-the-shelf 1,120 hp turboshafts, inside the fuselage.
-- **Battery:** Samsung 50G-shaped equivalent-circuit pack.
-- **Fuselage:** unpressurized and boxy (11 m long, 1.68 x 2.0 m). Its weight is raw Raymer GA x 1.70,
-  anchored to a layout-based structure estimate.
-- **Wing:** NDARC tiltrotor wing with whirl-flutter margins. Its spar caps sit at the real box depth, the
-  torque box has a 1 mm minimum gauge, and the nacelle pitch inertia is built from its components.
-- **Aerodynamics:** AeroSandbox AeroBuildup with Scholz drag corrections and trim drag from the tail load.
-- **Thermal:** heat exchanger sized with the aircraft.
-- **Machines and drive:**
-  - redundant motors (2 lanes per rotor), 2 cross-strapped buses, 2 battery strings;
-  - machines built from whole units of real products (2 motor units and 3 generator units);
-  - a single-stage rotor gearbox.
-- **Result:** 6,885 kg (15,179 lb) take-off weight.
+| | |
+|---|---|
+| **Take-off weight** | **6,885 kg (15,179 lb)** |
+| Payload | 900 kg (1,984 lb) |
+| Empty weight (OEW) | 5,049 kg (11,130 lb), of which powertrain 2,871 kg (57 %) |
+| Fuel / battery | 936 kg (10 % reserve included) / 70 kWh, 475 kg, two isolated strings |
+| Maximum speed | 210 kt sustained at 10,000 ft |
+| Design range | 445 nm with 900 kg, plus a 20 min reserve loiter |
+| Mission cruise | 165 kt at 10,000 ft, L/D 9.1 (cruise speed is optimized for mass; 210 kt is a dash capability) |
+| Ceiling | 13,000 ft |
+| Hover | out of ground effect at 4,000 ft, including an ISA + 27.7 K day at the destination |
+| Failure hovers | 60 s after losing a turbogenerator, a bus or a battery string |
+| Turboshafts | 2 × 835 kW (1,120 hp), fixed off-the-shelf engines in the fuselage |
+| Rotors | 2 × 9.7 m, disk loading 47 kg/m² (9.6 lb/ft²), rotor radius capped by the span |
+| Wing | 23.3 m², 11.9 m span |
+| Drive | per rotor, 2 motor lanes of stacked axial-flux units behind one 4.5:1 stage; two cross-strapped DC buses |
+| Fuselage | 11 m, unpressurized box section 1.68 × 2.0 m |
 
-Every earlier reference stays reproducible as a named assumption set (for example `assumptions_plan030`,
-`assumptions_plan037`, `assumptions_plan038`). All numbers are illustrative engineering inputs, not Archer or
-Halo data (see [reference assumptions](docs/HALO_REFERENCE.md)).
+**Empty weight breakdown (kg):**
 
-**For reviewers:**
-- [docs/RESULTS.md](docs/RESULTS.md): what the framework concludes, how it is
-  checked, and its limits.
-- [docs/ARCHITECTURE_DIAGRAMS.md](docs/ARCHITECTURE_DIAGRAMS.md): how the
-  framework is organized.
+| Powertrain | | Airframe and systems | |
+|---|---|---|---|
+| Rotors and gearboxes | 1,111 | Wing, nacelles, tails | 686 |
+| Motors and generators (with inverters) | 707 | Systems and equipment | 674 |
+| Battery | 475 | Fuselage | 560 |
+| Turboshafts | 422 | Landing gear | 258 |
+| Heat exchanger, protection, bus tie | 155 | | |
 
-## Results at a glance
-
-Figures from the executed notebooks (`notebooks/`) and the geometry
-export, copied to `docs/figures/`.
-
-**Where the empty mass goes.** The 15,179 lb reference: 5,049 kg empty, of
-which the powertrain is 2,871 kg (57 %).
+Not computed yet: maximum range at reduced payload (the payload-range curve) and maximum endurance.
 
 ![Empty mass breakdown](docs/figures/oew_breakdown.png)
 
-**Geometry.** The OpenVSP outer mold line at three nacelle angles, and the
-structural layout used for the mass check. These are rendered from an
-earlier sized design (`examples/halo_openvsp.py`, `examples/halo_structure.py`).
-
 ![Halo-class 3-view and nacelle conversion](docs/figures/halo_views.png)
-![Structural layout](docs/figures/halo_structure.png)
 
-**Aerodynamics.**
-- **Drag polar (Tier 21):** AeroSandbox AeroBuildup and the Scholz hand
-  build-up on the reference aircraft agree within about 3 % in drag at
-  cruise lift.
-- **Cross-check on the same geometry:** OpenVSP VSPAERO (VLM and panel)
-  against AeroSandbox for lift, pitching moment, induced drag, and profile
-  drag by component.
+**Fixed inputs:** two off-the-shelf 1,120 hp turboshafts. A non-OEM cannot add turbine power, so the engines are an
+input, not a design variable.
 
-![Drag polar by model](docs/figures/drag_polar_models.png)
-![OpenVSP vs AeroSandbox](docs/figures/aero_compare_openvsp.png)
+**What sizes the aircraft** (the active constraints at the optimum):
 
-**Validation against test data.**
-- **Rotor power model (Tier 12):** against full-scale JVX hover and
-  airplane-mode data. The D-2 hover data were held out of the fit.
-- **XV-15 wing weight (Tier 20):** the NDARC tiltrotor wing by component,
-  from the published wing modes.
+- **Battery:** the engine-out hover. The pack hits its cell voltage cutoff, so voltage sag, not stored energy, sets
+  its size.
+- **Generators and their gearboxes:** the engine-out hover.
+- **Motors:** the bus-out hover, with one lane per rotor carrying the torque.
+- **Rotors and drive:** the 4,000 ft hover.
+- **Heat exchanger:** the hot-day hover.
+- **Tails:** static margin and directional stability.
 
-![JVX proprotor calibration](docs/figures/rotor_jvx_calibration.png)
-![XV-15 wing components](docs/figures/xv15_wing_components.png)
+**Findings worth knowing:**
 
-**Battery cell (Tier 17).** The 50G open-circuit voltage fit to the
-digitized cell data.
+- With these engines, payload goes to zero near 228 kt, so 250 kt is out of reach at any size.
+- A realistic (equivalent-circuit) battery costs about 230 kg of payload against an ideal one.
+- Real catalogue machines change the architecture, not just the mass. A freely scalable motor wants about
+  13,000 rpm behind a 32:1 gearbox; whole units of real products want slow, stacked axial-flux motors behind a
+  single stage.
+- In conversion, the optimized transition rides the low-speed side of the computed corridor; no level,
+  constant-acceleration conversion fits inside it.
 
-![Battery OCV fit](docs/figures/battery_ocv_fit.png)
+Every aircraft sized during development is a numbered version and stays reproducible:
+[aircraft versions](docs/AIRCRAFT_VERSIONS.md).
 
-**Trajectory optimization (Tier 14).** Minimum-energy transition and minimum time to climb on the reference,
-flown inside the computed conversion corridor (see
-[Conversion corridor and trim](#conversion-corridor-and-trim-plan-039)). The transition rides the corridor's
-low-speed side and descends slightly through 15-90 kt; no level, constant-acceleration conversion fits inside the
-computed corridor.
+## What it does
 
-![Trajectories in the computed conversion corridor](docs/figures/trajectory_conversion_corridor.png)
-
-## What is in the package
-
-| Layer | Package | Contents |
-|---|---|---|
-| Core | `core/` | Typed ports, topology with buses and multiplicity, connection residuals, normalized margins |
-| Powertrain | `powertrain/` | Motor and generator (McDonald AIAA 2015-1676 losses), battery, turboshaft, gearbox, actuator-disk rotor; port declarations, compatibility margins, series-hybrid builders including rubber sizing |
-| Vehicle | `vehicle/` | Wing, tails, fuselage, gear, systems, payload, fuel, nacelles, interconnect shaft, fixed equipment, installed powertrain; Raymer GA and AFDD masses; mass and CG aggregation |
-| Aerodynamics | `aerodynamics/` | Linear lift, parasite buildup, induced drag, drag-increment hook |
-| Controls | `controls/` | Neutral point, static margin, elevator trim, Cn_beta, rudder for failed-rotor yaw |
-| Trajectory | `trajectory/` | Tiltrotor point mass, direct-collocation trajectories, computed conversion corridor and level-flight trim |
-| Performance | `performance/` | Quasi-steady flight points coupling aero and the whole powertrain |
-| Requirements | `requirements/` | Hover, climb, speed and ceiling capability requirements |
-| Mission | `mission/` | Hover, climb, cruise, loiter, descent segments; missions with fuel burn and SOC |
-| Weights | `weights/` | AFDD rotorcraft weight equations (rotor, drive system, engine section) from NDARC |
-| Export | `export/openvsp/` | Numeric geometry snapshot of a solved aircraft; OpenVSP outer mold line (tilting nacelles, Modes), STEP/STL export, PyVista renders. Optional; never imported by sizing code |
-
-Lower layers never import higher ones; components build equations and callers
-own variables, constraints and objectives ([architecture](docs/ARCHITECTURE.md),
-[interfaces](docs/MODEL_INTERFACES.md), [implementation notes](docs/IMPLEMENTATION_NOTES.md)).
-Diagrams of the layering, fidelity scaling and sizing/trajectory/6-DOF levels are in [architecture diagrams](docs/ARCHITECTURE_DIAGRAMS.md).
-
-## Environment and execution
-
-With uv installed, `uv sync` creates `.venv` and installs the project from
-`pyproject.toml` (Python 3.13 via `.python-version`; `uv sync --locked`
-reproduces the lockfile). Examples import each other, so run them as modules
-from the repository root.
-
-```powershell
-uv sync
-uv run python -m unittest discover -s tests
-uv run python -m examples.halo_sizing             # Tier 10c: Halo-class two-rotor series-hybrid sizing
-uv run python -m examples.xv15_performance        # Tier 10b: XV-15 lapse, hover and sfc checks
-uv run python -m examples.xv15_reference          # Tier 10a: XV-15 group-weight validation
-uv run python -m examples.coupled_sizing          # Tier 9: sizing + mission + energy allocation
-uv run python -m examples.mission_analysis        # Tier 8: prescribed and semi-free missions
-uv run python -m examples.requirements_sizing     # Tier 7: powertrain sized to requirements
-uv run python -m examples.tail_sizing             # Tier 6: stability-driven tail sizing
-uv run python -m examples.cruise_closure          # Tier 5: cruise equilibrium in the closure
-uv run python -m examples.aircraft_mass_closure   # Tier 4: mass and CG closure
-uv run python -m examples.series_hybrid_point     # Tiers 2-3: topology-coupled hover point
-uv run python -m examples.series_hybrid_point_explicit  # Tier 1: hand-coupled hover point
-uv run python -m examples.halo_openvsp            # Plan 031: Halo in OpenVSP (needs OpenVSP, see below)
-uv run python -m examples.halo_aero_compare       # Plan 031: VSPAERO and OpenVSP parasite drag vs AeroSandbox
+```
+requirements ──┐
+mission ───────┤      components return equations and residuals,
+powertrain ────┤      never variables or loops
+aero / rotor ──┼──►  ONE asb.Opti problem  ──►  IPOPT  ──►  sized aircraft + mission + energy split
+weights ───────┤      caller owns every variable, constraint
+stability ─────┤      and the objective
+thermal ───────┤
+failure cases ─┘
 ```
 
-### Optional: OpenVSP geometry export
+- **One problem, no hidden loops.** Mass closure, mission fuel and state of charge, battery-versus-generator energy
+  allocation and every failure case are constraints in the same problem. Derivatives come from CasADi automatic
+  differentiation.
+- **Typed powertrain network.** Components connect through ports (shaft, DC bus) with multiplicity, so "two lanes
+  per rotor, two buses, two strings" is a topology, not hand-written bookkeeping. Speed, torque, voltage, current
+  and power compatibility are checked as normalized margins.
+- **Named binding constraints.** Every margin has a name, so the solver reports *what* sizes the aircraft.
+- **Fidelity in layers.** Each model sits behind a simple interface, and the simple version is kept, so the effect
+  of each model on the answer is traceable
+  ([how the answer moved](docs/RESULTS.md#4-how-the-answer-moved-as-fidelity-was-added)).
+- **Conversion and trajectories.** The sized aircraft is trimmed at every nacelle angle to compute its conversion
+  corridor, then flown by direct collocation (minimum-energy transition, time to climb) inside it.
+- **Geometry and structure exports.** The sized aircraft goes to OpenVSP (outer mold line, internal structure,
+  STEP/STL), VSPAERO and CalculiX as independent checks; nothing in the sizing depends on them.
 
-The OpenVSP Python API ships with the OpenVSP release, not on PyPI. Install it
-into `.venv` from a release built for Python 3.13 (3.53.1 is used here), and
-the PyVista renderer from the `geometry` group:
-
-```powershell
-$vsp = "<OpenVSP-3.53.1-win64>\python"
-uv pip install --system-certs "$vsp\openvsp_config" "$vsp\utilities" "$vsp\degen_geom" "$vsp\vsp_airfoils" "$vsp\openvsp"
-uv sync --inexact --group geometry
-```
-
-These packages are outside the lockfile, so a plain `uv sync` removes them;
-use `uv sync --inexact`. Tests that need OpenVSP skip when it is absent.
-Outputs go to `output/` (not committed).
-
-## Geometry, aero cross-check and structure tools (plan 031)
-
-These are optional, they need OpenVSP, and nothing in the sizing depends on them. They take a solved aircraft (as
-plain numbers) and check it from a different direction.
-
-| Tool | What it does | Run |
-|---|---|---|
-| Outer mold line | The drawn Halo in OpenVSP: smooth bodies, a tapered wing, a V-tail, tip nacelles that tilt about the spindle, rotors. Writes `.vsp3` with hover, conversion and cruise Modes, STEP and STL per nacelle angle, and renders | `python -m examples.halo_openvsp` |
-| Aero cross-check | VSPAERO (vortex lattice and panel) and the OpenVSP parasite-drag build-up against AeroSandbox VLM and AeroBuildup on the same geometry. Compares lift slope, neutral point, induced and profile drag | `python -m examples.halo_aero_compare` |
-| Internal structure | Wing box (spars, ribs), fuselage (ring frames, bulkheads, floor) and V-tail as OpenVSP FEA structures. Writes CalculiX and Nastran decks, STL and a mass report, and renders the layout | `python -m examples.halo_structure` |
-| Wing FE check | Runs CalculiX on the OpenVSP wing-box mesh with AFDD-mapped gauges and rigid nacelles: free-free beam, chord and torsion frequencies vs AFDD, and the ultimate jump take-off strain | `python -m examples.halo_wing_fe` (needs CalculiX, `CCX`) |
-| Weight back-check | Sizes the primary-structure gauges on the drawn layout from simple ultimate loads and the AFDD stiffness requirements, then compares with the AFDD wing and Raymer tail and fuselage | `python -m examples.halo_structure_reference`, then `python -m examples.halo_structure_check` |
-
-Main findings so far:
-- The AFDD wing agrees with the layout to within about 10 %.
-- AeroBuildup is conservative on stability and induced drag compared with VSPAERO.
-- The XV-15 fuselage calibration overstated an uncrewed fuselage, which led to plan 037.
-- The CalculiX wing check found the AFDD wing optimistic for this layout, because the caps work over a shorter
-  lever arm in the real box. The jump take-off strain was 1.29x the allowable. Plan 038 corrects the model: the
-  FE re-check gives 1.10x, and beam frequency rises from 0.70x to 0.85x of the AFDD estimate.
-
-Limits:
-- Fuselage FE meshing takes minutes per file type.
-- The structural STEP export is off.
-- Only the wing box has been solved by FE; the fuselage and tail decks carry placeholder gauges.
-
-See [implementation notes](docs/IMPLEMENTATION_NOTES.md) (plans 031, 037 and 038) for numbers and OpenVSP quirks.
-
-## Conversion corridor and trim (plan 039)
-
-`trajectory/corridor.py` computes where the sized aircraft can fly level at each nacelle angle, instead of assuming
-an XV-15-shaped corridor.
-
-- **Trim:** thrust, attitude, ruddervator and longitudinal cyclic balance the forces along and normal to the flight
-  path and the pitching moment about the CG. The spare freedom goes to least rotor power.
-- **Corridor:** at each nacelle angle, the least and greatest airspeed with a trim inside the limits. Each side
-  reports the limit that sets it.
-- **Limits:**
-  - pitch -5 to +12 deg;
-  - ruddervator +/-25 deg;
-  - cyclic +/-10 deg, washed out toward airplane mode;
-  - wing stall;
-  - edgewise advance ratio 0.28, a proxy for flapping and hub loads;
-  - rotor power, blade loading, and a placard at 1.1 x the 210 kt requirement.
-
-`python examples/halo_conversion_corridor.py` writes `output/corridor/corridor.png` and a trim schedule. Results for
-the reference (6,885 kg, sea level, hover tip speed):
-
-| Corridor (kt) | 90 deg | 75 deg | 60 deg | 45 deg | 30 deg | 0 deg |
-|---|---|---|---|---|---|---|
-| Low side | hover | hover | 89 (pitch) | 106 (pitch) | 112 (pitch) | 119 (pitch) |
-| High side | 130 (edgewise) | 134 (edgewise) | 144 (edgewise) | 174 (edgewise) | 231 (placard) | 219 (rotor power) |
+| Discipline | Model |
+|---|---|
+| Rotor | Momentum + profile power with tip-Mach rise; propeller-mode efficiency in J. Fitted to full-scale JVX data |
+| Machines | McDonald loss model; mass from torque; built from whole units of real products (motor and generator database) |
+| Battery | Samsung 50G-shaped equivalent circuit with sag and end-of-life rating |
+| Turboshaft | Fixed 1,120 hp deck; lapse in density and temperature; part-power fuel curve |
+| Aerodynamics | AeroSandbox AeroBuildup with Scholz corrections; trim drag from the tail load; hover download |
+| Weights | AFDD rotorcraft equations (rotor, drive, engine section); NDARC tiltrotor wing with whirl-flutter frequency margins; Raymer GA elsewhere, anchored to a drawn structural layout |
+| Thermal | Heat exchanger sized with the aircraft; short-time machine ratings from thermal mass |
+| Stability and control | Neutral point, static margin, elevator trim, Cn_β, rudder for a failed rotor; conversion corridor from trim with ruddervator, cyclic, attitude, edgewise-flow, power and placard limits |
+| Redundancy | Lane-out, bus-out and string-out hovers |
 
 ![Computed conversion corridor](docs/figures/conversion_corridor.png)
 
-- **High side:** the edgewise limit sets it at high nacelle angles, close to the XV-15.
-- **Low side:** the attitude limit sets it, not wing stall.
-- **Pitch authority:** tightest in helicopter mode near 65 kt, where trim uses the full ruddervator and most of
-  the cyclic.
-- **Not modelled yet:** the rotor's in-plane force in edgewise flow (so the low side at 45-60 deg is conservative)
-  and an airplane-mode rotor speed schedule.
+![Trajectories in the computed conversion corridor](docs/figures/trajectory_conversion_corridor.png)
 
-## Continuous integration
+## How it is checked
 
-GitHub Actions runs the unit suite on every push and pull request
-(`.github/workflows/tests.yml`: `uv sync --locked`, then `unittest`). The
-notebooks workflow (`notebooks.yml`) executes every verification notebook on
-demand and uploads the executed copies as an artifact. Tests that need
-user-supplied local data in `data/` skip when it is absent.
-
-## Verification notebooks
-
-One executed notebook per discipline, on the current reference (outputs kept so plots render on GitHub). Each runs
-the 15,179 lb reference, then verifies the discipline's models with numbered checks:
+- **658 unit tests:** closed-form identities, limiting cases, sign conventions and trends, and every model exercised
+  symbolically inside `asb.Opti`. The full suite takes 10-17 min locally and currently exceeds the 30 min CI limit
+  (see [next steps](docs/NEXT_STEPS.md)).
+- **Six executed discipline notebooks** ([`notebooks/`](notebooks/)) size the baseline design and verify each
+  discipline with numbered checks and plots (458 checks, all passing):
 
 | Notebook | Contents |
 |---|---|
-| [Global sizing](notebooks/01_global_sizing.ipynb) | The reference, mass closure, binding constraints, empty-mass breakdown, mission and energy allocation; requirements, missions and coupled sizing building blocks |
-| [Powertrain](notebooks/02_powertrain.ipynb) | Machine units, failure cases and temperatures of the reference; machines and losses, supplier database, gearboxes, topology, margins, electrical layer, redundancy, thermal, turboshaft lapse, hot and high |
+| [Global sizing](notebooks/01_global_sizing.ipynb) | The baseline design, mass closure, binding constraints, empty-weight breakdown, mission and energy allocation; requirements, missions and coupled sizing building blocks |
+| [Powertrain](notebooks/02_powertrain.ipynb) | Machine units, failure cases and temperatures; machines and losses, supplier database, gearboxes, topology, margins, electrical layer, redundancy, thermal, turboshaft lapse, hot and high |
 | [Energy storage](notebooks/03_energy_storage.ipynb) | The pack through the mission and the engine-out hover; the 50G equivalent-circuit cell model |
-| [Aerodynamics and rotor](notebooks/04_aerodynamics_rotor.ipynb) | AeroBuildup and Scholz on the reference aircraft, XV-15 drag, blown wing, hover download; the JVX-calibrated proprotor; the simple model |
-| [Structures and weights](notebooks/05_structures_weights.ipynb) | Airframe groups, AFDD wing items and whirl flutter of the reference; XV-15 weight calibration; the AFDD tiltrotor wing |
+| [Aerodynamics and rotor](notebooks/04_aerodynamics_rotor.ipynb) | AeroBuildup and Scholz on the baseline design, XV-15 drag, blown wing, hover download; the JVX-calibrated proprotor; the simple model |
+| [Structures and weights](notebooks/05_structures_weights.ipynb) | Airframe groups, AFDD wing items and whirl-flutter frequency margins; XV-15 weight calibration; the AFDD tiltrotor wing |
 | [Dynamics and control](notebooks/06_dynamics_control.ipynb) | Static stability, the computed conversion corridor and trim, trajectories inside the corridor; trim and tail-sizing building blocks |
 
-The per-tier notebooks used while the framework was built are in the git history (before this change).
+- **External validation:**
+  - **Bell XV-15** group weights. Uncalibrated, the models give 11,315 lb against 13,000 lb actual; explicit group
+    factors close it.
+  - **JVX full-scale proprotor:** figure of merit within 0.012 and cruise efficiency within 0.013, with hover points
+    held out of the fit.
+  - **Tiltrotor wing weight:** fitted on the XV-15, then −2 % on the Bell D266 wing and −18 % on the V-22 FSD wing.
+  - **Drag:** AeroBuildup and an independent Scholz hand build-up agree within about 2 % in CD0.
+- **Cross-checks from another direction:** OpenVSP geometry and VSPAERO against AeroSandbox, a structural layout
+  back-check of the weight equations, and a CalculiX finite-element check of the wing box.
 
-```powershell
-uv sync --group notebooks
-uv run jupyter lab notebooks
+![JVX proprotor calibration](docs/figures/rotor_jvx_calibration.png)
+
+## What it does not do yet
+
+In rough order of how much each could move the answer:
+
+1. **Whirl flutter is a frequency margin, not a stability analysis.** It enters the sizing as wing torsion and beam
+   frequencies per rev (the NDARC practice), not as a coupled rotor-wing stability constraint.
+2. **Drag is not anchored to flight data.** The excrescence factor matches NASA NDARC's XV-15 estimate, not flight
+   test. Drag drives payload headroom more than anything else.
+3. **Weight calibration rests on one complete aircraft.** The fuselage needs a factor of about 2 and flight controls
+   about 4. These are the largest sensitivities (about ±540 lb each for ±15 %).
+4. **The wing is not closed structurally.** The finite-element check puts jump take-off spar-cap strain at 1.10 of
+   the allowable, and wing torsion is not cleanly separated from nacelle modes. The check was last run on an
+   earlier version (v3.3.5, 13,038 lb), not the baseline.
+5. **The electrical layer is built but off by default.** Inverters, cables and protection add about 330 kg and 3 %
+   losses; with every option on, the problem converges only through the multistart strategy.
+6. **Failures are single and symmetric.** Double failures did not converge (not shown infeasible), and degraded
+   states apply to both rotors, so roll trim is not modelled.
+7. **Simplifications still in the baseline:** a conventional tail in sizing (the V-tail is only drawn);
+   point-mass trajectories with no cyclic and no 6-DOF; no rotor in-plane force or rotor-speed schedule in the
+   conversion corridor; battery chiller power not modelled.
+
+## Where I would take it next
+
+Approach and effort for each are in [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md).
+
+1. **Whirl flutter inside the optimization:** a coupled rotor-pylon-wing stability model written in CasADi, so the
+   optimizer trades wing thickness, spar caps, nacelle station and pylon inertia directly against flutter speed.
+2. **Close the wing:** re-run the finite-element check on the baseline, fold the cap-depth and skin corrections
+   into the sizing, and identify torsion from mode shapes.
+3. **Anchor drag** to the XV-15 power-required curve, then airplane-mode rotor efficiency.
+4. **A second weight anchor** for the fuselage and flight controls, ideally an uncrewed fly-by-wire aircraft, to
+   replace the 2× and 4× factors.
+5. **Electrical layer on by default,** with problem scaling and continuation so the full model converges from one
+   start.
+6. **Asymmetric and double failures,** including the trade between an interconnect shaft and electrical
+   cross-strapping.
+7. **Uncertainty on the answer:** propagate the calibration factors to a take-off-weight band instead of a single
+   number.
+8. **Conversion controls:** rotor in-plane force, a rotor-speed schedule and cyclic in the trajectory model, then
+   linearized models at the corridor trim points as the first control-law step; V-tail in the sizing.
+
+## Running it
+
+```bash
+uv sync
+uv run python -m examples.halo_sizing                    # the baseline design (about 10 min from cold)
+uv run python -m unittest discover -s tests              # 10-17 min
+uv sync --group notebooks && uv run jupyter lab notebooks
 ```
 
-## Status and next step
+Set `OMP_NUM_THREADS=1` when running several solves at once; threaded BLAS under contention makes IPOPT fail
+spuriously. The OpenVSP and CalculiX tools are optional and need separate installs
+([details](docs/IMPLEMENTATION_NOTES.md)); nothing in the sizing depends on them.
 
-All roadmap tiers 0-22 are implemented, and Tier 23 (geometry) is partial. Open items, roughly by impact (see
-[docs/RESULTS.md](docs/RESULTS.md)):
+## Repository map
 
-- **Drag calibration** against XV-15 flight data, and airplane-mode rotor efficiency.
-- **Weight calibration** rests on one complete aircraft.
-- **Wing:** the corrected wing is still 10 % over the strain allowable in the jump take-off by FE, and wing
-  torsion is not yet cleanly identified in the FE modes.
-- **Layout assumptions:** the turbogenerator station and the nacelle drive and cowling offsets.
-- **V-tail:** the sizing uses a conventional tail; the V-tail is drawn only.
-- **Geometry:** the symbolic layout with clearance and packaging constraints (Tier 23) is still planned.
-- **Trajectories:** the trajectory layer has no 6-DOF yet. The computed corridor (plan 039) still needs the rotor
-  in-plane force and a rotor speed schedule. Linearized pitch models at its trim points are the next controls step.
+| Path | Contents |
+|---|---|
+| `src/aircraft_closure/core` | Typed ports, topology with buses and multiplicity, connection residuals, normalized margins |
+| `src/aircraft_closure/powertrain` | Motors, generators, battery, turboshaft, gearboxes, rotor; machine database; redundancy; series-hybrid builders |
+| `src/aircraft_closure/vehicle`, `weights` | Airframe components, mass and CG aggregation; AFDD rotorcraft weights |
+| `src/aircraft_closure/aerodynamics`, `controls` | Lift and drag build-ups, trim, download; static stability |
+| `src/aircraft_closure/mission`, `requirements`, `performance` | Segments and missions; capability requirements; coupled flight points |
+| `src/aircraft_closure/thermal`, `trajectory` | Heat rejection and ratings; collocation trajectories and the conversion corridor |
+| `src/aircraft_closure/export/openvsp` | Optional geometry, aero cross-check and FE decks; never imported by sizing |
+| `examples/` | The baseline design (`halo_sizing.py`), XV-15 and JVX validation, conversion corridor and trajectories |
+| `notebooks/` | Six executed discipline notebooks |
+| `docs/` | [Results](docs/RESULTS.md), [next steps](docs/NEXT_STEPS.md), [aircraft versions](docs/AIRCRAFT_VERSIONS.md), [architecture](docs/ARCHITECTURE.md), [coding conventions](docs/CODING_CONVENTIONS.md), [design log](docs/decisions/) |
+
+Lower layers never import higher ones. Components build equations; callers own variables, constraints and
+objectives.

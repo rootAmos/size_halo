@@ -206,7 +206,7 @@ class TrendTests(unittest.TestCase):
     pack = EquivalentCircuitBattery(count_series=210, count_parallel=20.0)
 
     def test_discharge_curve_shape(self):
-        """Constant-power discharge: the bus voltage falls with SOC, steeply below 20 % (the user's curve)."""
+        """Constant-power discharge: the bus voltage falls with SOC, steeply below 20 % (the author's curve)."""
         voltages = [float(self.pack.evaluate(200.0, soc).voltage_V) for soc in (0.9, 0.5, 0.2, 0.1, 0.05)]
         self.assertTrue(all(a > b for a, b in zip(voltages, voltages[1:])))
         self.assertGreater(voltages[3] - voltages[4], (voltages[0] - voltages[1]) / 8)
