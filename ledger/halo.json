@@ -656,8 +656,8 @@
      "note": ""
     }
    ],
-   "sensitivity": null,
-   "sensitivity_source": "",
+   "sensitivity": 336.98009802330944,
+   "sensitivity_source": "central difference ±0.02, Halo sizing",
    "allowance": 0.0,
    "plan": [],
    "sizing_keys": [],
@@ -681,8 +681,8 @@
      "note": ""
     }
    ],
-   "sensitivity": null,
-   "sensitivity_source": "",
+   "sensitivity": -1650.4686761186804,
+   "sensitivity_source": "central difference ±0.01, Halo sizing",
    "allowance": 0.0,
    "plan": [],
    "sizing_keys": [],
@@ -706,8 +706,8 @@
      "note": ""
     }
    ],
-   "sensitivity": null,
-   "sensitivity_source": "",
+   "sensitivity": -481.36741785883714,
+   "sensitivity_source": "central difference ±0.01, Halo sizing",
    "allowance": 0.0,
    "plan": [],
    "sizing_keys": [],
@@ -936,6 +936,30 @@
    "source": "Halo sizing (baseline)",
    "kind": "sizing",
    "summary": "take-off 6,885 kg, growth factor 2.54, 14 binding limits"
+  },
+  {
+   "date": "2026-10-09",
+   "source": "Halo sizing (baseline)",
+   "kind": "sizing",
+   "summary": "take-off 6,885 kg, growth factor 2.54, 14 binding limits"
+  },
+  {
+   "date": "2026-10-09",
+   "source": "central difference ±0.02, Halo sizing",
+   "kind": "sensitivity",
+   "summary": "Drag excrescence factor on AeroBuildup: 337 take-off kg per -"
+  },
+  {
+   "date": "2026-10-09",
+   "source": "central difference ±0.01, Halo sizing",
+   "kind": "sensitivity",
+   "summary": "Cell-to-pack mass fraction: -1650 take-off kg per -"
+  },
+  {
+   "date": "2026-10-09",
+   "source": "central difference ±0.01, Halo sizing",
+   "kind": "sensitivity",
+   "summary": "Battery capacity at end of life: -481.4 take-off kg per -"
   }
  ],
  "history": [
@@ -1000,6 +1024,278 @@
     {
      "key": "mass.fixed_equipment",
      "value_kg": 8.72
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-09",
+   "source": "Halo sizing (baseline)",
+   "sigma_takeoff_kg": 458.53,
+   "margin_99_kg": 1066.67,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 130.42
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 39.73
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 31.06
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 26.46
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 25.09
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 23.5
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 17.53
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 14.94
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 11.08
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 11.08
+    },
+    {
+     "key": "mass.rotor_gearboxes",
+     "value_kg": 10.52
+    },
+    {
+     "key": "mass.fixed_equipment",
+     "value_kg": 8.72
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-09",
+   "source": "central difference ±0.02, Halo sizing",
+   "sigma_takeoff_kg": 459.76,
+   "margin_99_kg": 1069.54,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 130.02
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 39.62
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 30.98
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 26.38
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 25.02
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 23.43
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 17.48
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 14.9
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 11.05
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 11.05
+    },
+    {
+     "key": "mass.rotor_gearboxes",
+     "value_kg": 10.49
+    },
+    {
+     "key": "mass.fixed_equipment",
+     "value_kg": 8.69
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-09",
+   "source": "central difference ±0.01, Halo sizing",
+   "sigma_takeoff_kg": 461.61,
+   "margin_99_kg": 1073.84,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 129.42
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 39.46
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 30.85
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 26.27
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 24.92
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 23.34
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 17.41
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 14.84
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 11.0
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 11.0
+    },
+    {
+     "key": "mass.rotor_gearboxes",
+     "value_kg": 10.45
+    },
+    {
+     "key": "mass.fixed_equipment",
+     "value_kg": 8.66
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-09",
+   "source": "central difference ±0.01, Halo sizing",
+   "sigma_takeoff_kg": 462.24,
+   "margin_99_kg": 1075.3,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 129.22
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 39.4
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 30.81
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 26.24
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 24.88
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 23.3
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 17.38
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 14.82
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 10.99
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 10.99
+    },
+    {
+     "key": "mass.rotor_gearboxes",
+     "value_kg": 10.44
+    },
+    {
+     "key": "mass.fixed_equipment",
+     "value_kg": 8.65
     },
     {
      "key": "hot-day hover: heat_exchanger power_heat_W",
