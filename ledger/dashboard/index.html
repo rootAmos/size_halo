@@ -77,6 +77,15 @@ svg .lab { fill: var(--ink); font-weight: 500; }
 .log div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--rule-soft); font-size: 13px; }
 .log .src { color: var(--muted); }
 .empty { color: var(--muted); padding: 24px 0; }
+.gates { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.gate h3 { font: 600 15px/1.2 var(--display); margin: 0 0 2px; }
+.gate .when { font: 12px var(--mono); color: var(--muted); margin-bottom: 8px; }
+.gate ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.gate li { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; font-size: 13px; align-items: baseline; }
+.tag { font: 500 10.5px/1 var(--body); border-radius: 3px; padding: 3px 5px; text-align: center; white-space: nowrap; }
+.tag.priced { background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good); }
+.tag.model { background: var(--accent-soft); color: var(--accent); }
+.tag.owner { background: var(--rule-soft); color: var(--muted); }
 @media (prefers-reduced-motion: no-preference) { tbody tr.row { transition: background .12s; } }
 </style>
 
@@ -129,6 +138,19 @@ svg .lab { fill: var(--ink); font-weight: 500; }
       </section>
     </div>
   </div>
+
+  <section class="panel" aria-labelledby="h-reg">
+    <div style="display:grid;gap:4px">
+      <h2 id="h-reg">Trade register</h2>
+      <p class="lede" id="reg-lede">Every trade from concept to first article, by the gate where it locks.</p>
+    </div>
+    <div id="register"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-dec">
+    <h2 id="h-dec">Decisions taken</h2>
+    <div class="tablewrap"><table style="min-width:560px"><thead><tr><th>Date</th><th>Decision</th><th>Choice</th><th>Owner</th></tr></thead><tbody id="decisions"></tbody></table></div>
+  </section>
 
   <section class="panel" aria-labelledby="h-log">
     <h2 id="h-log">Ledger log</h2>
@@ -290,12 +312,29 @@ function burn() {
   $("burn").innerHTML = s + `</svg>`;
 }
 
+function register() {
+  const trades = V.trades || [];
+  const open = trades.filter(t => t.status === "open"), decided = trades.filter(t => t.status !== "open");
+  const priced = open.filter(t => t.options > 1).length, model = open.filter(t => t.options < 2 && t.model_hook).length;
+  $("reg-lede").textContent = `${open.length} open trades: ${priced} priced by the sizing, ${model} the sizing can price next, ${open.length - priced - model} need an owner's option estimates. ${decided.length} decisions taken.`;
+  const gates = Object.entries(V.gates || {}).sort((a, b) => a[1].localeCompare(b[1]));
+  $("register").innerHTML = `<div class="gates">${gates.map(([g, d]) => {
+    const items = open.filter(t => t.lock_gate === g);
+    return `<div class="gate"><h3>${esc(g)}</h3><div class="when">${esc(d)} · ${items.length} trades</div><ul>${items.map(t => {
+      const tag = t.options > 1 ? `<span class="tag priced">priced</span>` : t.model_hook ? `<span class="tag model">model can price</span>` : `<span class="tag owner">needs estimate</span>`;
+      return `<li>${tag}<span>${esc(t.label)}<div class="sub">${esc(t.discipline)} · ${esc(t.owner)}</div></span></li>`;
+    }).join("")}</ul></div>`;
+  }).join("")}</div>`;
+  $("decisions").innerHTML = decided.slice().sort((a, b) => (b.decided_date || "").localeCompare(a.decided_date || "")).map(t =>
+    `<tr><td class="num">${esc(t.decided_date || "earlier")}</td><td>${esc(t.label)}</td><td>${esc(t.decision)}</td><td>${esc(t.owner)}</td></tr>`).join("");
+}
+
 function log() {
   const runs = (V.runs || []).slice().reverse();
   $("log").innerHTML = runs.length ? runs.map(r => `<div><span class="num src">${esc(r.date)}</span><span><b>${esc(r.source)}</b> <span class="sub">${esc(r.kind)}</span><br>${esc(r.summary)}</span></div>`).join("") : `<p class="empty">No ingests yet.</p>`;
 }
 
 fetch("view.json", { cache: "no-store" }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(v => {
-  V = v; summary(); controls(); table(); riskMap(); burn(); log();
+  V = v; summary(); controls(); table(); riskMap(); burn(); register(); log();
 }).catch(() => { $("meta").textContent = "The ledger view (view.json) did not load. Re-run the ledger export and republish."; });
 </script>

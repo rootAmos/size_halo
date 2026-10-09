@@ -3,9 +3,9 @@
     python -m examples.halo_trade_study trade.wing_material trade.hv_voltage --cache output/ledger/baseline.pkl
 
 Each option is one coupled sizing, warm-started from the baseline at its machine unit counts. An option's effect is
-its take-off mass against the trade's reference option (the first). Its uncertainty is the model error of the items
-that change: sigma = growth factor x sqrt(sum (sigma fraction x item mass change)^2) over the empty-weight items,
-since items estimated by the same method share their bias between options. Options that fail to solve are reported,
+its take-off mass against the trade's reference option (the first). Its uncertainty is the relative model error of
+the empty-weight change, sqrt(sum (sigma fraction x item mass change)^2) / |empty change|, applied to the take-off
+change: errors common to all options cancel, and the growth is not counted twice. Options that fail to solve are reported,
 never dropped silently.
 
 The run refuses to start with uncommitted changes under src/ or examples/, so the commit it records reproduces it.
@@ -70,11 +70,18 @@ def solve(assumptions, start):
 
 
 def study(key, baseline):
-    from examples.halo_sizing import HaloAssumptions
+    """Solve every option: warm from the baseline, else from the previous option; the reference option falls back to
+    the cold multistart (needed with the electrical layer on), and the others then start from it."""
+    from examples.halo_sizing import HaloAssumptions, solve_halo_sizing
     base = fixed_units(HaloAssumptions(), baseline)
     rows, previous = [], None
-    for label, assumptions in options_for(key, base):
-        result = solve(assumptions, baseline) or (previous and solve(assumptions, previous))
+    for index, (label, assumptions) in enumerate(options_for(key, base)):
+        result = (solve(assumptions, previous) if previous is not None else None) or solve(assumptions, baseline)
+        if result is None and index == 0:
+            try:
+                result = solve_halo_sizing(assumptions=assumptions)
+            except RuntimeError:
+                result = None
         previous = result or previous
         rows.append((label, result))
     return rows
@@ -90,9 +97,12 @@ def priced_options(rows, growth_factor):
         if result is None:
             continue
         items = items_of(result)
-        sigma = growth_factor * math.sqrt(sum((items_ref[k].sigma_fraction * (items[k].mass_kg - items_ref[k].mass_kg))
-                                              ** 2 for k in items))
-        options.append((label, result, result.mass_takeoff_kg - reference.mass_takeoff_kg, sigma, items, items_ref))
+        delta = result.mass_takeoff_kg - reference.mass_takeoff_kg
+        delta_empty = result.mass_empty_kg - reference.mass_empty_kg
+        error_empty = math.sqrt(sum((items_ref[k].sigma_fraction * (items[k].mass_kg - items_ref[k].mass_kg)) ** 2
+                                    for k in items))
+        sigma = abs(delta) * error_empty / abs(delta_empty) if abs(delta_empty) > 1e-6 else growth_factor * error_empty
+        options.append((label, result, delta, sigma, items, items_ref))
     return options
 
 
@@ -104,10 +114,16 @@ def report(key, trade, rows, options, baseline, sha, today, ranked):
     entry = next(p for p in ranked if p.key == key)
     best = min(options[1:], key=lambda o: o[2]) if len(options) > 1 else None
     if best is not None:
-        verdict = ("the data has decided it" if "decided" in entry.action else "still open")
-        lines += [f"**Result.** {best[0]} changes take-off mass by {best[2] * lb:+,.0f} lb "
-                  f"(±{best[3] * lb:,.0f} lb, 1σ) against {options[0][0]}. {entry.detail}; {verdict}. "
-                  f"It ranks #{[p.key for p in ranked].index(key) + 1} of {len(ranked)} in the ledger.", ""]
+        decided = "decided" in entry.action
+        if best[2] >= 0:
+            lines += [f"**Result.** The reference holds: {options[0][0]} is the lightest option. The best "
+                      f"alternative, {best[0]}, adds {best[2] * lb:,.0f} lb of take-off mass (±{best[3] * lb:,.0f} lb, "
+                      f"1σ). {'The data has decided it: the trade can be closed.' if decided else 'Not yet decisive.'}", ""]
+        else:
+            lines += [f"**Result.** {best[0]} saves {-best[2] * lb:,.0f} lb of take-off mass (±{best[3] * lb:,.0f} lb, "
+                      f"1σ) against {options[0][0]}. {entry.detail}. "
+                      f"{'The data has decided it.' if decided else 'Still open: the spread overlaps.'} It ranks "
+                      f"#{[p.key for p in ranked].index(key) + 1} of {len(ranked)} in the ledger.", ""]
     lines += ["| Option | Take-off (lb) | Change (lb) | 1σ (lb) | Empty (lb) | Battery (lb) | Binding limits |",
               "|---|---|---|---|---|---|---|"]
     for label, result in rows:
@@ -125,9 +141,9 @@ def report(key, trade, rows, options, baseline, sha, today, ranked):
         if any(abs(d) >= 1 for d in deltas):
             lines.append(f"| {item} | " + " | ".join(f"{d:+,.0f}" for d in deltas) + " |")
     lines += ["", "**Method.** Each option is one coupled sizing, warm-started from the baseline "
-              f"({baseline.mass_takeoff_kg * lb:,.0f} lb) at its machine unit counts. The 1σ is the model error of the "
-              "items that change (their maturity spreads, scaled by the growth factor); errors common to all options "
-              "cancel.", "", "**Reproduce.**", "", "```",
+              f"({baseline.mass_takeoff_kg * lb:,.0f} lb) at its machine unit counts. The 1σ is the relative model error "
+              "of the empty-weight change (each changed item at its maturity spread), applied to the take-off change; "
+              "errors common to all options cancel.", "", "**Reproduce.**", "", "```",
               f"git checkout {sha}",
               f"python -m examples.halo_trade_study {key} --cache output/ledger/baseline.pkl", "```", ""]
     return "\n".join(lines)
@@ -145,6 +161,12 @@ def main(argv=None):
     for key in args.keys:
         trade = ledger.trades[key]
         rows = study(key, baseline)
+        if rows[0][1] is None:
+            ledger.runs.append(dict(date=today.isoformat(), source=f"trade study {key} at {sha[:7]}", kind="trade",
+                                    summary=f"{trade.label}: the reference option did not solve; nothing priced"))
+            write(ledger, today)
+            print(f"{key}: reference option did not solve")
+            continue
         options = priced_options(rows, ledger.growth_factor)
         trade.options = [TradeOption(label, "", delta, sigma, f"Halo sizing at {sha[:7]}")
                          for label, result, delta, sigma, _, _ in options]
@@ -157,8 +179,8 @@ def main(argv=None):
         path = os.path.join("docs/trades", f"{key.split('.', 1)[1]}.md")
         with open(path, "w", encoding="utf-8") as file:
             file.write(report(key, trade, rows, options, baseline, sha, today, ranked))
+        write(ledger, today)
         print(f"{key}: wrote {path}")
-    write(ledger, today)
 
 
 if __name__ == "__main__":
