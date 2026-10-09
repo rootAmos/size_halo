@@ -92,6 +92,26 @@ def describe_opti(opti):
                 inequalities=int(sum(lower != upper)))
 
 
+@contextlib.contextmanager
+def quiet_solver():
+    """Silence C-level stderr (CasADi's repeated "NaN detected" warnings from starts that fail) inside the block.
+
+    The warnings are harmless (IPOPT backs off from the bad step) but can fill a notebook; results are unchanged.
+    """
+    import io
+    import os
+    # CasADi writes through Python's sys.stderr when run from Python; IPOPT's C code writes to file descriptor 2.
+    sys.stderr.flush()
+    saved_fd = os.dup(2)
+    with open(os.devnull, "w") as devnull, contextlib.redirect_stderr(io.StringIO()):
+        os.dup2(devnull.fileno(), 2)
+        try:
+            yield
+        finally:
+            os.dup2(saved_fd, 2)
+            os.close(saved_fd)
+
+
 # ---- the cached baseline (deep dives only) ----------------------------------------------------------------------
 cache_dir = repo_root / "tutorials" / ".cache"
 
