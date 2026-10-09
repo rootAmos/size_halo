@@ -16,10 +16,12 @@ Every notebook starts with `from tutorial_helpers import *`, which puts `src/`, 
 path and loads `asb`, `np` (AeroSandbox's symbolic NumPy), `u` (units), `plt`, a plot style, and a few helpers (`check`, `lb`,
 `describe_opti`, `capture_opti`, `cached`, `quiet_solver`). Set `OMP_NUM_THREADS=1` if you run several notebooks at once.
 
+The discipline tutorials end with a **Limits and next steps** section: what the model can't do, and the work package that would fix it.
+
 Each notebook ends with `check_summary()`: the `check(...)` lines verify the claims the text makes (closed-form identities,
 reproductions of `examples/` drivers and documented results). A notebook that still passes still tells the truth about the code.
 
-## Core series (run in order)
+## The series (run in order)
 
 | # | Notebook | Run time | What you can do afterwards |
 |---|---|---|---|
@@ -52,27 +54,11 @@ reproductions of `examples/` drivers and documented results). A notebook that st
 | 20 | [Studies and extensions](20_studies_and_extensions.ipynb) | 2-3 min | starting points, discrete choices, warm-started studies, objectives, extending, testing |
 | **After sizing** | | | |
 | 21 | [Trim, corridor and trajectories](21_after_sizing_trajectories.ipynb) | 15 s | level-flight trim, the computed conversion corridor, direct-collocation transition and climb |
+| 22 | [Weights in depth](22_weights_in_depth.ipynb) | 10 s | the stiffness-sized tiltrotor wing and its validation, the growth factor as a multiplier, empty-weight growth allowance and uncertainty |
 
 Tutorial 19 solves the current reference with the fast Scholz aerodynamics (about a minute, within 0.3 % of the 15,179 lb reference)
-and caches it in `tutorials/.cache/`; tutorials 20 and 21 reuse it. The cache is keyed on a hash of `src/`, `examples/` and `data/`,
+and caches it in `tutorials/.cache/`; tutorials 20-22 reuse it. The cache is keyed on a hash of `src/`, `examples/` and `data/`,
 so any code change triggers a fresh solve.
-
-## Deep dives (`deep_dives/`, on the full reference)
-
-These read the current full-fidelity reference design top-down, discipline by discipline, with the three questions a reviewer asks
-(why is it built this way, what can't it do, what's next). They call `baseline()`, the full reference solve (10-15 minutes the
-first time, then cached).
-
-| Notebook | Topic |
-|---|---|
-| [D0 Reference tour](deep_dives/D0_reference_tour.ipynb) | the v3.6 baseline: requirements, what sizes it, where the weight goes, how the mission is flown |
-| [D1 Optimization](deep_dives/D1_optimization.ipynb) | the paradigm on a toy, then multipliers read off the full solve |
-| [D2 Components, ports, topology](deep_dives/D2_components_ports_topology.ipynb) | the network of the sized aircraft; residuals in normal and degraded states |
-| [D3 Rotor](deep_dives/D3_rotor.ipynb) | momentum + profile, JVX calibration, the rotor in the sizing |
-| [D4 Machines, gearboxes, engine](deep_dives/D4_machines_gearboxes_engine.ipynb) | losses, torque sizing, whole units, gearboxes, the turboshaft |
-| [D5 Battery](deep_dives/D5_battery.ipynb) | the equivalent circuit and the engine-out hover on the sized pack |
-| [D6 Aerodynamics](deep_dives/D6_aerodynamics.ipynb) | the three models on the sized aircraft; the NDARC drag calibration |
-| [D7 Weights and calibration](deep_dives/D7_weights_and_calibration.ipynb) | correlations, XV-15 calibration, the tiltrotor wing, OEW uncertainty |
 
 ## Where things are
 

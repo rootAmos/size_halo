@@ -1,4 +1,4 @@
-"""Shared helpers for the tutorials: paths, plot style, checks, Opti inspection and a cached baseline solve.
+"""Shared helpers for the tutorials: paths, plot style, checks, Opti inspection and a solve cache.
 
 Nothing here changes the model. Import it at the top of every tutorial:
 
@@ -12,8 +12,11 @@ What it gives you:
 - `check(name, passed)` and `check_summary()`: each tutorial verifies the claims it makes;
 - `lb(kg)` and `scalar(x)`;
 - `describe_opti(opti)`: size of an `asb.Opti` problem (variables, constraints) before or after a solve;
-- `baseline()`: the full v3.6 reference design (about 10-15 minutes the first time, then cached), used only by
-  the deep-dive tutorials.
+- `cached(name, compute)`: compute once per source version and keep the result in `tutorials/.cache/`;
+- `capture_opti()`: record the Opti that library code solves (size, duals, selected locals) without changing it;
+- `quiet_solver()`: silence harmless CasADi warnings from starts that fail;
+- `baseline()`: the full reference design with every default (10-15 minutes the first time, then cached), for your
+  own exploration; the tutorials use the faster Scholz near-reference instead.
 """
 import contextlib
 import hashlib
@@ -112,7 +115,7 @@ def quiet_solver():
             os.close(saved_fd)
 
 
-# ---- the cached baseline (deep dives only) ----------------------------------------------------------------------
+# ---- the solve cache --------------------------------------------------------------------------------------------
 cache_dir = repo_root / "tutorials" / ".cache"
 
 

@@ -506,7 +506,7 @@ spuriously. The OpenVSP and CalculiX tools are optional and need separate instal
 | `src/aircraft_closure/export/openvsp` | Optional geometry, aero cross-check and FE decks; never imported by sizing |
 | `examples/` | The baseline design (`halo_sizing.py`), mission profiles, empty-weight uncertainty, XV-15 and JVX validation, conversion corridor and trajectories |
 | `notebooks/` | Six executed discipline notebooks |
-| `tutorials/` | A bottom-up tutorial series (22 core notebooks) and deep dives on the full reference |
+| `tutorials/` | A bottom-up tutorial series (23 notebooks) from AeroSandbox to the Halo driver |
 | `docs/` | [Results](docs/RESULTS.md), [next steps](docs/NEXT_STEPS.md), [aircraft versions](docs/AIRCRAFT_VERSIONS.md), [architecture](docs/ARCHITECTURE.md), [coding conventions](docs/CODING_CONVENTIONS.md), [design log](docs/decisions/) |
 
 Lower layers never import higher ones. Components build equations; callers own variables, constraints and
