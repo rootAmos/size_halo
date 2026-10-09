@@ -201,6 +201,7 @@ open trade, ranked by the take-off weight at stake, with its owner, lock date an
 | Ingest | `src/aircraft_closure/ledger/ingest.py` | A new sizing, analysis, vendor weight or test updates the ledger and snapshots the ranking |
 | Halo seed | `examples/halo_ledger.py` | 16 empty-weight items, 6 model gaps, 3 model inputs, 4 architecture trades, every binding limit |
 | Ledger file | `ledger/halo.json` | Kept in git: its history is the decision history |
+| Trade reports | `docs/trades/` | One report per priced trade, tied to the commit that produced it ([wing material](trades/wing_material.md)) |
 | Dashboard | `ledger/dashboard/index.html` ([live](https://claude.ai/artifact/RdwNbk3GPj2Pwg4FWYojLu)) | Ranked list, risk against schedule, burn-down and log, drawn from `ledger/view.json` |
 
 **Evidence rule.** A re-run of the same source replaces its earlier entry, so re-running a handbook model never

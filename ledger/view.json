@@ -648,6 +648,22 @@
    "detail": "0.1 kg take-off per 1 % of the limit"
   },
   {
+   "key": "trade.wing_material",
+   "label": "Wing material: graphite-epoxy or aluminium",
+   "kind": "decide trade",
+   "owner": "Structures",
+   "value_kg": 0.0,
+   "value_low_kg": -343.46519645768757,
+   "value_high_kg": -290.523407728457,
+   "share": null,
+   "exposure_kg": 26.470894364615287,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "",
+   "action": "best option: Aluminium (the XV-15's) (the data has decided it)",
+   "detail": "P(better than Graphite-epoxy (baseline)) = 0 %"
+  },
+  {
    "key": "trade.hv_voltage",
    "label": "HV bus voltage and regulation",
    "kind": "blind spot",
@@ -870,22 +886,6 @@
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Structures trade without option data; moves mass.wing, gap.wing_strength"
-  },
-  {
-   "key": "trade.wing_material",
-   "label": "Wing material: graphite-epoxy or aluminium",
-   "kind": "blind spot",
-   "owner": "Structures",
-   "value_kg": null,
-   "value_low_kg": null,
-   "value_high_kg": null,
-   "share": null,
-   "exposure_kg": null,
-   "lock_date": "2026-12-15",
-   "days_to_lock": 67,
-   "schedule": "",
-   "action": "price it with the sizing: wing_material graphite_epoxy and aluminium",
-   "detail": "Structures trade without option data; moves mass.wing"
   },
   {
    "key": "trade.cruise_point",
@@ -1981,6 +1981,12 @@
    "source": "trade register (examples/halo_trades.py)",
    "kind": "register",
    "summary": "49 trades and decisions added"
+  },
+  {
+   "date": "2026-10-09",
+   "source": "trade study trade.wing_material at a6998ae",
+   "kind": "trade",
+   "summary": "Wing material: graphite-epoxy or aluminium: 2 options priced"
   }
  ],
  "history": [
@@ -2391,6 +2397,74 @@
      "value_kg": 6.29
     }
    ]
+  },
+  {
+   "date": "2026-10-09",
+   "source": "trade study trade.wing_material",
+   "sigma_takeoff_kg": 462.24,
+   "margin_99_kg": 1075.3,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 129.22
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 39.4
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 30.81
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 26.24
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 24.88
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 23.3
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 17.38
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 14.82
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 10.99
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 10.99
+    },
+    {
+     "key": "mass.rotor_gearboxes",
+     "value_kg": 10.44
+    },
+    {
+     "key": "mass.fixed_equipment",
+     "value_kg": 8.65
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    }
+   ]
   }
  ],
  "trades": [
@@ -2666,7 +2740,7 @@
    "affects": [
     "mass.wing"
    ],
-   "options": 0,
+   "options": 2,
    "note": ""
   },
   {

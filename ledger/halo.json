@@ -1147,7 +1147,22 @@
    "key": "trade.wing_material",
    "label": "Wing material: graphite-epoxy or aluminium",
    "owner": "Structures",
-   "options": [],
+   "options": [
+    {
+     "label": "Graphite-epoxy (baseline)",
+     "quantity": "",
+     "delta_mean": 0.0,
+     "delta_sigma": 0.0,
+     "source": "Halo sizing at a6998ae"
+    },
+    {
+     "label": "Aluminium (the XV-15's)",
+     "quantity": "",
+     "delta_mean": 316.9943020930723,
+     "delta_sigma": 16.092707377114284,
+     "source": "Halo sizing at a6998ae"
+    }
+   ],
    "lock_gate": "Concept freeze",
    "lock_date": "2026-12-15",
    "status": "open",
@@ -1825,6 +1840,12 @@
    "source": "trade register (examples/halo_trades.py)",
    "kind": "register",
    "summary": "49 trades and decisions added"
+  },
+  {
+   "date": "2026-10-09",
+   "source": "trade study trade.wing_material at a6998ae",
+   "kind": "trade",
+   "summary": "Wing material: graphite-epoxy or aluminium: 2 options priced"
   }
  ],
  "history": [
@@ -2171,6 +2192,74 @@
   {
    "date": "2026-10-09",
    "source": "trade register",
+   "sigma_takeoff_kg": 462.24,
+   "margin_99_kg": 1075.3,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 129.22
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 39.4
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 30.81
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 26.24
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 24.88
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 23.3
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 17.38
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 14.82
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 10.99
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 10.99
+    },
+    {
+     "key": "mass.rotor_gearboxes",
+     "value_kg": 10.44
+    },
+    {
+     "key": "mass.fixed_equipment",
+     "value_kg": 8.65
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-09",
+   "source": "trade study trade.wing_material",
    "sigma_takeoff_kg": 462.24,
    "margin_99_kg": 1075.3,
    "top": [
