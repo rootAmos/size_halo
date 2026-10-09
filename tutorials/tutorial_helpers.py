@@ -55,6 +55,34 @@ def scalar(x):
     return float(np.asarray(x, dtype=float).reshape(-1)[0])
 
 
+def show_source(target, start=None, end=None):
+    """Print source with the file's real line numbers, straight from the repo (so it can never drift from the code).
+
+    `target`: a function, class or module object, or a path relative to the repo root
+    ("src/aircraft_closure/core/margins.py"). `start`/`end`: 1-based file line range to print (inclusive); by default
+    the whole object (or file).
+    """
+    import inspect
+    if isinstance(target, str):
+        path = repo_root / target
+        lines = path.read_text().splitlines()
+        first = 1
+    else:
+        path = Path(inspect.getsourcefile(target))
+        lines, first = inspect.getsourcelines(target)
+        lines = [line.rstrip("\n") for line in lines]
+        first = max(first, 1)
+        if start is None and end is None:
+            start, end = first, first + len(lines) - 1
+        lines = path.read_text().splitlines()
+        first = 1
+    start = start or first
+    end = end or len(lines)
+    print(f"# {path.relative_to(repo_root)}  lines {start}-{end}")
+    for number in range(start, end + 1):
+        print(f"{number:4d}  {lines[number - 1]}")
+
+
 def lb(kg):
     """Kilograms to pounds (mass)."""
     return kg / u.lbm
