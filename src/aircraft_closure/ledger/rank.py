@@ -141,8 +141,11 @@ def _trade_priority(ledger, trade, today):
     if len(trade.options) < 2 or any(i is None for i in impacts):
         return Priority(trade.key, trade.label, "blind spot", trade.owner, None, None, None, None, None,
                         trade.lock_date,
-                        days, schedule, "estimate each option against a priced quantity",
-                        "trade without option data")
+                        days, schedule,
+                        f"price it with the sizing: {trade.model_hook}" if trade.model_hook
+                        else "owner to estimate each option against a ledger quantity",
+                        f"{trade.discipline + ' trade' if trade.discipline else 'Trade'} without option data"
+                        + (f"; moves {', '.join(trade.affects)}" if trade.affects else ""))
     (base_mean, base_sigma), best = impacts[0], min(range(1, len(impacts)), key=lambda i: impacts[i][0])
     gain = base_mean - impacts[best][0]
     sigma = math.hypot(base_sigma, impacts[best][1])

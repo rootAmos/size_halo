@@ -3,6 +3,7 @@
     python -m examples.halo_ledger seed                 # sizes the baseline, writes ledger/halo.json + view
     python -m examples.halo_ledger seed --sensitivities # also re-solves for the model-input sensitivities
     python -m examples.halo_ledger resize               # re-sizes and ingests (sensitivities, limits, masses)
+    python -m examples.halo_ledger trades               # adds new trade-register entries, no solve
     python -m aircraft_closure.ledger evidence ledger/halo.json mass.wing 452 25 --source "CalculiX" --fidelity 2
 
 What is seeded and where it comes from:
@@ -14,7 +15,7 @@ What is seeded and where it comes from:
   stated as assumptions; their take-off sensitivities come from re-solves (`--sensitivities`), else they are
   blind spots.
 - **Limits:** every binding margin of the sizing, priced from the same solve.
-- **Trades:** the architecture trades of docs/CLOSURE_SYSTEM.md, without option data until owners estimate them.
+- **Trades:** the register in `examples/halo_trades.py`, from concept to first article, plus decisions taken.
 Gate dates are a placeholder programme calendar. Illustrative study, not Archer data.
 """
 import argparse
@@ -25,9 +26,10 @@ from dataclasses import replace
 from datetime import date
 
 from aircraft_closure.ledger.ingest import ingest_sizing, set_sensitivity
-from aircraft_closure.ledger.model import Activity, Evidence, Ledger, Quantity, Trade
+from aircraft_closure.ledger.model import Activity, Evidence, Ledger, Quantity
 from aircraft_closure.ledger.store import load, save, snapshot, view
 from examples.halo_oew_uncertainty import item_definitions, maturity_levels
+from examples.halo_trades import register
 
 directory = "ledger"
 path_ledger = os.path.join(directory, "halo.json")
@@ -87,17 +89,6 @@ inputs = (
      0.80, 0.05, 0.01, "Preliminary design review", "Assumed 80 % of rated"),
 )
 
-trades = (
-    ("trade.hv_voltage", "HV bus voltage and regulation", "Electrical", "Concept freeze"),
-    ("trade.tilt_load_path", "Tilting load path: spindle station, fittings, actuator stiffness", "Structures",
-     "Preliminary design review"),
-    ("trade.failure_architecture", "Interconnect shaft or electrical cross-strapping", "Electrical",
-     "Concept freeze"),
-    ("trade.thermal_architecture", "Thermal: ram-air exchanger, liquid loop or nacelle-local", "Thermal",
-     "Concept freeze"),
-)
-
-
 # Margin label patterns -> (plain name, owner) for the binding limits. "{c}" is the flight condition.
 limit_patterns = (
     ("rotor_radius_m", "Rotor radius capped by the span (rotor diameter against span)", "Configuration"),
@@ -147,9 +138,7 @@ def seed(result, today):
         ledger.quantities[key] = Quantity(key, label, "input", "-", owner, gate, gates[gate],
                                           evidence=[Evidence(today.isoformat(), value, sigma, "assumption", 1)],
                                           note=note)
-    for key, label, owner, gate in trades:
-        ledger.trades[key] = Trade(key, label, owner, lock_gate=gate, lock_date=gates[gate],
-                                   note="Owner to estimate each option against a ledger quantity")
+    register(ledger, gates)
     ingest_sizing(ledger, result, source_sizing, today, sigma_fraction, *limit_names(result.sensitivity.margins))
     for label, group, keys, maturity, sigma, basis in item_definitions:
         q = ledger.quantities[slug(label)]
@@ -196,11 +185,20 @@ def write(ledger, today):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="python -m examples.halo_ledger")
-    parser.add_argument("command", choices=("seed", "resize"))
+    parser.add_argument("command", choices=("seed", "resize", "trades"))
     parser.add_argument("--cache", default=None, help="pickled HaloSizingResult to use instead of solving")
     parser.add_argument("--sensitivities", action="store_true", help="re-solve for the model-input sensitivities")
     args = parser.parse_args(argv)
     today = date.today()
+    if args.command == "trades":                 # add new register entries to the master ledger, no solve
+        ledger = load(path_ledger)
+        added = register(ledger, gates)
+        ledger.runs.append(dict(date=today.isoformat(), source="trade register (examples/halo_trades.py)",
+                                kind="register", summary=f"{added} trades and decisions added"))
+        snapshot(ledger, "trade register", today)
+        write(ledger, today)
+        print(f"{added} added; {len(ledger.trades)} trades and decisions in the ledger")
+        return
     result = baseline_result(args.cache)
     if args.command == "seed":
         ledger = seed(result, today)
