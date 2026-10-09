@@ -1,0 +1,1011 @@
+{
+ "name": "Halo decision ledger",
+ "growth_factor": 2.5368810508980673,
+ "baseline": {
+  "mass_takeoff_kg": 6885.064235165387,
+  "mass_empty_kg": 5048.620948255306,
+  "mass_payload_kg": 900.0
+ },
+ "gates": {
+  "Concept freeze": "2026-12-15",
+  "Preliminary design review": "2027-06-30",
+  "Critical design review": "2028-03-31",
+  "First article": "2028-12-31"
+ },
+ "quantities": {
+  "mass.wing": {
+   "key": "mass.wing",
+   "label": "Wing",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Structures",
+   "lock_gate": "Preliminary design review",
+   "lock_date": "2027-06-30",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 407.87010483896864,
+     "sigma": 40.787010483896864,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 40.787010483896864,
+   "plan": [
+    {
+     "label": "FE: calibrated structure, root fittings and a buckling step",
+     "due": "2026-10-30",
+     "sigma_after": 24.472206290338118,
+     "owner": "Structures",
+     "done": false
+    }
+   ],
+   "sizing_keys": [
+    "wing"
+   ],
+   "note": "Calibrated parametric; AFDD tiltrotor wing x 1.33 (XV-15); strength at ultimate not demonstrated"
+  },
+  "mass.tails": {
+   "key": "mass.tails",
+   "label": "Tails",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Structures",
+   "lock_gate": "Preliminary design review",
+   "lock_date": "2027-06-30",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 82.8736532011344,
+     "sigma": 8.287365320113441,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 8.287365320113441,
+   "plan": [],
+   "sizing_keys": [
+    "horizontal_tail",
+    "vertical_tail"
+   ],
+   "note": "Calibrated parametric; Raymer x XV-15 factor"
+  },
+  "mass.fuselage": {
+   "key": "mass.fuselage",
+   "label": "Fuselage",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Structures",
+   "lock_gate": "Preliminary design review",
+   "lock_date": "2027-06-30",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 560.185765675941,
+     "sigma": 56.018576567594096,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 44.814861254075275,
+   "plan": [
+    {
+     "label": "Second calibration aircraft (V-22 or AW609 group weights)",
+     "due": "2026-11-20",
+     "sigma_after": 39.21300359731587,
+     "owner": "Weights",
+     "done": false
+    }
+   ],
+   "sizing_keys": [
+    "fuselage"
+   ],
+   "note": "Calculated / layout; Raymer x 1.70, anchored to the drawn layout"
+  },
+  "mass.nacelles": {
+   "key": "mass.nacelles",
+   "label": "Nacelles",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Structures",
+   "lock_gate": "Preliminary design review",
+   "lock_date": "2027-06-30",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 194.83127296469638,
+     "sigma": 19.48312729646964,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 19.483127296469636,
+   "plan": [],
+   "sizing_keys": [
+    "nacelles"
+   ],
+   "note": "Calibrated parametric; AFDD-class estimate"
+  },
+  "mass.landing_gear": {
+   "key": "mass.landing_gear",
+   "label": "Landing gear",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Structures",
+   "lock_gate": "Preliminary design review",
+   "lock_date": "2027-06-30",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 258.38654122113917,
+     "sigma": 19.37899059158544,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 25.83865412211392,
+   "plan": [],
+   "sizing_keys": [
+    "landing_gear"
+   ],
+   "note": "Calibrated parametric; Raymer x XV-15 factor"
+  },
+  "mass.systems": {
+   "key": "mass.systems",
+   "label": "Systems",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Flight controls and systems",
+   "lock_gate": "Preliminary design review",
+   "lock_date": "2027-06-30",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 407.2715083868005,
+     "sigma": 61.09072625802008,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 40.72715083868005,
+   "plan": [
+    {
+     "label": "Second calibration aircraft (V-22 or AW609 group weights)",
+     "due": "2026-11-20",
+     "sigma_after": 36.65443575481205,
+     "owner": "Weights",
+     "done": false
+    }
+   ],
+   "sizing_keys": [
+    "systems"
+   ],
+   "note": "Calibrated parametric; Raymer; flight controls carry an XV-15 factor of about 4"
+  },
+  "mass.fixed_equipment": {
+   "key": "mass.fixed_equipment",
+   "label": "Fixed equipment",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Systems",
+   "lock_gate": "Preliminary design review",
+   "lock_date": "2027-06-30",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 266.25872119,
+     "sigma": 26.625872119000004,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 39.938808178500004,
+   "plan": [],
+   "sizing_keys": [
+    "equipment"
+   ],
+   "note": "Estimated; Assumed allowance"
+  },
+  "mass.rotors": {
+   "key": "mass.rotors",
+   "label": "Rotors",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Rotor and drive",
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 674.881836730543,
+     "sigma": 50.61613775479072,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 67.48818367305431,
+   "plan": [
+    {
+     "label": "Blade and hub layout weights",
+     "due": "2027-01-31",
+     "sigma_after": 33.744091836527154,
+     "owner": "Rotor and drive",
+     "done": false
+    }
+   ],
+   "sizing_keys": [
+    "pt:propulsor"
+   ],
+   "note": "Calibrated parametric; AFDD blades and hubs, XV-15 calibrated"
+  },
+  "mass.rotor_gearboxes": {
+   "key": "mass.rotor_gearboxes",
+   "label": "Rotor gearboxes",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Rotor and drive",
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 292.41508993528487,
+     "sigma": 29.241508993528488,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 29.241508993528488,
+   "plan": [],
+   "sizing_keys": [
+    "pt:gearbox"
+   ],
+   "note": "Calibrated parametric; AFDD drive system"
+  },
+  "mass.generator_gearboxes": {
+   "key": "mass.generator_gearboxes",
+   "label": "Generator gearboxes",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Rotor and drive",
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 144.16918308083484,
+     "sigma": 14.416918308083485,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 14.416918308083485,
+   "plan": [],
+   "sizing_keys": [
+    "pt:generator_gearbox"
+   ],
+   "note": "Calibrated parametric; AFDD drive system"
+  },
+  "mass.motors": {
+   "key": "mass.motors",
+   "label": "Motors (with inverters)",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Electrical",
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 425.5575131606171,
+     "sigma": 21.277875658030855,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 21.277875658030855,
+   "plan": [],
+   "sizing_keys": [
+    "pt:motor"
+   ],
+   "note": "Vendor data; Whole catalogue units plus inverter allowance"
+  },
+  "mass.generators": {
+   "key": "mass.generators",
+   "label": "Generators (with inverters)",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Electrical",
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 281.7,
+     "sigma": 14.085,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 14.085,
+   "plan": [],
+   "sizing_keys": [
+    "pt:generator"
+   ],
+   "note": "Vendor data; Whole catalogue units plus inverter allowance"
+  },
+  "mass.turboshafts": {
+   "key": "mass.turboshafts",
+   "label": "Turboshafts",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Propulsion",
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 421.7207577098069,
+     "sigma": 10.543018942745173,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 8.434415154196138,
+   "plan": [],
+   "sizing_keys": [
+    "pt:turboshaft"
+   ],
+   "note": "Vendor hardware; Fixed off-the-shelf engines plus installation"
+  },
+  "mass.battery": {
+   "key": "mass.battery",
+   "label": "Battery",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Electrical",
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 475.1205070660537,
+     "sigma": 35.63403802995403,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 38.00964056528429,
+   "plan": [
+    {
+     "label": "Pack layout: cell-to-pack fraction from a module design",
+     "due": "2026-12-01",
+     "sigma_after": 19.004820282642147,
+     "owner": "Electrical",
+     "done": false
+    }
+   ],
+   "sizing_keys": [
+    "pt:battery"
+   ],
+   "note": "Calculated / layout; 50G cell data; 70 % cell-to-pack mass assumed"
+  },
+  "mass.heat_exchanger": {
+   "key": "mass.heat_exchanger",
+   "label": "Heat exchanger",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Thermal",
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 126.90427818630664,
+     "sigma": 19.035641727945997,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 19.035641727945993,
+   "plan": [],
+   "sizing_keys": [
+    "pt:heat_exchanger"
+   ],
+   "note": "Estimated; Thermal model, mass per watt assumed"
+  },
+  "mass.protection_and_bus_tie": {
+   "key": "mass.protection_and_bus_tie",
+   "label": "Protection and bus tie",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Electrical",
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 28.474214907178812,
+     "sigma": 5.694842981435762,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 4.271132236076822,
+   "plan": [],
+   "sizing_keys": [
+    "pt:protection_string",
+    "pt:protection_bus_tie",
+    "pt:cable_bus_tie"
+   ],
+   "note": "Estimated; Simple ratings-based estimate"
+  },
+  "gap.hv_installation": {
+   "key": "gap.hv_installation",
+   "label": "HV installation: inverters, cables, protection, partial-discharge insulation",
+   "kind": "gap",
+   "unit": "kg",
+   "owner": "Electrical",
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 330.0,
+     "sigma": 100.0,
+     "source": "electrical layer (off in the baseline)",
+     "fidelity": 1,
+     "note": ""
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 0.0,
+   "plan": [],
+   "sizing_keys": [],
+   "note": "Modelled but off by default; also adds about 3 % losses"
+  },
+  "gap.tilt_fittings": {
+   "key": "gap.tilt_fittings",
+   "label": "Tilt spindle, tip ribs and fittings",
+   "kind": "gap",
+   "unit": "kg",
+   "owner": "Structures",
+   "lock_gate": "Preliminary design review",
+   "lock_date": "2027-06-30",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 70.0,
+     "sigma": 50.0,
+     "source": "placeholder prior",
+     "fidelity": 0,
+     "note": ""
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 0.0,
+   "plan": [],
+   "sizing_keys": [],
+   "note": "Owner to replace with a layout estimate"
+  },
+  "gap.conversion_actuators": {
+   "key": "gap.conversion_actuators",
+   "label": "Conversion actuators and backup structure",
+   "kind": "gap",
+   "unit": "kg",
+   "owner": "Flight controls and systems",
+   "lock_gate": "Preliminary design review",
+   "lock_date": "2027-06-30",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 45.0,
+     "sigma": 30.0,
+     "source": "placeholder prior",
+     "fidelity": 0,
+     "note": ""
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 0.0,
+   "plan": [],
+   "sizing_keys": [],
+   "note": "Owner to replace"
+  },
+  "gap.coolant_loop": {
+   "key": "gap.coolant_loop",
+   "label": "Coolant loop: plumbing, pumps, fluid",
+   "kind": "gap",
+   "unit": "kg",
+   "owner": "Thermal",
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 40.0,
+     "sigma": 30.0,
+     "source": "placeholder prior",
+     "fidelity": 0,
+     "note": ""
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 0.0,
+   "plan": [],
+   "sizing_keys": [],
+   "note": "Owner to replace"
+  },
+  "gap.tilt_joint_crossings": {
+   "key": "gap.tilt_joint_crossings",
+   "label": "HV and coolant crossings at the tilt joint",
+   "kind": "gap",
+   "unit": "kg",
+   "owner": "Electrical",
+   "lock_gate": "Preliminary design review",
+   "lock_date": "2027-06-30",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 20.0,
+     "sigma": 15.0,
+     "source": "placeholder prior",
+     "fidelity": 0,
+     "note": ""
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 0.0,
+   "plan": [],
+   "sizing_keys": [],
+   "note": "Flex loops or slip rings; swivel joints"
+  },
+  "gap.wing_strength": {
+   "key": "gap.wing_strength",
+   "label": "Wing structure added for ultimate strength",
+   "kind": "gap",
+   "unit": "kg",
+   "owner": "Structures",
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 40.0,
+     "sigma": 45.0,
+     "source": "placeholder prior",
+     "fidelity": 0,
+     "note": ""
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, Halo sizing (baseline)",
+   "allowance": 0.0,
+   "plan": [],
+   "sizing_keys": [],
+   "note": "FE peak cap strain 10 % over the ultimate allowable on raw gauges; 0.83 of it if the 1.33 calibration material is load-carrying"
+  },
+  "input.drag_excrescence": {
+   "key": "input.drag_excrescence",
+   "label": "Drag excrescence factor on AeroBuildup",
+   "kind": "input",
+   "unit": "-",
+   "owner": "Aerodynamics",
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 1.27,
+     "sigma": 0.1,
+     "source": "assumption",
+     "fidelity": 1,
+     "note": ""
+    }
+   ],
+   "sensitivity": null,
+   "sensitivity_source": "",
+   "allowance": 0.0,
+   "plan": [],
+   "sizing_keys": [],
+   "note": "Calibrated to NDARC XV-15 components, not flight"
+  },
+  "input.cell_to_pack": {
+   "key": "input.cell_to_pack",
+   "label": "Cell-to-pack mass fraction",
+   "kind": "input",
+   "unit": "-",
+   "owner": "Electrical",
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 0.7,
+     "sigma": 0.025,
+     "source": "assumption",
+     "fidelity": 1,
+     "note": ""
+    }
+   ],
+   "sensitivity": null,
+   "sensitivity_source": "",
+   "allowance": 0.0,
+   "plan": [],
+   "sizing_keys": [],
+   "note": "Cylindrical-cell packs about 0.65-0.75"
+  },
+  "input.capacity_end_of_life": {
+   "key": "input.capacity_end_of_life",
+   "label": "Battery capacity at end of life",
+   "kind": "input",
+   "unit": "-",
+   "owner": "Electrical",
+   "lock_gate": "Preliminary design review",
+   "lock_date": "2027-06-30",
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 0.8,
+     "sigma": 0.05,
+     "source": "assumption",
+     "fidelity": 1,
+     "note": ""
+    }
+   ],
+   "sensitivity": null,
+   "sensitivity_source": "",
+   "allowance": 0.0,
+   "plan": [],
+   "sizing_keys": [],
+   "note": "Assumed 80 % of rated"
+  }
+ },
+ "limits": {
+  "static_margin": {
+   "key": "static_margin",
+   "label": "Static margin",
+   "owner": "Flight controls and systems",
+   "price": -102.16012401057625,
+   "margin": -9.90211676543673e-09,
+   "relaxation_low": 0.02,
+   "relaxation_high": 0.05,
+   "lock_date": null,
+   "binding": true,
+   "note": ""
+  },
+  "cn_beta_per_rad": {
+   "key": "cn_beta_per_rad",
+   "label": "Directional stability (Cn beta)",
+   "owner": "Flight controls and systems",
+   "price": -37.20185732938288,
+   "margin": -9.731194785163785e-09,
+   "relaxation_low": 0.02,
+   "relaxation_high": 0.05,
+   "lock_date": null,
+   "binding": true,
+   "note": ""
+  },
+  "rotor_radius_m": {
+   "key": "rotor_radius_m",
+   "label": "Rotor radius capped by the span (rotor diameter against span)",
+   "owner": "Configuration",
+   "price": -1320.5011013221567,
+   "margin": -9.992427296717352e-09,
+   "relaxation_low": 0.02,
+   "relaxation_high": 0.05,
+   "lock_date": null,
+   "binding": true,
+   "note": ""
+  },
+  "engine-out hover 1/3: turboshaft power_shaft_W": {
+   "key": "engine-out hover 1/3: turboshaft power_shaft_W",
+   "label": "engine-out hover 1/3: turboshaft power at the fixed 1,120 hp deck",
+   "owner": "Propulsion",
+   "price": -241.984295654525,
+   "margin": -9.958666801212036e-09,
+   "relaxation_low": 0.02,
+   "relaxation_high": 0.05,
+   "lock_date": null,
+   "binding": true,
+   "note": "Binds together with engine-out hover 1/3: generator_gearbox power_input_W; relaxing one alone may save nothing"
+  },
+  "engine-out hover 1/3: generator torque_Nm": {
+   "key": "engine-out hover 1/3: generator torque_Nm",
+   "label": "engine-out hover 1/3: generator torque rating",
+   "owner": "Electrical",
+   "price": -7.467141830933763,
+   "margin": -8.661514739481178e-09,
+   "relaxation_low": 0.02,
+   "relaxation_high": 0.05,
+   "lock_date": null,
+   "binding": true,
+   "note": ""
+  },
+  "engine-out hover 2/3: turboshaft power_shaft_W": {
+   "key": "engine-out hover 2/3: turboshaft power_shaft_W",
+   "label": "engine-out hover 2/3: turboshaft power at the fixed 1,120 hp deck",
+   "owner": "Propulsion",
+   "price": -171.54642696832963,
+   "margin": -9.941700107530579e-09,
+   "relaxation_low": 0.02,
+   "relaxation_high": 0.05,
+   "lock_date": null,
+   "binding": true,
+   "note": "Binds together with engine-out hover 2/3: generator_gearbox power_input_W; relaxing one alone may save nothing"
+  },
+  "engine-out hover 2/3: generator torque_Nm": {
+   "key": "engine-out hover 2/3: generator torque_Nm",
+   "label": "engine-out hover 2/3: generator torque rating",
+   "owner": "Electrical",
+   "price": -7.38406367945574,
+   "margin": -8.644547986813263e-09,
+   "relaxation_low": 0.02,
+   "relaxation_high": 0.05,
+   "lock_date": null,
+   "binding": true,
+   "note": ""
+  },
+  "engine-out hover 3/3: battery end voltage_V": {
+   "key": "engine-out hover 3/3: battery end voltage_V",
+   "label": "engine-out hover 3/3: battery end voltage (2.5 V per cell cutoff)",
+   "owner": "Electrical",
+   "price": -1168.2742409131915,
+   "margin": -9.991440709286723e-09,
+   "relaxation_low": 0.02,
+   "relaxation_high": 0.05,
+   "lock_date": null,
+   "binding": true,
+   "note": ""
+  },
+  "engine-out hover 3/3: turboshaft power_shaft_W": {
+   "key": "engine-out hover 3/3: turboshaft power_shaft_W",
+   "label": "engine-out hover 3/3: turboshaft power at the fixed 1,120 hp deck",
+   "owner": "Propulsion",
+   "price": -300.5905758054476,
+   "margin": -9.966722502958084e-09,
+   "relaxation_low": 0.02,
+   "relaxation_high": 0.05,
+   "lock_date": null,
+   "binding": true,
+   "note": "Binds together with engine-out hover 3/3: generator_gearbox power_input_W; relaxing one alone may save nothing"
+  },
+  "engine-out hover 3/3: generator torque_Nm": {
+   "key": "engine-out hover 3/3: generator torque_Nm",
+   "label": "engine-out hover 3/3: generator torque rating",
+   "owner": "Electrical",
+   "price": -7.515051636410365,
+   "margin": -8.669570379166827e-09,
+   "relaxation_low": 0.02,
+   "relaxation_high": 0.05,
+   "lock_date": null,
+   "binding": true,
+   "note": ""
+  },
+  "hover: gearbox power_input_W": {
+   "key": "hover: gearbox power_input_W",
+   "label": "hover: rotor and gearbox power rating",
+   "owner": "Rotor and drive",
+   "price": -282.9969239403188,
+   "margin": -9.964665031331584e-09,
+   "relaxation_low": 0.02,
+   "relaxation_high": 0.05,
+   "lock_date": null,
+   "binding": true,
+   "note": "Binds together with hover: propulsor power_shaft_W; relaxing one alone may save nothing"
+  },
+  "bus-out hover 1/3: motor torque_Nm": {
+   "key": "bus-out hover 1/3: motor torque_Nm",
+   "label": "bus-out hover 1/3: motor torque rating",
+   "owner": "Electrical",
+   "price": -37.772615634023055,
+   "margin": -9.738026468160873e-09,
+   "relaxation_low": 0.02,
+   "relaxation_high": 0.05,
+   "lock_date": null,
+   "binding": true,
+   "note": ""
+  },
+  "hot-day hover: turboshaft power_shaft_W": {
+   "key": "hot-day hover: turboshaft power_shaft_W",
+   "label": "hot-day hover: turboshaft power at the fixed 1,120 hp deck",
+   "owner": "Propulsion",
+   "price": -216.50544159785412,
+   "margin": -9.95380277655748e-09,
+   "relaxation_low": 0.02,
+   "relaxation_high": 0.05,
+   "lock_date": null,
+   "binding": true,
+   "note": ""
+  },
+  "hot-day hover: heat_exchanger power_heat_W": {
+   "key": "hot-day hover: heat_exchanger power_heat_W",
+   "label": "hot-day hover: heat rejection at the exchanger rating",
+   "owner": "Thermal",
+   "price": -314.7300002347256,
+   "margin": -9.968231232771325e-09,
+   "relaxation_low": 0.02,
+   "relaxation_high": 0.05,
+   "lock_date": null,
+   "binding": true,
+   "note": ""
+  }
+ },
+ "trades": {
+  "trade.hv_voltage": {
+   "key": "trade.hv_voltage",
+   "label": "HV bus voltage and regulation",
+   "owner": "Electrical",
+   "options": [],
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "status": "open",
+   "decision": "",
+   "note": "Owner to estimate each option against a ledger quantity"
+  },
+  "trade.tilt_load_path": {
+   "key": "trade.tilt_load_path",
+   "label": "Tilting load path: spindle station, fittings, actuator stiffness",
+   "owner": "Structures",
+   "options": [],
+   "lock_gate": "Preliminary design review",
+   "lock_date": "2027-06-30",
+   "status": "open",
+   "decision": "",
+   "note": "Owner to estimate each option against a ledger quantity"
+  },
+  "trade.failure_architecture": {
+   "key": "trade.failure_architecture",
+   "label": "Interconnect shaft or electrical cross-strapping",
+   "owner": "Electrical",
+   "options": [],
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "status": "open",
+   "decision": "",
+   "note": "Owner to estimate each option against a ledger quantity"
+  },
+  "trade.thermal_architecture": {
+   "key": "trade.thermal_architecture",
+   "label": "Thermal: ram-air exchanger, liquid loop or nacelle-local",
+   "owner": "Thermal",
+   "options": [],
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "status": "open",
+   "decision": "",
+   "note": "Owner to estimate each option against a ledger quantity"
+  }
+ },
+ "runs": [
+  {
+   "date": "2026-10-09",
+   "source": "Halo sizing (baseline)",
+   "kind": "sizing",
+   "summary": "take-off 6,885 kg, growth factor 2.54, 14 binding limits"
+  }
+ ],
+ "history": [
+  {
+   "date": "2026-10-09",
+   "source": "Halo sizing (baseline)",
+   "sigma_takeoff_kg": 458.53,
+   "margin_99_kg": 1066.67,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 130.42
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 39.73
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 31.06
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 26.46
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 25.09
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 23.5
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 17.53
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 14.94
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 11.08
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 11.08
+    },
+    {
+     "key": "mass.rotor_gearboxes",
+     "value_kg": 10.52
+    },
+    {
+     "key": "mass.fixed_equipment",
+     "value_kg": 8.72
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    }
+   ]
+  }
+ ]
+}

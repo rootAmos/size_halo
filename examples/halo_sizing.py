@@ -48,6 +48,7 @@ from aircraft_closure.aerodynamics.simple import SimpleAerodynamics
 from aircraft_closure.aerodynamics.slipstream import BlownWing
 from aircraft_closure.controls.stability import DirectionalStability, LongitudinalStability
 from aircraft_closure.core.margins import margin_above, margin_below, margin_report
+from aircraft_closure.core.sensitivity import objective_sensitivities
 from aircraft_closure.mission.cost import CostBreakdown, CostModel
 from aircraft_closure.mission.mission import Mission, build_mission
 from aircraft_closure.mission.segments import (ClimbSegment, CruiseSegment, DescentSegment, HoverSegment,
@@ -970,6 +971,22 @@ class HaloSizingResult:
     # current, its smallest margin and its binding margins.
     count_lanes_motor: int = 1
     failure_cases: tuple = ()
+    # Plan 041 (closure system): first-order prices of the optimum from the same solve (SizingSensitivity).
+    sensitivity: Any = None
+
+
+@dataclass(frozen=True)
+class SizingSensitivity:
+    """Envelope-theorem derivatives of the optimal objective, in its own units (kg take-off mass for
+    "mass_takeoff", kg payload for "payload", USD per mission for "cost").
+
+    growth_factor: d(objective)/d(empty mass added, kg); for "mass_takeoff" the take-off mass growth per kg.
+    margins: (label, margin value, price) per margin; price = d(objective)/d(relaxation), where a relaxation of
+    0.01 lets the margin fall to -1 % of its limit. Only binding margins carry a price.
+    """
+    objective: str
+    growth_factor: float
+    margins: tuple
 
 
 def count_parallel_guess(guess, assumptions):
@@ -1296,13 +1313,17 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         all_margins += hover_hot.margins + (
             margin_above("soc_after_hot_day_hover", soc_after_hover_hot, soc_emergency_floor),)
 
+    # Fixed parameters at zero that price the answer (closure system, plan 041): an empty-mass adder gives the
+    # growth factor, and one relaxation per margin gives the take-off-mass price of each limit.
+    mass_empty_adder_kg = opti.parameter(0.0)
+    relaxation_margins = [opti.parameter(0.0) for _ in all_margins]
     opti.subject_to([
-        mass_takeoff_kg / total.mass == 1,                                           # mass closure
+        mass_takeoff_kg / (total.mass + mass_empty_adder_kg) == 1,                   # mass closure
         x_cg_m == aircraft.wing.x_le_root_m + 0.25 * aircraft.wing.chord_root_m(),   # hover pitch trim
         design.mass_fuel_kg == fuel_factor * flown.mass_fuel_burnt_kg,               # fuel with reserve
         power_turboshaft(design.mass_turboshaft_bare_kg) / design.power_rated_turboshaft_W == 1,  # engine regression
     ])
-    opti.subject_to([m.value >= 0 for m in all_margins])
+    opti.subject_to([m.value + relaxation >= 0 for m, relaxation in zip(all_margins, relaxation_margins)])
     # ---- Cost per mission (Tier 22) -----------------------------------------------------------
     motor_component, generator_component = instances["motor"].component, instances["generator"].component
     turboshaft_component = instances["turboshaft"].component
@@ -1331,6 +1352,12 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
     solution = opti.solve(verbose=verbose, max_iter=max_iter)
     value = lambda expression: float(solution.value(expression))
     report = margin_report(all_margins, solution.value)
+    prices = objective_sensitivities(opti, solution, [mass_empty_adder_kg] + relaxation_margins)
+    scale_objective = {"mass_takeoff": 1000.0, "payload": -100.0, "cost": scale_objective_cost_usd}[objective]
+    sensitivity = SizingSensitivity(
+        objective=objective, growth_factor=float(scale_objective * prices[0]),
+        margins=tuple((m.label, value(m.value), float(scale_objective * price))
+                      for m, price in zip(all_margins, prices[1:])))
     altitude_cruise_value_m = value(altitude_cruise_m)
     altitudes = [(0, 0), (0, altitude_cruise_value_m), (altitude_cruise_value_m,) * 2, (altitude_cruise_value_m,) * 2,
                  (altitude_cruise_value_m, 0), (0, 0)]
@@ -1396,6 +1423,7 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         heat_exchanger=heat_exchanger_summary(aircraft.powertrain, value) if thermal else None,
         count_lanes_motor=lanes,
         failure_cases=tuple(failure_summary(label, failure, instances, value) for label, failure in failures),
+        sensitivity=sensitivity,
     )
 
 

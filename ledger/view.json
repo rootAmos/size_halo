@@ -1,0 +1,1450 @@
+{
+ "name": "Halo decision ledger",
+ "as_of": "2026-10-09",
+ "growth_factor": 2.5368810508980673,
+ "baseline": {
+  "mass_takeoff_kg": 6885.064235165387,
+  "mass_empty_kg": 5048.620948255306,
+  "mass_payload_kg": 900.0
+ },
+ "gates": {
+  "Concept freeze": "2026-12-15",
+  "Preliminary design review": "2027-06-30",
+  "Critical design review": "2028-03-31",
+  "First article": "2028-12-31"
+ },
+ "portfolio": {
+  "sigma_takeoff_kg": 458.5251041757933,
+  "margin_99_kg": 1066.666949844148,
+  "allowance_empty_kg": 436.1372938100496,
+  "gaps_empty_kg": 545.0,
+  "takeoff_predicted_kg": 9374.09284416151,
+  "takeoff_99_kg": 10440.759794005658
+ },
+ "z_99": 2.3263,
+ "priorities": [
+  {
+   "key": "gap.hv_installation",
+   "label": "HV installation: inverters, cables, protection, partial-discharge insulation",
+   "kind": "model gap",
+   "owner": "Electrical",
+   "value_kg": 130.41564354085986,
+   "value_low_kg": 130.41564354085986,
+   "value_high_kg": 178.13114071232386,
+   "share": 0.30610750153451266,
+   "exposure_kg": 1344.5469569759757,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "330 ± 1e+02 kg (handbook or parametric model); take-off spread ±254 kg"
+  },
+  {
+   "key": "mass.systems",
+   "label": "Systems",
+   "kind": "reduce uncertainty",
+   "owner": "Flight controls and systems",
+   "value_kg": 39.73458049956675,
+   "value_low_kg": 39.73458049956675,
+   "value_high_kg": 62.77618003949916,
+   "share": 0.11424167154147503,
+   "exposure_kg": 309.9598116591443,
+   "lock_date": "2027-06-30",
+   "days_to_lock": 264,
+   "schedule": "",
+   "action": "Second calibration aircraft (V-22 or AW609 group weights)",
+   "detail": "407.3 ± 61 kg (handbook or parametric model); take-off spread ±155 kg"
+  },
+  {
+   "key": "gap.tilt_fittings",
+   "label": "Tilt spindle, tip ribs and fittings",
+   "kind": "model gap",
+   "owner": "Structures",
+   "value_kg": 31.063061498793736,
+   "value_low_kg": 31.063061498793736,
+   "value_high_kg": 41.62658115384623,
+   "share": 0.07652687538362817,
+   "exposure_kg": 431.26977865267145,
+   "lock_date": "2027-06-30",
+   "days_to_lock": 264,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "70 ± 50 kg (placeholder prior); take-off spread ±127 kg"
+  },
+  {
+   "key": "mass.fuselage",
+   "label": "Fuselage",
+   "kind": "reduce uncertainty",
+   "owner": "Structures",
+   "value_kg": 26.45614901369113,
+   "value_low_kg": 26.45614901369113,
+   "value_high_kg": 52.52469366830429,
+   "share": 0.09605901102361727,
+   "exposure_kg": 284.2249307852239,
+   "lock_date": "2027-06-30",
+   "days_to_lock": 264,
+   "schedule": "",
+   "action": "Second calibration aircraft (V-22 or AW609 group weights)",
+   "detail": "560.2 ± 56 kg (handbook or parametric model); take-off spread ±142 kg"
+  },
+  {
+   "key": "rotor_radius_m",
+   "label": "Rotor radius capped by the span (rotor diameter against span)",
+   "kind": "relax limit",
+   "owner": "Configuration",
+   "value_kg": 26.410022026443134,
+   "value_low_kg": 26.410022026443134,
+   "value_high_kg": 66.02505506610784,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": null,
+   "days_to_lock": null,
+   "schedule": "",
+   "action": "argue the requirement or change the design that meets it",
+   "detail": "13.2 kg take-off per 1 % of the limit"
+  },
+  {
+   "key": "gap.wing_strength",
+   "label": "Wing structure added for ultimate strength",
+   "kind": "model gap",
+   "owner": "Structures",
+   "value_kg": 25.089791137487904,
+   "value_low_kg": 25.089791137487904,
+   "value_high_kg": 33.588455203342484,
+   "share": 0.06198676906073883,
+   "exposure_kg": 329.79453661674876,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "40 ± 45 kg (placeholder prior); take-off spread ±114 kg"
+  },
+  {
+   "key": "mass.rotors",
+   "label": "Rotors",
+   "kind": "reduce uncertainty",
+   "owner": "Rotor and drive",
+   "value_kg": 23.49567880605767,
+   "value_low_kg": 23.49567880605767,
+   "value_high_kg": 42.68031136552473,
+   "share": 0.07842453989928987,
+   "exposure_kg": 256.81424147954965,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "plan lands after lock",
+   "action": "Blade and hub layout weights",
+   "detail": "674.9 ± 51 kg (handbook or parametric model); take-off spread ±128 kg"
+  },
+  {
+   "key": "engine-out hover 3/3: battery end voltage_V",
+   "label": "engine-out hover 3/3: battery end voltage (2.5 V per cell cutoff)",
+   "kind": "relax limit",
+   "owner": "Electrical",
+   "value_kg": 23.36548481826383,
+   "value_low_kg": 23.36548481826383,
+   "value_high_kg": 58.41371204565958,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": null,
+   "days_to_lock": null,
+   "schedule": "",
+   "action": "argue the requirement or change the design that meets it",
+   "detail": "11.7 kg take-off per 1 % of the limit"
+  },
+  {
+   "key": "mass.wing",
+   "label": "Wing",
+   "kind": "reduce uncertainty",
+   "owner": "Structures",
+   "value_kg": 17.525850734017208,
+   "value_low_kg": 17.525850734017208,
+   "value_high_kg": 27.514028318580067,
+   "share": 0.05092343860362228,
+   "exposure_kg": 206.94358803875753,
+   "lock_date": "2027-06-30",
+   "days_to_lock": 264,
+   "schedule": "",
+   "action": "FE: calibrated structure, root fittings and a buckling step",
+   "detail": "407.9 ± 41 kg (handbook or parametric model); take-off spread ±103 kg"
+  },
+  {
+   "key": "mass.battery",
+   "label": "Battery",
+   "kind": "reduce uncertainty",
+   "owner": "Electrical",
+   "value_kg": 14.938190675552251,
+   "value_low_kg": 14.938190675552251,
+   "value_high_kg": 20.935624709958066,
+   "share": 0.03886906116941143,
+   "exposure_kg": 180.79863169034294,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "",
+   "action": "Pack layout: cell-to-pack fraction from a module design",
+   "detail": "475.1 ± 36 kg (handbook or parametric model); take-off spread ±90 kg"
+  },
+  {
+   "key": "gap.conversion_actuators",
+   "label": "Conversion actuators and backup structure",
+   "kind": "model gap",
+   "owner": "Flight controls and systems",
+   "value_kg": 11.077392634694698,
+   "value_low_kg": 11.077392634694698,
+   "value_high_kg": 14.795780408654144,
+   "share": 0.02754967513810614,
+   "exposure_kg": 266.3725103442971,
+   "lock_date": "2027-06-30",
+   "days_to_lock": 264,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "45 ± 30 kg (placeholder prior); take-off spread ±76 kg"
+  },
+  {
+   "key": "gap.coolant_loop",
+   "label": "Coolant loop: plumbing, pumps, fluid",
+   "kind": "model gap",
+   "owner": "Thermal",
+   "value_kg": 11.077392634694698,
+   "value_low_kg": 11.077392634694698,
+   "value_high_kg": 14.795780408654144,
+   "share": 0.02754967513810614,
+   "exposure_kg": 253.68810508980673,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "40 ± 30 kg (placeholder prior); take-off spread ±76 kg"
+  },
+  {
+   "key": "mass.rotor_gearboxes",
+   "label": "Rotor gearboxes",
+   "kind": "reduce uncertainty",
+   "owner": "Rotor and drive",
+   "value_kg": 10.521577896704304,
+   "value_low_kg": 10.521577896704304,
+   "value_high_kg": 14.052141402142622,
+   "share": 0.026174207044568677,
+   "exposure_kg": 148.36446013069568,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "292.4 ± 29 kg (handbook or parametric model); take-off spread ±74 kg"
+  },
+  {
+   "key": "mass.fixed_equipment",
+   "label": "Fixed equipment",
+   "kind": "reduce uncertainty",
+   "owner": "Systems",
+   "value_kg": 8.716051182677516,
+   "value_low_kg": 8.716051182677516,
+   "value_high_kg": 11.637403018620468,
+   "share": 0.021701095404826495,
+   "exposure_kg": 135.09334088465255,
+   "lock_date": "2027-06-30",
+   "days_to_lock": 264,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "266.3 ± 27 kg (handbook or parametric model); take-off spread ±68 kg"
+  },
+  {
+   "key": "hot-day hover: heat_exchanger power_heat_W",
+   "label": "hot-day hover: heat rejection at the exchanger rating",
+   "kind": "relax limit",
+   "owner": "Thermal",
+   "value_kg": 6.294600004694512,
+   "value_low_kg": 6.294600004694512,
+   "value_high_kg": 15.73650001173628,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": null,
+   "days_to_lock": null,
+   "schedule": "",
+   "action": "argue the requirement or change the design that meets it",
+   "detail": "3.1 kg take-off per 1 % of the limit"
+  },
+  {
+   "key": "engine-out hover 3/3: turboshaft power_shaft_W",
+   "label": "engine-out hover 3/3: turboshaft power at the fixed 1,120 hp deck",
+   "kind": "relax limit",
+   "owner": "Propulsion",
+   "value_kg": 6.011811516108952,
+   "value_low_kg": 6.011811516108952,
+   "value_high_kg": 15.02952879027238,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": null,
+   "days_to_lock": null,
+   "schedule": "",
+   "action": "argue the requirement or change the design that meets it",
+   "detail": "3.0 kg take-off per 1 % of the limit"
+  },
+  {
+   "key": "hover: gearbox power_input_W",
+   "label": "hover: rotor and gearbox power rating",
+   "kind": "relax limit",
+   "owner": "Rotor and drive",
+   "value_kg": 5.659938478806376,
+   "value_low_kg": 5.659938478806376,
+   "value_high_kg": 14.149846197015941,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": null,
+   "days_to_lock": null,
+   "schedule": "",
+   "action": "argue the requirement or change the design that meets it",
+   "detail": "2.8 kg take-off per 1 % of the limit"
+  },
+  {
+   "key": "mass.motors",
+   "label": "Motors (with inverters)",
+   "kind": "reduce uncertainty",
+   "owner": "Electrical",
+   "value_kg": 5.558064402901766,
+   "value_low_kg": 5.558064402901766,
+   "value_high_kg": 7.417233431686922,
+   "share": 0.01385895568146416,
+   "exposure_kg": 107.95887912044743,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "425.6 ± 21 kg (handbook or parametric model); take-off spread ±54 kg"
+  },
+  {
+   "key": "engine-out hover 1/3: turboshaft power_shaft_W",
+   "label": "engine-out hover 1/3: turboshaft power at the fixed 1,120 hp deck",
+   "kind": "relax limit",
+   "owner": "Propulsion",
+   "value_kg": 4.8396859130905,
+   "value_low_kg": 4.8396859130905,
+   "value_high_kg": 12.09921478272625,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": null,
+   "days_to_lock": null,
+   "schedule": "",
+   "action": "argue the requirement or change the design that meets it",
+   "detail": "2.4 kg take-off per 1 % of the limit"
+  },
+  {
+   "key": "mass.nacelles",
+   "label": "Nacelles",
+   "kind": "reduce uncertainty",
+   "owner": "Structures",
+   "value_kg": 4.658013141261836,
+   "value_low_kg": 4.658013141261836,
+   "value_high_kg": 6.215230896453269,
+   "share": 0.01161960350199183,
+   "exposure_kg": 98.85275290129744,
+   "lock_date": "2027-06-30",
+   "days_to_lock": 264,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "194.8 ± 19 kg (handbook or parametric model); take-off spread ±49 kg"
+  },
+  {
+   "key": "mass.landing_gear",
+   "label": "Landing gear",
+   "kind": "reduce uncertainty",
+   "owner": "Structures",
+   "value_kg": 4.6082446050763,
+   "value_low_kg": 4.6082446050763,
+   "value_high_kg": 6.148775930006495,
+   "share": 0.01149572262562061,
+   "exposure_kg": 98.32438803465006,
+   "lock_date": "2027-06-30",
+   "days_to_lock": 264,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "258.4 ± 19 kg (handbook or parametric model); take-off spread ±49 kg"
+  },
+  {
+   "key": "mass.heat_exchanger",
+   "label": "Heat exchanger",
+   "kind": "reduce uncertainty",
+   "owner": "Thermal",
+   "value_kg": 4.446058542240295,
+   "value_low_kg": 4.446058542240295,
+   "value_high_kg": 5.932219294444037,
+   "share": 0.011091978452344274,
+   "exposure_kg": 96.58231758262149,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "126.9 ± 19 kg (handbook or parametric model); take-off spread ±48 kg"
+  },
+  {
+   "key": "hot-day hover: turboshaft power_shaft_W",
+   "label": "hot-day hover: turboshaft power at the fixed 1,120 hp deck",
+   "kind": "relax limit",
+   "owner": "Propulsion",
+   "value_kg": 4.330108831957083,
+   "value_low_kg": 4.330108831957083,
+   "value_high_kg": 10.825272079892706,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": null,
+   "days_to_lock": null,
+   "schedule": "",
+   "action": "argue the requirement or change the design that meets it",
+   "detail": "2.2 kg take-off per 1 % of the limit"
+  },
+  {
+   "key": "engine-out hover 2/3: turboshaft power_shaft_W",
+   "label": "engine-out hover 2/3: turboshaft power at the fixed 1,120 hp deck",
+   "kind": "relax limit",
+   "owner": "Propulsion",
+   "value_kg": 3.4309285393665925,
+   "value_low_kg": 3.4309285393665925,
+   "value_high_kg": 8.577321348416481,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": null,
+   "days_to_lock": null,
+   "schedule": "",
+   "action": "argue the requirement or change the design that meets it",
+   "detail": "1.7 kg take-off per 1 % of the limit"
+  },
+  {
+   "key": "gap.tilt_joint_crossings",
+   "label": "HV and coolant crossings at the tilt joint",
+   "kind": "model gap",
+   "owner": "Electrical",
+   "value_kg": 2.758535205098365,
+   "value_low_kg": 2.758535205098365,
+   "value_high_kg": 3.6796377421821655,
+   "share": 0.006887418784526535,
+   "exposure_kg": 126.84405254490336,
+   "lock_date": "2027-06-30",
+   "days_to_lock": 264,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "20 ± 15 kg (placeholder prior); take-off spread ±38 kg"
+  },
+  {
+   "key": "mass.generator_gearboxes",
+   "label": "Generator gearboxes",
+   "kind": "reduce uncertainty",
+   "owner": "Rotor and drive",
+   "value_kg": 2.5479914892076576,
+   "value_low_kg": 2.5479914892076576,
+   "value_high_kg": 3.398678862047628,
+   "share": 0.006362368918039369,
+   "exposure_kg": 73.14801373624483,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "144.2 ± 14 kg (handbook or parametric model); take-off spread ±37 kg"
+  },
+  {
+   "key": "mass.generators",
+   "label": "Generators (with inverters)",
+   "kind": "reduce uncertainty",
+   "owner": "Electrical",
+   "value_kg": 2.431885574502848,
+   "value_low_kg": 2.431885574502848,
+   "value_high_kg": 3.243749953930974,
+   "share": 0.0060727817781115224,
+   "exposure_kg": 71.46393920379856,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "281.7 ± 14 kg (handbook or parametric model); take-off spread ±36 kg"
+  },
+  {
+   "key": "static_margin",
+   "label": "Static margin",
+   "kind": "relax limit",
+   "owner": "Flight controls and systems",
+   "value_kg": 2.043202480211525,
+   "value_low_kg": 2.043202480211525,
+   "value_high_kg": 5.108006200528813,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": null,
+   "days_to_lock": null,
+   "schedule": "",
+   "action": "argue the requirement or change the design that meets it",
+   "detail": "1.0 kg take-off per 1 % of the limit"
+  },
+  {
+   "key": "mass.turboshafts",
+   "label": "Turboshafts",
+   "kind": "reduce uncertainty",
+   "owner": "Propulsion",
+   "value_kg": 1.3618879850811492,
+   "value_low_kg": 1.3618879850811492,
+   "value_high_kg": 1.8162377095968094,
+   "share": 0.003402545537846261,
+   "exposure_kg": 53.492769950219206,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "421.7 ± 11 kg (handbook or parametric model); take-off spread ±27 kg"
+  },
+  {
+   "key": "mass.tails",
+   "label": "Tails",
+   "kind": "reduce uncertainty",
+   "owner": "Structures",
+   "value_kg": 0.8412756977142059,
+   "value_low_kg": 0.8412756977142059,
+   "value_high_kg": 1.1218485323072607,
+   "share": 0.0021023592979365303,
+   "exposure_kg": 42.04812008493117,
+   "lock_date": "2027-06-30",
+   "days_to_lock": 264,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "82.87 ± 8.3 kg (handbook or parametric model); take-off spread ±21 kg"
+  },
+  {
+   "key": "bus-out hover 1/3: motor torque_Nm",
+   "label": "bus-out hover 1/3: motor torque rating",
+   "kind": "relax limit",
+   "owner": "Electrical",
+   "value_kg": 0.7554523126804611,
+   "value_low_kg": 0.7554523126804611,
+   "value_high_kg": 1.8886307817011527,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": null,
+   "days_to_lock": null,
+   "schedule": "",
+   "action": "argue the requirement or change the design that meets it",
+   "detail": "0.4 kg take-off per 1 % of the limit"
+  },
+  {
+   "key": "cn_beta_per_rad",
+   "label": "Directional stability (Cn beta)",
+   "kind": "relax limit",
+   "owner": "Flight controls and systems",
+   "value_kg": 0.7440371465876576,
+   "value_low_kg": 0.7440371465876576,
+   "value_high_kg": 1.8600928664691443,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": null,
+   "days_to_lock": null,
+   "schedule": "",
+   "action": "argue the requirement or change the design that meets it",
+   "detail": "0.4 kg take-off per 1 % of the limit"
+  },
+  {
+   "key": "mass.protection_and_bus_tie",
+   "label": "Protection and bus tie",
+   "kind": "reduce uncertainty",
+   "owner": "Electrical",
+   "value_kg": 0.39717184067743644,
+   "value_low_kg": 0.39717184067743644,
+   "value_high_kg": 0.5295953341919164,
+   "share": 0.0009927444802160536,
+   "exposure_kg": 28.89427849488848,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "no plan",
+   "action": "plan the work that narrows it",
+   "detail": "28.47 ± 5.7 kg (handbook or parametric model); take-off spread ±14 kg"
+  },
+  {
+   "key": "engine-out hover 3/3: generator torque_Nm",
+   "label": "engine-out hover 3/3: generator torque rating",
+   "kind": "relax limit",
+   "owner": "Electrical",
+   "value_kg": 0.1503010327282073,
+   "value_low_kg": 0.1503010327282073,
+   "value_high_kg": 0.3757525818205183,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": null,
+   "days_to_lock": null,
+   "schedule": "",
+   "action": "argue the requirement or change the design that meets it",
+   "detail": "0.1 kg take-off per 1 % of the limit"
+  },
+  {
+   "key": "engine-out hover 1/3: generator torque_Nm",
+   "label": "engine-out hover 1/3: generator torque rating",
+   "kind": "relax limit",
+   "owner": "Electrical",
+   "value_kg": 0.14934283661867528,
+   "value_low_kg": 0.14934283661867528,
+   "value_high_kg": 0.37335709154668817,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": null,
+   "days_to_lock": null,
+   "schedule": "",
+   "action": "argue the requirement or change the design that meets it",
+   "detail": "0.1 kg take-off per 1 % of the limit"
+  },
+  {
+   "key": "engine-out hover 2/3: generator torque_Nm",
+   "label": "engine-out hover 2/3: generator torque rating",
+   "kind": "relax limit",
+   "owner": "Electrical",
+   "value_kg": 0.14768127358911481,
+   "value_low_kg": 0.14768127358911481,
+   "value_high_kg": 0.369203183972787,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": null,
+   "days_to_lock": null,
+   "schedule": "",
+   "action": "argue the requirement or change the design that meets it",
+   "detail": "0.1 kg take-off per 1 % of the limit"
+  },
+  {
+   "key": "input.drag_excrescence",
+   "label": "Drag excrescence factor on AeroBuildup",
+   "kind": "blind spot",
+   "owner": "Aerodynamics",
+   "value_kg": null,
+   "value_low_kg": null,
+   "value_high_kg": null,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "no plan",
+   "action": "compute its sensitivity",
+   "detail": "1.27 ± 0.1 -; no take-off sensitivity yet"
+  },
+  {
+   "key": "input.cell_to_pack",
+   "label": "Cell-to-pack mass fraction",
+   "kind": "blind spot",
+   "owner": "Electrical",
+   "value_kg": null,
+   "value_low_kg": null,
+   "value_high_kg": null,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "no plan",
+   "action": "compute its sensitivity",
+   "detail": "0.7 ± 0.025 -; no take-off sensitivity yet"
+  },
+  {
+   "key": "input.capacity_end_of_life",
+   "label": "Battery capacity at end of life",
+   "kind": "blind spot",
+   "owner": "Electrical",
+   "value_kg": null,
+   "value_low_kg": null,
+   "value_high_kg": null,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": "2027-06-30",
+   "days_to_lock": 264,
+   "schedule": "no plan",
+   "action": "compute its sensitivity",
+   "detail": "0.8 ± 0.05 -; no take-off sensitivity yet"
+  },
+  {
+   "key": "trade.hv_voltage",
+   "label": "HV bus voltage and regulation",
+   "kind": "blind spot",
+   "owner": "Electrical",
+   "value_kg": null,
+   "value_low_kg": null,
+   "value_high_kg": null,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "",
+   "action": "estimate each option against a priced quantity",
+   "detail": "trade without option data"
+  },
+  {
+   "key": "trade.tilt_load_path",
+   "label": "Tilting load path: spindle station, fittings, actuator stiffness",
+   "kind": "blind spot",
+   "owner": "Structures",
+   "value_kg": null,
+   "value_low_kg": null,
+   "value_high_kg": null,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": "2027-06-30",
+   "days_to_lock": 264,
+   "schedule": "",
+   "action": "estimate each option against a priced quantity",
+   "detail": "trade without option data"
+  },
+  {
+   "key": "trade.failure_architecture",
+   "label": "Interconnect shaft or electrical cross-strapping",
+   "kind": "blind spot",
+   "owner": "Electrical",
+   "value_kg": null,
+   "value_low_kg": null,
+   "value_high_kg": null,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "",
+   "action": "estimate each option against a priced quantity",
+   "detail": "trade without option data"
+  },
+  {
+   "key": "trade.thermal_architecture",
+   "label": "Thermal: ram-air exchanger, liquid loop or nacelle-local",
+   "kind": "blind spot",
+   "owner": "Thermal",
+   "value_kg": null,
+   "value_low_kg": null,
+   "value_high_kg": null,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 67,
+   "schedule": "",
+   "action": "estimate each option against a priced quantity",
+   "detail": "trade without option data"
+  }
+ ],
+ "quantities": [
+  {
+   "key": "mass.wing",
+   "label": "Wing",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Structures",
+   "mean": 407.87010483896864,
+   "sigma": 40.787010483896864,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 40.787010483896864,
+   "lock_date": "2027-06-30",
+   "next_activity": {
+    "label": "FE: calibrated structure, root fittings and a buckling step",
+    "due": "2026-10-30",
+    "sigma_after": 24.472206290338118,
+    "owner": "Structures",
+    "done": false
+   },
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 407.87010483896864,
+     "sigma": 40.787010483896864,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "note": "Calibrated parametric; AFDD tiltrotor wing x 1.33 (XV-15); strength at ultimate not demonstrated"
+  },
+  {
+   "key": "mass.tails",
+   "label": "Tails",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Structures",
+   "mean": 82.8736532011344,
+   "sigma": 8.287365320113441,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 8.287365320113441,
+   "lock_date": "2027-06-30",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 82.8736532011344,
+     "sigma": 8.287365320113441,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "note": "Calibrated parametric; Raymer x XV-15 factor"
+  },
+  {
+   "key": "mass.fuselage",
+   "label": "Fuselage",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Structures",
+   "mean": 560.185765675941,
+   "sigma": 56.01857656759409,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 44.814861254075275,
+   "lock_date": "2027-06-30",
+   "next_activity": {
+    "label": "Second calibration aircraft (V-22 or AW609 group weights)",
+    "due": "2026-11-20",
+    "sigma_after": 39.21300359731587,
+    "owner": "Weights",
+    "done": false
+   },
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 560.185765675941,
+     "sigma": 56.018576567594096,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "note": "Calculated / layout; Raymer x 1.70, anchored to the drawn layout"
+  },
+  {
+   "key": "mass.nacelles",
+   "label": "Nacelles",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Structures",
+   "mean": 194.83127296469635,
+   "sigma": 19.48312729646964,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 19.483127296469636,
+   "lock_date": "2027-06-30",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 194.83127296469638,
+     "sigma": 19.48312729646964,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "note": "Calibrated parametric; AFDD-class estimate"
+  },
+  {
+   "key": "mass.landing_gear",
+   "label": "Landing gear",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Structures",
+   "mean": 258.38654122113917,
+   "sigma": 19.37899059158544,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 25.83865412211392,
+   "lock_date": "2027-06-30",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 258.38654122113917,
+     "sigma": 19.37899059158544,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "note": "Calibrated parametric; Raymer x XV-15 factor"
+  },
+  {
+   "key": "mass.systems",
+   "label": "Systems",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Flight controls and systems",
+   "mean": 407.2715083868005,
+   "sigma": 61.090726258020084,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 40.72715083868005,
+   "lock_date": "2027-06-30",
+   "next_activity": {
+    "label": "Second calibration aircraft (V-22 or AW609 group weights)",
+    "due": "2026-11-20",
+    "sigma_after": 36.65443575481205,
+    "owner": "Weights",
+    "done": false
+   },
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 407.2715083868005,
+     "sigma": 61.09072625802008,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "note": "Calibrated parametric; Raymer; flight controls carry an XV-15 factor of about 4"
+  },
+  {
+   "key": "mass.fixed_equipment",
+   "label": "Fixed equipment",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Systems",
+   "mean": 266.25872119,
+   "sigma": 26.625872119,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 39.938808178500004,
+   "lock_date": "2027-06-30",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 266.25872119,
+     "sigma": 26.625872119000004,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "note": "Estimated; Assumed allowance"
+  },
+  {
+   "key": "mass.rotors",
+   "label": "Rotors",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Rotor and drive",
+   "mean": 674.881836730543,
+   "sigma": 50.61613775479072,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 67.48818367305431,
+   "lock_date": "2026-12-15",
+   "next_activity": {
+    "label": "Blade and hub layout weights",
+    "due": "2027-01-31",
+    "sigma_after": 33.744091836527154,
+    "owner": "Rotor and drive",
+    "done": false
+   },
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 674.881836730543,
+     "sigma": 50.61613775479072,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "note": "Calibrated parametric; AFDD blades and hubs, XV-15 calibrated"
+  },
+  {
+   "key": "mass.rotor_gearboxes",
+   "label": "Rotor gearboxes",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Rotor and drive",
+   "mean": 292.41508993528487,
+   "sigma": 29.24150899352849,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 29.241508993528488,
+   "lock_date": "2026-12-15",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 292.41508993528487,
+     "sigma": 29.241508993528488,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "note": "Calibrated parametric; AFDD drive system"
+  },
+  {
+   "key": "mass.generator_gearboxes",
+   "label": "Generator gearboxes",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Rotor and drive",
+   "mean": 144.16918308083484,
+   "sigma": 14.416918308083485,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 14.416918308083485,
+   "lock_date": "2026-12-15",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 144.16918308083484,
+     "sigma": 14.416918308083485,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "note": "Calibrated parametric; AFDD drive system"
+  },
+  {
+   "key": "mass.motors",
+   "label": "Motors (with inverters)",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Electrical",
+   "mean": 425.5575131606171,
+   "sigma": 21.277875658030855,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 21.277875658030855,
+   "lock_date": "2026-12-15",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 425.5575131606171,
+     "sigma": 21.277875658030855,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "note": "Vendor data; Whole catalogue units plus inverter allowance"
+  },
+  {
+   "key": "mass.generators",
+   "label": "Generators (with inverters)",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Electrical",
+   "mean": 281.7,
+   "sigma": 14.085,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 14.085,
+   "lock_date": "2026-12-15",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 281.7,
+     "sigma": 14.085,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "note": "Vendor data; Whole catalogue units plus inverter allowance"
+  },
+  {
+   "key": "mass.turboshafts",
+   "label": "Turboshafts",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Propulsion",
+   "mean": 421.7207577098069,
+   "sigma": 10.543018942745173,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 8.434415154196138,
+   "lock_date": "2026-12-15",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 421.7207577098069,
+     "sigma": 10.543018942745173,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "note": "Vendor hardware; Fixed off-the-shelf engines plus installation"
+  },
+  {
+   "key": "mass.battery",
+   "label": "Battery",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Electrical",
+   "mean": 475.1205070660537,
+   "sigma": 35.63403802995403,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 38.00964056528429,
+   "lock_date": "2026-12-15",
+   "next_activity": {
+    "label": "Pack layout: cell-to-pack fraction from a module design",
+    "due": "2026-12-01",
+    "sigma_after": 19.004820282642147,
+    "owner": "Electrical",
+    "done": false
+   },
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 475.1205070660537,
+     "sigma": 35.63403802995403,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "note": "Calculated / layout; 50G cell data; 70 % cell-to-pack mass assumed"
+  },
+  {
+   "key": "mass.heat_exchanger",
+   "label": "Heat exchanger",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Thermal",
+   "mean": 126.90427818630663,
+   "sigma": 19.035641727945997,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 19.035641727945993,
+   "lock_date": "2026-12-15",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 126.90427818630664,
+     "sigma": 19.035641727945997,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "note": "Estimated; Thermal model, mass per watt assumed"
+  },
+  {
+   "key": "mass.protection_and_bus_tie",
+   "label": "Protection and bus tie",
+   "kind": "mass",
+   "unit": "kg",
+   "owner": "Electrical",
+   "mean": 28.474214907178812,
+   "sigma": 5.694842981435762,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 4.271132236076822,
+   "lock_date": "2026-12-15",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 28.474214907178812,
+     "sigma": 5.694842981435762,
+     "source": "Halo sizing (baseline)",
+     "fidelity": 1,
+     "note": "sized mass"
+    }
+   ],
+   "note": "Estimated; Simple ratings-based estimate"
+  },
+  {
+   "key": "gap.hv_installation",
+   "label": "HV installation: inverters, cables, protection, partial-discharge insulation",
+   "kind": "gap",
+   "unit": "kg",
+   "owner": "Electrical",
+   "mean": 330.0,
+   "sigma": 100.0,
+   "fidelity": 1,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 0.0,
+   "lock_date": "2026-12-15",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 330.0,
+     "sigma": 100.0,
+     "source": "electrical layer (off in the baseline)",
+     "fidelity": 1,
+     "note": ""
+    }
+   ],
+   "note": "Modelled but off by default; also adds about 3 % losses"
+  },
+  {
+   "key": "gap.tilt_fittings",
+   "label": "Tilt spindle, tip ribs and fittings",
+   "kind": "gap",
+   "unit": "kg",
+   "owner": "Structures",
+   "mean": 70.0,
+   "sigma": 50.0,
+   "fidelity": 0,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 0.0,
+   "lock_date": "2027-06-30",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 70.0,
+     "sigma": 50.0,
+     "source": "placeholder prior",
+     "fidelity": 0,
+     "note": ""
+    }
+   ],
+   "note": "Owner to replace with a layout estimate"
+  },
+  {
+   "key": "gap.conversion_actuators",
+   "label": "Conversion actuators and backup structure",
+   "kind": "gap",
+   "unit": "kg",
+   "owner": "Flight controls and systems",
+   "mean": 45.0,
+   "sigma": 30.0,
+   "fidelity": 0,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 0.0,
+   "lock_date": "2027-06-30",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 45.0,
+     "sigma": 30.0,
+     "source": "placeholder prior",
+     "fidelity": 0,
+     "note": ""
+    }
+   ],
+   "note": "Owner to replace"
+  },
+  {
+   "key": "gap.coolant_loop",
+   "label": "Coolant loop: plumbing, pumps, fluid",
+   "kind": "gap",
+   "unit": "kg",
+   "owner": "Thermal",
+   "mean": 40.0,
+   "sigma": 30.0,
+   "fidelity": 0,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 0.0,
+   "lock_date": "2026-12-15",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 40.0,
+     "sigma": 30.0,
+     "source": "placeholder prior",
+     "fidelity": 0,
+     "note": ""
+    }
+   ],
+   "note": "Owner to replace"
+  },
+  {
+   "key": "gap.tilt_joint_crossings",
+   "label": "HV and coolant crossings at the tilt joint",
+   "kind": "gap",
+   "unit": "kg",
+   "owner": "Electrical",
+   "mean": 20.0,
+   "sigma": 15.0,
+   "fidelity": 0,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 0.0,
+   "lock_date": "2027-06-30",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 20.0,
+     "sigma": 15.0,
+     "source": "placeholder prior",
+     "fidelity": 0,
+     "note": ""
+    }
+   ],
+   "note": "Flex loops or slip rings; swivel joints"
+  },
+  {
+   "key": "gap.wing_strength",
+   "label": "Wing structure added for ultimate strength",
+   "kind": "gap",
+   "unit": "kg",
+   "owner": "Structures",
+   "mean": 40.0,
+   "sigma": 45.0,
+   "fidelity": 0,
+   "sensitivity": 2.5368810508980673,
+   "allowance": 0.0,
+   "lock_date": "2026-12-15",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 40.0,
+     "sigma": 45.0,
+     "source": "placeholder prior",
+     "fidelity": 0,
+     "note": ""
+    }
+   ],
+   "note": "FE peak cap strain 10 % over the ultimate allowable on raw gauges; 0.83 of it if the 1.33 calibration material is load-carrying"
+  },
+  {
+   "key": "input.drag_excrescence",
+   "label": "Drag excrescence factor on AeroBuildup",
+   "kind": "input",
+   "unit": "-",
+   "owner": "Aerodynamics",
+   "mean": 1.27,
+   "sigma": 0.1,
+   "fidelity": 1,
+   "sensitivity": null,
+   "allowance": 0.0,
+   "lock_date": "2026-12-15",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 1.27,
+     "sigma": 0.1,
+     "source": "assumption",
+     "fidelity": 1,
+     "note": ""
+    }
+   ],
+   "note": "Calibrated to NDARC XV-15 components, not flight"
+  },
+  {
+   "key": "input.cell_to_pack",
+   "label": "Cell-to-pack mass fraction",
+   "kind": "input",
+   "unit": "-",
+   "owner": "Electrical",
+   "mean": 0.7,
+   "sigma": 0.025,
+   "fidelity": 1,
+   "sensitivity": null,
+   "allowance": 0.0,
+   "lock_date": "2026-12-15",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 0.7,
+     "sigma": 0.025,
+     "source": "assumption",
+     "fidelity": 1,
+     "note": ""
+    }
+   ],
+   "note": "Cylindrical-cell packs about 0.65-0.75"
+  },
+  {
+   "key": "input.capacity_end_of_life",
+   "label": "Battery capacity at end of life",
+   "kind": "input",
+   "unit": "-",
+   "owner": "Electrical",
+   "mean": 0.8000000000000002,
+   "sigma": 0.05,
+   "fidelity": 1,
+   "sensitivity": null,
+   "allowance": 0.0,
+   "lock_date": "2027-06-30",
+   "next_activity": null,
+   "evidence": [
+    {
+     "date": "2026-10-09",
+     "value": 0.8,
+     "sigma": 0.05,
+     "source": "assumption",
+     "fidelity": 1,
+     "note": ""
+    }
+   ],
+   "note": "Assumed 80 % of rated"
+  }
+ ],
+ "runs": [
+  {
+   "date": "2026-10-09",
+   "source": "Halo sizing (baseline)",
+   "kind": "sizing",
+   "summary": "take-off 6,885 kg, growth factor 2.54, 14 binding limits"
+  }
+ ],
+ "history": [
+  {
+   "date": "2026-10-09",
+   "source": "Halo sizing (baseline)",
+   "sigma_takeoff_kg": 458.53,
+   "margin_99_kg": 1066.67,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 130.42
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 39.73
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 31.06
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 26.46
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 25.09
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 23.5
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 17.53
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 14.94
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 11.08
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 11.08
+    },
+    {
+     "key": "mass.rotor_gearboxes",
+     "value_kg": 10.52
+    },
+    {
+     "key": "mass.fixed_equipment",
+     "value_kg": 8.72
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    }
+   ]
+  }
+ ]
+}
