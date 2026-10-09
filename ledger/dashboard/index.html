@@ -1,0 +1,301 @@
+<title>Halo Decision Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a war-room board. Summary strip, then the ranked priority list beside the risk-versus-schedule map, then burn-down and the log. */
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14212b; --muted: #5b6b77; --rule: #d9e0e4; --rule-soft: #e9eef0;
+  --accent: #1d5ea8; --accent-soft: rgba(29, 94, 168, .10);
+  --k-uncert: #1d5ea8; --k-gap: #7a4fb4; --k-limit: #13837a; --k-trade: #b0661a; --k-blind: #8a959d;
+  --crit: #c2362b; --warn: #b7791f; --good: #2f7d4f;
+  --display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f161c; --panel: #16212a; --ink: #e3eaee; --muted: #93a3ae; --rule: #2a3843; --rule-soft: #1f2b35;
+  --accent: #6aa6ec; --accent-soft: rgba(106, 166, 236, .14);
+  --k-uncert: #6aa6ec; --k-gap: #b393e6; --k-limit: #4cc2b5; --k-trade: #e0a05a; --k-blind: #7f8c95;
+  --crit: #ef6b5f; --warn: #e3ac4f; --good: #5fbf86; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f161c; --panel: #16212a; --ink: #e3eaee; --muted: #93a3ae; --rule: #2a3843; --rule-soft: #1f2b35;
+  --accent: #6aa6ec; --accent-soft: rgba(106, 166, 236, .14);
+  --k-uncert: #6aa6ec; --k-gap: #b393e6; --k-limit: #4cc2b5; --k-trade: #e0a05a; --k-blind: #7f8c95;
+  --crit: #ef6b5f; --warn: #e3ac4f; --good: #5fbf86; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body); }
+.wrap { max-width: 1280px; margin: 0 auto; padding-inline: 20px; padding-block: 20px 48px; display: grid; gap: 20px; }
+h1, h2 { font-family: var(--display); font-weight: 600; margin: 0; text-wrap: balance; letter-spacing: .01em; }
+h1 { font-size: 30px; line-height: 1.1; }
+h2 { font-size: 19px; }
+.eyebrow { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; }
+header .meta { color: var(--muted); font-size: 13px; }
+.strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.stat { background: var(--panel); padding: 12px 14px; display: grid; gap: 4px; }
+.stat b { font: 600 24px/1.1 var(--display); }
+.stat b.crit { color: var(--crit); }
+.stat span { font-size: 12px; color: var(--muted); }
+.panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; min-width: 0; display: grid; gap: 12px; align-content: start; }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 20px; }
+@media (max-width: 980px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.lede { margin: 0; color: var(--muted); max-width: 70ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { font: 500 12px/1 var(--body); border: 1px solid var(--rule); background: transparent; color: var(--ink); border-radius: 999px; padding: 6px 10px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.chip[aria-pressed="false"] { color: var(--muted); opacity: .6; }
+.chip:focus-visible, select:focus-visible, button:focus-visible, tr:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+select { font: 13px var(--body); color: var(--ink); background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; padding: 5px 8px; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 720px; }
+th { font: 500 11px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+td { padding: 9px 8px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+tbody tr.row { cursor: pointer; }
+tbody tr.row:hover { background: var(--accent-soft); }
+td.rank { font: 500 13px var(--mono); color: var(--muted); width: 32px; }
+.item { font-weight: 500; }
+.sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.kind { font: 500 11px/1 var(--body); display: inline-flex; gap: 5px; align-items: center; white-space: nowrap; }
+.range { position: relative; height: 14px; min-width: 120px; }
+.range .track { position: absolute; inset: 6px 0; background: var(--rule-soft); border-radius: 2px; }
+.range .band { position: absolute; top: 4px; height: 6px; border-radius: 3px; opacity: .35; }
+.range .mark { position: absolute; top: 1px; width: 3px; height: 12px; border-radius: 1px; }
+.pill { font: 500 11px/1 var(--body); border-radius: 3px; padding: 3px 6px; white-space: nowrap; display: inline-block; }
+.pill.crit { background: color-mix(in srgb, var(--crit) 16%, transparent); color: var(--crit); }
+.pill.warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.pill.ok { color: var(--muted); }
+tr.detail td { background: var(--bg); font-size: 13px; }
+tr.detail .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 24px; }
+tr.detail h3 { font: 500 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+tr.detail ul { margin: 0; padding-left: 16px; }
+svg text { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+svg .lab { fill: var(--ink); font-weight: 500; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); }
+.log { display: grid; gap: 0; }
+.log div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--rule-soft); font-size: 13px; }
+.log .src { color: var(--muted); }
+.empty { color: var(--muted); padding: 24px 0; }
+@media (prefers-reduced-motion: no-preference) { tbody tr.row { transition: background .12s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div style="display:grid;gap:6px">
+      <span class="eyebrow">Chief engineer's war room</span>
+      <h1 id="title">Halo Decision Ledger</h1>
+    </div>
+    <div class="meta" id="meta">Loading the ledger…</div>
+  </header>
+
+  <section class="strip" id="strip" aria-label="Weight status"></section>
+
+  <div class="grid2">
+    <section class="panel" aria-labelledby="h-rank">
+      <div style="display:grid;gap:4px">
+        <h2 id="h-rank">What to work on next</h2>
+        <p class="lede">Ranked by the take-off weight each action is expected to save. Uncertainty items save the 99 % margin we no longer have to carry; limits and trades save weight directly. Bars show the range on a common scale.</p>
+      </div>
+      <div class="controls">
+        <div class="controls" id="kinds" role="group" aria-label="Filter by kind"></div>
+        <label for="owner" class="sub">Owner</label>
+        <select id="owner"><option value="">All owners</option></select>
+        <label for="sort" class="sub">Sort</label>
+        <select id="sort">
+          <option value="value">Weight at stake</option>
+          <option value="urgency">Weight per week to lock</option>
+        </select>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>#</th><th>Item</th><th>Kind</th><th>Saving, lb</th><th class="num">Expected</th><th>Lock</th><th>Owner</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="7" class="empty">The ranking appears once the ledger loads.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div style="display:grid;gap:20px;align-content:start;min-width:0">
+      <section class="panel" aria-labelledby="h-map">
+        <h2 id="h-map">Risk against schedule</h2>
+        <p class="lede">Weight at stake against days left before each item locks. Top left is where to look first.</p>
+        <div id="map"></div>
+        <div class="legend" id="legend"></div>
+      </section>
+      <section class="panel" aria-labelledby="h-burn">
+        <h2 id="h-burn">Burn-down</h2>
+        <p class="lede">The 99 % take-off margin the uncertainty forces us to carry, after each ingest.</p>
+        <div id="burn"></div>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" aria-labelledby="h-log">
+    <h2 id="h-log">Ledger log</h2>
+    <div class="log" id="log"></div>
+  </section>
+</div>
+
+<script>
+const LB = 2.20462;
+const KINDS = {
+  "reduce uncertainty": { label: "Reduce uncertainty", color: "--k-uncert" },
+  "model gap": { label: "Model gap", color: "--k-gap" },
+  "relax limit": { label: "Relax a limit", color: "--k-limit" },
+  "decide trade": { label: "Decide a trade", color: "--k-trade" },
+  "blind spot": { label: "Blind spot", color: "--k-blind" },
+};
+const state = { kinds: new Set(Object.keys(KINDS)), owner: "", sort: "value", open: null };
+try { const s = JSON.parse(localStorage.getItem("ledger-view") || "{}"); if (s.sort) state.sort = s.sort; if (s.owner) state.owner = s.owner; } catch (e) {}
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = (kg, d = 0) => kg == null || !isFinite(kg) ? "—" : (kg * LB).toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d });
+const kindColor = k => `var(${(KINDS[k] || KINDS["blind spot"]).color})`;
+let V = null;
+
+function remember() { try { localStorage.setItem("ledger-view", JSON.stringify({ sort: state.sort, owner: state.owner })); } catch (e) {} }
+
+function summary() {
+  const p = V.portfolio, b = V.baseline || {};
+  const blind = V.priorities.filter(r => r.kind === "blind spot").length;
+  const flagged = V.priorities.filter(r => r.schedule).length;
+  const stats = [
+    [fmt(b.mass_takeoff_kg), "lb take-off, sized baseline", ""],
+    [fmt(p.takeoff_predicted_kg), "lb predicted with allowances and gaps (first order)", "crit"],
+    [fmt(p.takeoff_99_kg), "lb at 99 % confidence", "crit"],
+    [`±${fmt(p.sigma_takeoff_kg)}`, "lb take-off spread (1σ)", ""],
+    [fmt(p.allowance_empty_kg + p.gaps_empty_kg), `lb empty growth (allowance ${fmt(p.allowance_empty_kg)}, gaps ${fmt(p.gaps_empty_kg)}) against ${fmt(b.mass_payload_kg)} lb payload`, p.allowance_empty_kg + p.gaps_empty_kg > b.mass_payload_kg ? "crit" : ""],
+    [String(blind), "blind spots: no sensitivity or data", blind ? "crit" : ""],
+    [String(flagged), "schedule flags", flagged ? "crit" : ""],
+  ];
+  $("strip").innerHTML = stats.map(([v, l, c]) => `<div class="stat"><b class="num ${c}">${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+  $("meta").innerHTML = `As of <span class="num">${esc(V.as_of)}</span> · growth factor <span class="num">${V.growth_factor == null ? "—" : V.growth_factor.toFixed(2)}</span> lb take-off per lb empty · ${V.priorities.length} items tracked`;
+}
+
+function filtered() {
+  let rows = V.priorities.filter(r => state.kinds.has(r.kind) && (!state.owner || r.owner === state.owner));
+  if (state.sort === "urgency") {
+    const u = r => r.value_kg == null ? -1 : r.value_kg / Math.max((r.days_to_lock ?? 3650) / 7, 1);
+    rows = rows.slice().sort((a, b) => u(b) - u(a));
+  }
+  return rows;
+}
+
+function schedulePill(r) {
+  if (!r.schedule) return r.lock_date ? `<span class="num">${esc(r.lock_date)}</span><div class="sub num">${r.days_to_lock} days</div>` : `<span class="sub">no lock date</span>`;
+  const cls = r.schedule === "past lock" || r.schedule === "plan lands after lock" ? "crit" : "warn";
+  return `<span class="num">${esc(r.lock_date || "")}</span><div><span class="pill ${cls}">${esc(r.schedule)}</span></div>`;
+}
+
+function rangeBar(r, max) {
+  if (r.value_kg == null) return `<span class="sub">unknown</span>`;
+  const x = v => Math.max(0, Math.min(100, 100 * v / max));
+  const lo = x(Math.min(r.value_low_kg, r.value_high_kg)), hi = x(Math.max(r.value_low_kg, r.value_high_kg));
+  const c = kindColor(r.kind);
+  return `<div class="range" title="${fmt(r.value_low_kg)} to ${fmt(r.value_high_kg)} lb"><div class="track"></div><div class="band" style="left:${lo}%;width:${Math.max(hi - lo, .8)}%;background:${c}"></div><div class="mark" style="left:calc(${x(r.value_kg)}% - 1px);background:${c}"></div></div><div class="sub num">${fmt(r.value_low_kg)} to ${fmt(r.value_high_kg)}</div>`;
+}
+
+function detail(r) {
+  const q = V.quantities.find(q => q.key === r.key);
+  const parts = [`<div><h3>Why it ranks here</h3><div>${esc(r.detail)}</div>${r.share != null ? `<div class="sub">${(100 * r.share).toFixed(1)} % of the take-off variance</div>` : ""}${r.exposure_kg ? `<div class="sub">Exposure: ${fmt(r.exposure_kg)} lb take-off ${r.kind === "model gap" ? "(unbooked mean plus a 2σ overrun)" : r.kind === "decide trade" ? "(90 % half-range)" : "(2σ overrun)"}</div>` : ""}</div>`,
+    `<div><h3>Next action</h3><div>${esc(r.action)}</div></div>`];
+  if (q) {
+    parts.push(`<div><h3>Evidence</h3><ul>${q.evidence.map(e => `<li><span class="num">${esc(e.date)}</span> ${esc(e.source)}: <span class="num">${(+e.value).toPrecision(4)} ± ${(+e.sigma).toPrecision(2)}</span> ${esc(q.unit)} <span class="sub">(tier ${e.fidelity})</span></li>`).join("")}</ul></div>`);
+    if (q.note) parts.push(`<div><h3>Basis</h3><div>${esc(q.note)}</div></div>`);
+  }
+  return `<tr class="detail"><td></td><td colspan="6"><div class="cols">${parts.join("")}</div></td></tr>`;
+}
+
+function table() {
+  const rows = filtered();
+  const max = Math.max(1, ...rows.filter(r => r.value_high_kg != null).map(r => Math.max(r.value_high_kg, r.value_low_kg)));
+  if (!rows.length) { $("rows").innerHTML = `<tr><td colspan="7" class="empty">No items match these filters.</td></tr>`; return; }
+  $("rows").innerHTML = rows.map((r, i) => {
+    const rank = V.priorities.indexOf(r) + 1;
+    const k = KINDS[r.kind] || KINDS["blind spot"];
+    const head = `<tr class="row" tabindex="0" data-key="${esc(r.key)}" aria-expanded="${state.open === r.key}">
+      <td class="rank">${rank}</td>
+      <td><div class="item">${esc(r.label)}</div><div class="sub">${esc(r.action)}</div></td>
+      <td><span class="kind"><span class="dot" style="background:${kindColor(r.kind)}"></span>${esc(k.label)}</span></td>
+      <td style="min-width:140px">${rangeBar(r, max)}</td>
+      <td class="num" style="text-align:right">${r.value_kg == null ? "—" : fmt(r.value_kg)}</td>
+      <td>${schedulePill(r)}</td>
+      <td>${esc(r.owner)}</td></tr>`;
+    return head + (state.open === r.key ? detail(r) : "");
+  }).join("");
+  $("rows").querySelectorAll("tr.row").forEach(tr => {
+    const toggle = () => { state.open = state.open === tr.dataset.key ? null : tr.dataset.key; table(); };
+    tr.addEventListener("click", toggle);
+    tr.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+  });
+}
+
+function controls() {
+  $("kinds").innerHTML = Object.entries(KINDS).map(([k, v]) => `<button class="chip" type="button" id="kind-${k.replace(/\s/g, "-")}" data-kind="${k}" aria-pressed="${state.kinds.has(k)}"><span class="dot" style="background:var(${v.color})"></span>${v.label}</button>`).join("");
+  $("kinds").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    const k = b.dataset.kind; state.kinds.has(k) ? state.kinds.delete(k) : state.kinds.add(k);
+    b.setAttribute("aria-pressed", state.kinds.has(k)); table();
+  }));
+  const owners = [...new Set(V.priorities.map(r => r.owner))].sort();
+  $("owner").innerHTML = `<option value="">All owners</option>` + owners.map(o => `<option${o === state.owner ? " selected" : ""}>${esc(o)}</option>`).join("");
+  $("owner").onchange = e => { state.owner = e.target.value; remember(); table(); };
+  $("sort").value = state.sort;
+  $("sort").onchange = e => { state.sort = e.target.value; remember(); table(); };
+  $("legend").innerHTML = Object.values(KINDS).map(v => `<span class="kind"><span class="dot" style="background:var(${v.color})"></span>${v.label}</span>`).join("");
+}
+
+function niceTicks(max, n = 4) {
+  const step0 = max / n, mag = Math.pow(10, Math.floor(Math.log10(step0))), r = step0 / mag;
+  const step = (r < 1.5 ? 1 : r < 3 ? 2 : r < 7 ? 5 : 10) * mag;
+  const t = []; for (let v = 0; v <= max + 1e-9; v += step) t.push(v); return t;
+}
+
+function riskMap() {
+  const W = 460, H = 300, L = 52, R = 14, T = 12, B = 54;
+  const pts = V.priorities.map((r, i) => ({ r, rank: i + 1 })).filter(p => p.r.value_kg != null && p.r.days_to_lock != null);
+  const blind = V.priorities.filter(r => r.value_kg == null);
+  const xmax = Math.max(60, ...pts.map(p => p.r.days_to_lock)) * 1.05, xmin = Math.min(0, ...pts.map(p => p.r.days_to_lock));
+  const ymax = Math.max(1, ...pts.map(p => p.r.value_kg * LB)) * 1.1;
+  const X = d => L + (d - xmin) / (xmax - xmin) * (W - L - R), Y = v => T + (1 - v / ymax) * (H - T - B);
+  const yt = niceTicks(ymax), xt = niceTicks(xmax);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weight at stake against days to lock" style="width:100%;height:auto;display:block">`;
+  s += yt.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--rule-soft)"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${v.toLocaleString("en-US")}</text>`).join("");
+  s += xt.map(d => `<text x="${X(d)}" y="${H - B + 16}" text-anchor="middle">${d}</text>`).join("");
+  if (xmin < 0) s += `<rect x="${X(xmin)}" y="${T}" width="${X(0) - X(xmin)}" height="${H - T - B}" fill="var(--crit)" fill-opacity=".08"/>`;
+  s += `<line x1="${X(0)}" x2="${X(0)}" y1="${T}" y2="${H - B}" stroke="var(--rule)"/>`;
+  s += `<text x="${(L + W - R) / 2}" y="${H - B + 34}" text-anchor="middle">days to lock</text><text x="12" y="${T + 8}" transform="rotate(-90 12 ${T + 8})" text-anchor="end">lb at stake</text>`;
+  pts.slice().reverse().forEach(p => {
+    const cx = X(p.r.days_to_lock), cy = Y(p.r.value_kg * LB);
+    s += `<circle cx="${cx}" cy="${cy}" r="${p.rank <= 8 ? 6 : 4}" fill="${kindColor(p.r.kind)}" fill-opacity="${p.rank <= 8 ? .9 : .45}" stroke="var(--panel)" stroke-width="1"><title>${esc(p.r.label)}: ${fmt(p.r.value_kg)} lb, ${p.r.days_to_lock} days</title></circle>`;
+    if (p.rank <= 8) s += `<text class="lab" x="${cx + 8}" y="${cy + 4}">${p.rank}</text>`;
+  });
+  s += `<text x="${L}" y="${H - 6}">${blind.length} blind spot${blind.length === 1 ? "" : "s"} not placed: value unknown</text>`;
+  $("map").innerHTML = s + `</svg>`;
+}
+
+function burn() {
+  const h = V.history || [];
+  if (h.length < 2) { $("burn").innerHTML = `<p class="sub">One snapshot so far (${fmt(h[0]?.margin_99_kg)} lb on ${esc(h[0]?.date || "")}). The line grows with each new sizing, analysis or test.</p>`; return; }
+  const W = 460, H = 160, L = 52, R = 14, T = 10, B = 26;
+  const ys = h.map(e => e.margin_99_kg * LB), ymax = Math.max(...ys) * 1.1;
+  const X = i => L + i / (h.length - 1) * (W - L - R), Y = v => T + (1 - v / ymax) * (H - T - B);
+  const yt = niceTicks(ymax, 3);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="99 percent margin after each ingest" style="width:100%;height:auto;display:block">`;
+  s += yt.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--rule-soft)"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${v.toLocaleString("en-US")}</text>`).join("");
+  const line = ys.map((v, i) => `${X(i)},${Y(v)}`).join(" ");
+  s += `<polygon points="${X(0)},${Y(0)} ${line} ${X(h.length - 1)},${Y(0)}" fill="var(--accent)" fill-opacity=".10"/>`;
+  s += `<polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
+  s += `<circle cx="${X(h.length - 1)}" cy="${Y(ys.at(-1))}" r="4" fill="var(--accent)"/>`;
+  s += `<text x="${L}" y="${H - 6}">${esc(h[0].date)}</text><text x="${W - R}" y="${H - 6}" text-anchor="end">${esc(h.at(-1).date)}</text>`;
+  $("burn").innerHTML = s + `</svg>`;
+}
+
+function log() {
+  const runs = (V.runs || []).slice().reverse();
+  $("log").innerHTML = runs.length ? runs.map(r => `<div><span class="num src">${esc(r.date)}</span><span><b>${esc(r.source)}</b> <span class="sub">${esc(r.kind)}</span><br>${esc(r.summary)}</span></div>`).join("") : `<p class="empty">No ingests yet.</p>`;
+}
+
+fetch("view.json", { cache: "no-store" }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(v => {
+  V = v; summary(); controls(); table(); riskMap(); burn(); log();
+}).catch(() => { $("meta").textContent = "The ledger view (view.json) did not load. Re-run the ledger export and republish."; });
+</script>

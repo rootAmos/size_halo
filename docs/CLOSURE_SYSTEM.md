@@ -187,6 +187,36 @@ flowchart LR
 The loop closes through the owners: the dashboard points them at the top trades, and their decisions and data cut the
 spread for the next solve.
 
+## What is built (plan 041)
+
+The decision ledger is running. It is the chief engineer's war room: every uncertain quantity, binding limit and
+open trade, ranked by the take-off weight at stake, with its owner, lock date and planned work.
+
+| Piece | Where | What it does |
+| --- | --- | --- |
+| Envelope sensitivities | `src/aircraft_closure/core/sensitivity.py` | dJ*/dp for any Opti parameter from one solve, bound terms included; checked against finite differences |
+| Priced sizing | `examples/halo_sizing.py` (`SizingSensitivity`) | Every solve returns the growth factor and the take-off price of every margin |
+| Ledger model | `src/aircraft_closure/ledger/model.py` | Quantities with evidence and fidelity tiers, burn-down activities, limits, trades |
+| Ranking | `src/aircraft_closure/ledger/rank.py` | Four kinds of priority in take-off kg with a range; blind spots never valued at zero; schedule flags |
+| Ingest | `src/aircraft_closure/ledger/ingest.py` | A new sizing, analysis, vendor weight or test updates the ledger and snapshots the ranking |
+| Halo seed | `examples/halo_ledger.py` | 16 empty-weight items, 6 model gaps, 3 model inputs, 4 architecture trades, every binding limit |
+| Ledger file | `ledger/halo.json` | Kept in git: its history is the decision history |
+| Dashboard | `ledger/dashboard/index.html` ([live](https://claude.ai/artifact/RdwNbk3GPj2Pwg4FWYojLu)) | Ranked list, risk against schedule, burn-down and log, drawn from `ledger/view.json` |
+
+**Evidence rule.** A re-run of the same source replaces its earlier entry, so re-running a handbook model never
+looks like new information. Independent sources at the highest fidelity tier present are fused by inverse variance:
+placeholder, handbook, analysis, vendor or component test, weighed hardware.
+
+**Keeping it live.**
+
+```
+python -m examples.halo_ledger resize          # after a design change: new sensitivities, limits, masses
+python -m aircraft_closure.ledger evidence ledger/halo.json mass.wing 452 25 --source "CalculiX wing box" --fidelity 2
+python -m aircraft_closure.ledger rank ledger/halo.json
+```
+
+Each command rewrites `ledger/view.json`. Republishing the dashboard with it updates the war room.
+
 ## Roadmap
 
 Build the ledger first: every later step reads from it.
