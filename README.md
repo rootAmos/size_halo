@@ -482,7 +482,12 @@ uv run python -m examples.halo_mission_profile           # mission profile plots
 uv run python -m examples.halo_oew_uncertainty           # empty-weight uncertainty
 uv run python -m unittest discover -s tests              # 10-17 min
 uv sync --group notebooks && uv run jupyter lab notebooks
+uv run jupyter lab tutorials                            # learn the code from the bottom up
 ```
+
+New to the code? The [tutorials](tutorials/README.md) teach it from first principles: AeroSandbox and `asb.Opti`, each
+component, the topology, the airframe, a flight point, a mission, a coupled sizing, then the Halo driver. Most notebooks run in
+seconds; each verifies what it teaches.
 
 Set `OMP_NUM_THREADS=1` when running several solves at once; threaded BLAS under contention makes IPOPT fail
 spuriously. The OpenVSP and CalculiX tools are optional and need separate installs
@@ -501,6 +506,7 @@ spuriously. The OpenVSP and CalculiX tools are optional and need separate instal
 | `src/aircraft_closure/export/openvsp` | Optional geometry, aero cross-check and FE decks; never imported by sizing |
 | `examples/` | The baseline design (`halo_sizing.py`), mission profiles, empty-weight uncertainty, XV-15 and JVX validation, conversion corridor and trajectories |
 | `notebooks/` | Six executed discipline notebooks |
+| `tutorials/` | A bottom-up tutorial series (22 core notebooks) and deep dives on the full reference |
 | `docs/` | [Results](docs/RESULTS.md), [next steps](docs/NEXT_STEPS.md), [aircraft versions](docs/AIRCRAFT_VERSIONS.md), [architecture](docs/ARCHITECTURE.md), [coding conventions](docs/CODING_CONVENTIONS.md), [design log](docs/decisions/) |
 
 Lower layers never import higher ones. Components build equations; callers own variables, constraints and
