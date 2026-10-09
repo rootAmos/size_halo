@@ -114,6 +114,10 @@ class Trade:
     status: str = "open"              # "open" or "decided"
     decision: str = ""
     note: str = ""
+    discipline: str = ""
+    affects: list = field(default_factory=list)   # ledger keys (quantities, limits) the choice moves
+    model_hook: str = ""              # how the sizing can price the options ("" = owner estimate needed)
+    decided_date: str = ""            # ISO date of the decision, when decided
 
 
 @dataclass
