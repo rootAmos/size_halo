@@ -65,7 +65,8 @@ def view(ledger, today=None):
         gates=ledger.gates, portfolio=p, z_99=z_99,
         priorities=[asdict(r) for r in priorities(ledger, today)], quantities=quantities,
         runs=ledger.runs[-30:], history=ledger.history,
-        trades=[dict(key=t.key, label=t.label, owner=t.owner, discipline=t.discipline, lock_gate=t.lock_gate,
+        trades=[dict(key=t.key, label=t.label, owner=t.owner, category=t.category, discipline=t.discipline, lock_gate=t.lock_gate,
                      lock_date=t.lock_date, status=t.status, decision=t.decision, decided_date=t.decided_date,
-                     model_hook=t.model_hook, affects=t.affects, options=len(t.options), note=t.note)
+                     model_hook=t.model_hook, affects=t.affects, options=len(t.options), note=t.note,
+                     precedent=t.precedent, sources=t.sources)
                 for t in ledger.trades.values()])

@@ -144,7 +144,7 @@ def _trade_priority(ledger, trade, today):
                         days, schedule,
                         f"price it with the sizing: {trade.model_hook}" if trade.model_hook
                         else "owner to estimate each option against a ledger quantity",
-                        f"{trade.discipline + ' trade' if trade.discipline else 'Trade'} without option data"
+                        f"{trade.category or 'Trade'} without option data"
                         + (f"; moves {', '.join(trade.affects)}" if trade.affects else ""))
     (base_mean, base_sigma), best = impacts[0], min(range(1, len(impacts)), key=lambda i: impacts[i][0])
     gain = base_mean - impacts[best][0]
@@ -155,4 +155,5 @@ def _trade_priority(ledger, trade, today):
         trade.key, trade.label, "decide trade", trade.owner, max(gain, 0.0), gain - z_90 * sigma,
         gain + z_90 * sigma, None, z_90 * sigma, trade.lock_date, days, schedule,
         f"best option: {trade.options[best].label} ({ready})",
-        f"P(better than {trade.options[0].label}) = {100 * probability:.0f} %")
+        f"{trade.category + ': ' if trade.category else ''}P(better than {trade.options[0].label}) = "
+        f"{100 * probability:.0f} %")
