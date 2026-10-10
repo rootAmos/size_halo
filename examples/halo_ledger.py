@@ -138,7 +138,7 @@ def seed(result, today):
         ledger.quantities[key] = Quantity(key, label, "input", "-", owner, gate, gates[gate],
                                           evidence=[Evidence(today.isoformat(), value, sigma, "assumption", 1)],
                                           note=note)
-    register(ledger, gates)
+    register(ledger, gates, today.isoformat())
     ingest_sizing(ledger, result, source_sizing, today, sigma_fraction, *limit_names(result.sensitivity.margins))
     for label, group, keys, maturity, sigma, basis in item_definitions:
         q = ledger.quantities[slug(label)]
@@ -192,12 +192,13 @@ def main(argv=None):
     today = date.today()
     if args.command == "trades":                 # add new register entries to the master ledger, no solve
         ledger = load(path_ledger)
-        added = register(ledger, gates)
+        added, retired = register(ledger, gates, today.isoformat())
         ledger.runs.append(dict(date=today.isoformat(), source="trade register (examples/halo_trades.py)",
-                                kind="register", summary=f"{added} trades and decisions added"))
+                                kind="register", summary=f"{added} added, {retired} retired below the line"))
         snapshot(ledger, "trade register", today)
         write(ledger, today)
-        print(f"{added} added; {len(ledger.trades)} trades and decisions in the ledger")
+        counts = {s: sum(t.status == s for t in ledger.trades.values()) for s in ("open", "decided", "retired")}
+        print(f"{added} added, {retired} retired; {counts}")
         return
     result = baseline_result(args.cache)
     if args.command == "seed":

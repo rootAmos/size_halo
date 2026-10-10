@@ -76,6 +76,7 @@ svg .lab { fill: var(--ink); font-weight: 500; }
 .log { display: grid; gap: 0; }
 .log div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--rule-soft); font-size: 13px; }
 .log .src { color: var(--muted); }
+a { color: var(--accent); }
 .empty { color: var(--muted); padding: 24px 0; }
 .gates { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
 .gate h3 { font: 600 15px/1.2 var(--display); margin: 0 0 2px; }
@@ -142,7 +143,7 @@ svg .lab { fill: var(--ink); font-weight: 500; }
   <section class="panel" aria-labelledby="h-reg">
     <div style="display:grid;gap:4px">
       <h2 id="h-reg">Trade register</h2>
-      <p class="lede" id="reg-lede">Every trade from concept to first article, by the gate where it locks.</p>
+      <p class="lede" id="reg-lede">The governing trades from concept to first article, by category.</p>
     </div>
     <div id="register"></div>
   </section>
@@ -221,6 +222,11 @@ function detail(r) {
   const q = V.quantities.find(q => q.key === r.key);
   const parts = [`<div><h3>Why it ranks here</h3><div>${esc(r.detail)}</div>${r.share != null ? `<div class="sub">${(100 * r.share).toFixed(1)} % of the take-off variance</div>` : ""}${r.exposure_kg ? `<div class="sub">Exposure: ${fmt(r.exposure_kg)} lb take-off ${r.kind === "model gap" ? "(unbooked mean plus a 2σ overrun)" : r.kind === "decide trade" ? "(90 % half-range)" : "(2σ overrun)"}</div>` : ""}</div>`,
     `<div><h3>Next action</h3><div>${esc(r.action)}</div></div>`];
+  const t = (V.trades || []).find(t => t.key === r.key);
+  if (t) {
+    if (t.precedent) parts.push(`<div><h3>Precedent</h3><div>${esc(t.precedent)}</div>${(t.sources || []).map(([l, u]) => `<div class="sub"><a href="${esc(u)}" target="_blank" rel="noopener">${esc(l)}</a></div>`).join("")}</div>`);
+    if (t.note) parts.push(`<div><h3>Note</h3><div>${esc(t.note)}</div></div>`);
+  }
   if (q) {
     parts.push(`<div><h3>Evidence</h3><ul>${q.evidence.map(e => `<li><span class="num">${esc(e.date)}</span> ${esc(e.source)}: <span class="num">${(+e.value).toPrecision(4)} ± ${(+e.sigma).toPrecision(2)}</span> ${esc(q.unit)} <span class="sub">(tier ${e.fidelity})</span></li>`).join("")}</ul></div>`);
     if (q.note) parts.push(`<div><h3>Basis</h3><div>${esc(q.note)}</div></div>`);
@@ -237,7 +243,7 @@ function table() {
     const k = KINDS[r.kind] || KINDS["blind spot"];
     const head = `<tr class="row" tabindex="0" data-key="${esc(r.key)}" aria-expanded="${state.open === r.key}">
       <td class="rank">${rank}</td>
-      <td><div class="item">${esc(r.label)}</div><div class="sub">${esc(r.action)}</div></td>
+      <td><div class="item">${esc(r.label)}</div><div class="sub">${(() => { const t = (V.trades || []).find(t => t.key === r.key); return t && t.category ? esc(t.category) + " · " : ""; })()}${esc(r.action)}</div></td>
       <td><span class="kind"><span class="dot" style="background:${kindColor(r.kind)}"></span>${esc(k.label)}</span></td>
       <td style="min-width:140px">${rangeBar(r, max)}</td>
       <td class="num" style="text-align:right">${r.value_kg == null ? "—" : fmt(r.value_kg)}</td>
@@ -312,21 +318,21 @@ function burn() {
   $("burn").innerHTML = s + `</svg>`;
 }
 
+const CATEGORIES = ["Design decision", "Material and technology", "Requirement", "Risk tolerance"];
 function register() {
   const trades = V.trades || [];
-  const open = trades.filter(t => t.status === "open"), decided = trades.filter(t => t.status !== "open");
+  const open = trades.filter(t => t.status === "open"), decided = trades.filter(t => t.status === "decided");
   const priced = open.filter(t => t.options > 1).length, model = open.filter(t => t.options < 2 && t.model_hook).length;
-  $("reg-lede").textContent = `${open.length} open trades: ${priced} priced by the sizing, ${model} the sizing can price next, ${open.length - priced - model} need an owner's option estimates. ${decided.length} decisions taken.`;
-  const gates = Object.entries(V.gates || {}).sort((a, b) => a[1].localeCompare(b[1]));
-  $("register").innerHTML = `<div class="gates">${gates.map(([g, d]) => {
-    const items = open.filter(t => t.lock_gate === g);
-    return `<div class="gate"><h3>${esc(g)}</h3><div class="when">${esc(d)} · ${items.length} trades</div><ul>${items.map(t => {
+  $("reg-lede").textContent = `${open.length} governing trades: ${priced} priced by the sizing, ${model} the sizing can price next, ${open.length - priced - model} need an owner's option estimates. ${decided.length} decisions taken.`;
+  $("register").innerHTML = `<div class="gates">${CATEGORIES.map(c => {
+    const items = open.filter(t => t.category === c).sort((a, b) => (a.lock_date || "").localeCompare(b.lock_date || ""));
+    return `<div class="gate"><h3>${esc(c)}</h3><div class="when">${items.length} trades</div><ul>${items.map(t => {
       const tag = t.options > 1 ? `<span class="tag priced">priced</span>` : t.model_hook ? `<span class="tag model">model can price</span>` : `<span class="tag owner">needs estimate</span>`;
-      return `<li>${tag}<span>${esc(t.label)}<div class="sub">${esc(t.discipline)} · ${esc(t.owner)}</div></span></li>`;
+      return `<li>${tag}<span>${esc(t.label)}<div class="sub">${esc(t.owner)} · locks ${esc(t.lock_gate)}${t.precedent ? " · precedent on file" : ""}</div></span></li>`;
     }).join("")}</ul></div>`;
   }).join("")}</div>`;
   $("decisions").innerHTML = decided.slice().sort((a, b) => (b.decided_date || "").localeCompare(a.decided_date || "")).map(t =>
-    `<tr><td class="num">${esc(t.decided_date || "earlier")}</td><td>${esc(t.label)}</td><td>${esc(t.decision)}</td><td>${esc(t.owner)}</td></tr>`).join("");
+    `<tr><td class="num">${esc(t.decided_date || "earlier")}</td><td>${esc(t.label)}<div class="sub">${esc(t.category)}</div></td><td>${esc(t.decision)}</td><td>${esc(t.owner)}</td></tr>`).join("");
 }
 
 function log() {

@@ -1,163 +1,217 @@
-"""Halo trade register: every trade from concept to first article, and the decisions already taken.
+"""Halo trade register: the governing trades from concept to first article, and the decisions already taken.
 
-Each open trade names its discipline, owner, the gate where it locks, the ledger items it moves and, where the sizing
-can already price its options, the model hook (an existing `HaloAssumptions` switch or helper). The rest need an
-owner's option estimates before the ledger can value them. Decided entries record the decision and its date, so the
-ledger holds the decision history as well as the open work.
+Only trades that shape the aircraft are listed, in four categories:
+
+- **Design decision**: what the aircraft is (configuration, tilt mechanism, power and failure architecture).
+- **Material and technology**: what it is made of and with (structure materials by component, cells, machines).
+- **Requirement**: what it must do (speed, payload-range, hover cases): negotiated with the customer.
+- **Risk tolerance**: how much margin, redundancy and confidence the programme buys.
+
+Each open trade names its owner, the gate where it locks, the ledger items it moves and, where the sizing can already
+price its options, the model hook. Trades dropped from an earlier register are marked "retired" in the ledger (kept
+for the record, never ranked). Decided entries record the decision and its date.
 """
 from aircraft_closure.ledger.model import Trade
 
-# (key, label, discipline, owner, gate, affects, model hook, note)
+DESIGN, MATERIAL, REQUIREMENT, RISK = "Design decision", "Material and technology", "Requirement", "Risk tolerance"
+
+# (key, label, category, owner, gate, affects, model hook, note)
 open_trades = (
-    # ---- Concept freeze: configuration, architecture, requirements --------------------------------------
-    ("trade.hv_voltage", "HV bus voltage and regulation (floating or DC-DC; 540 to 1,000 V)", "Electrical",
-     "Electrical", "Concept freeze", ["gap.hv_installation", "mass.battery", "mass.motors"],
-     "assumptions_for_bus_voltage at 540, 756, 800, 1,000 V, with and without DC-DC",
-     "Voltage and cell series count are one decision; the engine-out battery voltage limit binds"),
-    ("trade.failure_architecture", "Interconnect shaft or electrical cross-strapping", "Electrical",
+    # ---- Design decisions ------------------------------------------------------------------------------------------
+    ("trade.tilt_load_path", "Tilt mechanism: spindle station, bearings and fitting concept", DESIGN, "Structures",
+     "Preliminary design review", ["gap.tilt_fittings", "mass.wing", "mass.nacelles", "gap.wing_strength"], "",
+     "Sets whirl flutter, jump take-off root strain and nacelle CG against the elastic axis"),
+    ("trade.conversion_actuator", "Conversion actuation: electromechanical or hydraulic, redundancy and stiffness",
+     DESIGN, "Flight controls and systems", "Preliminary design review", ["gap.conversion_actuators"], "",
+     "The actuator is the pylon pitch spring for whirl flutter; a jam is a critical failure"),
+    ("trade.tilt_joint_crossings", "Power across the tilt joint: inverters in nacelle or fuselage, AC or DC, flex "
+     "loops or slip rings, coolant swivel or nacelle-local cooling", DESIGN, "Electrical",
+     "Preliminary design review", ["gap.tilt_joint_crossings", "gap.coolant_loop", "mass.motors"], "", ""),
+    ("trade.failure_architecture", "Failure architecture: interconnect shaft or electrical cross-strapping", DESIGN,
      "Electrical", "Concept freeze", ["mass.motors", "mass.generators", "mass.battery"], "",
      "Needs asymmetric failure cases with roll trim"),
-    ("trade.redundancy_level", "Redundancy level: lanes, buses and battery strings (2/2/2 today)", "Electrical",
-     "Electrical", "Concept freeze", ["mass.motors", "mass.protection_and_bus_tie", "mass.battery"],
-     "redundancy on/off, count_strings_battery 1 to 3", "Set by the safety assessment's failure rates"),
-    ("trade.thermal_architecture", "Thermal: ram-air exchanger, liquid loop or nacelle-local cooling", "Thermal",
-     "Thermal", "Concept freeze", ["mass.heat_exchanger", "gap.coolant_loop", "gap.tilt_joint_crossings"], "",
+    ("trade.hv_voltage", "HV bus voltage and regulation (floating or DC-DC; 540 to 1,000 V)", DESIGN, "Electrical",
+     "Concept freeze", ["gap.hv_installation", "mass.battery", "mass.motors"],
+     "assumptions_for_bus_voltage at 540, 756, 800, 1,000 V, with and without DC-DC",
+     "Voltage and cell series count are one decision; the engine-out battery voltage limit binds"),
+    ("trade.thermal_architecture", "Thermal architecture: ram-air exchanger, liquid loop or nacelle-local", DESIGN,
+     "Thermal", "Concept freeze", ["mass.heat_exchanger", "gap.coolant_loop"], "",
      "Hot-day hover heat rejection binds"),
-    ("trade.rotor_span", "Rotor diameter against wing span", "Configuration", "Configuration", "Concept freeze",
+    ("trade.rotor_span", "Rotor diameter against wing span", DESIGN, "Configuration", "Concept freeze",
      ["Rotor radius capped by the span (rotor diameter against span)", "mass.rotors", "mass.wing"],
      "clearance_rotor_fuselage_m and the span cap", "The span cap is the most expensive binding limit"),
-    ("trade.blade_count", "Blade count: 3 or 4", "Rotor and drive", "Rotor and drive", "Concept freeze",
-     ["mass.rotors"], "count_blades 3 and 4", "Noise and hub loads not modelled"),
-    ("trade.tip_speed", "Hover tip speed and airplane-mode rotor speed schedule", "Rotor and drive",
-     "Rotor and drive", "Concept freeze", ["mass.rotors", "mass.rotor_gearboxes", "mass.motors"],
-     "speed_tip_m_s; a rotor-speed schedule is not modelled yet", "Hover tip speed is used in cruise today"),
-    ("trade.battery_reserve", "Battery reserve state of charge (30 % today)", "Electrical", "Chief engineer",
-     "Concept freeze", ["mass.battery"], "free_soc_reserve with bounds_soc_reserve", ""),
-    ("trade.cell_selection", "Cell selection and chemistry (50G today)", "Electrical", "Electrical",
-     "Concept freeze", ["mass.battery", "input.cell_to_pack", "input.capacity_end_of_life"], "",
+    ("trade.rotor_hub", "Rotor hub: gimballed or hingeless", DESIGN, "Rotor and drive", "Preliminary design review",
+     ["mass.rotors", "gap.tilt_fittings"], "", "Hub moments size the tilt fittings and the wing tip"),
+    # ---- Materials and technology ----------------------------------------------------------------------------------
+    ("trade.wing_material", "Wing primary structure: material and cover concept", MATERIAL, "Structures",
+     "Concept freeze", ["mass.wing", "gap.wing_strength"], "wing_material graphite_epoxy and aluminium",
+     "Covers (unstiffened, stiffened, sandwich) still to price: the FE shows a negative margin on 1 mm covers"),
+    ("trade.fuselage_material", "Fuselage structure: material and construction", MATERIAL, "Structures",
+     "Preliminary design review", ["mass.fuselage"], "", "Composite monocoque or metallic semi-monocoque"),
+    ("trade.fitting_material", "Tilt spindle and fittings: titanium, steel or composite", MATERIAL, "Structures",
+     "Preliminary design review", ["gap.tilt_fittings"], "", "Fatigue under conversion cycles"),
+    ("trade.rotor_construction", "Rotor blades and hub: material and construction", MATERIAL, "Rotor and drive",
+     "Preliminary design review", ["mass.rotors"], "", "Blade stiffness sets the rotor frequencies"),
+    ("trade.cell_selection", "Electric powertrain technology: cells, pack and machines (50G, Evolito, Helix today)",
+     MATERIAL, "Electrical", "Concept freeze",
+     ["mass.battery", "mass.motors", "mass.generators", "input.cell_to_pack", "input.capacity_end_of_life"],
+     "machine database units (count_units_motor, count_units_generator)",
      "No further power scaling of the 50G (decided 2026-10-03)"),
-    ("trade.machine_selection", "Motor and generator units: Evolito, magniX, EMRAX, Siemens or mixed",
-     "Electrical", "Electrical", "Concept freeze", ["mass.motors", "mass.generators"],
-     "machine database units (count_units_motor, count_units_generator)", ""),
-    ("trade.gearbox_stages", "Rotor and generator gearbox stage counts and ratios", "Rotor and drive",
-     "Rotor and drive", "Concept freeze", ["mass.rotor_gearboxes", "mass.generator_gearboxes"],
-     "gearbox_stages with the staircase stage model", "Generator step-up near 31:1 is the open refinement"),
-    ("trade.tail_type", "V-tail or conventional tail", "Configuration", "Flight controls and systems",
-     "Concept freeze", ["mass.tails", "static_margin"], "", "Drawn as a V-tail; sized as conventional"),
-    ("trade.wing_section", "Wing thickness ratio and section (NACA 2423 today)", "Structures", "Structures",
-     "Concept freeze", ["mass.wing", "gap.wing_strength"], "", "Whirl flutter against drag"),
-    ("trade.wing_material", "Wing material: graphite-epoxy or aluminium", "Structures", "Structures",
-     "Concept freeze", ["mass.wing"], "wing_material graphite_epoxy and aluminium", ""),
-    ("trade.cruise_point", "Cruise speed and altitude requirement (210 kt, 10,000 ft)", "Requirements",
-     "Chief engineer", "Concept freeze", ["mass.battery"], "HaloRequirements velocity_max_m_s, altitude_cruise_m",
-     ""),
-    ("trade.payload_range", "Payload against range (900 kg, 445 nm)", "Requirements", "Chief engineer",
-     "Concept freeze", [], "HaloRequirements mass_payload_kg, range_m", "Payload-range diagram not drawn yet"),
-    ("trade.hot_high", "Hot and high hover requirement (4,000 ft, 95 F)", "Requirements", "Chief engineer",
-     "Concept freeze", ["mass.heat_exchanger"], "HaloRequirements altitude_hover_hot_m, temperature_hover_hot_K",
-     ""),
-    ("trade.engine_out_hover", "Engine-out hover duration and reserve", "Requirements", "Chief engineer",
-     "Concept freeze", ["mass.battery", "mass.generators"], "HaloRequirements duration_engine_out_hover_s", ""),
-    # ---- Preliminary design review: subsystem concepts ---------------------------------------------------
-    ("trade.tilt_load_path", "Tilting load path: spindle station, tip rib and fitting concept", "Structures",
-     "Structures", "Preliminary design review", ["gap.tilt_fittings", "mass.wing", "mass.nacelles"], "",
-     "Whirl flutter and jump take-off root strain"),
-    ("trade.conversion_actuator", "Conversion actuator: electromechanical or hydraulic, and its stiffness",
-     "Flight controls", "Flight controls and systems", "Preliminary design review",
-     ["gap.conversion_actuators"], "", "The actuator is the pylon pitch spring for whirl flutter"),
-    ("trade.tilt_joint_crossings", "Tilt-joint crossings: flex loops or slip rings; coolant swivel or local HX",
-     "Electrical", "Electrical", "Preliminary design review", ["gap.tilt_joint_crossings", "gap.coolant_loop"], "",
-     ""),
-    ("trade.wing_covers", "Wing covers: unstiffened, stringer-stiffened or sandwich", "Structures", "Structures",
-     "Preliminary design review", ["gap.wing_strength", "mass.wing"], "",
-     "FE shows a negative margin on 1 mm unstiffened covers; no buckling step yet"),
-    ("trade.rotor_hub", "Rotor hub: gimballed or hingeless", "Rotor and drive", "Rotor and drive",
-     "Preliminary design review", ["mass.rotors", "mass.nacelles"], "", "Hub moments drive the tilt fittings"),
-    ("trade.landing_gear", "Landing gear: retractable or fixed, wheels or skids", "Structures", "Structures",
-     "Preliminary design review", ["mass.landing_gear"], "", ""),
-    ("trade.battery_location", "Battery location and containment", "Electrical", "Electrical",
-     "Preliminary design review", ["mass.battery", "gap.hv_installation"], "", "CG and crash loads"),
-    ("trade.conductor", "Cable conductor: aluminium or copper", "Electrical", "Electrical",
-     "Preliminary design review", ["gap.hv_installation"], "conductor_cable aluminium_conductor, copper_conductor",
-     ""),
-    ("trade.inverter_location", "Inverter location: nacelle or fuselage", "Electrical", "Electrical",
-     "Preliminary design review", ["mass.motors", "gap.tilt_joint_crossings"], "", "AC or DC across the tilt joint"),
-    ("trade.partial_discharge", "Partial-discharge insulation strategy at altitude", "Electrical", "Electrical",
-     "Preliminary design review", ["gap.hv_installation"], "", "Couples to the bus voltage"),
-    ("trade.flight_control_actuation", "Flight control actuation: electromechanical or hydraulic, lane count",
-     "Flight controls", "Flight controls and systems", "Preliminary design review", ["mass.systems"], "",
-     "Flight controls carry an XV-15 factor of about 4"),
-    ("trade.autonomy_avionics", "Autonomy and avionics architecture and lane count", "Systems", "Systems",
-     "Preliminary design review", ["mass.fixed_equipment"], "", "100 lb allocation today"),
-    ("trade.ice_protection", "Ice protection: none, electrothermal rotor and wing, or inlets only", "Systems",
-     "Systems", "Preliminary design review", ["mass.fixed_equipment"], "", "Mission icing requirement open"),
-    ("trade.lightning", "Lightning and HIRF protection on composite structure", "Structures", "Structures",
-     "Preliminary design review", ["mass.wing", "mass.fuselage"], "", ""),
-    # ---- Critical design review: detail design ------------------------------------------------------------
-    ("trade.fitting_material", "Tilt and wing fittings: titanium, steel or composite", "Structures", "Structures",
-     "Critical design review", ["gap.tilt_fittings"], "", ""),
-    ("trade.skin_joints", "Skin joints: bonded or bolted", "Structures", "Structures", "Critical design review",
-     ["mass.wing", "mass.fuselage"], "", "Repairability against mass"),
-    ("trade.harness_standard", "Harness routing and connector standard", "Electrical", "Electrical",
-     "Critical design review", ["gap.hv_installation", "mass.systems"], "", ""),
-    ("trade.exchanger_core", "Heat exchanger core type", "Thermal", "Thermal", "Critical design review",
-     ["mass.heat_exchanger"], "", ""),
-    # ---- First article: manufacturing ---------------------------------------------------------------------
-    ("trade.wing_skin_process", "Wing skin process: automated fibre placement or hand layup", "Manufacturing",
-     "Manufacturing", "First article", ["mass.wing"], "", "Thickness tolerance is mass"),
-    ("trade.fuselage_assembly", "Fuselage: monolithic or panelized assembly", "Manufacturing", "Manufacturing",
-     "First article", ["mass.fuselage"], "", ""),
-    ("trade.fitting_process", "Fittings: machined or additively manufactured", "Manufacturing", "Manufacturing",
-     "First article", ["gap.tilt_fittings"], "", ""),
-    ("trade.finish_allowances", "Paint, sealant and tolerance allowances", "Manufacturing", "Weights",
-     "First article", ["mass.fuselage", "mass.wing"], "", ""),
+    # ---- Requirements ----------------------------------------------------------------------------------------------
+    ("trade.payload_range", "Mission: payload, range, cruise speed and altitude (900 kg, 445 nm, 210 kt, 10,000 ft)",
+     REQUIREMENT, "Chief engineer", "Concept freeze", ["mass.battery"],
+     "HaloRequirements mass_payload_kg, range_m, velocity_max_m_s, altitude_cruise_m",
+     "Payload-range diagram not drawn yet"),
+    ("trade.hover_cases", "Hover cases: hot and high (4,000 ft, 95 F) and engine-out duration", REQUIREMENT,
+     "Chief engineer", "Concept freeze", ["mass.heat_exchanger", "mass.battery", "mass.generators"],
+     "HaloRequirements altitude_hover_hot_m, temperature_hover_hot_K, duration_engine_out_hover_s",
+     "Both bind at the optimum"),
+    # ---- Risk tolerance --------------------------------------------------------------------------------------------
+    ("trade.redundancy_level", "Redundancy: lanes, buses and battery strings (2/2/2 today)", RISK, "Electrical",
+     "Concept freeze", ["mass.motors", "mass.protection_and_bus_tie", "mass.battery"],
+     "redundancy on/off, count_strings_battery 1 to 3", "Set by the safety assessment's failure rates"),
+    ("trade.battery_reserve", "Battery reserve and end-of-life sizing (30 % reserve, 80 % capacity)", RISK,
+     "Chief engineer", "Concept freeze", ["mass.battery", "input.capacity_end_of_life"],
+     "free_soc_reserve with bounds_soc_reserve; factor_capacity_ageing_battery", ""),
+    ("trade.weight_margin", "Weight margin policy: confidence level and management reserve", RISK,
+     "Chief engineer", "Concept freeze", [], "", "99 % today; sets the NTE take-off weight"),
+    ("trade.load_factors", "Design loads: ultimate and jump take-off load factors (4.5, 2.0)", RISK, "Structures",
+     "Concept freeze", ["mass.wing", "gap.wing_strength"], "load_factor_ultimate, load_factor_jump", ""),
+    ("trade.whirl_margin", "Whirl-flutter margin: frequency placement or flutter-speed margin", RISK, "Structures",
+     "Preliminary design review", ["mass.wing"], "frequency_torsion_wing_per_rev, frequency_beam_wing_per_rev",
+     "Frequency placement is a proxy for the flutter boundary"),
+    ("trade.assurance_level", "Certification basis and design assurance levels", RISK, "Chief engineer",
+     "Concept freeze", ["mass.systems", "mass.fixed_equipment"], "", "Drives redundancy and avionics weight"),
 )
 
-# (key, label, discipline, owner, decision, decided date)
+# (key, label, category, owner, decision, decided date)
 decided_trades = (
-    ("decided.engines", "Turboshafts: off-the-shelf or sized", "Propulsion", "Chief engineer",
+    ("decided.engines", "Turboshafts: off-the-shelf or sized", DESIGN, "Chief engineer",
      "Fixed 2 x 1,120 hp off-the-shelf engines; never a design variable", "2026-10-03"),
-    ("decided.max_speed", "Maximum speed: 250 or 210 kt", "Requirements", "Chief engineer",
+    ("decided.max_speed", "Maximum speed: 250 or 210 kt", REQUIREMENT, "Chief engineer",
      "210 kt; 250 kt is infeasible with the fixed engines", "2026-10-03"),
-    ("decided.payload", "Reference payload", "Requirements", "Chief engineer", "900 kg", "2026-10-03"),
-    ("decided.cell_scaling", "Battery: stretch the cell further or accept the pack", "Electrical",
-     "Chief engineer", "Equivalent-circuit 50G pack; no further cell power scaling", "2026-10-03"),
-    ("decided.wing_model", "Wing weight method", "Structures", "Weights", "NDARC tiltrotor wing (AFDD)",
-     "2026-10-03"),
-    ("decided.aero_model", "Aerodynamics method", "Aerodynamics", "Aerodynamics", "AeroBuildup by default",
-     "2026-10-04"),
-    ("decided.turbines_fuselage", "Turbogenerator location", "Configuration", "Configuration",
+    ("decided.payload", "Reference payload", REQUIREMENT, "Chief engineer", "900 kg", "2026-10-03"),
+    ("decided.cell_scaling", "Battery: stretch the cell further or accept the pack", MATERIAL, "Chief engineer",
+     "Equivalent-circuit 50G pack; no further cell power scaling", "2026-10-03"),
+    ("decided.turbines_fuselage", "Turbogenerator location", DESIGN, "Configuration",
      "In the fuselage, behind the rear spar", "2026-10-04"),
-    ("decided.fuselage", "Fuselage shape and length", "Configuration", "Configuration",
+    ("decided.fuselage", "Fuselage shape and length", DESIGN, "Configuration",
      "Boxy unpressurized section, 1.68 m wide, 2.0 m deep, 11 m long", "2026-10-04"),
-    ("decided.redundancy_default", "Redundancy default", "Electrical", "Electrical",
-     "2 lanes, 2 buses, 2 strings, switchable", "2026-10-04"),
-    ("decided.real_machines", "Machines: rubber scaling or catalogue units", "Electrical", "Electrical",
-     "Best-in-class catalogue units, whole unit counts", "2026-10-04"),
-    ("decided.nacelles_tilt", "Tilt concept", "Configuration", "Configuration", "Whole tip nacelles tilt",
+    ("decided.redundancy_default", "Redundancy default", RISK, "Electrical", "2 lanes, 2 buses, 2 strings, switchable",
      "2026-10-04"),
-    ("decided.geared_rotors", "Drive: direct or geared", "Rotor and drive", "Rotor and drive",
+    ("decided.real_machines", "Machines: rubber scaling or catalogue units", MATERIAL, "Electrical",
+     "Best-in-class catalogue units, whole unit counts", "2026-10-04"),
+    ("decided.nacelles_tilt", "What tilts", DESIGN, "Configuration", "Whole tip nacelles tilt", "2026-10-04"),
+    ("decided.geared_rotors", "Drive: direct or geared", DESIGN, "Rotor and drive",
      "Geared rotors and a step-up gearbox to each generator", ""),
-    ("decided.ruddervator_limit", "Ruddervator deflection limit", "Flight controls", "Flight controls and systems",
-     "±25 deg", "2026-10-05"),
+    ("decided.ruddervator_limit", "Ruddervator deflection limit", RISK, "Flight controls and systems", "±25 deg",
+     "2026-10-05"),
 )
 
 
-def register(ledger, gates):
-    """Add every trade the ledger does not hold yet (existing entries, with their options, are kept)."""
-    added = 0
-    for key, label, discipline, owner, gate, affects, hook, note in open_trades:
-        if key in ledger.trades:
-            t = ledger.trades[key]
-            t.discipline, t.affects, t.model_hook = discipline, list(affects), hook
-            t.note = t.note if t.options else note
-            continue
-        ledger.trades[key] = Trade(key, label, owner, lock_gate=gate, lock_date=gates[gate], note=note,
-                                   discipline=discipline, affects=list(affects), model_hook=hook)
-        added += 1
-    for key, label, discipline, owner, decision, decided in decided_trades:
-        if key not in ledger.trades:
-            ledger.trades[key] = Trade(key, label, owner, status="decided", decision=decision,
-                                       discipline=discipline, decided_date=decided)
+def register(ledger, gates, today=""):
+    """Bring the ledger in line with this register; returns (added, retired).
+
+    New trades are added; existing ones get the register's label, category, links and hook (their options and
+    decisions are kept); open trades no longer listed are retired, with the date, and never ranked again.
+    """
+    added = retired = 0
+    listed = {t[0] for t in open_trades} | {t[0] for t in decided_trades}
+    for key, label, category, owner, gate, affects, hook, note in open_trades:
+        t = ledger.trades.get(key)
+        if t is None:
+            ledger.trades[key] = Trade(key, label, owner, lock_gate=gate, lock_date=gates[gate], note=note,
+                                       affects=list(affects), model_hook=hook, category=category)
             added += 1
-    return added
+            continue
+        t.label, t.category, t.owner, t.affects, t.model_hook = label, category, owner, list(affects), hook
+        t.lock_gate, t.lock_date, t.note = gate, gates[gate], note
+        if t.status == "retired":
+            t.status = "open"
+    for key, label, category, owner, decision, decided in decided_trades:
+        t = ledger.trades.get(key)
+        if t is None:
+            ledger.trades[key] = Trade(key, label, owner, status="decided", decision=decision, decided_date=decided,
+                                       category=category)
+            added += 1
+        else:
+            t.category = category
+    for key, t in ledger.trades.items():
+        if key not in listed and t.status == "open":
+            t.status, t.note = "retired", f"Below the line: not a governing trade (retired {today})"
+            retired += 1
+    apply_precedents(ledger)
+    return added, retired
+
+
+# Precedents from comparable programmes (researched 2026-10-10). "As reported" marks a source whose full text could not
+# be opened; its figures come from the publisher's summary. Each entry: (precedent, [(label, url), ...]).
+TWZ_V280 = ("The War Zone: V-280 against V-22, with Bell's head of tiltrotor systems",
+            "https://www.twz.com/21162/we-talk-v-280-valor-versus-v-22-osprey-with-bells-head-of-tiltrotor-systems")
+FLIGHT_V22 = ("Flight International, 'Tilting in favour' (2000), as reported",
+              "https://flightglobal.com/tilting-in-favour/33528.article")
+NASA_X57 = ("NASA: X-57 project creates paths toward electric aviation",
+            "https://www.nasa.gov/centers-and-facilities/armstrong/x-57-project-creates-paths-toward-electric-aviation-2/")
+NTSB_JOBY = ("eVTOL Insights: NTSB report on the Joby JAS4-2 prototype crash",
+             "https://evtolinsights.com/ntsb-finally-releases-report-on-joby-aviation-crash-jas4-2-prototype/")
+FR_AW609 = ("Federal Register 2024-25238: AW609 airworthiness criteria",
+            "https://www.govinfo.gov/content/pkg/FR-2024-10-31/html/2024-25238.htm")
+PATENT_TILT = ("US 7,871,033: Tilt actuation for a rotorcraft (background on the V-22), as reported",
+               "https://patents.google.com/patent/US7871033")
+NASA_THIN_WING = ("Acree, Peyran and Johnson, NASA/TP-2004-212262 (thin-wing whirl flutter), as reported",
+                  "https://rotorcraft.arc.nasa.gov/Publications/files/AcreePeyranJohnson_TP2004-212262.pdf")
+NASA_XV15 = ("NASA NTRS 19810001546 (XV-15 description), as reported",
+             "https://ntrs.nasa.gov/api/citations/19810001546/downloads/19810001546.pdf")
+
+precedents = {
+    "trade.tilt_load_path": (
+        "V-22 tilts the whole nacelle: engine, gearbox and rotor. V-280 keeps the engines fixed and tilts only the "
+        "proprotor gearbox; Bell cites maintenance (engine, shaft and gearbox removable independently) and says the "
+        "V-280 weighs less than a V-22. Halo already keeps the turbines in the fuselage and tilts only motors, gearbox "
+        "and rotor, the V-280 logic carried further.", [TWZ_V280]),
+    "trade.conversion_actuator": (
+        "V-22: a three-bar linkage with a linear actuator, two hydraulic motors and an electric third for triple "
+        "redundancy; the nacelle is locked horizontal to unload the actuator. Joby JAS4-2: the NTSB named the tilt "
+        "actuator linkage at one station, which let blades run steeper than commanded, as a contributing factor in a "
+        "cascading prototype loss.", [PATENT_TILT, NTSB_JOBY]),
+    "trade.tilt_joint_crossings": (
+        "X-57: electromagnetic interference from the electric propulsion affected onboard systems and needed filters "
+        "designed and installed during integration; the aircraft never flew. Routing HV across a rotating joint adds "
+        "this exposure where it is hardest to shield.", [NASA_X57]),
+    "trade.failure_architecture": (
+        "XV-15 and V-22 both carry a cross-shaft so one engine drives both rotors; V-280 kept it. No certified "
+        "tiltrotor has replaced the shaft with electrical cross-strapping, so Halo's choice carries certification "
+        "risk as well as mass.", [NASA_XV15, TWZ_V280]),
+    "trade.hv_voltage": (
+        "X-57 hit interference between its inverters and onboard systems and redesigned its battery for overheating; "
+        "integration problems and component shortages ended the programme before first flight.", [NASA_X57]),
+    "trade.wing_material": (
+        "The sizing prices aluminium (the material of the XV-15 calibration) at +699 lb take-off against "
+        "graphite-epoxy. The V-22 lesson is in the details: composite parts that need many fasteners lose to machined "
+        "aluminium (see the fuselage trade).", [FLIGHT_V22]),
+    "trade.fuselage_material": (
+        "V-22: empty weight ran 1,520 kg over specification by the end of full-scale development, partly from "
+        "over-ambitious new materials. Composite frames needing many parts and fasteners were replaced by machined "
+        "aluminium (32.4 lb against 26.4 lb per frame, 39 parts against 1, 258 fasteners against none); composite share "
+        "fell from 57 % to 43 % of the airframe.", [FLIGHT_V22]),
+    "trade.weight_margin": (
+        "V-22: 1,520 kg empty-weight overrun in full-scale development; the next phase gave each integrated product "
+        "team a weight allocation to hold or trade, the discipline this ledger encodes.", [FLIGHT_V22]),
+    "trade.whirl_margin": (
+        "XV-15 and V-22 use 23 % thick wings to keep whirl flutter beyond dive speed, at a drag and speed cost; a 15 % "
+        "NASA design lost stiffness, and tailoring recovered stability at about 18 %. Halo's NACA 2423 follows the "
+        "same precedent.", [NASA_THIN_WING]),
+    "trade.assurance_level": (
+        "AW609: applied in 2012, certified as a special-class powered-lift on a basis drawn from Parts 23, 25 and 29 "
+        "(17,500 lb maximum weight); the criteria took effect on 2 December 2024. A tiltrotor's certification basis "
+        "is itself a long-lead risk.", [FR_AW609]),
+    "trade.cell_selection": (
+        "X-57's battery had to be redesigned for overheating before it was cleared; containment and cell spacing are "
+        "installed mass the cell data does not show.", [NASA_X57]),
+}
+
+
+def apply_precedents(ledger):
+    for key, (text, sources) in precedents.items():
+        if key in ledger.trades:
+            ledger.trades[key].precedent, ledger.trades[key].sources = text, [list(s) for s in sources]

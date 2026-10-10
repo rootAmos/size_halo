@@ -887,7 +887,7 @@
  "trades": {
   "trade.hv_voltage": {
    "key": "trade.hv_voltage",
-   "label": "HV bus voltage and regulation",
+   "label": "HV bus voltage and regulation (floating or DC-DC; 540 to 1,000 V)",
    "owner": "Electrical",
    "options": [],
    "lock_gate": "Concept freeze",
@@ -902,30 +902,47 @@
     "mass.motors"
    ],
    "model_hook": "assumptions_for_bus_voltage at 540, 756, 800, 1,000 V, with and without DC-DC",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "Design decision",
+   "precedent": "X-57 hit interference between its inverters and onboard systems and redesigned its battery for overheating; integration problems and component shortages ended the programme before first flight.",
+   "sources": [
+    [
+     "NASA: X-57 project creates paths toward electric aviation",
+     "https://www.nasa.gov/centers-and-facilities/armstrong/x-57-project-creates-paths-toward-electric-aviation-2/"
+    ]
+   ]
   },
   "trade.tilt_load_path": {
    "key": "trade.tilt_load_path",
-   "label": "Tilting load path: spindle station, fittings, actuator stiffness",
+   "label": "Tilt mechanism: spindle station, bearings and fitting concept",
    "owner": "Structures",
    "options": [],
    "lock_gate": "Preliminary design review",
    "lock_date": "2027-06-30",
    "status": "open",
    "decision": "",
-   "note": "Whirl flutter and jump take-off root strain",
+   "note": "Sets whirl flutter, jump take-off root strain and nacelle CG against the elastic axis",
    "discipline": "Structures",
    "affects": [
     "gap.tilt_fittings",
     "mass.wing",
-    "mass.nacelles"
+    "mass.nacelles",
+    "gap.wing_strength"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "Design decision",
+   "precedent": "V-22 tilts the whole nacelle: engine, gearbox and rotor. V-280 keeps the engines fixed and tilts only the proprotor gearbox; Bell cites maintenance (engine, shaft and gearbox removable independently) and says the V-280 weighs less than a V-22. Halo already keeps the turbines in the fuselage and tilts only motors, gearbox and rotor, the V-280 logic carried further.",
+   "sources": [
+    [
+     "The War Zone: V-280 against V-22, with Bell's head of tiltrotor systems",
+     "https://www.twz.com/21162/we-talk-v-280-valor-versus-v-22-osprey-with-bells-head-of-tiltrotor-systems"
+    ]
+   ]
   },
   "trade.failure_architecture": {
    "key": "trade.failure_architecture",
-   "label": "Interconnect shaft or electrical cross-strapping",
+   "label": "Failure architecture: interconnect shaft or electrical cross-strapping",
    "owner": "Electrical",
    "options": [],
    "lock_gate": "Concept freeze",
@@ -940,11 +957,23 @@
     "mass.battery"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "Design decision",
+   "precedent": "XV-15 and V-22 both carry a cross-shaft so one engine drives both rotors; V-280 kept it. No certified tiltrotor has replaced the shaft with electrical cross-strapping, so Halo's choice carries certification risk as well as mass.",
+   "sources": [
+    [
+     "NASA NTRS 19810001546 (XV-15 description), as reported",
+     "https://ntrs.nasa.gov/api/citations/19810001546/downloads/19810001546.pdf"
+    ],
+    [
+     "The War Zone: V-280 against V-22, with Bell's head of tiltrotor systems",
+     "https://www.twz.com/21162/we-talk-v-280-valor-versus-v-22-osprey-with-bells-head-of-tiltrotor-systems"
+    ]
+   ]
   },
   "trade.thermal_architecture": {
    "key": "trade.thermal_architecture",
-   "label": "Thermal: ram-air exchanger, liquid loop or nacelle-local",
+   "label": "Thermal architecture: ram-air exchanger, liquid loop or nacelle-local",
    "owner": "Thermal",
    "options": [],
    "lock_gate": "Concept freeze",
@@ -955,15 +984,17 @@
    "discipline": "Thermal",
    "affects": [
     "mass.heat_exchanger",
-    "gap.coolant_loop",
-    "gap.tilt_joint_crossings"
+    "gap.coolant_loop"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "Design decision",
+   "precedent": "",
+   "sources": []
   },
   "trade.redundancy_level": {
    "key": "trade.redundancy_level",
-   "label": "Redundancy level: lanes, buses and battery strings (2/2/2 today)",
+   "label": "Redundancy: lanes, buses and battery strings (2/2/2 today)",
    "owner": "Electrical",
    "options": [],
    "lock_gate": "Concept freeze",
@@ -978,7 +1009,10 @@
     "mass.battery"
    ],
    "model_hook": "redundancy on/off, count_strings_battery 1 to 3",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "Risk tolerance",
+   "precedent": "",
+   "sources": []
   },
   "trade.rotor_span": {
    "key": "trade.rotor_span",
@@ -997,7 +1031,10 @@
     "mass.wing"
    ],
    "model_hook": "clearance_rotor_fuselage_m and the span cap",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "Design decision",
+   "precedent": "",
+   "sources": []
   },
   "trade.blade_count": {
    "key": "trade.blade_count",
@@ -1006,15 +1043,18 @@
    "options": [],
    "lock_gate": "Concept freeze",
    "lock_date": "2026-12-15",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "Noise and hub loads not modelled",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Rotor and drive",
    "affects": [
     "mass.rotors"
    ],
    "model_hook": "count_blades 3 and 4",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.tip_speed": {
    "key": "trade.tip_speed",
@@ -1023,9 +1063,9 @@
    "options": [],
    "lock_gate": "Concept freeze",
    "lock_date": "2026-12-15",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "Hover tip speed is used in cruise today",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Rotor and drive",
    "affects": [
     "mass.rotors",
@@ -1033,11 +1073,14 @@
     "mass.motors"
    ],
    "model_hook": "speed_tip_m_s; a rotor-speed schedule is not modelled yet",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.battery_reserve": {
    "key": "trade.battery_reserve",
-   "label": "Battery reserve state of charge (30 % today)",
+   "label": "Battery reserve and end-of-life sizing (30 % reserve, 80 % capacity)",
    "owner": "Chief engineer",
    "options": [],
    "lock_gate": "Concept freeze",
@@ -1047,14 +1090,18 @@
    "note": "",
    "discipline": "Electrical",
    "affects": [
-    "mass.battery"
+    "mass.battery",
+    "input.capacity_end_of_life"
    ],
-   "model_hook": "free_soc_reserve with bounds_soc_reserve",
-   "decided_date": ""
+   "model_hook": "free_soc_reserve with bounds_soc_reserve; factor_capacity_ageing_battery",
+   "decided_date": "",
+   "category": "Risk tolerance",
+   "precedent": "",
+   "sources": []
   },
   "trade.cell_selection": {
    "key": "trade.cell_selection",
-   "label": "Cell selection and chemistry (50G today)",
+   "label": "Electric powertrain technology: cells, pack and machines (50G, Evolito, Helix today)",
    "owner": "Electrical",
    "options": [],
    "lock_gate": "Concept freeze",
@@ -1065,29 +1112,42 @@
    "discipline": "Electrical",
    "affects": [
     "mass.battery",
+    "mass.motors",
+    "mass.generators",
     "input.cell_to_pack",
     "input.capacity_end_of_life"
    ],
-   "model_hook": "",
-   "decided_date": ""
+   "model_hook": "machine database units (count_units_motor, count_units_generator)",
+   "decided_date": "",
+   "category": "Material and technology",
+   "precedent": "X-57's battery had to be redesigned for overheating before it was cleared; containment and cell spacing are installed mass the cell data does not show.",
+   "sources": [
+    [
+     "NASA: X-57 project creates paths toward electric aviation",
+     "https://www.nasa.gov/centers-and-facilities/armstrong/x-57-project-creates-paths-toward-electric-aviation-2/"
+    ]
+   ]
   },
   "trade.machine_selection": {
    "key": "trade.machine_selection",
-   "label": "Motor and generator units: Evolito, magniX, EMRAX, Siemens or mixed",
+   "label": "Electric machines: supplier and technology",
    "owner": "Electrical",
    "options": [],
    "lock_gate": "Concept freeze",
    "lock_date": "2026-12-15",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Electrical",
    "affects": [
     "mass.motors",
     "mass.generators"
    ],
    "model_hook": "machine database units (count_units_motor, count_units_generator)",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "Material and technology",
+   "precedent": "",
+   "sources": []
   },
   "trade.gearbox_stages": {
    "key": "trade.gearbox_stages",
@@ -1096,34 +1156,40 @@
    "options": [],
    "lock_gate": "Concept freeze",
    "lock_date": "2026-12-15",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "Generator step-up near 31:1 is the open refinement",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Rotor and drive",
    "affects": [
     "mass.rotor_gearboxes",
     "mass.generator_gearboxes"
    ],
    "model_hook": "gearbox_stages with the staircase stage model",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.tail_type": {
    "key": "trade.tail_type",
-   "label": "V-tail or conventional tail",
+   "label": "Tail: V-tail or conventional",
    "owner": "Flight controls and systems",
    "options": [],
    "lock_gate": "Concept freeze",
    "lock_date": "2026-12-15",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "Drawn as a V-tail; sized as conventional",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Configuration",
    "affects": [
     "mass.tails",
     "static_margin"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "Design decision",
+   "precedent": "",
+   "sources": []
   },
   "trade.wing_section": {
    "key": "trade.wing_section",
@@ -1132,20 +1198,23 @@
    "options": [],
    "lock_gate": "Concept freeze",
    "lock_date": "2026-12-15",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "Whirl flutter against drag",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Structures",
    "affects": [
     "mass.wing",
     "gap.wing_strength"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.wing_material": {
    "key": "trade.wing_material",
-   "label": "Wing material: graphite-epoxy or aluminium",
+   "label": "Wing primary structure: material and cover concept",
    "owner": "Structures",
    "options": [
     {
@@ -1167,34 +1236,46 @@
    "lock_date": "2026-12-15",
    "status": "open",
    "decision": "",
-   "note": "",
+   "note": "Covers (unstiffened, stiffened, sandwich) still to price: the FE shows a negative margin on 1 mm covers",
    "discipline": "Structures",
    "affects": [
-    "mass.wing"
+    "mass.wing",
+    "gap.wing_strength"
    ],
    "model_hook": "wing_material graphite_epoxy and aluminium",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "Material and technology",
+   "precedent": "The sizing prices aluminium (the material of the XV-15 calibration) at +699 lb take-off against graphite-epoxy. The V-22 lesson is in the details: composite parts that need many fasteners lose to machined aluminium (see the fuselage trade).",
+   "sources": [
+    [
+     "Flight International, 'Tilting in favour' (2000), as reported",
+     "https://flightglobal.com/tilting-in-favour/33528.article"
+    ]
+   ]
   },
   "trade.cruise_point": {
    "key": "trade.cruise_point",
-   "label": "Cruise speed and altitude requirement (210 kt, 10,000 ft)",
+   "label": "Cruise speed and altitude (210 kt, 10,000 ft)",
    "owner": "Chief engineer",
    "options": [],
    "lock_gate": "Concept freeze",
    "lock_date": "2026-12-15",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Requirements",
    "affects": [
     "mass.battery"
    ],
    "model_hook": "HaloRequirements velocity_max_m_s, altitude_cruise_m",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "Requirement",
+   "precedent": "",
+   "sources": []
   },
   "trade.payload_range": {
    "key": "trade.payload_range",
-   "label": "Payload against range (900 kg, 445 nm)",
+   "label": "Mission: payload, range, cruise speed and altitude (900 kg, 445 nm, 210 kt, 10,000 ft)",
    "owner": "Chief engineer",
    "options": [],
    "lock_gate": "Concept freeze",
@@ -1203,9 +1284,14 @@
    "decision": "",
    "note": "Payload-range diagram not drawn yet",
    "discipline": "Requirements",
-   "affects": [],
-   "model_hook": "HaloRequirements mass_payload_kg, range_m",
-   "decided_date": ""
+   "affects": [
+    "mass.battery"
+   ],
+   "model_hook": "HaloRequirements mass_payload_kg, range_m, velocity_max_m_s, altitude_cruise_m",
+   "decided_date": "",
+   "category": "Requirement",
+   "precedent": "",
+   "sources": []
   },
   "trade.hot_high": {
    "key": "trade.hot_high",
@@ -1214,15 +1300,18 @@
    "options": [],
    "lock_gate": "Concept freeze",
    "lock_date": "2026-12-15",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Requirements",
    "affects": [
     "mass.heat_exchanger"
    ],
    "model_hook": "HaloRequirements altitude_hover_hot_m, temperature_hover_hot_K",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.engine_out_hover": {
    "key": "trade.engine_out_hover",
@@ -1231,37 +1320,52 @@
    "options": [],
    "lock_gate": "Concept freeze",
    "lock_date": "2026-12-15",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Requirements",
    "affects": [
     "mass.battery",
     "mass.generators"
    ],
    "model_hook": "HaloRequirements duration_engine_out_hover_s",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.conversion_actuator": {
    "key": "trade.conversion_actuator",
-   "label": "Conversion actuator: electromechanical or hydraulic, and its stiffness",
+   "label": "Conversion actuation: electromechanical or hydraulic, redundancy and stiffness",
    "owner": "Flight controls and systems",
    "options": [],
    "lock_gate": "Preliminary design review",
    "lock_date": "2027-06-30",
    "status": "open",
    "decision": "",
-   "note": "The actuator is the pylon pitch spring for whirl flutter",
+   "note": "The actuator is the pylon pitch spring for whirl flutter; a jam is a critical failure",
    "discipline": "Flight controls",
    "affects": [
     "gap.conversion_actuators"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "Design decision",
+   "precedent": "V-22: a three-bar linkage with a linear actuator, two hydraulic motors and an electric third for triple redundancy; the nacelle is locked horizontal to unload the actuator. Joby JAS4-2: the NTSB named the tilt actuator linkage at one station, which let blades run steeper than commanded, as a contributing factor in a cascading prototype loss.",
+   "sources": [
+    [
+     "US 7,871,033: Tilt actuation for a rotorcraft (background on the V-22), as reported",
+     "https://patents.google.com/patent/US7871033"
+    ],
+    [
+     "eVTOL Insights: NTSB report on the Joby JAS4-2 prototype crash",
+     "https://evtolinsights.com/ntsb-finally-releases-report-on-joby-aviation-crash-jas4-2-prototype/"
+    ]
+   ]
   },
   "trade.tilt_joint_crossings": {
    "key": "trade.tilt_joint_crossings",
-   "label": "Tilt-joint crossings: flex loops or slip rings; coolant swivel or local HX",
+   "label": "Power across the tilt joint: inverters in nacelle or fuselage, AC or DC, flex loops or slip rings, coolant swivel or nacelle-local cooling",
    "owner": "Electrical",
    "options": [],
    "lock_gate": "Preliminary design review",
@@ -1272,10 +1376,19 @@
    "discipline": "Electrical",
    "affects": [
     "gap.tilt_joint_crossings",
-    "gap.coolant_loop"
+    "gap.coolant_loop",
+    "mass.motors"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "Design decision",
+   "precedent": "X-57: electromagnetic interference from the electric propulsion affected onboard systems and needed filters designed and installed during integration; the aircraft never flew. Routing HV across a rotating joint adds this exposure where it is hardest to shield.",
+   "sources": [
+    [
+     "NASA: X-57 project creates paths toward electric aviation",
+     "https://www.nasa.gov/centers-and-facilities/armstrong/x-57-project-creates-paths-toward-electric-aviation-2/"
+    ]
+   ]
   },
   "trade.wing_covers": {
    "key": "trade.wing_covers",
@@ -1284,16 +1397,19 @@
    "options": [],
    "lock_gate": "Preliminary design review",
    "lock_date": "2027-06-30",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "FE shows a negative margin on 1 mm unstiffened covers; no buckling step yet",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Structures",
    "affects": [
     "gap.wing_strength",
     "mass.wing"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.rotor_hub": {
    "key": "trade.rotor_hub",
@@ -1304,14 +1420,17 @@
    "lock_date": "2027-06-30",
    "status": "open",
    "decision": "",
-   "note": "Hub moments drive the tilt fittings",
+   "note": "Hub moments size the tilt fittings and the wing tip",
    "discipline": "Rotor and drive",
    "affects": [
     "mass.rotors",
-    "mass.nacelles"
+    "gap.tilt_fittings"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "Design decision",
+   "precedent": "",
+   "sources": []
   },
   "trade.landing_gear": {
    "key": "trade.landing_gear",
@@ -1320,15 +1439,18 @@
    "options": [],
    "lock_gate": "Preliminary design review",
    "lock_date": "2027-06-30",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Structures",
    "affects": [
     "mass.landing_gear"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.battery_location": {
    "key": "trade.battery_location",
@@ -1337,16 +1459,19 @@
    "options": [],
    "lock_gate": "Preliminary design review",
    "lock_date": "2027-06-30",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "CG and crash loads",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Electrical",
    "affects": [
     "mass.battery",
     "gap.hv_installation"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.conductor": {
    "key": "trade.conductor",
@@ -1355,15 +1480,18 @@
    "options": [],
    "lock_gate": "Preliminary design review",
    "lock_date": "2027-06-30",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Electrical",
    "affects": [
     "gap.hv_installation"
    ],
    "model_hook": "conductor_cable aluminium_conductor, copper_conductor",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.inverter_location": {
    "key": "trade.inverter_location",
@@ -1372,16 +1500,19 @@
    "options": [],
    "lock_gate": "Preliminary design review",
    "lock_date": "2027-06-30",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "AC or DC across the tilt joint",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Electrical",
    "affects": [
     "mass.motors",
     "gap.tilt_joint_crossings"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.partial_discharge": {
    "key": "trade.partial_discharge",
@@ -1390,15 +1521,18 @@
    "options": [],
    "lock_gate": "Preliminary design review",
    "lock_date": "2027-06-30",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "Couples to the bus voltage",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Electrical",
    "affects": [
     "gap.hv_installation"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.flight_control_actuation": {
    "key": "trade.flight_control_actuation",
@@ -1407,15 +1541,18 @@
    "options": [],
    "lock_gate": "Preliminary design review",
    "lock_date": "2027-06-30",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "Flight controls carry an XV-15 factor of about 4",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Flight controls",
    "affects": [
     "mass.systems"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.autonomy_avionics": {
    "key": "trade.autonomy_avionics",
@@ -1424,15 +1561,18 @@
    "options": [],
    "lock_gate": "Preliminary design review",
    "lock_date": "2027-06-30",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "100 lb allocation today",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Systems",
    "affects": [
     "mass.fixed_equipment"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.ice_protection": {
    "key": "trade.ice_protection",
@@ -1441,15 +1581,18 @@
    "options": [],
    "lock_gate": "Preliminary design review",
    "lock_date": "2027-06-30",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "Mission icing requirement open",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Systems",
    "affects": [
     "mass.fixed_equipment"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.lightning": {
    "key": "trade.lightning",
@@ -1458,33 +1601,39 @@
    "options": [],
    "lock_gate": "Preliminary design review",
    "lock_date": "2027-06-30",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Structures",
    "affects": [
     "mass.wing",
     "mass.fuselage"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.fitting_material": {
    "key": "trade.fitting_material",
-   "label": "Tilt and wing fittings: titanium, steel or composite",
+   "label": "Tilt spindle and fittings: titanium, steel or composite",
    "owner": "Structures",
    "options": [],
-   "lock_gate": "Critical design review",
-   "lock_date": "2028-03-31",
+   "lock_gate": "Preliminary design review",
+   "lock_date": "2027-06-30",
    "status": "open",
    "decision": "",
-   "note": "",
+   "note": "Fatigue under conversion cycles",
    "discipline": "Structures",
    "affects": [
     "gap.tilt_fittings"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "Material and technology",
+   "precedent": "",
+   "sources": []
   },
   "trade.skin_joints": {
    "key": "trade.skin_joints",
@@ -1493,16 +1642,19 @@
    "options": [],
    "lock_gate": "Critical design review",
    "lock_date": "2028-03-31",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "Repairability against mass",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Structures",
    "affects": [
     "mass.wing",
     "mass.fuselage"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.harness_standard": {
    "key": "trade.harness_standard",
@@ -1511,16 +1663,19 @@
    "options": [],
    "lock_gate": "Critical design review",
    "lock_date": "2028-03-31",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Electrical",
    "affects": [
     "gap.hv_installation",
     "mass.systems"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.exchanger_core": {
    "key": "trade.exchanger_core",
@@ -1529,15 +1684,18 @@
    "options": [],
    "lock_gate": "Critical design review",
    "lock_date": "2028-03-31",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Thermal",
    "affects": [
     "mass.heat_exchanger"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.wing_skin_process": {
    "key": "trade.wing_skin_process",
@@ -1546,15 +1704,18 @@
    "options": [],
    "lock_gate": "First article",
    "lock_date": "2028-12-31",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "Thickness tolerance is mass",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Manufacturing",
    "affects": [
     "mass.wing"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.fuselage_assembly": {
    "key": "trade.fuselage_assembly",
@@ -1563,15 +1724,18 @@
    "options": [],
    "lock_gate": "First article",
    "lock_date": "2028-12-31",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Manufacturing",
    "affects": [
     "mass.fuselage"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.fitting_process": {
    "key": "trade.fitting_process",
@@ -1580,15 +1744,18 @@
    "options": [],
    "lock_gate": "First article",
    "lock_date": "2028-12-31",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Manufacturing",
    "affects": [
     "gap.tilt_fittings"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "trade.finish_allowances": {
    "key": "trade.finish_allowances",
@@ -1597,16 +1764,19 @@
    "options": [],
    "lock_gate": "First article",
    "lock_date": "2028-12-31",
-   "status": "open",
+   "status": "retired",
    "decision": "",
-   "note": "",
+   "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "discipline": "Manufacturing",
    "affects": [
     "mass.fuselage",
     "mass.wing"
    ],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "decided.engines": {
    "key": "decided.engines",
@@ -1621,7 +1791,10 @@
    "discipline": "Propulsion",
    "affects": [],
    "model_hook": "",
-   "decided_date": "2026-10-03"
+   "decided_date": "2026-10-03",
+   "category": "Design decision",
+   "precedent": "",
+   "sources": []
   },
   "decided.max_speed": {
    "key": "decided.max_speed",
@@ -1636,7 +1809,10 @@
    "discipline": "Requirements",
    "affects": [],
    "model_hook": "",
-   "decided_date": "2026-10-03"
+   "decided_date": "2026-10-03",
+   "category": "Requirement",
+   "precedent": "",
+   "sources": []
   },
   "decided.payload": {
    "key": "decided.payload",
@@ -1651,7 +1827,10 @@
    "discipline": "Requirements",
    "affects": [],
    "model_hook": "",
-   "decided_date": "2026-10-03"
+   "decided_date": "2026-10-03",
+   "category": "Requirement",
+   "precedent": "",
+   "sources": []
   },
   "decided.cell_scaling": {
    "key": "decided.cell_scaling",
@@ -1666,7 +1845,10 @@
    "discipline": "Electrical",
    "affects": [],
    "model_hook": "",
-   "decided_date": "2026-10-03"
+   "decided_date": "2026-10-03",
+   "category": "Material and technology",
+   "precedent": "",
+   "sources": []
   },
   "decided.wing_model": {
    "key": "decided.wing_model",
@@ -1681,7 +1863,10 @@
    "discipline": "Structures",
    "affects": [],
    "model_hook": "",
-   "decided_date": "2026-10-03"
+   "decided_date": "2026-10-03",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "decided.aero_model": {
    "key": "decided.aero_model",
@@ -1696,7 +1881,10 @@
    "discipline": "Aerodynamics",
    "affects": [],
    "model_hook": "",
-   "decided_date": "2026-10-04"
+   "decided_date": "2026-10-04",
+   "category": "",
+   "precedent": "",
+   "sources": []
   },
   "decided.turbines_fuselage": {
    "key": "decided.turbines_fuselage",
@@ -1711,7 +1899,10 @@
    "discipline": "Configuration",
    "affects": [],
    "model_hook": "",
-   "decided_date": "2026-10-04"
+   "decided_date": "2026-10-04",
+   "category": "Design decision",
+   "precedent": "",
+   "sources": []
   },
   "decided.fuselage": {
    "key": "decided.fuselage",
@@ -1726,7 +1917,10 @@
    "discipline": "Configuration",
    "affects": [],
    "model_hook": "",
-   "decided_date": "2026-10-04"
+   "decided_date": "2026-10-04",
+   "category": "Design decision",
+   "precedent": "",
+   "sources": []
   },
   "decided.redundancy_default": {
    "key": "decided.redundancy_default",
@@ -1741,7 +1935,10 @@
    "discipline": "Electrical",
    "affects": [],
    "model_hook": "",
-   "decided_date": "2026-10-04"
+   "decided_date": "2026-10-04",
+   "category": "Risk tolerance",
+   "precedent": "",
+   "sources": []
   },
   "decided.real_machines": {
    "key": "decided.real_machines",
@@ -1756,7 +1953,10 @@
    "discipline": "Electrical",
    "affects": [],
    "model_hook": "",
-   "decided_date": "2026-10-04"
+   "decided_date": "2026-10-04",
+   "category": "Material and technology",
+   "precedent": "",
+   "sources": []
   },
   "decided.nacelles_tilt": {
    "key": "decided.nacelles_tilt",
@@ -1771,7 +1971,10 @@
    "discipline": "Configuration",
    "affects": [],
    "model_hook": "",
-   "decided_date": "2026-10-04"
+   "decided_date": "2026-10-04",
+   "category": "Design decision",
+   "precedent": "",
+   "sources": []
   },
   "decided.geared_rotors": {
    "key": "decided.geared_rotors",
@@ -1786,7 +1989,10 @@
    "discipline": "Rotor and drive",
    "affects": [],
    "model_hook": "",
-   "decided_date": ""
+   "decided_date": "",
+   "category": "Design decision",
+   "precedent": "",
+   "sources": []
   },
   "decided.ruddervator_limit": {
    "key": "decided.ruddervator_limit",
@@ -1801,7 +2007,172 @@
    "discipline": "Flight controls",
    "affects": [],
    "model_hook": "",
-   "decided_date": "2026-10-05"
+   "decided_date": "2026-10-05",
+   "category": "Risk tolerance",
+   "precedent": "",
+   "sources": []
+  },
+  "trade.fuselage_material": {
+   "key": "trade.fuselage_material",
+   "label": "Fuselage structure: material and construction",
+   "owner": "Structures",
+   "options": [],
+   "lock_gate": "Preliminary design review",
+   "lock_date": "2027-06-30",
+   "status": "open",
+   "decision": "",
+   "note": "Composite monocoque or metallic semi-monocoque",
+   "discipline": "",
+   "affects": [
+    "mass.fuselage"
+   ],
+   "model_hook": "",
+   "decided_date": "",
+   "category": "Material and technology",
+   "precedent": "V-22: empty weight ran 1,520 kg over specification by the end of full-scale development, partly from over-ambitious new materials. Composite frames needing many parts and fasteners were replaced by machined aluminium (32.4 lb against 26.4 lb per frame, 39 parts against 1, 258 fasteners against none); composite share fell from 57 % to 43 % of the airframe.",
+   "sources": [
+    [
+     "Flight International, 'Tilting in favour' (2000), as reported",
+     "https://flightglobal.com/tilting-in-favour/33528.article"
+    ]
+   ]
+  },
+  "trade.rotor_construction": {
+   "key": "trade.rotor_construction",
+   "label": "Rotor blades and hub: material and construction",
+   "owner": "Rotor and drive",
+   "options": [],
+   "lock_gate": "Preliminary design review",
+   "lock_date": "2027-06-30",
+   "status": "open",
+   "decision": "",
+   "note": "Blade stiffness sets the rotor frequencies",
+   "discipline": "",
+   "affects": [
+    "mass.rotors"
+   ],
+   "model_hook": "",
+   "decided_date": "",
+   "category": "Material and technology",
+   "precedent": "",
+   "sources": []
+  },
+  "trade.hover_cases": {
+   "key": "trade.hover_cases",
+   "label": "Hover cases: hot and high (4,000 ft, 95 F) and engine-out duration",
+   "owner": "Chief engineer",
+   "options": [],
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "status": "open",
+   "decision": "",
+   "note": "Both bind at the optimum",
+   "discipline": "",
+   "affects": [
+    "mass.heat_exchanger",
+    "mass.battery",
+    "mass.generators"
+   ],
+   "model_hook": "HaloRequirements altitude_hover_hot_m, temperature_hover_hot_K, duration_engine_out_hover_s",
+   "decided_date": "",
+   "category": "Requirement",
+   "precedent": "",
+   "sources": []
+  },
+  "trade.weight_margin": {
+   "key": "trade.weight_margin",
+   "label": "Weight margin policy: confidence level and management reserve",
+   "owner": "Chief engineer",
+   "options": [],
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "status": "open",
+   "decision": "",
+   "note": "99 % today; sets the NTE take-off weight",
+   "discipline": "",
+   "affects": [],
+   "model_hook": "",
+   "decided_date": "",
+   "category": "Risk tolerance",
+   "precedent": "V-22: 1,520 kg empty-weight overrun in full-scale development; the next phase gave each integrated product team a weight allocation to hold or trade, the discipline this ledger encodes.",
+   "sources": [
+    [
+     "Flight International, 'Tilting in favour' (2000), as reported",
+     "https://flightglobal.com/tilting-in-favour/33528.article"
+    ]
+   ]
+  },
+  "trade.load_factors": {
+   "key": "trade.load_factors",
+   "label": "Design loads: ultimate and jump take-off load factors (4.5, 2.0)",
+   "owner": "Structures",
+   "options": [],
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "status": "open",
+   "decision": "",
+   "note": "",
+   "discipline": "",
+   "affects": [
+    "mass.wing",
+    "gap.wing_strength"
+   ],
+   "model_hook": "load_factor_ultimate, load_factor_jump",
+   "decided_date": "",
+   "category": "Risk tolerance",
+   "precedent": "",
+   "sources": []
+  },
+  "trade.whirl_margin": {
+   "key": "trade.whirl_margin",
+   "label": "Whirl-flutter margin: frequency placement or flutter-speed margin",
+   "owner": "Structures",
+   "options": [],
+   "lock_gate": "Preliminary design review",
+   "lock_date": "2027-06-30",
+   "status": "open",
+   "decision": "",
+   "note": "Frequency placement is a proxy for the flutter boundary",
+   "discipline": "",
+   "affects": [
+    "mass.wing"
+   ],
+   "model_hook": "frequency_torsion_wing_per_rev, frequency_beam_wing_per_rev",
+   "decided_date": "",
+   "category": "Risk tolerance",
+   "precedent": "XV-15 and V-22 use 23 % thick wings to keep whirl flutter beyond dive speed, at a drag and speed cost; a 15 % NASA design lost stiffness, and tailoring recovered stability at about 18 %. Halo's NACA 2423 follows the same precedent.",
+   "sources": [
+    [
+     "Acree, Peyran and Johnson, NASA/TP-2004-212262 (thin-wing whirl flutter), as reported",
+     "https://rotorcraft.arc.nasa.gov/Publications/files/AcreePeyranJohnson_TP2004-212262.pdf"
+    ]
+   ]
+  },
+  "trade.assurance_level": {
+   "key": "trade.assurance_level",
+   "label": "Certification basis and design assurance levels",
+   "owner": "Chief engineer",
+   "options": [],
+   "lock_gate": "Concept freeze",
+   "lock_date": "2026-12-15",
+   "status": "open",
+   "decision": "",
+   "note": "Drives redundancy and avionics weight",
+   "discipline": "",
+   "affects": [
+    "mass.systems",
+    "mass.fixed_equipment"
+   ],
+   "model_hook": "",
+   "decided_date": "",
+   "category": "Risk tolerance",
+   "precedent": "AW609: applied in 2012, certified as a special-class powered-lift on a basis drawn from Parts 23, 25 and 29 (17,500 lb maximum weight); the criteria took effect on 2 December 2024. A tiltrotor's certification basis is itself a long-lead risk.",
+   "sources": [
+    [
+     "Federal Register 2024-25238: AW609 airworthiness criteria",
+     "https://www.govinfo.gov/content/pkg/FR-2024-10-31/html/2024-25238.htm"
+    ]
+   ]
   }
  },
  "runs": [
@@ -1846,6 +2217,18 @@
    "source": "trade study trade.wing_material at a6998ae",
    "kind": "trade",
    "summary": "Wing material: graphite-epoxy or aluminium: 2 options priced"
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register (examples/halo_trades.py)",
+   "kind": "register",
+   "summary": "7 added, 23 retired below the line"
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register (examples/halo_trades.py)",
+   "kind": "register",
+   "summary": "0 added, 3 retired below the line"
   }
  ],
  "history": [
@@ -2260,6 +2643,142 @@
   {
    "date": "2026-10-09",
    "source": "trade study trade.wing_material",
+   "sigma_takeoff_kg": 462.24,
+   "margin_99_kg": 1075.3,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 129.22
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 39.4
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 30.81
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 26.24
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 24.88
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 23.3
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 17.38
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 14.82
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 10.99
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 10.99
+    },
+    {
+     "key": "mass.rotor_gearboxes",
+     "value_kg": 10.44
+    },
+    {
+     "key": "mass.fixed_equipment",
+     "value_kg": 8.65
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register",
+   "sigma_takeoff_kg": 462.24,
+   "margin_99_kg": 1075.3,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 129.22
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 39.4
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 30.81
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 26.24
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 24.88
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 23.3
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 17.38
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 14.82
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 10.99
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 10.99
+    },
+    {
+     "key": "mass.rotor_gearboxes",
+     "value_kg": 10.44
+    },
+    {
+     "key": "mass.fixed_equipment",
+     "value_kg": 8.65
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register",
    "sigma_takeoff_kg": 462.24,
    "margin_99_kg": 1075.3,
    "top": [

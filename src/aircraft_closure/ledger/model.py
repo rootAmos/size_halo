@@ -111,13 +111,16 @@ class Trade:
     options: list = field(default_factory=list)   # the first option is the baseline (delta 0)
     lock_gate: str = ""
     lock_date: Optional[str] = None
-    status: str = "open"              # "open" or "decided"
+    status: str = "open"              # "open", "decided" or "retired" (below the line; kept for the record)
     decision: str = ""
     note: str = ""
     discipline: str = ""
     affects: list = field(default_factory=list)   # ledger keys (quantities, limits) the choice moves
     model_hook: str = ""              # how the sizing can price the options ("" = owner estimate needed)
     decided_date: str = ""            # ISO date of the decision, when decided
+    category: str = ""                # "Design decision", "Material and technology", "Requirement", "Risk tolerance"
+    precedent: str = ""               # what comparable programmes chose and what it cost them
+    sources: list = field(default_factory=list)   # [label, url] pairs behind the precedent
 
 
 @dataclass
