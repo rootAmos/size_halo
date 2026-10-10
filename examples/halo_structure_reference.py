@@ -50,6 +50,13 @@ if __name__ == "__main__":
         factor_fuselage=float(aircraft.fuselage.mass_factor),
         radius_gyration_pylon_m=float(model.radius_gyration_pylon_m),
         ratio_depth_spar_cap=float(model.ratio_depth_spar_cap),
+        # Whirl-flutter inputs (plan 040): rotor and pylon, and the rotor speed at every airplane-mode point.
+        count_blades=int(assumptions.count_blades),
+        solidity=float(result.design.solidity if result.design.solidity is not None else assumptions.solidity),
+        length_mast_m=float(assumptions.length_mast_m),
+        velocity_max_m_s=float(requirements.velocity_max_m_s),
+        whirl_points=[dict(label=w["label"], speed_rotor_rad_s=float(w["speed_rotor_rad_s"]))
+                      for w in result.whirl_flutter],
     )
     path_output.parent.mkdir(parents=True, exist_ok=True)
     path_output.write_text(json.dumps(reference, indent=1))
