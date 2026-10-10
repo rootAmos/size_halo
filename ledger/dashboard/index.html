@@ -7,7 +7,7 @@
 :root {
   --bg: #f4f6f7; --panel: #ffffff; --ink: #14212b; --muted: #5b6b77; --rule: #d9e0e4; --rule-soft: #e9eef0;
   --accent: #1d5ea8; --accent-soft: rgba(29, 94, 168, .10);
-  --k-uncert: #1d5ea8; --k-gap: #7a4fb4; --k-limit: #13837a; --k-trade: #b0661a; --k-blind: #8a959d;
+  --t-req: #b0661a; --t-arch: #1d5ea8; --t-tech: #13837a; --t-margin: #7a4fb4; --t-evid: #5b6b77; --t-verif: #a8326e;
   --crit: #c2362b; --warn: #b7791f; --good: #2f7d4f;
   --display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
   --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -16,12 +16,12 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0f161c; --panel: #16212a; --ink: #e3eaee; --muted: #93a3ae; --rule: #2a3843; --rule-soft: #1f2b35;
   --accent: #6aa6ec; --accent-soft: rgba(106, 166, 236, .14);
-  --k-uncert: #6aa6ec; --k-gap: #b393e6; --k-limit: #4cc2b5; --k-trade: #e0a05a; --k-blind: #7f8c95;
+  --t-req: #e0a05a; --t-arch: #6aa6ec; --t-tech: #4cc2b5; --t-margin: #b393e6; --t-evid: #9aa8b2; --t-verif: #e57aa8;
   --crit: #ef6b5f; --warn: #e3ac4f; --good: #5fbf86; color-scheme: dark; } }
 :root[data-theme="dark"] {
   --bg: #0f161c; --panel: #16212a; --ink: #e3eaee; --muted: #93a3ae; --rule: #2a3843; --rule-soft: #1f2b35;
   --accent: #6aa6ec; --accent-soft: rgba(106, 166, 236, .14);
-  --k-uncert: #6aa6ec; --k-gap: #b393e6; --k-limit: #4cc2b5; --k-trade: #e0a05a; --k-blind: #7f8c95;
+  --t-req: #e0a05a; --t-arch: #6aa6ec; --t-tech: #4cc2b5; --t-margin: #b393e6; --t-evid: #9aa8b2; --t-verif: #e57aa8;
   --crit: #ef6b5f; --warn: #e3ac4f; --good: #5fbf86; color-scheme: dark; }
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body); }
@@ -78,6 +78,14 @@ svg .lab { fill: var(--ink); font-weight: 500; }
 .log .src { color: var(--muted); }
 a { color: var(--accent); }
 .empty { color: var(--muted); padding: 24px 0; }
+tr.phase td { background: var(--bg); border-bottom: 1px solid var(--rule); padding-top: 14px; }
+tr.phase b { font: 600 15px var(--display); margin: 0 8px; }
+table.matrix { min-width: 760px; }
+table.matrix th[scope="row"] { font: 500 13px var(--body); text-transform: none; letter-spacing: 0; color: var(--ink); white-space: nowrap; }
+table.matrix thead th { white-space: normal; vertical-align: bottom; }
+.mcell { border: 1px solid var(--panel); min-width: 96px; }
+.mcell b { font-size: 13px; }
+.empty-cell { color: var(--muted); text-align: center; }
 .gates { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px; }
 .gate h3 { font: 600 15px/1.2 var(--display); margin: 0 0 2px; }
 .gate .when { font: 12px var(--mono); color: var(--muted); margin-bottom: 8px; }
@@ -102,14 +110,22 @@ a { color: var(--accent); }
 
   <section class="strip" id="strip" aria-label="Weight status"></section>
 
+  <section class="panel" aria-labelledby="h-matrix">
+    <div style="display:grid;gap:4px">
+      <h2 id="h-matrix">Where the weight is at stake</h2>
+      <p class="lede">Programme phase against decision type: the take-off weight each cell's decisions can save, shaded by size.</p>
+    </div>
+    <div class="tablewrap" id="matrix"></div>
+  </section>
+
   <div class="grid2">
     <section class="panel" aria-labelledby="h-rank">
       <div style="display:grid;gap:4px">
         <h2 id="h-rank">What to work on next</h2>
-        <p class="lede">Ranked by the take-off weight each action is expected to save. Uncertainty items save the 99 % margin we no longer have to carry; limits and trades save weight directly. Bars show the range on a common scale.</p>
+        <p class="lede">Grouped by the phase in which each decision locks and ranked within it by the take-off weight it can save. Maturity work saves the 99 % margin we no longer have to carry; the other types save weight directly. Bars show the range on a common scale.</p>
       </div>
       <div class="controls">
-        <div class="controls" id="kinds" role="group" aria-label="Filter by kind"></div>
+        <div class="controls" id="kinds" role="group" aria-label="Filter by decision type"></div>
         <label for="owner" class="sub">Owner</label>
         <select id="owner"><option value="">All owners</option></select>
         <label for="sort" class="sub">Sort</label>
@@ -120,7 +136,7 @@ a { color: var(--accent); }
       </div>
       <div class="tablewrap">
         <table>
-          <thead><tr><th>#</th><th>Item</th><th>Kind</th><th>Saving, lb</th><th class="num">Expected</th><th>Lock</th><th>Owner</th></tr></thead>
+          <thead><tr><th>#</th><th>Decision</th><th>Type</th><th>Saving, lb</th><th class="num">Expected</th><th>Lock</th><th>Owner</th></tr></thead>
           <tbody id="rows"><tr><td colspan="7" class="empty">The ranking appears once the ledger loads.</td></tr></tbody>
         </table>
       </div>
@@ -157,26 +173,27 @@ a { color: var(--accent); }
 
 <script>
 const LB = 2.20462;
-const KINDS = {
-  "reduce uncertainty": { label: "Reduce uncertainty", color: "--k-uncert" },
-  "model gap": { label: "Model gap", color: "--k-gap" },
-  "relax limit": { label: "Relax a limit", color: "--k-limit" },
-  "decide trade": { label: "Decide a trade", color: "--k-trade" },
-  "blind spot": { label: "Blind spot", color: "--k-blind" },
+const TYPES = {
+  "Requirement": { color: "--t-req", q: "What it must do" },
+  "Architecture": { color: "--t-arch", q: "How the parts fit and fail" },
+  "Technology and material": { color: "--t-tech", q: "What it is made of and with" },
+  "Margin policy": { color: "--t-margin", q: "How much margin and redundancy we buy" },
+  "Maturity": { color: "--t-evid", q: "How far we firm up an estimate before we commit" },
+  "Verification": { color: "--t-verif", q: "How we will prove it" },
 };
-const state = { kinds: new Set(Object.keys(KINDS)), owner: "", sort: "value", open: null };
+const state = { kinds: new Set(Object.keys(TYPES)), owner: "", sort: "value", open: null };
 try { const s = JSON.parse(localStorage.getItem("ledger-view") || "{}"); if (s.sort) state.sort = s.sort; if (s.owner) state.owner = s.owner; } catch (e) {}
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const fmt = (kg, d = 0) => kg == null || !isFinite(kg) ? "—" : (kg * LB).toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d });
-const kindColor = k => `var(${(KINDS[k] || KINDS["blind spot"]).color})`;
+const kindColor = k => `var(${(TYPES[k] || TYPES["Maturity"]).color})`;
 let V = null;
 
 function remember() { try { localStorage.setItem("ledger-view", JSON.stringify({ sort: state.sort, owner: state.owner })); } catch (e) {} }
 
 function summary() {
   const p = V.portfolio, b = V.baseline || {};
-  const blind = V.priorities.filter(r => r.kind === "blind spot").length;
+  const blind = V.priorities.filter(r => r.value_kg == null).length;
   const flagged = V.priorities.filter(r => r.schedule).length;
   const stats = [
     [fmt(b.mass_takeoff_kg), "lb take-off, sized baseline", ""],
@@ -184,7 +201,7 @@ function summary() {
     [fmt(p.takeoff_99_kg), "lb at 99 % confidence", "crit"],
     [`±${fmt(p.sigma_takeoff_kg)}`, "lb take-off spread (1σ)", ""],
     [fmt(p.allowance_empty_kg + p.gaps_empty_kg), `lb empty growth (allowance ${fmt(p.allowance_empty_kg)}, gaps ${fmt(p.gaps_empty_kg)}) against ${fmt(b.mass_payload_kg)} lb payload`, p.allowance_empty_kg + p.gaps_empty_kg > b.mass_payload_kg ? "crit" : ""],
-    [String(blind), "blind spots: no sensitivity or data", blind ? "crit" : ""],
+    [String(blind), "unvalued: no sensitivity or option data yet", blind ? "crit" : ""],
     [String(flagged), "schedule flags", flagged ? "crit" : ""],
   ];
   $("strip").innerHTML = stats.map(([v, l, c]) => `<div class="stat"><b class="num ${c}">${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
@@ -192,7 +209,7 @@ function summary() {
 }
 
 function filtered() {
-  let rows = V.priorities.filter(r => state.kinds.has(r.kind) && (!state.owner || r.owner === state.owner));
+  let rows = V.priorities.filter(r => state.kinds.has(r.category) && (!state.owner || r.owner === state.owner));
   if (state.sort === "urgency") {
     const u = r => r.value_kg == null ? -1 : r.value_kg / Math.max((r.days_to_lock ?? 3650) / 7, 1);
     rows = rows.slice().sort((a, b) => u(b) - u(a));
@@ -224,7 +241,7 @@ function detail(r) {
     if (t.note) parts.push(`<div><h3>Note</h3><div>${esc(t.note)}</div></div>`);
   }
   if (q) {
-    parts.push(`<div><h3>Evidence</h3><ul>${q.evidence.map(e => `<li><span class="num">${esc(e.date)}</span> ${esc(e.source)}: <span class="num">${(+e.value).toPrecision(4)} ± ${(+e.sigma).toPrecision(2)}</span> ${esc(q.unit)} <span class="sub">(tier ${e.fidelity})</span></li>`).join("")}</ul></div>`);
+    parts.push(`<div><h3>Estimate history</h3><ul>${q.evidence.map(e => `<li><span class="num">${esc(e.date)}</span> ${esc(e.source)}: <span class="num">${(+e.value).toPrecision(4)} ± ${(+e.sigma).toPrecision(2)}</span> ${esc(q.unit)} <span class="sub">(tier ${e.fidelity})</span></li>`).join("")}</ul></div>`);
     if (q.note) parts.push(`<div><h3>Basis</h3><div>${esc(q.note)}</div></div>`);
   }
   return `<tr class="detail"><td></td><td colspan="6"><div class="cols">${parts.join("")}</div></td></tr>`;
@@ -234,19 +251,27 @@ function table() {
   const rows = filtered();
   const max = Math.max(1, ...rows.filter(r => r.value_high_kg != null).map(r => Math.max(r.value_high_kg, r.value_low_kg)));
   if (!rows.length) { $("rows").innerHTML = `<tr><td colspan="7" class="empty">No items match these filters.</td></tr>`; return; }
-  $("rows").innerHTML = rows.map((r, i) => {
-    const rank = V.priorities.indexOf(r) + 1;
-    const k = KINDS[r.kind] || KINDS["blind spot"];
-    const head = `<tr class="row" tabindex="0" data-key="${esc(r.key)}" aria-expanded="${state.open === r.key}">
-      <td class="rank">${rank}</td>
-      <td><div class="item">${esc(r.label)}</div><div class="sub">${(() => { const t = (V.trades || []).find(t => t.key === r.key); return t && t.category ? esc(t.category) + " · " : ""; })()}${esc(r.action)}</div></td>
-      <td><span class="kind"><span class="dot" style="background:${kindColor(r.kind)}"></span>${esc(k.label)}</span></td>
-      <td style="min-width:140px">${rangeBar(r, max)}</td>
-      <td class="num" style="text-align:right">${r.value_kg == null ? "—" : fmt(r.value_kg)}</td>
-      <td>${schedulePill(r)}</td>
-      <td>${esc(r.owner)}</td></tr>`;
-    return head + (state.open === r.key ? detail(r) : "");
-  }).join("");
+  const phases = Object.entries(V.gates || {}).sort((a, b) => a[1].localeCompare(b[1]));
+  let html = "";
+  phases.forEach(([phase, date], pi) => {
+    const group = rows.filter(r => r.phase === phase);
+    if (!group.length) return;
+    const stake = group.reduce((t, r) => t + (r.value_kg || 0), 0);
+    html += `<tr class="phase"><td colspan="7"><span class="eyebrow">Phase ${pi + 1}</span><b>${esc(phase)}</b><span class="sub">locks ${esc(date)} · ${group.length} decisions · ${fmt(stake)} lb at stake</span></td></tr>`;
+    html += group.map(r => {
+      const rank = V.priorities.indexOf(r) + 1;
+      const head = `<tr class="row" tabindex="0" data-key="${esc(r.key)}" aria-expanded="${state.open === r.key}">
+        <td class="rank">${rank}</td>
+        <td><div class="item">${esc(r.label)}</div><div class="sub">${esc(r.action)}</div></td>
+        <td><span class="kind"><span class="dot" style="background:${kindColor(r.category)}"></span>${esc(r.category)}</span></td>
+        <td style="min-width:140px">${rangeBar(r, max)}</td>
+        <td class="num" style="text-align:right">${r.value_kg == null ? "—" : fmt(r.value_kg)}</td>
+        <td>${schedulePill(r)}</td>
+        <td>${esc(r.owner)}</td></tr>`;
+      return head + (state.open === r.key ? detail(r) : "");
+    }).join("");
+  });
+  $("rows").innerHTML = html;
   $("rows").querySelectorAll("tr.row").forEach(tr => {
     const toggle = () => { state.open = state.open === tr.dataset.key ? null : tr.dataset.key; table(); };
     tr.addEventListener("click", toggle);
@@ -254,8 +279,23 @@ function table() {
   });
 }
 
+function matrix() {
+  const phases = Object.entries(V.gates || {}).sort((a, b) => a[1].localeCompare(b[1]));
+  const types = Object.keys(TYPES);
+  const cell = (p, t) => V.priorities.filter(r => r.phase === p && r.category === t);
+  const total = c => c.reduce((a, r) => a + (r.value_kg || 0), 0);
+  const maxStake = Math.max(1, ...phases.flatMap(([p]) => types.map(t => total(cell(p, t)))));
+  $("matrix").innerHTML = `<table class="matrix"><thead><tr><th>Phase</th>${types.map(t => `<th title="${esc(TYPES[t].q)}"><span class="dot" style="background:var(${TYPES[t].color})"></span> ${esc(t)}</th>`).join("")}</tr></thead><tbody>${phases.map(([p, d], i) =>
+    `<tr><th scope="row">${i + 1}. ${esc(p)}<div class="sub num">locks ${esc(d)}</div></th>${types.map(t => {
+      const c = cell(p, t);
+      if (!c.length) return `<td class="mcell empty-cell">·</td>`;
+      const stake = total(c), unknown = c.filter(r => r.value_kg == null).length;
+      return `<td class="mcell" style="background:color-mix(in srgb, var(${TYPES[t].color}) ${Math.round(6 + 34 * stake / maxStake)}%, transparent)"><b class="num">${stake ? fmt(stake) + " lb" : "—"}</b><div class="sub">${c.length} decision${c.length > 1 ? "s" : ""}${unknown ? `, ${unknown} unvalued` : ""}</div></td>`;
+    }).join("")}</tr>`).join("")}</tbody></table>`;
+}
+
 function controls() {
-  $("kinds").innerHTML = Object.entries(KINDS).map(([k, v]) => `<button class="chip" type="button" id="kind-${k.replace(/\s/g, "-")}" data-kind="${k}" aria-pressed="${state.kinds.has(k)}"><span class="dot" style="background:var(${v.color})"></span>${v.label}</button>`).join("");
+  $("kinds").innerHTML = Object.entries(TYPES).map(([k, v]) => `<button class="chip" type="button" id="type-${k.replace(/\s/g, "-")}" data-kind="${k}" title="${esc(v.q)}" aria-pressed="${state.kinds.has(k)}"><span class="dot" style="background:var(${v.color})"></span>${esc(k)}</button>`).join("");
   $("kinds").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
     const k = b.dataset.kind; state.kinds.has(k) ? state.kinds.delete(k) : state.kinds.add(k);
     b.setAttribute("aria-pressed", state.kinds.has(k)); table();
@@ -265,7 +305,7 @@ function controls() {
   $("owner").onchange = e => { state.owner = e.target.value; remember(); table(); };
   $("sort").value = state.sort;
   $("sort").onchange = e => { state.sort = e.target.value; remember(); table(); };
-  $("legend").innerHTML = Object.values(KINDS).map(v => `<span class="kind"><span class="dot" style="background:var(${v.color})"></span>${v.label}</span>`).join("");
+  $("legend").innerHTML = Object.entries(TYPES).map(([k, v]) => `<span class="kind"><span class="dot" style="background:var(${v.color})"></span>${esc(k)}</span>`).join("");
 }
 
 function niceTicks(max, n = 4) {
@@ -290,10 +330,10 @@ function riskMap() {
   s += `<text x="${(L + W - R) / 2}" y="${H - B + 34}" text-anchor="middle">days to lock</text><text x="12" y="${T + 8}" transform="rotate(-90 12 ${T + 8})" text-anchor="end">lb at stake</text>`;
   pts.slice().reverse().forEach(p => {
     const cx = X(p.r.days_to_lock), cy = Y(p.r.value_kg * LB);
-    s += `<circle cx="${cx}" cy="${cy}" r="${p.rank <= 8 ? 6 : 4}" fill="${kindColor(p.r.kind)}" fill-opacity="${p.rank <= 8 ? .9 : .45}" stroke="var(--panel)" stroke-width="1"><title>${esc(p.r.label)}: ${fmt(p.r.value_kg)} lb, ${p.r.days_to_lock} days</title></circle>`;
+    s += `<circle cx="${cx}" cy="${cy}" r="${p.rank <= 8 ? 6 : 4}" fill="${kindColor(p.r.category)}" fill-opacity="${p.rank <= 8 ? .9 : .45}" stroke="var(--panel)" stroke-width="1"><title>${esc(p.r.label)}: ${fmt(p.r.value_kg)} lb, ${p.r.days_to_lock} days</title></circle>`;
     if (p.rank <= 8) s += `<text class="lab" x="${cx + 8}" y="${cy + 4}">${p.rank}</text>`;
   });
-  s += `<text x="${L}" y="${H - 6}">${blind.length} blind spot${blind.length === 1 ? "" : "s"} not placed: value unknown</text>`;
+  s += `<text x="${L}" y="${H - 6}">${blind.length} unvalued decision${blind.length === 1 ? "" : "s"} not placed</text>`;
   $("map").innerHTML = s + `</svg>`;
 }
 
@@ -336,6 +376,6 @@ function log() {
 }
 
 fetch("view.json", { cache: "no-store" }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(v => {
-  V = v; summary(); controls(); table(); riskMap(); burn(); register(); log();
+  V = v; summary(); matrix(); controls(); table(); riskMap(); burn(); register(); log();
 }).catch(() => { $("meta").textContent = "The ledger view (view.json) did not load. Re-run the ledger export and republish."; });
 </script>

@@ -90,17 +90,19 @@ inputs = (
 
 # Margin label patterns -> (plain name, owner) for the binding limits. "{c}" is the flight condition.
 limit_patterns = (
-    ("rotor_radius_m", "Rotor radius capped by the span (rotor diameter against span)", "Configuration"),
-    ("battery end voltage", "{c}: battery end voltage (2.5 V per cell cutoff)", "Electrical"),
-    ("heat_exchanger power_heat", "{c}: heat rejection at the exchanger rating", "Thermal"),
-    ("turboshaft power_shaft", "{c}: turboshaft power at the fixed 1,120 hp deck", "Propulsion"),
-    ("generator_gearbox power_input", "{c}: turboshaft power at the fixed 1,120 hp deck", "Propulsion"),
-    ("propulsor power_shaft", "{c}: rotor and gearbox power rating", "Rotor and drive"),
-    ("gearbox power_input", "{c}: rotor and gearbox power rating", "Rotor and drive"),
-    ("motor torque", "{c}: motor torque rating", "Electrical"),
-    ("generator torque", "{c}: generator torque rating", "Electrical"),
-    ("static_margin", "Static margin", "Flight controls and systems"),
-    ("cn_beta", "Directional stability (Cn beta)", "Flight controls and systems"),
+    ("rotor_radius_m", "Rotor radius capped by the span (rotor diameter against span)", "Configuration",
+     "Architecture"),
+    ("battery end voltage", "{c}: battery end voltage (2.5 V per cell cutoff)", "Electrical",
+     "Technology and material"),
+    ("heat_exchanger power_heat", "{c}: heat rejection at the exchanger rating", "Thermal", "Requirement"),
+    ("turboshaft power_shaft", "{c}: turboshaft power at the fixed 1,120 hp deck", "Propulsion", "Requirement"),
+    ("generator_gearbox power_input", "{c}: turboshaft power at the fixed 1,120 hp deck", "Propulsion", "Requirement"),
+    ("propulsor power_shaft", "{c}: rotor and gearbox power rating", "Rotor and drive", "Requirement"),
+    ("gearbox power_input", "{c}: rotor and gearbox power rating", "Rotor and drive", "Requirement"),
+    ("motor torque", "{c}: motor torque rating", "Electrical", "Technology and material"),
+    ("generator torque", "{c}: generator torque rating", "Electrical", "Technology and material"),
+    ("static_margin", "Static margin", "Flight controls and systems", "Margin policy"),
+    ("cn_beta", "Directional stability (Cn beta)", "Flight controls and systems", "Margin policy"),
 )
 
 
@@ -108,11 +110,22 @@ def limit_names(margins):
     names, limit_owners = {}, {}
     for label, _, _ in margins:
         condition = label.split(":")[0] if ":" in label else ""
-        for pattern, name, owner in limit_patterns:
+        for pattern, name, owner, category in limit_patterns:
             if pattern in label:
                 names[label], limit_owners[label] = name.format(c=condition), owner
                 break
     return names, limit_owners
+
+
+def classify(ledger):
+    """Give every limit its decision type and phase (limits bind now: conceptual design), and every uncertain
+    quantity the maturity type."""
+    phase = next(iter(phases))
+    for q in ledger.quantities.values():
+        q.category = "Maturity"
+    for key, limit in ledger.limits.items():
+        limit.category = next((c for pattern, _, _, c in limit_patterns if pattern in key), "Requirement")
+        limit.lock_gate, limit.lock_date = phase, limit.lock_date or phases[phase]
 
 
 def slug(label):
@@ -144,6 +157,7 @@ def seed(result, today):
         mean = q.belief()[0]
         q.allowance = maturity_levels[maturity] * mean
         q.plan = [replace(a, sigma_after=a.sigma_after * mean) for a in q.plan]   # fractions -> kg
+    classify(ledger)
     ledger.history.clear()                     # the ingest's snapshot predates the allowances and plans
     snapshot(ledger, source_sizing, today)
     return ledger
@@ -192,6 +206,7 @@ def main(argv=None):
     if args.command == "trades":                 # add new register entries to the master ledger, no solve
         ledger = load(path_ledger)
         added, retired = register(ledger, gates, today.isoformat())
+        classify(ledger)
         ledger.runs.append(dict(date=today.isoformat(), source="trade register (examples/halo_trades.py)",
                                 kind="register", summary=f"{added} added, {retired} retired below the line"))
         snapshot(ledger, "trade register", today)
@@ -205,6 +220,7 @@ def main(argv=None):
     else:
         ledger = load(path_ledger)
         ingest_sizing(ledger, result, source_sizing, today, None, *limit_names(result.sensitivity.margins))
+        classify(ledger)
     if args.sensitivities:
         input_sensitivities(ledger, result, today)
     write(ledger, today)
