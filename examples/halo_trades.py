@@ -179,8 +179,8 @@ precedents = {
         "designed and installed during integration; the aircraft never flew. Routing HV across a rotating joint adds "
         "this exposure where it is hardest to shield.", [NASA_X57]),
     "trade.failure_architecture": (
-        "XV-15 and V-22 both carry a cross-shaft so one engine drives both rotors; V-280 kept it. No certified "
-        "tiltrotor has replaced the shaft with electrical cross-strapping, so Halo's choice carries certification "
+        "XV-15 and V-22 both carry a cross-shaft so one engine drives both rotors; V-280 kept it. No tiltrotor that "
+        "has flown has replaced the shaft with electrical cross-strapping, so Halo's choice carries certification "
         "risk as well as mass.", [NASA_XV15, TWZ_V280]),
     "trade.hv_voltage": (
         "X-57 hit interference between its inverters and onboard systems and redesigned its battery for overheating; "
