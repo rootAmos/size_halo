@@ -201,6 +201,7 @@ open trade, ranked by the take-off weight at stake, with its owner, lock date an
 | Ingest | `src/aircraft_closure/ledger/ingest.py` | A new sizing, analysis, vendor weight or test updates the ledger and snapshots the ranking |
 | Halo seed | `examples/halo_ledger.py` | 16 empty-weight items, 6 model gaps, 3 model inputs, every binding limit, and the decision ledger: 29 governing trades and 11 decisions by programme phase (conceptual, preliminary, detailed design, test and validation, after entry into service), typed requirement, architecture, technology and material, margin policy, maturity or verification (`examples/halo_trades.py`); uncertain quantities are maturity decisions and binding limits carry their type |
 | Ledger file | `ledger/halo.json` | Kept in git: its history is the decision history |
+| Schedule | `examples/halo_schedule.py` | Twelve months to first flight (2027-10-11): Block 0 flight article first, Block 1 final design in parallel; each trade carries its block and Block 0 choice |
 | Precedents | `docs/PRECEDENTS.md` | What V-22, V-280, XV-15, AW609, X-57 and Joby teach each governing trade, with sources |
 | Trade reports | `docs/trades/` | One report per priced trade, tied to the commit that produced it ([wing material](trades/wing_material.md)) |
 | Dashboard | `ledger/dashboard/index.html` ([live](https://claude.ai/artifact/RdwNbk3GPj2Pwg4FWYojLu)) | Ranked list, risk against schedule, burn-down and log, drawn from `ledger/view.json` |

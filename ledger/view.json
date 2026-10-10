@@ -5,14 +5,15 @@
  "baseline": {
   "mass_takeoff_kg": 6885.064235165387,
   "mass_empty_kg": 5048.620948255306,
-  "mass_payload_kg": 900.0
+  "mass_payload_kg": 900.0,
+  "first_flight": "2027-10-11"
  },
  "gates": {
   "Conceptual design": "2026-12-15",
-  "Preliminary design": "2027-06-30",
-  "Detailed design": "2028-03-31",
-  "Test and validation": "2029-09-30",
-  "After entry into service": "2031-06-30"
+  "Preliminary design": "2027-03-15",
+  "Detailed design": "2027-06-15",
+  "Test and validation": "2027-10-11",
+  "After entry into service": "2030-12-31"
  },
  "portfolio": {
   "sigma_takeoff_kg": 462.23656582239454,
@@ -70,8 +71,8 @@
    "value_high_kg": 41.278945203792595,
    "share": 0.07530288615934504,
    "exposure_kg": 431.26977865267145,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "Choose the spindle concept and bearing type (conceptual design)",
    "detail": "70 ± 50 kg (placeholder prior); take-off spread ±127 kg",
@@ -124,8 +125,8 @@
    "value_high_kg": 62.241018145975005,
    "share": 0.11241446280951142,
    "exposure_kg": 309.9598116591443,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "Define the equipment list and architecture (lanes, actuators, computers) (conceptual design)",
    "detail": "407.3 ± 61 kg (handbook or parametric model); take-off spread ±155 kg",
@@ -160,8 +161,8 @@
    "value_high_kg": 52.08139187100985,
    "share": 0.09452262013089104,
    "exposure_kg": 284.2249307852239,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "Size primary structure for every load case (strength, stiffness, whirl flutter) (conceptual design)",
    "detail": "560.2 ± 56 kg (handbook or parametric model); take-off spread ±142 kg",
@@ -196,8 +197,8 @@
    "value_high_kg": 14.675329208034581,
    "share": 0.027109039017364216,
    "exposure_kg": 266.3725103442971,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "Select actuator type (electromechanical or hydraulic) and redundancy (conceptual design)",
    "detail": "45 ± 30 kg (placeholder prior); take-off spread ±76 kg",
@@ -286,8 +287,8 @@
    "value_high_kg": 27.287331755153115,
    "share": 0.050108956896355146,
    "exposure_kg": 206.94358803875753,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "Size primary structure for every load case (strength, stiffness, whirl flutter) (conceptual design)",
    "detail": "407.9 ± 41 kg (handbook or parametric model); take-off spread ±103 kg",
@@ -376,8 +377,8 @@
    "value_high_kg": 11.542944044547584,
    "share": 0.021354002872987277,
    "exposure_kg": 135.09334088465255,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "Select suppliers for the main units; collect datasheet masses (preliminary design)",
    "detail": "266.3 ± 27 kg (handbook or parametric model); take-off spread ±68 kg",
@@ -396,7 +397,7 @@
    "exposure_kg": 107.95887912044743,
    "lock_date": "2026-12-15",
    "days_to_lock": 66,
-   "schedule": "plan lands after lock",
+   "schedule": "",
    "action": "Installed weight from layout: mounts, cooling, harness, protection (preliminary design)",
    "detail": "425.6 ± 21 kg (handbook or parametric model); take-off spread ±54 kg",
    "category": "Increase maturity",
@@ -430,8 +431,8 @@
    "value_high_kg": 3.649991583838646,
    "share": 0.006777259754341054,
    "exposure_kg": 126.84405254490336,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "Select flex loop or slip ring; swivel or local cooling (conceptual design)",
    "detail": "20 ± 15 kg (placeholder prior); take-off spread ±38 kg",
@@ -468,7 +469,7 @@
    "exposure_kg": 71.46393920379856,
    "lock_date": "2026-12-15",
    "days_to_lock": 66,
-   "schedule": "plan lands after lock",
+   "schedule": "",
    "action": "Installed weight from layout: mounts, cooling, harness, protection (preliminary design)",
    "detail": "281.7 ± 14 kg (handbook or parametric model); take-off spread ±36 kg",
    "category": "Increase maturity",
@@ -538,8 +539,8 @@
    "value_high_kg": 6.165037653871555,
    "share": 0.011433756772910256,
    "exposure_kg": 98.85275290129744,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "Size primary structure for every load case (strength, stiffness, whirl flutter) (conceptual design)",
    "detail": "194.8 ± 19 kg (handbook or parametric model); take-off spread ±49 kg",
@@ -558,7 +559,7 @@
    "exposure_kg": 53.492769950219206,
    "lock_date": "2026-12-15",
    "days_to_lock": 66,
-   "schedule": "plan lands after lock",
+   "schedule": "",
    "action": "Weigh the delivered unit with its installation kit (test and validation)",
    "detail": "421.7 ± 11 kg (handbook or parametric model); take-off spread ±27 kg",
    "category": "Increase maturity",
@@ -574,8 +575,8 @@
    "value_high_kg": 6.0991224413285146,
    "share": 0.011311857277028088,
    "exposure_kg": 98.32438803465006,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "Structural layout: joints, fittings, cut-outs and access panels (preliminary design)",
    "detail": "258.4 ± 19 kg (handbook or parametric model); take-off spread ±49 kg",
@@ -628,8 +629,8 @@
    "value_high_kg": 1.458678173274686,
    "share": 0.002711220220316118,
    "exposure_kg": 48.136741785883714,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "Supplier ageing data at the mission duty cycle (conceptual design)",
    "detail": "0.8 ± 0.05 - (handbook or parametric model); take-off spread ±24 kg",
@@ -664,8 +665,8 @@
    "value_high_kg": 1.1128314421684216,
    "share": 0.002068733658403412,
    "exposure_kg": 42.04812008493117,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "Size primary structure for every load case (strength, stiffness, whirl flutter) (conceptual design)",
    "detail": "82.87 ± 8.3 kg (handbook or parametric model); take-off spread ±21 kg",
@@ -772,8 +773,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Architecture without option data; moves gap.tilt_fittings, mass.wing, mass.nacelles, gap.wing_strength",
@@ -916,8 +917,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Architecture without option data; moves gap.conversion_actuators",
@@ -934,8 +935,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Architecture without option data; moves gap.tilt_joint_crossings, gap.coolant_loop, mass.motors",
@@ -952,8 +953,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Architecture without option data; moves mass.rotors, gap.tilt_fittings",
@@ -970,8 +971,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2028-03-31",
-   "days_to_lock": 538,
+   "lock_date": "2028-09-30",
+   "days_to_lock": 721,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Technology and material without option data; moves gap.tilt_fittings",
@@ -988,8 +989,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Technology and material without option data; moves mass.fuselage",
@@ -1006,8 +1007,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Technology and material without option data; moves mass.rotors",
@@ -1042,8 +1043,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2026-12-15",
-   "days_to_lock": 66,
+   "lock_date": "2027-04-30",
+   "days_to_lock": 202,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Margin policy without option data",
@@ -1078,8 +1079,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2027-03-15",
+   "days_to_lock": 156,
    "schedule": "",
    "action": "price it with the sizing: frequency_torsion_wing_per_rev, frequency_beam_wing_per_rev",
    "detail": "Margin policy without option data; moves mass.wing",
@@ -1096,8 +1097,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2026-12-15",
-   "days_to_lock": 66,
+   "lock_date": "2027-04-30",
+   "days_to_lock": 202,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Verification without option data; moves mass.systems, mass.fixed_equipment",
@@ -1114,8 +1115,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2028-03-31",
-   "days_to_lock": 538,
+   "lock_date": "2028-09-30",
+   "days_to_lock": 721,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Technology and material without option data; moves mass.fuselage, mass.wing",
@@ -1132,8 +1133,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2028-03-31",
-   "days_to_lock": 538,
+   "lock_date": "2028-09-30",
+   "days_to_lock": 721,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Architecture without option data; moves gap.hv_installation",
@@ -1150,8 +1151,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2029-09-30",
-   "days_to_lock": 1086,
+   "lock_date": "2027-10-11",
+   "days_to_lock": 366,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Verification without option data; moves gap.hv_installation, gap.conversion_actuators",
@@ -1168,8 +1169,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2029-09-30",
-   "days_to_lock": 1086,
+   "lock_date": "2027-10-11",
+   "days_to_lock": 366,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Verification without option data",
@@ -1204,8 +1205,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2031-06-30",
-   "days_to_lock": 1724,
+   "lock_date": "2030-12-31",
+   "days_to_lock": 1543,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Architecture without option data; moves gap.tilt_fittings, mass.rotor_gearboxes, mass.battery",
@@ -1222,8 +1223,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2031-06-30",
-   "days_to_lock": 1724,
+   "lock_date": "2030-12-31",
+   "days_to_lock": 1543,
    "schedule": "",
    "action": "price it with the sizing: factor_capacity_ageing_battery",
    "detail": "Margin policy without option data; moves mass.battery, input.capacity_end_of_life",
@@ -1240,8 +1241,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2031-06-30",
-   "days_to_lock": 1724,
+   "lock_date": "2030-12-31",
+   "days_to_lock": 1543,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Margin policy without option data",
@@ -1261,7 +1262,7 @@
    "fidelity": 1,
    "sensitivity": 2.5368810508980673,
    "allowance": 40.787010483896864,
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "next_activity": {
     "label": "Size primary structure for every load case (strength, stiffness, whirl flutter) (conceptual design)",
     "due": "2026-12-15",
@@ -1279,28 +1280,28 @@
     },
     {
      "label": "Structural layout: joints, fittings, cut-outs and access panels (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 28.550907338727807,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "FE sizing with buckling and fatigue; gauges back to the weight model (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 20.393505241948432,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Detail drawings and parts list weight (detailed design)",
-     "due": "2028-03-31",
+     "due": "2027-06-15",
      "sigma_after": 10.196752620974216,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Weigh the first article (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 4.078701048389687,
      "owner": "Structures",
      "done": false
@@ -1329,7 +1330,7 @@
    "fidelity": 1,
    "sensitivity": 2.5368810508980673,
    "allowance": 8.287365320113441,
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "next_activity": {
     "label": "Size primary structure for every load case (strength, stiffness, whirl flutter) (conceptual design)",
     "due": "2026-12-15",
@@ -1347,28 +1348,28 @@
     },
     {
      "label": "Structural layout: joints, fittings, cut-outs and access panels (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 5.8011557240794085,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "FE sizing with buckling and fatigue; gauges back to the weight model (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 4.1436826600567205,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Detail drawings and parts list weight (detailed design)",
-     "due": "2028-03-31",
+     "due": "2027-06-15",
      "sigma_after": 2.0718413300283602,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Weigh the first article (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 0.828736532011344,
      "owner": "Structures",
      "done": false
@@ -1397,7 +1398,7 @@
    "fidelity": 1,
    "sensitivity": 2.5368810508980673,
    "allowance": 44.814861254075275,
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "next_activity": {
     "label": "Size primary structure for every load case (strength, stiffness, whirl flutter) (conceptual design)",
     "due": "2026-12-15",
@@ -1415,28 +1416,28 @@
     },
     {
      "label": "Structural layout: joints, fittings, cut-outs and access panels (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 39.21300359731587,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "FE sizing with buckling and fatigue; gauges back to the weight model (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 28.009288283797048,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Detail drawings and parts list weight (detailed design)",
-     "due": "2028-03-31",
+     "due": "2027-06-15",
      "sigma_after": 14.004644141898524,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Weigh the first article (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 5.601857656759409,
      "owner": "Structures",
      "done": false
@@ -1465,7 +1466,7 @@
    "fidelity": 1,
    "sensitivity": 2.5368810508980673,
    "allowance": 19.483127296469636,
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "next_activity": {
     "label": "Size primary structure for every load case (strength, stiffness, whirl flutter) (conceptual design)",
     "due": "2026-12-15",
@@ -1483,28 +1484,28 @@
     },
     {
      "label": "Structural layout: joints, fittings, cut-outs and access panels (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 13.638189107528746,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "FE sizing with buckling and fatigue; gauges back to the weight model (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 9.741563648234818,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Detail drawings and parts list weight (detailed design)",
-     "due": "2028-03-31",
+     "due": "2027-06-15",
      "sigma_after": 4.870781824117409,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Weigh the first article (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 1.9483127296469636,
      "owner": "Structures",
      "done": false
@@ -1533,10 +1534,10 @@
    "fidelity": 1,
    "sensitivity": 2.5368810508980673,
    "allowance": 25.83865412211392,
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "next_activity": {
     "label": "Structural layout: joints, fittings, cut-outs and access panels (preliminary design)",
-    "due": "2027-06-30",
+    "due": "2027-03-15",
     "sigma_after": 18.087057885479744,
     "owner": "Structures",
     "done": false
@@ -1551,28 +1552,28 @@
     },
     {
      "label": "Structural layout: joints, fittings, cut-outs and access panels (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 18.087057885479744,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "FE sizing with buckling and fatigue; gauges back to the weight model (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 12.91932706105696,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Detail drawings and parts list weight (detailed design)",
-     "due": "2028-03-31",
+     "due": "2027-06-15",
      "sigma_after": 6.45966353052848,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Weigh the first article (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 2.5838654122113915,
      "owner": "Structures",
      "done": false
@@ -1601,7 +1602,7 @@
    "fidelity": 1,
    "sensitivity": 2.5368810508980673,
    "allowance": 40.72715083868005,
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "next_activity": {
     "label": "Define the equipment list and architecture (lanes, actuators, computers) (conceptual design)",
     "due": "2026-12-15",
@@ -1619,21 +1620,21 @@
     },
     {
      "label": "Select suppliers for the main units; collect datasheet masses (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 32.581720670944044,
      "owner": "Flight controls and systems",
      "done": false
     },
     {
      "label": "Installation layout: brackets, harness, cooling (detailed design)",
-     "due": "2028-03-31",
+     "due": "2027-06-15",
      "sigma_after": 16.290860335472022,
      "owner": "Flight controls and systems",
      "done": false
     },
     {
      "label": "Weigh installed systems on the first article (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 6.109072625802008,
      "owner": "Flight controls and systems",
      "done": false
@@ -1662,10 +1663,10 @@
    "fidelity": 1,
    "sensitivity": 2.5368810508980673,
    "allowance": 39.938808178500004,
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "next_activity": {
     "label": "Select suppliers for the main units; collect datasheet masses (preliminary design)",
-    "due": "2027-06-30",
+    "due": "2027-03-15",
     "sigma_after": 21.3006976952,
     "owner": "Systems",
     "done": false
@@ -1680,21 +1681,21 @@
     },
     {
      "label": "Select suppliers for the main units; collect datasheet masses (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 21.3006976952,
      "owner": "Systems",
      "done": false
     },
     {
      "label": "Installation layout: brackets, harness, cooling (detailed design)",
-     "due": "2028-03-31",
+     "due": "2027-06-15",
      "sigma_after": 10.6503488476,
      "owner": "Systems",
      "done": false
     },
     {
      "label": "Weigh installed systems on the first article (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 3.99388081785,
      "owner": "Systems",
      "done": false
@@ -1741,21 +1742,21 @@
     },
     {
      "label": "Blade structural design: spar, skins, ballast (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 30.369682652874435,
      "owner": "Rotor and drive",
      "done": false
     },
     {
      "label": "Hub and pitch-link layout (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 23.620864285569006,
      "owner": "Rotor and drive",
      "done": false
     },
     {
      "label": "Weigh the first blade set and hub (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 10.123227550958145,
      "owner": "Rotor and drive",
      "done": false
@@ -1802,21 +1803,21 @@
     },
     {
      "label": "Select the gearbox supplier; confirm ratings and lubrication (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 17.54490539611709,
      "owner": "Rotor and drive",
      "done": false
     },
     {
      "label": "Layout with housing, mounts and oil system (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 11.696603597411395,
      "owner": "Rotor and drive",
      "done": false
     },
     {
      "label": "Weigh the first gearbox (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 4.386226349029273,
      "owner": "Rotor and drive",
      "done": false
@@ -1863,21 +1864,21 @@
     },
     {
      "label": "Select the gearbox supplier; confirm ratings and lubrication (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 8.65015098485009,
      "owner": "Rotor and drive",
      "done": false
     },
     {
      "label": "Layout with housing, mounts and oil system (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 5.766767323233394,
      "owner": "Rotor and drive",
      "done": false
     },
     {
      "label": "Weigh the first gearbox (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 2.1625377462125224,
      "owner": "Rotor and drive",
      "done": false
@@ -1909,7 +1910,7 @@
    "lock_date": "2026-12-15",
    "next_activity": {
     "label": "Installed weight from layout: mounts, cooling, harness, protection (preliminary design)",
-    "due": "2027-06-30",
+    "due": "2027-03-15",
     "sigma_after": 14.894512960621599,
     "owner": "Electrical",
     "done": false
@@ -1924,21 +1925,21 @@
     },
     {
      "label": "Verify the datasheet: mass, ratings and derating at altitude and hot day (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 21.277875658030855,
      "owner": "Electrical",
      "done": true
     },
     {
      "label": "Installed weight from layout: mounts, cooling, harness, protection (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 14.894512960621599,
      "owner": "Electrical",
      "done": false
     },
     {
      "label": "Weigh the delivered unit with its installation kit (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 6.383362697409256,
      "owner": "Electrical",
      "done": false
@@ -1970,7 +1971,7 @@
    "lock_date": "2026-12-15",
    "next_activity": {
     "label": "Installed weight from layout: mounts, cooling, harness, protection (preliminary design)",
-    "due": "2027-06-30",
+    "due": "2027-03-15",
     "sigma_after": 9.8595,
     "owner": "Electrical",
     "done": false
@@ -1985,21 +1986,21 @@
     },
     {
      "label": "Verify the datasheet: mass, ratings and derating at altitude and hot day (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 14.085,
      "owner": "Electrical",
      "done": true
     },
     {
      "label": "Installed weight from layout: mounts, cooling, harness, protection (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 9.8595,
      "owner": "Electrical",
      "done": false
     },
     {
      "label": "Weigh the delivered unit with its installation kit (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 4.225499999999999,
      "owner": "Electrical",
      "done": false
@@ -2031,7 +2032,7 @@
    "lock_date": "2026-12-15",
    "next_activity": {
     "label": "Weigh the delivered unit with its installation kit (test and validation)",
-    "due": "2029-09-30",
+    "due": "2027-10-11",
     "sigma_after": 6.325811365647103,
     "owner": "Propulsion",
     "done": false
@@ -2046,21 +2047,21 @@
     },
     {
      "label": "Verify the datasheet: mass, ratings and derating at altitude and hot day (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 21.086037885490345,
      "owner": "Propulsion",
      "done": true
     },
     {
      "label": "Installed weight from layout: mounts, cooling, harness, protection (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 14.760226519843243,
      "owner": "Propulsion",
      "done": true
     },
     {
      "label": "Weigh the delivered unit with its installation kit (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 6.325811365647103,
      "owner": "Propulsion",
      "done": false
@@ -2107,21 +2108,21 @@
     },
     {
      "label": "Module design: cell-to-pack mass from a real module (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 19.004820282642147,
      "owner": "Electrical",
      "done": false
     },
     {
      "label": "Thermal-runaway containment test; add what containment needs (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 14.253615211981609,
      "owner": "Electrical",
      "done": false
     },
     {
      "label": "Weigh the first pack (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 4.751205070660537,
      "owner": "Electrical",
      "done": false
@@ -2168,21 +2169,21 @@
     },
     {
      "label": "Verify the datasheet: mass, ratings and derating at altitude and hot day (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 6.345213909315332,
      "owner": "Thermal",
      "done": false
     },
     {
      "label": "Installed weight from layout: mounts, cooling, harness, protection (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 4.441649736520732,
      "owner": "Thermal",
      "done": false
     },
     {
      "label": "Weigh the delivered unit with its installation kit (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 1.9035641727945993,
      "owner": "Thermal",
      "done": false
@@ -2229,21 +2230,21 @@
     },
     {
      "label": "Verify the datasheet: mass, ratings and derating at altitude and hot day (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 1.4237107453589406,
      "owner": "Electrical",
      "done": false
     },
     {
      "label": "Installed weight from layout: mounts, cooling, harness, protection (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 0.9965975217512585,
      "owner": "Electrical",
      "done": false
     },
     {
      "label": "Weigh the delivered unit with its installation kit (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 0.42711322360768217,
      "owner": "Electrical",
      "done": false
@@ -2290,28 +2291,28 @@
     },
     {
      "label": "Wire list and harness routing from the layout (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 39.6,
      "owner": "Electrical",
      "done": false
     },
     {
      "label": "Select cables, connectors and contactors; partial-discharge rating at altitude (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 26.400000000000002,
      "owner": "Electrical",
      "done": false
     },
     {
      "label": "Harness mock-up weight (detailed design)",
-     "due": "2028-03-31",
+     "due": "2027-06-15",
      "sigma_after": 13.200000000000001,
      "owner": "Electrical",
      "done": false
     },
     {
      "label": "Weigh the installed HV system (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 4.95,
      "owner": "Electrical",
      "done": false
@@ -2340,7 +2341,7 @@
    "fidelity": 0,
    "sensitivity": 2.5368810508980673,
    "allowance": 0.0,
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "next_activity": {
     "label": "Choose the spindle concept and bearing type (conceptual design)",
     "due": "2026-12-15",
@@ -2358,28 +2359,28 @@
     },
     {
      "label": "Size spindle, bearings and fittings for conversion and jump take-off loads (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 14.0,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Fitting layout and FE with fatigue (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 7.0,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Detail drawings (detailed design)",
-     "due": "2028-03-31",
+     "due": "2027-06-15",
      "sigma_after": 2.8000000000000003,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Weigh the first fittings (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 1.05,
      "owner": "Structures",
      "done": false
@@ -2408,7 +2409,7 @@
    "fidelity": 0,
    "sensitivity": 2.5368810508980673,
    "allowance": 0.0,
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "next_activity": {
     "label": "Select actuator type (electromechanical or hydraulic) and redundancy (conceptual design)",
     "due": "2026-12-15",
@@ -2426,21 +2427,21 @@
     },
     {
      "label": "Size for hinge moment, rate and stiffness; select supplier (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 6.75,
      "owner": "Flight controls and systems",
      "done": false
     },
     {
      "label": "Verify the supplier datasheet and installation (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 3.1500000000000004,
      "owner": "Flight controls and systems",
      "done": false
     },
     {
      "label": "Weigh the delivered actuators (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 0.6749999999999999,
      "owner": "Flight controls and systems",
      "done": false
@@ -2487,21 +2488,21 @@
     },
     {
      "label": "Size pumps, lines and reservoir to the heat loads (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 8.0,
      "owner": "Thermal",
      "done": false
     },
     {
      "label": "Select suppliers; datasheet masses (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 3.2,
      "owner": "Thermal",
      "done": false
     },
     {
      "label": "Weigh the installed loop with fluid (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 0.8,
      "owner": "Thermal",
      "done": false
@@ -2530,7 +2531,7 @@
    "fidelity": 0,
    "sensitivity": 2.5368810508980673,
    "allowance": 0.0,
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "next_activity": {
     "label": "Select flex loop or slip ring; swivel or local cooling (conceptual design)",
     "due": "2026-12-15",
@@ -2548,21 +2549,21 @@
     },
     {
      "label": "Supplier datasheet and bend-radius layout (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 3.0,
      "owner": "Electrical",
      "done": false
     },
     {
      "label": "Mock-up and conversion-cycle test (detailed design)",
-     "due": "2028-03-31",
+     "due": "2027-06-15",
      "sigma_after": 1.2,
      "owner": "Electrical",
      "done": false
     },
     {
      "label": "Weigh the installed crossings (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 0.4,
      "owner": "Electrical",
      "done": false
@@ -2609,21 +2610,21 @@
     },
     {
      "label": "Size stiffeners or sandwich covers to a non-negative margin (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 10.0,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Detail design of the covers (detailed design)",
-     "due": "2028-03-31",
+     "due": "2027-06-15",
      "sigma_after": 3.2,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Static test of the wing box (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 0.8,
      "owner": "Structures",
      "done": false
@@ -2670,21 +2671,21 @@
     },
     {
      "label": "CFD of the installed nacelle, wing and fuselage (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 0.05,
      "owner": "Aerodynamics",
      "done": false
     },
     {
      "label": "Wind-tunnel test (detailed design)",
-     "due": "2028-03-31",
+     "due": "2027-06-15",
      "sigma_after": 0.03,
      "owner": "Aerodynamics",
      "done": false
     },
     {
      "label": "Flight-test drag polar (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 0.015,
      "owner": "Aerodynamics",
      "done": false
@@ -2731,14 +2732,14 @@
     },
     {
      "label": "Module design (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 0.012,
      "owner": "Electrical",
      "done": false
     },
     {
      "label": "Weigh the first module (detailed design)",
-     "due": "2028-03-31",
+     "due": "2027-06-15",
      "sigma_after": 0.005,
      "owner": "Electrical",
      "done": false
@@ -2767,7 +2768,7 @@
    "fidelity": 1,
    "sensitivity": -481.36741785883714,
    "allowance": 0.0,
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "next_activity": {
     "label": "Supplier ageing data at the mission duty cycle (conceptual design)",
     "due": "2026-12-15",
@@ -2785,14 +2786,14 @@
     },
     {
      "label": "Cell ageing test at the mission duty cycle (preliminary design)",
-     "due": "2027-06-30",
+     "due": "2027-03-15",
      "sigma_after": 0.02,
      "owner": "Electrical",
      "done": false
     },
     {
      "label": "Pack ageing data from test and validation (test and validation)",
-     "due": "2029-09-30",
+     "due": "2027-10-11",
      "sigma_after": 0.01,
      "owner": "Electrical",
      "done": false
@@ -2883,6 +2884,18 @@
    "source": "trade register (examples/halo_trades.py)",
    "kind": "register",
    "summary": "0 added, 2 retired below the line"
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register (examples/halo_trades.py)",
+   "kind": "register",
+   "summary": "0 added, 0 retired below the line"
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register (examples/halo_trades.py)",
+   "kind": "register",
+   "summary": "0 added, 0 retired below the line"
   },
   {
    "date": "2026-10-10",
@@ -4145,6 +4158,264 @@
      "value_kg": 5.13
     }
    ]
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register",
+   "sigma_takeoff_kg": 462.24,
+   "margin_99_kg": 1075.3,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 79.53
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.7
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.73
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 21.98
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 15.04
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 9.7
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 9.37
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 7.96
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 7.43
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    },
+    {
+     "key": "engine-out hover 3/3: turboshaft power_shaft_W",
+     "value_kg": 6.01
+    },
+    {
+     "key": "hover: gearbox power_input_W",
+     "value_kg": 5.66
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 5.13
+    }
+   ]
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register",
+   "sigma_takeoff_kg": 462.24,
+   "margin_99_kg": 1075.3,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 79.53
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.7
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.73
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 21.98
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 15.04
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 9.7
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 9.37
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 7.96
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 7.43
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    },
+    {
+     "key": "engine-out hover 3/3: turboshaft power_shaft_W",
+     "value_kg": 6.01
+    },
+    {
+     "key": "hover: gearbox power_input_W",
+     "value_kg": 5.66
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 5.13
+    }
+   ]
+  }
+ ],
+ "schedule": [
+  {
+   "lane": "Block 0 design",
+   "task": "Configuration freeze and supplier selection",
+   "start": "2026-10-12",
+   "end": "2026-12-15"
+  },
+  {
+   "lane": "Block 0 design",
+   "task": "Configuration freeze",
+   "start": "2026-12-15",
+   "end": "2026-12-15"
+  },
+  {
+   "lane": "Block 0 design",
+   "task": "Preliminary design",
+   "start": "2026-12-15",
+   "end": "2027-03-15"
+  },
+  {
+   "lane": "Block 0 design",
+   "task": "Preliminary design review",
+   "start": "2027-03-15",
+   "end": "2027-03-15"
+  },
+  {
+   "lane": "Block 0 design",
+   "task": "Detailed design",
+   "start": "2027-03-15",
+   "end": "2027-06-15"
+  },
+  {
+   "lane": "Block 0 design",
+   "task": "Critical design review",
+   "start": "2027-06-15",
+   "end": "2027-06-15"
+  },
+  {
+   "lane": "Long-lead parts",
+   "task": "Order machines, turbines, gearboxes, blades, cells, actuators",
+   "start": "2026-11-15",
+   "end": "2027-01-31"
+  },
+  {
+   "lane": "Long-lead parts",
+   "task": "Deliveries",
+   "start": "2027-05-01",
+   "end": "2027-07-31"
+  },
+  {
+   "lane": "Integration rig",
+   "task": "Build: HV powertrain and one tilting nacelle",
+   "start": "2027-01-15",
+   "end": "2027-05-31"
+  },
+  {
+   "lane": "Integration rig",
+   "task": "Runs: power, EMI, failure cases, conversion cycles",
+   "start": "2027-06-01",
+   "end": "2027-08-31"
+  },
+  {
+   "lane": "Airframe",
+   "task": "Tooling and long-lead structure",
+   "start": "2027-04-01",
+   "end": "2027-06-30"
+  },
+  {
+   "lane": "Airframe",
+   "task": "Fabrication",
+   "start": "2027-06-15",
+   "end": "2027-08-15"
+  },
+  {
+   "lane": "Airframe",
+   "task": "Assembly and systems integration",
+   "start": "2027-08-01",
+   "end": "2027-09-10"
+  },
+  {
+   "lane": "Airframe",
+   "task": "Weigh the first article",
+   "start": "2027-09-10",
+   "end": "2027-09-10"
+  },
+  {
+   "lane": "Test",
+   "task": "Ground runs and tethered hover",
+   "start": "2027-09-10",
+   "end": "2027-10-05"
+  },
+  {
+   "lane": "Test",
+   "task": "Flight readiness review",
+   "start": "2027-10-05",
+   "end": "2027-10-05"
+  },
+  {
+   "lane": "Test",
+   "task": "First flight: hover, helicopter mode",
+   "start": "2027-10-11",
+   "end": "2027-10-11"
+  },
+  {
+   "lane": "Test",
+   "task": "Envelope expansion to conversion",
+   "start": "2027-10-11",
+   "end": "2028-03-31"
+  },
+  {
+   "lane": "Block 1 (final design)",
+   "task": "Block 1 trades and design, from rig and Block 0 data",
+   "start": "2027-03-01",
+   "end": "2027-12-15"
+  },
+  {
+   "lane": "Block 1 (final design)",
+   "task": "Block 1 preliminary design review",
+   "start": "2027-12-15",
+   "end": "2027-12-15"
   }
  ],
  "trades": [
@@ -4173,7 +4444,9 @@
      "NASA: X-57 project creates paths toward electric aviation",
      "https://www.nasa.gov/centers-and-facilities/armstrong/x-57-project-creates-paths-toward-electric-aviation-2/"
     ]
-   ]
+   ],
+   "block": "Block 0",
+   "block0_choice": "The bus voltage native to the selected machines and inverters, fixed by month 2"
   },
   {
    "key": "trade.tilt_load_path",
@@ -4182,7 +4455,7 @@
    "category": "Architecture",
    "discipline": "Structures",
    "lock_gate": "Preliminary design",
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -4201,7 +4474,9 @@
      "The War Zone: V-280 against V-22, with Bell's head of tiltrotor systems",
      "https://www.twz.com/21162/we-talk-v-280-valor-versus-v-22-osprey-with-bells-head-of-tiltrotor-systems"
     ]
-   ]
+   ],
+   "block": "Block 0",
+   "block0_choice": "Conservative machined spindle and fittings with generous margin; nacelles locked at 90 deg for first flight"
   },
   {
    "key": "trade.failure_architecture",
@@ -4232,7 +4507,9 @@
      "The War Zone: V-280 against V-22, with Bell's head of tiltrotor systems",
      "https://www.twz.com/21162/we-talk-v-280-valor-versus-v-22-osprey-with-bells-head-of-tiltrotor-systems"
     ]
-   ]
+   ],
+   "block": "Block 0",
+   "block0_choice": "Electrical cross-strapping as designed; the uncrewed test article carries the risk with flight termination. Shaft question goes to the certification authority for Block 1"
   },
   {
    "key": "trade.thermal_architecture",
@@ -4253,7 +4530,9 @@
    "options": 0,
    "note": "Hot-day hover heat rejection binds",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": "Ram-air exchanger with ground fans; hot-day envelope deferred"
   },
   {
    "key": "trade.redundancy_level",
@@ -4275,7 +4554,9 @@
    "options": 0,
    "note": "Set by the safety assessment's failure rates",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": "2 lanes, 2 buses, 2 strings as designed"
   },
   {
    "key": "trade.rotor_span",
@@ -4297,7 +4578,9 @@
    "options": 0,
    "note": "The span cap is the most expensive binding limit",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": "Today's span-capped rotor"
   },
   {
    "key": "trade.blade_count",
@@ -4317,7 +4600,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.tip_speed",
@@ -4339,7 +4624,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.battery_reserve",
@@ -4360,7 +4647,9 @@
    "options": 0,
    "note": "",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": "30 % reserve or more"
   },
   {
    "key": "trade.cell_selection",
@@ -4389,7 +4678,9 @@
      "NASA: X-57 project creates paths toward electric aviation",
      "https://www.nasa.gov/centers-and-facilities/armstrong/x-57-project-creates-paths-toward-electric-aviation-2/"
     ]
-   ]
+   ],
+   "block": "Block 0",
+   "block0_choice": "50G cells in the supplier's modules; catalogue machines"
   },
   {
    "key": "trade.machine_selection",
@@ -4410,7 +4701,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.gearbox_stages",
@@ -4431,7 +4724,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.tail_type",
@@ -4452,7 +4747,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.wing_section",
@@ -4473,7 +4770,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.wing_material",
@@ -4499,7 +4798,9 @@
      "Flight International, 'Tilting in favour' (2000), as reported",
      "https://flightglobal.com/tilting-in-favour/33528.article"
     ]
-   ]
+   ],
+   "block": "Block 0",
+   "block0_choice": "Whatever the structures supplier can deliver by month 9; aluminium costs +699 lb take-off (priced), taken from payload"
   },
   {
    "key": "trade.cruise_point",
@@ -4519,7 +4820,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.payload_range",
@@ -4539,7 +4842,9 @@
    "options": 0,
    "note": "Payload-range diagram not drawn yet",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": "Reduced payload accepted for Block 0; full mission in Block 1"
   },
   {
    "key": "trade.hot_high",
@@ -4559,7 +4864,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.engine_out_hover",
@@ -4580,7 +4887,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.conversion_actuator",
@@ -4589,7 +4898,7 @@
    "category": "Architecture",
    "discipline": "Flight controls",
    "lock_gate": "Preliminary design",
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -4609,7 +4918,9 @@
      "eVTOL Insights: NTSB report on the Joby JAS4-2 prototype crash",
      "https://evtolinsights.com/ntsb-finally-releases-report-on-joby-aviation-crash-jas4-2-prototype/"
     ]
-   ]
+   ],
+   "block": "Block 0",
+   "block0_choice": "Catalogue dual-motor electromechanical actuator; conversion cleared after first flight"
   },
   {
    "key": "trade.tilt_joint_crossings",
@@ -4618,7 +4929,7 @@
    "category": "Architecture",
    "discipline": "Electrical",
    "lock_gate": "Preliminary design",
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -4636,7 +4947,9 @@
      "NASA: X-57 project creates paths toward electric aviation",
      "https://www.nasa.gov/centers-and-facilities/armstrong/x-57-project-creates-paths-toward-electric-aviation-2/"
     ]
-   ]
+   ],
+   "block": "Block 0",
+   "block0_choice": "Flex loops, no slip rings; air cooling local to the nacelle where it suffices"
   },
   {
    "key": "trade.wing_covers",
@@ -4657,7 +4970,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.rotor_hub",
@@ -4666,7 +4981,7 @@
    "category": "Architecture",
    "discipline": "Rotor and drive",
    "lock_gate": "Preliminary design",
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -4678,7 +4993,9 @@
    "options": 0,
    "note": "Hub moments size the tilt fittings and the wing tip",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": "Gimballed hub (XV-15 and V-22 heritage)"
   },
   {
    "key": "trade.landing_gear",
@@ -4698,7 +5015,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.battery_location",
@@ -4719,7 +5038,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.conductor",
@@ -4739,7 +5060,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.inverter_location",
@@ -4760,7 +5083,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.partial_discharge",
@@ -4780,7 +5105,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.flight_control_actuation",
@@ -4800,7 +5127,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.autonomy_avionics",
@@ -4820,7 +5149,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.ice_protection",
@@ -4840,7 +5171,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.lightning",
@@ -4861,7 +5194,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.fitting_material",
@@ -4870,7 +5205,7 @@
    "category": "Technology and material",
    "discipline": "Structures",
    "lock_gate": "Detailed design",
-   "lock_date": "2028-03-31",
+   "lock_date": "2028-09-30",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -4881,7 +5216,9 @@
    "options": 0,
    "note": "Fatigue under conversion cycles",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 1",
+   "block0_choice": "Machined steel or titanium in Block 0"
   },
   {
    "key": "trade.skin_joints",
@@ -4902,7 +5239,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.harness_standard",
@@ -4923,7 +5262,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.exchanger_core",
@@ -4943,7 +5284,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.wing_skin_process",
@@ -4963,7 +5306,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.fuselage_assembly",
@@ -4983,7 +5328,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.fitting_process",
@@ -5003,7 +5350,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "trade.finish_allowances",
@@ -5024,7 +5373,9 @@
    "options": 0,
    "note": "Below the line: not a governing trade (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "decided.engines",
@@ -5042,7 +5393,9 @@
    "options": 0,
    "note": "",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": ""
   },
   {
    "key": "decided.max_speed",
@@ -5060,7 +5413,9 @@
    "options": 0,
    "note": "",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": ""
   },
   {
    "key": "decided.payload",
@@ -5078,7 +5433,9 @@
    "options": 0,
    "note": "",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": ""
   },
   {
    "key": "decided.cell_scaling",
@@ -5096,7 +5453,9 @@
    "options": 0,
    "note": "",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": ""
   },
   {
    "key": "decided.wing_model",
@@ -5114,7 +5473,9 @@
    "options": 0,
    "note": "Analysis-method choice, not an aircraft decision (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "decided.aero_model",
@@ -5132,7 +5493,9 @@
    "options": 0,
    "note": "Analysis-method choice, not an aircraft decision (retired 2026-10-10)",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "",
+   "block0_choice": ""
   },
   {
    "key": "decided.turbines_fuselage",
@@ -5150,7 +5513,9 @@
    "options": 0,
    "note": "",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": ""
   },
   {
    "key": "decided.fuselage",
@@ -5168,7 +5533,9 @@
    "options": 0,
    "note": "",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": ""
   },
   {
    "key": "decided.redundancy_default",
@@ -5186,7 +5553,9 @@
    "options": 0,
    "note": "",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": ""
   },
   {
    "key": "decided.real_machines",
@@ -5204,7 +5573,9 @@
    "options": 0,
    "note": "",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": ""
   },
   {
    "key": "decided.nacelles_tilt",
@@ -5222,7 +5593,9 @@
    "options": 0,
    "note": "",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": ""
   },
   {
    "key": "decided.geared_rotors",
@@ -5240,7 +5613,9 @@
    "options": 0,
    "note": "",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": ""
   },
   {
    "key": "decided.ruddervator_limit",
@@ -5258,7 +5633,9 @@
    "options": 0,
    "note": "",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": ""
   },
   {
    "key": "trade.fuselage_material",
@@ -5267,7 +5644,7 @@
    "category": "Technology and material",
    "discipline": "",
    "lock_gate": "Preliminary design",
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -5283,7 +5660,9 @@
      "Flight International, 'Tilting in favour' (2000), as reported",
      "https://flightglobal.com/tilting-in-favour/33528.article"
     ]
-   ]
+   ],
+   "block": "Block 0",
+   "block0_choice": "Metallic semi-monocoque or simple composite panels; optimise in Block 1 (V-22 lesson)"
   },
   {
    "key": "trade.rotor_construction",
@@ -5292,7 +5671,7 @@
    "category": "Technology and material",
    "discipline": "",
    "lock_gate": "Preliminary design",
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -5303,7 +5682,9 @@
    "options": 0,
    "note": "Blade stiffness sets the rotor frequencies",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": "The blade supplier's existing family, adapted"
   },
   {
    "key": "trade.hover_cases",
@@ -5325,7 +5706,9 @@
    "options": 0,
    "note": "Both bind at the optimum",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": "ISA sea-level hover only; hot and high in Block 1"
   },
   {
    "key": "trade.weight_margin",
@@ -5334,7 +5717,7 @@
    "category": "Margin policy",
    "discipline": "",
    "lock_gate": "Conceptual design",
-   "lock_date": "2026-12-15",
+   "lock_date": "2027-04-30",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -5348,7 +5731,9 @@
      "Flight International, 'Tilting in favour' (2000), as reported",
      "https://flightglobal.com/tilting-in-favour/33528.article"
     ]
-   ]
+   ],
+   "block": "Block 1",
+   "block0_choice": "Track Block 0 against its predicted weight; set the NTE for Block 1"
   },
   {
    "key": "trade.load_factors",
@@ -5369,7 +5754,9 @@
    "options": 0,
    "note": "",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": "Restricted, placarded envelope"
   },
   {
    "key": "trade.whirl_margin",
@@ -5378,7 +5765,7 @@
    "category": "Margin policy",
    "discipline": "",
    "lock_gate": "Preliminary design",
-   "lock_date": "2027-06-30",
+   "lock_date": "2027-03-15",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -5394,7 +5781,9 @@
      "Acree, Peyran and Johnson, NASA/TP-2004-212262 (thin-wing whirl flutter), as reported",
      "https://rotorcraft.arc.nasa.gov/Publications/files/AcreePeyranJohnson_TP2004-212262.pdf"
     ]
-   ]
+   ],
+   "block": "Block 0",
+   "block0_choice": "Frequency placement with wide margin; airplane-mode speed limited until flutter is cleared"
   },
   {
    "key": "trade.assurance_level",
@@ -5403,7 +5792,7 @@
    "category": "Verification",
    "discipline": "",
    "lock_gate": "Conceptual design",
-   "lock_date": "2026-12-15",
+   "lock_date": "2027-04-30",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -5420,7 +5809,9 @@
      "Federal Register 2024-25238: AW609 airworthiness criteria",
      "https://www.govinfo.gov/content/pkg/FR-2024-10-31/html/2024-25238.htm"
     ]
-   ]
+   ],
+   "block": "Block 1",
+   "block0_choice": "Experimental permit to fly for Block 0"
   },
   {
    "key": "trade.structure_joining",
@@ -5429,7 +5820,7 @@
    "category": "Technology and material",
    "discipline": "",
    "lock_gate": "Detailed design",
-   "lock_date": "2028-03-31",
+   "lock_date": "2028-09-30",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -5441,7 +5832,9 @@
    "options": 0,
    "note": "Part and fastener count is weight",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 1",
+   "block0_choice": "Fastened in Block 0"
   },
   {
    "key": "trade.hv_installation_standard",
@@ -5450,7 +5843,7 @@
    "category": "Architecture",
    "discipline": "",
    "lock_gate": "Detailed design",
-   "lock_date": "2028-03-31",
+   "lock_date": "2028-09-30",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -5461,7 +5854,9 @@
    "options": 0,
    "note": "Partial discharge at altitude and EMI",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 1",
+   "block0_choice": "Aerospace catalogue connectors with generous clearance in Block 0"
   },
   {
    "key": "trade.integration_rig",
@@ -5470,7 +5865,7 @@
    "category": "Verification",
    "discipline": "",
    "lock_gate": "Test and validation",
-   "lock_date": "2029-09-30",
+   "lock_date": "2027-10-11",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -5487,7 +5882,9 @@
      "NASA: X-57 project creates paths toward electric aviation",
      "https://www.nasa.gov/centers-and-facilities/armstrong/x-57-project-creates-paths-toward-electric-aviation-2/"
     ]
-   ]
+   ],
+   "block": "Block 0",
+   "block0_choice": "Yes: HV powertrain and one tilting nacelle on an iron bird by month 9 (X-57 lesson)"
   },
   {
    "key": "trade.envelope_expansion",
@@ -5496,7 +5893,7 @@
    "category": "Verification",
    "discipline": "",
    "lock_gate": "Test and validation",
-   "lock_date": "2029-09-30",
+   "lock_date": "2027-10-11",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -5505,7 +5902,9 @@
    "options": 0,
    "note": "The computed corridor is edgewise-limited above 45 deg",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 0",
+   "block0_choice": "Build-up: hover, low speed, then conversion"
   },
   {
    "key": "trade.means_of_compliance",
@@ -5530,7 +5929,9 @@
      "Federal Register 2024-25238: AW609 airworthiness criteria",
      "https://www.govinfo.gov/content/pkg/FR-2024-10-31/html/2024-25238.htm"
     ]
-   ]
+   ],
+   "block": "Block 1",
+   "block0_choice": ""
   },
   {
    "key": "trade.maintenance_concept",
@@ -5539,7 +5940,7 @@
    "category": "Architecture",
    "discipline": "",
    "lock_gate": "After entry into service",
-   "lock_date": "2031-06-30",
+   "lock_date": "2030-12-31",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -5557,7 +5958,9 @@
      "The War Zone: V-280 against V-22, with Bell's head of tiltrotor systems",
      "https://www.twz.com/21162/we-talk-v-280-valor-versus-v-22-osprey-with-bells-head-of-tiltrotor-systems"
     ]
-   ]
+   ],
+   "block": "Block 1",
+   "block0_choice": ""
   },
   {
    "key": "trade.battery_life",
@@ -5566,7 +5969,7 @@
    "category": "Margin policy",
    "discipline": "",
    "lock_gate": "After entry into service",
-   "lock_date": "2031-06-30",
+   "lock_date": "2030-12-31",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -5578,7 +5981,9 @@
    "options": 0,
    "note": "",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 1",
+   "block0_choice": ""
   },
   {
    "key": "trade.growth_reserve",
@@ -5587,7 +5992,7 @@
    "category": "Margin policy",
    "discipline": "",
    "lock_gate": "After entry into service",
-   "lock_date": "2031-06-30",
+   "lock_date": "2030-12-31",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -5596,7 +6001,9 @@
    "options": 0,
    "note": "Fixed engines leave no power growth path",
    "precedent": "",
-   "sources": []
+   "sources": [],
+   "block": "Block 1",
+   "block0_choice": ""
   }
  ]
 }

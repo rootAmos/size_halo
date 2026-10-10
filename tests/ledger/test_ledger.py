@@ -53,12 +53,12 @@ class RankingTest(unittest.TestCase):
 
     def test_planned_activity_sets_the_expected_value(self):
         ledger = two_item_ledger()
-        ledger.quantities["a"].plan = [Activity("FE wing box", "2026-11-01", 20.0)]
+        ledger.quantities["a"].plan = [Activity("FE wing box", "2026-10-01", 20.0)]
         ledger.quantities["a"].lock_date = "2026-10-20"
         top = priorities(ledger, today)[0]
         sigma_total = 1.5 * math.hypot(40.0, 10.0)
         self.assertAlmostEqual(top.value_kg, z_99 * (sigma_total - 1.5 * math.hypot(20.0, 10.0)))
-        self.assertEqual(top.schedule, "plan lands after lock")
+        self.assertEqual(top.schedule, "overdue")
 
     def test_quantity_without_sensitivity_is_a_blind_spot_not_zero(self):
         ledger = two_item_ledger()
