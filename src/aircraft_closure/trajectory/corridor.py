@@ -269,6 +269,44 @@ def solve_corridor(model, stability, geometry, limits, *, mass_kg, altitude_m, s
 
 
 @dataclass(frozen=True)
+class PowerMap:
+    """Least-power trims across the corridor: `trims[i][j]` at nacelle angle `tilts_deg[i]` and airspeed
+    `velocities_m_s[i][j]` (from the low to the high bound at that angle); None where no trim was found."""
+    tilts_deg: tuple
+    velocities_m_s: tuple
+    trims: tuple
+
+    def values(self, name):
+        """A TrimPoint field on the map grid (NaN where no trim was found)."""
+        return tuple(tuple(float("nan") if t is None else getattr(t, name) for t in row) for row in self.trims)
+
+
+def solve_power_map(model, stability, geometry, limits, corridor, *, mass_kg, altitude_m, speed_rotor_rad_s,
+                    count_speeds=12, inset=0.01, verbose=False):
+    """Least-power trim at `count_speeds` airspeeds across each nacelle angle of `corridor` (`solve_corridor` pairs),
+    the end points `inset` of the width inside the bounds (a trim exactly at a bound is at a limit)."""
+    tilts, velocities, trims = [], [], []
+    for low, high in corridor:
+        if low.trim is None or high.trim is None:
+            continue
+        v_low, v_high = low.velocity_m_s, high.velocity_m_s
+        width = v_high - v_low
+        row_v = [v_low + width * (inset + (1 - 2 * inset) * k / (count_speeds - 1)) for k in range(count_speeds)]
+        row = []
+        for velocity_m_s in row_v:
+            try:
+                row.append(solve_trim(model, stability, geometry, limits, mass_kg=mass_kg, velocity_m_s=velocity_m_s,
+                                      tilt_deg=low.tilt_deg, altitude_m=altitude_m,
+                                      speed_rotor_rad_s=speed_rotor_rad_s, verbose=verbose))
+            except RuntimeError:
+                row.append(None)
+        tilts.append(low.tilt_deg)
+        velocities.append(tuple(row_v))
+        trims.append(tuple(row))
+    return PowerMap(tuple(tilts), tuple(velocities), tuple(trims))
+
+
+@dataclass(frozen=True)
 class ComputedCorridor:
     """The computed corridor as airspeed limits against nacelle angle, for the trajectory layer.
 

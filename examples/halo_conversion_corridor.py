@@ -5,7 +5,8 @@ aircraft at take-off mass, sea level, hover rotor speed. Each nacelle angle gets
 level-flight trim airspeed inside `CorridorLimits`, with the limit that sets it, and a least-power trim schedule
 at the corridor's mid speed.
 
-    python examples/halo_conversion_corridor.py            # writes output/corridor/corridor.png and .json
+    python examples/halo_conversion_corridor.py            # writes output/corridor/corridor.png, .json and
+                                                           # corridor_power.png (power required across the corridor)
 """
 import json
 import os
@@ -14,7 +15,8 @@ from dataclasses import asdict
 import aerosandbox.tools.units as u
 
 from aircraft_closure.controls.stability import LongitudinalStability
-from aircraft_closure.trajectory.corridor import CorridorLimits, TrimGeometry, solve_corridor, solve_trim
+from aircraft_closure.trajectory.corridor import (CorridorLimits, TrimGeometry, solve_corridor, solve_power_map,
+                                                  solve_trim)
 from aircraft_closure.trajectory.tiltrotor import TiltrotorPointMass
 from aircraft_closure.vehicle.condition import StructuralDesignCondition
 from examples.halo_sizing import (HaloAssumptions, HaloRequirements, build_halo_aerodynamics, build_halo_aircraft,
@@ -22,6 +24,7 @@ from examples.halo_sizing import (HaloAssumptions, HaloRequirements, build_halo_
 
 ratio_placard_speed = 1.1           # airplane-mode limit speed over the required maximum speed (assumed)
 tilts_deg = (0.0, 15.0, 30.0, 45.0, 60.0, 75.0, 90.0)
+tilts_map_deg = tuple(7.5 * k for k in range(13))   # finer nacelle-angle grid for the power map
 # Plot labels for the limit names in `CorridorLimits` margins; others print with underscores as spaces.
 labels_limit = {"disc_tilt": "rotor pitch limit", "pitch_max": "attitude max", "pitch_min": "attitude min"}
 
@@ -49,9 +52,10 @@ def halo_corridor_case(sizing, requirements=HaloRequirements(), assumptions=Halo
     return model, geometry, limits, speed_rotor_rad_s
 
 
-def run(sizing=None, directory="output/corridor", plot=True):
-    sizing = sizing if sizing is not None else solve_halo_sizing()
-    model, geometry, limits, speed_rotor_rad_s = halo_corridor_case(sizing)
+def run(sizing=None, directory="output/corridor", plot=True, requirements=HaloRequirements(),
+        assumptions=HaloAssumptions(), power_map=True):
+    sizing = sizing if sizing is not None else solve_halo_sizing(requirements, assumptions)
+    model, geometry, limits, speed_rotor_rad_s = halo_corridor_case(sizing, requirements, assumptions)
     stability = LongitudinalStability()
     common = dict(mass_kg=sizing.mass_takeoff_kg, altitude_m=0.0, speed_rotor_rad_s=speed_rotor_rad_s)
     corridor = solve_corridor(model, stability, geometry, limits, tilts_deg=tilts_deg,
@@ -87,7 +91,67 @@ def run(sizing=None, directory="output/corridor", plot=True):
         json.dump(record, file, indent=1)
     if plot:
         plot_corridor(corridor, sizing, model, os.path.join(directory, "corridor.png"))
+    if power_map:
+        fine = solve_corridor(model, stability, geometry, limits, tilts_deg=tilts_map_deg,
+                              velocity_max_m_s=1.05 * limits.velocity_placard_m_s, **common)
+        powers = solve_power_map(model, stability, geometry, limits, fine, **common)
+        if plot:
+            plot_power_map(powers, fine, sizing, model, os.path.join(directory, "corridor_power.png"))
     return corridor, schedule
+
+
+def plot_power_map(power_map, corridor, sizing, model, path, ax=None):
+    """Total rotor shaft power (both rotors) of the least-power trim across the corridor, as filled contours with
+    labelled lines, the corridor bounds and the limit that sets each bound. Returns the axes."""
+    import numpy as onp
+    import matplotlib
+    import matplotlib.pyplot as plt
+    count_rotors = model.count("propulsor")
+    velocity_kt = onp.array(power_map.velocities_m_s) / u.knot
+    tilt = onp.repeat(onp.array(power_map.tilts_deg)[:, None], velocity_kt.shape[1], axis=1)
+    power_kW = count_rotors * onp.array(power_map.values("power_shaft_rotor_W")) / 1e3
+    rating_kW = count_rotors * float(model.instance("propulsor").max_shaft_power_W) / 1e3
+    own = ax is None
+    if own:
+        matplotlib.use("Agg")
+        fig, ax = plt.subplots(figsize=(9, 6))
+    step_kW = 50.0
+    levels = onp.arange(onp.floor(onp.nanmin(power_kW) / step_kW) * step_kW,
+                        onp.nanmax(power_kW) + step_kW, step_kW)
+    filled = ax.contourf(velocity_kt, tilt, onp.ma.masked_invalid(power_kW), levels=levels, cmap="viridis")
+    lines = ax.contour(velocity_kt, tilt, onp.ma.masked_invalid(power_kW),
+                       levels=[level for level in levels if level % (2 * step_kW) == 0], colors="white",
+                       linewidths=0.7)
+    ax.clabel(lines, fmt="%.0f", fontsize=7)
+    ax.figure.colorbar(filled, ax=ax, label=f"Rotor shaft power, both rotors (kW); drive rating {rating_kW:.0f} kW")
+    pairs = [(lo, hi) for lo, hi in corridor if lo.trim is not None and hi.trim is not None]
+    for side in (0, 1):
+        ax.plot([p[side].velocity_m_s / u.knot for p in pairs], [p[side].tilt_deg for p in pairs], "-",
+                color="black", lw=1.5)
+    labels_map = {"disc_tilt": "disc tilt", "pitch_max": "attitude max", "pitch_min": "attitude min",
+                  "edgewise_advance_ratio": "edgewise mu", "rotor_power": "rotor power"}
+    for lo, hi in pairs[::2]:
+        for bound, align in ((lo, "right"), (hi, "left")):
+            names = [n for n in bound.binding if n not in ("hover",)]
+            if names:
+                ax.annotate(", ".join(labels_map.get(n, n.replace("_", " ")) for n in names),
+                            (bound.velocity_m_s / u.knot, bound.tilt_deg), xytext=(-3 if align == "right" else 3, 3),
+                            textcoords="offset points", ha=align, fontsize=7, color="#333333")
+    index = onp.unravel_index(onp.nanargmin(power_kW), power_kW.shape)
+    ax.plot(velocity_kt[index], tilt[index], "w*", ms=10)
+    ax.annotate(f"least power {power_kW[index]:.0f} kW", (velocity_kt[index], tilt[index]), xytext=(5, -10),
+                textcoords="offset points", color="white", fontsize=8)
+    ax.set_xlabel("True airspeed (kt)")
+    ax.set_ylabel("Nacelle angle (deg, 90 = hover)")
+    ax.set_title(f"Power required across the conversion corridor: level flight, {sizing.mass_takeoff_kg:.0f} kg, "
+                 f"sea level")
+    ax.set_xlim(0, onp.nanmax(velocity_kt) + 45)
+    ax.set_ylim(-3, 95)
+    if own:
+        fig.tight_layout()
+        fig.savefig(path, dpi=150)
+        plt.close(fig)
+    return ax
 
 
 def plot_corridor(corridor, sizing, model, path):

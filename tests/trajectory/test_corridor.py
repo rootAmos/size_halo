@@ -7,7 +7,8 @@ import aerosandbox.numpy as np
 
 from aircraft_closure.controls.stability import LongitudinalStability
 from aircraft_closure.performance.flight_point import acceleration_gravity_m_s2
-from aircraft_closure.trajectory.corridor import (ComputedCorridor, CorridorBound, CorridorLimits, TrimGeometry, moment_rotor_Nm, solve_corridor_bound,
+from aircraft_closure.trajectory.corridor import (ComputedCorridor, CorridorBound, CorridorLimits, TrimGeometry, moment_rotor_Nm, solve_corridor,
+                                                  solve_corridor_bound, solve_power_map,
                                                   solve_trim)
 from aircraft_closure.trajectory.tiltrotor import TiltrotorPointMass
 from examples.halo_sizing import (HaloAssumptions, HaloRequirements, build_halo_aerodynamics, build_halo_aircraft,
@@ -150,6 +151,23 @@ class CorridorTests(unittest.TestCase):
     def test_tail_sign(self):
         """Wing-borne at the low side the trim needs nose-up tail (negative deflection, trailing edge up)."""
         self.assertLess(self.bound(0.0, "low").trim.deflection_tail_deg, 0.0)
+
+    def test_power_map_inside_the_corridor(self):
+        """Least-power trims across the corridor: every grid point inside the bounds trims within the limits, and in
+        helicopter mode power falls from hover as speed builds (the power bucket)."""
+        corridor = solve_corridor(self.model, self.stability, self.geometry, self.limits, tilts_deg=(0.0, 45.0, 90.0),
+                                  velocity_max_m_s=125.0, **self.common)
+        power_map = solve_power_map(self.model, self.stability, self.geometry, self.limits, corridor, count_speeds=5,
+                                    **self.common)
+        self.assertEqual(power_map.tilts_deg, (0.0, 45.0, 90.0))
+        for (low, high), velocities, row in zip(corridor, power_map.velocities_m_s, power_map.trims):
+            self.assertTrue(all(t is not None for t in row))
+            self.assertTrue(low.velocity_m_s < velocities[0] and velocities[-1] < high.velocity_m_s)
+            for t in row:
+                self.assertGreater(min(t.margins.values()), -1e-6)
+        power = np.array(power_map.values("power_shaft_rotor_W"))
+        self.assertEqual(int(np.argmax(power[2])), 0)            # helicopter mode: hover needs the most power
+        self.assertLess(power.min(), power[2][0])
 
 
 if __name__ == "__main__":
