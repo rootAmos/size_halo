@@ -98,6 +98,30 @@ hub modes, so it is about 10 % conservative (fuselage-fixed beam mode).
   beam stiffness helps less (x1.5 -> 276), chord stiffness does nothing.
 - The frequency-placement margins of plan 024 are met by this wing, so the proxy does not catch the shortfall.
 
+### Torsion stiffness to clear 1.15 V_D (`examples/halo_whirl_flutter_torsion.py`)
+
+The AFDD wing is re-sized with a higher torsion frequency target (same design rotor speed, 56.3 rad/s, and same
+gross weight). The torque box thickens, so beam stiffness also rises a little. The flutter speed is the minimum over
+the airplane-mode rotor speeds.
+
+| Torsion frequency | GJ | EI beam | Flutter (calibrated) | Wing mass (x factor_wing) |
+|---|---|---|---|---|
+| x1.00 | x1.00 | x1.00 | 262 kt | +0 kg |
+| x1.40 | x1.96 | x1.04 | 284 kt | +110 kg |
+| x1.73 | x2.98 | x1.09 | 294 kt | +222 kg |
+| x2.05 | x4.19 | x1.27 | 302 kt | +361 kg |
+
+- The baseline box is at the 1 mm minimum gauge, so stiffness up to that gauge is free. Beyond it, cost is roughly
+  linear in GJ.
+- Returns diminish: the critical mode stays wing beam at the 23.8 rad/s reserve-loiter rotor speed. Clearing
+  302 kt on torsion alone costs about 360 kg of wing, 5 % of take-off mass, before the weight spiral. That is not a
+  credible fix by itself.
+- Cheaper levers come first:
+  - a rotor-speed schedule that keeps the low reserve-loiter rpm away from high speed (the 39 rad/s point is 265 kt);
+  - pylon geometry (nacelle CG and spindle relative to the elastic axis, both assumed here);
+  - delta-3 and pitch-lag;
+  - replacing the cantilever with whole-aircraft modes, worth about 10 % on the XV-15.
+
 ## Next
 
 1. Wing torsion for flutter: the GJ (or nacelle offset, delta-3) that clears 1.15 V_D, and its wing weight;
