@@ -77,6 +77,26 @@ an independent hand check; `SimpleAerodynamics` stays as the simplest model.
   (McCormick, *Aerodynamics, Aeronautics and Flight Mechanics*); tip
   propellers rotating inboard-up reduce induced drag (Snyder and Zumwalt,
   J. Aircraft 6(5), 1969).
+- Immersed-strip blown lift (added 2026-10-10; the method was in use without a
+  citation): R. Smelt, H. Davies, "Estimation of Increase in Lift Due to
+  Slipstream", ARC R&M 1788, 1937 (semi-empirical: slipstream velocity and
+  inclination from the propeller, lift increment on the immersed wing; the
+  method McCormick recommends). Modern momentum-theory form for conceptual
+  design (lift augmentation from the dynamic-pressure change on the blown
+  span): M. D. Patterson, N. K. Borer, B. J. German, "A Simple Method for
+  High-Lift Propeller Conceptual Design", AIAA SciTech 2016 (NTRS
+  20160007767); M. D. Patterson, "Conceptual Design of High-Lift Propeller
+  Systems for Small Electric Aircraft", PhD dissertation, Georgia Tech;
+  applied in Patterson, Derlaga, Borer, "High-Lift Propeller System
+  Configuration Selection for NASA's SCEPTOR Distributed Electric Propulsion
+  Flight Demonstrator", AIAA Aviation 2016 (NTRS 20160010105). The local
+  form here (q ratio on the immersed strip, swirl angle on the lift slope,
+  no circulation or finite-slipstream correction) is the simplest version;
+  Patterson adds semi-empirical corrections from CFD. Not validated against
+  data in this repo.
+- Swirl recovery: the energy-bounded form and efficiency 0.5 are this
+  model's, not from a source; Veldhuis (TU Delft PhD thesis, 2005) and
+  Snyder and Zumwalt support the sign and existence of the effect only.
 
 ## Assumptions
 

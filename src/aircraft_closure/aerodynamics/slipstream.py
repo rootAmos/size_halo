@@ -24,6 +24,10 @@ With the unblown wing's lift and profile-drag coefficients cl_w, cd_w and lift s
                                                                    swirl energy keeps it below the rotor's own swirl
                                                                    loss; with outboard-up rotation (s = -1) the wing
                                                                    adds swirl instead, the same magnitude as a loss.
+The lift and profile-drag increments are the immersed-strip method (Smelt and Davies, ARC R&M 1788, 1937, as
+recommended by McCormick; momentum-theory form for conceptual design: Patterson, Borer and German, AIAA SciTech
+2016, NTRS 20160007767), here without its circulation and finite-slipstream corrections. x / R, the immersed
+fraction and the recovery efficiency are assumptions; the model is not validated against data (plan 025).
 Every increment is zero at zero thrust. The induced drag of the extra lift is carried by the caller's
 induced-drag term on the total lift.
 """
