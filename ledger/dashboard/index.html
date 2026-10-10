@@ -78,7 +78,7 @@ svg .lab { fill: var(--ink); font-weight: 500; }
 .log .src { color: var(--muted); }
 a { color: var(--accent); }
 .empty { color: var(--muted); padding: 24px 0; }
-.gates { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.gates { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px; }
 .gate h3 { font: 600 15px/1.2 var(--display); margin: 0 0 2px; }
 .gate .when { font: 12px var(--mono); color: var(--muted); margin-bottom: 8px; }
 .gate ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
@@ -87,6 +87,7 @@ a { color: var(--accent); }
 .tag.priced { background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good); }
 .tag.model { background: var(--accent-soft); color: var(--accent); }
 .tag.owner { background: var(--rule-soft); color: var(--muted); }
+.tag.decided { background: var(--ink); color: var(--panel); }
 @media (prefers-reduced-motion: no-preference) { tbody tr.row { transition: background .12s; } }
 </style>
 
@@ -142,15 +143,10 @@ a { color: var(--accent); }
 
   <section class="panel" aria-labelledby="h-reg">
     <div style="display:grid;gap:4px">
-      <h2 id="h-reg">Trade register</h2>
-      <p class="lede" id="reg-lede">The governing trades from concept to first article, by category.</p>
+      <h2 id="h-reg">Decision ledger by programme phase</h2>
+      <p class="lede" id="reg-lede">Decisions taken and open, by the programme phase in which they lock.</p>
     </div>
     <div id="register"></div>
-  </section>
-
-  <section class="panel" aria-labelledby="h-dec">
-    <h2 id="h-dec">Decisions taken</h2>
-    <div class="tablewrap"><table style="min-width:560px"><thead><tr><th>Date</th><th>Decision</th><th>Choice</th><th>Owner</th></tr></thead><tbody id="decisions"></tbody></table></div>
   </section>
 
   <section class="panel" aria-labelledby="h-log">
@@ -318,21 +314,20 @@ function burn() {
   $("burn").innerHTML = s + `</svg>`;
 }
 
-const CATEGORIES = ["Design decision", "Material and technology", "Requirement", "Risk tolerance"];
 function register() {
-  const trades = V.trades || [];
+  const trades = (V.trades || []).filter(t => t.status === "open" || t.status === "decided");
   const open = trades.filter(t => t.status === "open"), decided = trades.filter(t => t.status === "decided");
   const priced = open.filter(t => t.options > 1).length, model = open.filter(t => t.options < 2 && t.model_hook).length;
-  $("reg-lede").textContent = `${open.length} governing trades: ${priced} priced by the sizing, ${model} the sizing can price next, ${open.length - priced - model} need an owner's option estimates. ${decided.length} decisions taken.`;
-  $("register").innerHTML = `<div class="gates">${CATEGORIES.map(c => {
-    const items = open.filter(t => t.category === c).sort((a, b) => (a.lock_date || "").localeCompare(b.lock_date || ""));
-    return `<div class="gate"><h3>${esc(c)}</h3><div class="when">${items.length} trades</div><ul>${items.map(t => {
-      const tag = t.options > 1 ? `<span class="tag priced">priced</span>` : t.model_hook ? `<span class="tag model">model can price</span>` : `<span class="tag owner">needs estimate</span>`;
-      return `<li>${tag}<span>${esc(t.label)}<div class="sub">${esc(t.owner)} · locks ${esc(t.lock_gate)}${t.precedent ? " · precedent on file" : ""}</div></span></li>`;
-    }).join("")}</ul></div>`;
+  $("reg-lede").textContent = `${decided.length} decisions taken and ${open.length} open, by the programme phase in which they lock. Of the open ones, ${priced} are priced by the sizing, ${model} the sizing can price next and ${open.length - priced - model} need an owner's option estimates.`;
+  const phases = Object.entries(V.gates || {}).sort((a, b) => a[1].localeCompare(b[1]));
+  const tagOf = t => t.status === "decided" ? `<span class="tag decided">decided</span>` : t.options > 1 ? `<span class="tag priced">priced</span>` : t.model_hook ? `<span class="tag model">model can price</span>` : `<span class="tag owner">needs estimate</span>`;
+  const order = t => t.status === "decided" ? 0 : t.options > 1 ? 1 : t.model_hook ? 2 : 3;
+  $("register").innerHTML = `<div class="gates">${phases.map(([phase, date], i) => {
+    const items = trades.filter(t => t.lock_gate === phase).sort((a, b) => order(a) - order(b) || a.category.localeCompare(b.category));
+    const nd = items.filter(t => t.status === "decided").length;
+    return `<div class="gate"><span class="eyebrow">Phase ${i + 1}</span><h3>${esc(phase)}</h3><div class="when">locks ${esc(date)} · ${items.length - nd} open${nd ? `, ${nd} decided` : ""}</div><ul>${items.map(t =>
+      `<li>${tagOf(t)}<span>${esc(t.label)}<div class="sub">${esc(t.category)} · ${esc(t.owner)}${t.status === "decided" ? ` · ${esc(t.decision)}${t.decided_date ? " (" + esc(t.decided_date) + ")" : ""}` : ""}${t.precedent ? " · precedent on file" : ""}</div></span></li>`).join("")}</ul></div>`;
   }).join("")}</div>`;
-  $("decisions").innerHTML = decided.slice().sort((a, b) => (b.decided_date || "").localeCompare(a.decided_date || "")).map(t =>
-    `<tr><td class="num">${esc(t.decided_date || "earlier")}</td><td>${esc(t.label)}<div class="sub">${esc(t.category)}</div></td><td>${esc(t.decision)}</td><td>${esc(t.owner)}</td></tr>`).join("");
 }
 
 function log() {

@@ -29,16 +29,15 @@ from aircraft_closure.ledger.ingest import ingest_sizing, set_sensitivity
 from aircraft_closure.ledger.model import Activity, Evidence, Ledger, Quantity
 from aircraft_closure.ledger.store import load, save, snapshot, view
 from examples.halo_oew_uncertainty import item_definitions, maturity_levels
-from examples.halo_trades import register
+from examples.halo_trades import phases, register
 
 directory = "ledger"
 path_ledger = os.path.join(directory, "halo.json")
 path_view = os.path.join(directory, "view.json")
 source_sizing = "Halo sizing (baseline)"
 
-# Placeholder programme calendar: gate -> lock date.
-gates = {"Concept freeze": "2026-12-15", "Preliminary design review": "2027-06-30",
-         "Critical design review": "2028-03-31", "First article": "2028-12-31"}
+# Placeholder programme calendar: phase -> the date its decisions lock (examples/halo_trades.py).
+gates = phases
 
 owners = {"Wing": "Structures", "Tails": "Structures", "Fuselage": "Structures", "Nacelles": "Structures",
           "Landing gear": "Structures", "Systems": "Flight controls and systems", "Fixed equipment": "Systems",
@@ -63,18 +62,18 @@ plans = {
 # (key, label, owner, mass kg, sigma kg, fidelity, gate, source, note)
 gaps = (
     ("gap.hv_installation", "HV installation: inverters, cables, protection, partial-discharge insulation",
-     "Electrical", 330.0, 100.0, 1, "Concept freeze", "electrical layer (off in the baseline)",
+     "Electrical", 330.0, 100.0, 1, "Conceptual design", "electrical layer (off in the baseline)",
      "Modelled but off by default; also adds about 3 % losses"),
     ("gap.tilt_fittings", "Tilt spindle, tip ribs and fittings", "Structures", 70.0, 50.0, 0,
-     "Preliminary design review", "placeholder prior", "Owner to replace with a layout estimate"),
+     "Preliminary design", "placeholder prior", "Owner to replace with a layout estimate"),
     ("gap.conversion_actuators", "Conversion actuators and backup structure", "Flight controls and systems", 45.0,
-     30.0, 0, "Preliminary design review", "placeholder prior", "Owner to replace"),
-    ("gap.coolant_loop", "Coolant loop: plumbing, pumps, fluid", "Thermal", 40.0, 30.0, 0, "Concept freeze",
+     30.0, 0, "Preliminary design", "placeholder prior", "Owner to replace"),
+    ("gap.coolant_loop", "Coolant loop: plumbing, pumps, fluid", "Thermal", 40.0, 30.0, 0, "Conceptual design",
      "placeholder prior", "Owner to replace"),
     ("gap.tilt_joint_crossings", "HV and coolant crossings at the tilt joint", "Electrical", 20.0, 15.0, 0,
-     "Preliminary design review", "placeholder prior", "Flex loops or slip rings; swivel joints"),
+     "Preliminary design", "placeholder prior", "Flex loops or slip rings; swivel joints"),
     ("gap.wing_strength", "Wing structure added for ultimate strength", "Structures", 40.0, 45.0, 0,
-     "Concept freeze", "placeholder prior",
+     "Conceptual design", "placeholder prior",
      "FE peak cap strain 10 % over the ultimate allowable on raw gauges; 0.83 of it if the 1.33 calibration "
      "material is load-carrying"),
 )
@@ -82,11 +81,11 @@ gaps = (
 # (key, label, owner, assumptions field, value, sigma, step, gate, note)
 inputs = (
     ("input.drag_excrescence", "Drag excrescence factor on AeroBuildup", "Aerodynamics", "factor_excrescence_buildup",
-     1.27, 0.10, 0.02, "Concept freeze", "Calibrated to NDARC XV-15 components, not flight"),
+     1.27, 0.10, 0.02, "Conceptual design", "Calibrated to NDARC XV-15 components, not flight"),
     ("input.cell_to_pack", "Cell-to-pack mass fraction", "Electrical", "fraction_mass_cells_battery", 0.70, 0.025,
-     0.01, "Concept freeze", "Cylindrical-cell packs about 0.65-0.75"),
+     0.01, "Conceptual design", "Cylindrical-cell packs about 0.65-0.75"),
     ("input.capacity_end_of_life", "Battery capacity at end of life", "Electrical", "factor_capacity_ageing_battery",
-     0.80, 0.05, 0.01, "Preliminary design review", "Assumed 80 % of rated"),
+     0.80, 0.05, 0.01, "Preliminary design", "Assumed 80 % of rated"),
 )
 
 # Margin label patterns -> (plain name, owner) for the binding limits. "{c}" is the flight condition.
@@ -126,7 +125,7 @@ def seed(result, today):
     for label, group, keys, maturity, sigma, basis in item_definitions:
         key = slug(label)
         sigma_fraction[key] = sigma
-        gate = "Preliminary design review" if group == "Airframe and systems" else "Concept freeze"
+        gate = "Preliminary design" if group == "Airframe and systems" else "Conceptual design"
         ledger.quantities[key] = Quantity(
             key, label, "mass", "kg", owners[label], gate, gates[gate], sizing_keys=tuple(keys),
             plan=[replace(a) for a in plans.get(label, [])], note=f"{maturity}; {basis}")
