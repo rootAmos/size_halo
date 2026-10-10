@@ -23,7 +23,7 @@ tolerance. The comparable programmes say where each category has hurt before.
 1. **The tilt mechanism is the trade to get right first.** Halo already follows the V-280's logic by keeping the
    heavy turbines in the fuselage. What tilts, and how its actuator fails, has caused accidents and certification
    work on every programme.
-2. **Electrical cross-strapping instead of a cross-shaft is a first.** It may well be lighter, but none of the
+2. **Electrical cross-strapping instead of a cross-shaft is a first.** It may well be lighter, but no
    tiltrotor that has flown has done it. The ledger records that as certification risk, not only mass.
 3. **Weight grows in development unless it is allocated.** The V-22's 1,520 kg overrun was recovered only by giving
    each team a weight allocation to hold or trade. That is the discipline this ledger encodes.
