@@ -99,7 +99,7 @@
   },
   {
    "key": "engine-out hover 3/3: battery end voltage_V",
-   "label": "engine-out hover 3/3: battery end voltage (2.5 V per cell cutoff)",
+   "label": "engine-out hover, 40-60 s: battery end voltage (2.5 V per cell cutoff)",
    "kind": "relax limit",
    "owner": "Electrical",
    "value_kg": 23.36548481826383,
@@ -243,7 +243,7 @@
   },
   {
    "key": "engine-out hover 3/3: turboshaft power_shaft_W",
-   "label": "engine-out hover 3/3: turboshaft power at the fixed 1,120 hp deck",
+   "label": "engine-out hover, 40-60 s: turboshaft power at the fixed 1,120 hp deck",
    "kind": "relax limit",
    "owner": "Propulsion",
    "value_kg": 6.011811516108952,
@@ -315,7 +315,7 @@
   },
   {
    "key": "engine-out hover 1/3: turboshaft power_shaft_W",
-   "label": "engine-out hover 1/3: turboshaft power at the fixed 1,120 hp deck",
+   "label": "engine-out hover, 0-20 s: turboshaft power at the fixed 1,120 hp deck",
    "kind": "relax limit",
    "owner": "Propulsion",
    "value_kg": 4.8396859130905,
@@ -405,7 +405,7 @@
   },
   {
    "key": "engine-out hover 2/3: turboshaft power_shaft_W",
-   "label": "engine-out hover 2/3: turboshaft power at the fixed 1,120 hp deck",
+   "label": "engine-out hover, 20-40 s: turboshaft power at the fixed 1,120 hp deck",
    "kind": "relax limit",
    "owner": "Propulsion",
    "value_kg": 3.4309285393665925,
@@ -585,7 +585,7 @@
   },
   {
    "key": "bus-out hover 1/3: motor torque_Nm",
-   "label": "bus-out hover 1/3: motor torque rating",
+   "label": "bus-out hover, 0-20 s: motor torque rating",
    "kind": "relax limit",
    "owner": "Electrical",
    "value_kg": 0.7554523126804611,
@@ -675,7 +675,7 @@
   },
   {
    "key": "engine-out hover 3/3: generator torque_Nm",
-   "label": "engine-out hover 3/3: generator torque rating",
+   "label": "engine-out hover, 40-60 s: generator torque rating",
    "kind": "relax limit",
    "owner": "Electrical",
    "value_kg": 0.1503010327282073,
@@ -693,7 +693,7 @@
   },
   {
    "key": "engine-out hover 1/3: generator torque_Nm",
-   "label": "engine-out hover 1/3: generator torque rating",
+   "label": "engine-out hover, 0-20 s: generator torque rating",
    "kind": "relax limit",
    "owner": "Electrical",
    "value_kg": 0.14934283661867528,
@@ -711,7 +711,7 @@
   },
   {
    "key": "engine-out hover 2/3: generator torque_Nm",
-   "label": "engine-out hover 2/3: generator torque rating",
+   "label": "engine-out hover, 20-40 s: generator torque rating",
    "kind": "relax limit",
    "owner": "Electrical",
    "value_kg": 0.14768127358911481,
@@ -2938,6 +2938,12 @@
    "source": "trade register (examples/halo_trades.py)",
    "kind": "register",
    "summary": "0 added, 0 retired below the line"
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register (examples/halo_trades.py)",
+   "kind": "register",
+   "summary": "0 added, 0 retired below the line"
   }
  ],
  "history": [
@@ -3958,6 +3964,74 @@
     {
      "key": "hot-day hover: heat_exchanger power_heat_W",
      "value_kg": 6.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register",
+   "sigma_takeoff_kg": 462.24,
+   "margin_99_kg": 1075.3,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 79.53
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.7
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.73
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 21.98
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 15.04
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 9.7
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 9.37
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 7.96
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 7.43
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    },
+    {
+     "key": "engine-out hover 3/3: turboshaft power_shaft_W",
+     "value_kg": 6.01
+    },
+    {
+     "key": "hover: gearbox power_input_W",
+     "value_kg": 5.66
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 5.13
     }
    ]
   },
