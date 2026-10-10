@@ -38,7 +38,9 @@
    "days_to_lock": 66,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "330 ± 1e+02 kg (handbook or parametric model); take-off spread ±254 kg"
+   "detail": "330 ± 1e+02 kg (handbook or parametric model); take-off spread ±254 kg",
+   "category": "Maturity",
+   "phase": "Conceptual design"
   },
   {
    "key": "mass.systems",
@@ -54,7 +56,9 @@
    "days_to_lock": 263,
    "schedule": "",
    "action": "Second calibration aircraft (V-22 or AW609 group weights)",
-   "detail": "407.3 ± 61 kg (handbook or parametric model); take-off spread ±155 kg"
+   "detail": "407.3 ± 61 kg (handbook or parametric model); take-off spread ±155 kg",
+   "category": "Maturity",
+   "phase": "Preliminary design"
   },
   {
    "key": "gap.tilt_fittings",
@@ -70,7 +74,9 @@
    "days_to_lock": 263,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "70 ± 50 kg (placeholder prior); take-off spread ±127 kg"
+   "detail": "70 ± 50 kg (placeholder prior); take-off spread ±127 kg",
+   "category": "Maturity",
+   "phase": "Preliminary design"
   },
   {
    "key": "rotor_radius_m",
@@ -82,11 +88,13 @@
    "value_high_kg": 66.02505506610784,
    "share": null,
    "exposure_kg": null,
-   "lock_date": null,
-   "days_to_lock": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 66,
    "schedule": "",
    "action": "argue the requirement or change the design that meets it",
-   "detail": "13.2 kg take-off per 1 % of the limit"
+   "detail": "13.2 kg take-off per 1 % of the limit",
+   "category": "Architecture",
+   "phase": "Conceptual design"
   },
   {
    "key": "mass.fuselage",
@@ -102,7 +110,9 @@
    "days_to_lock": 263,
    "schedule": "",
    "action": "Second calibration aircraft (V-22 or AW609 group weights)",
-   "detail": "560.2 ± 56 kg (handbook or parametric model); take-off spread ±142 kg"
+   "detail": "560.2 ± 56 kg (handbook or parametric model); take-off spread ±142 kg",
+   "category": "Maturity",
+   "phase": "Preliminary design"
   },
   {
    "key": "gap.wing_strength",
@@ -118,7 +128,9 @@
    "days_to_lock": 66,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "40 ± 45 kg (placeholder prior); take-off spread ±114 kg"
+   "detail": "40 ± 45 kg (placeholder prior); take-off spread ±114 kg",
+   "category": "Maturity",
+   "phase": "Conceptual design"
   },
   {
    "key": "engine-out hover 3/3: battery end voltage_V",
@@ -130,11 +142,13 @@
    "value_high_kg": 58.41371204565958,
    "share": null,
    "exposure_kg": null,
-   "lock_date": null,
-   "days_to_lock": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 66,
    "schedule": "",
    "action": "argue the requirement or change the design that meets it",
-   "detail": "11.7 kg take-off per 1 % of the limit"
+   "detail": "11.7 kg take-off per 1 % of the limit",
+   "category": "Technology and material",
+   "phase": "Conceptual design"
   },
   {
    "key": "mass.rotors",
@@ -150,7 +164,9 @@
    "days_to_lock": 66,
    "schedule": "plan lands after lock",
    "action": "Blade and hub layout weights",
-   "detail": "674.9 ± 51 kg (handbook or parametric model); take-off spread ±128 kg"
+   "detail": "674.9 ± 51 kg (handbook or parametric model); take-off spread ±128 kg",
+   "category": "Maturity",
+   "phase": "Conceptual design"
   },
   {
    "key": "mass.wing",
@@ -166,7 +182,9 @@
    "days_to_lock": 263,
    "schedule": "",
    "action": "FE: calibrated structure, root fittings and a buckling step",
-   "detail": "407.9 ± 41 kg (handbook or parametric model); take-off spread ±103 kg"
+   "detail": "407.9 ± 41 kg (handbook or parametric model); take-off spread ±103 kg",
+   "category": "Maturity",
+   "phase": "Preliminary design"
   },
   {
    "key": "mass.battery",
@@ -182,7 +200,9 @@
    "days_to_lock": 66,
    "schedule": "",
    "action": "Pack layout: cell-to-pack fraction from a module design",
-   "detail": "475.1 ± 36 kg (handbook or parametric model); take-off spread ±90 kg"
+   "detail": "475.1 ± 36 kg (handbook or parametric model); take-off spread ±90 kg",
+   "category": "Maturity",
+   "phase": "Conceptual design"
   },
   {
    "key": "gap.conversion_actuators",
@@ -198,7 +218,9 @@
    "days_to_lock": 263,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "45 ± 30 kg (placeholder prior); take-off spread ±76 kg"
+   "detail": "45 ± 30 kg (placeholder prior); take-off spread ±76 kg",
+   "category": "Maturity",
+   "phase": "Preliminary design"
   },
   {
    "key": "gap.coolant_loop",
@@ -214,7 +236,9 @@
    "days_to_lock": 66,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "40 ± 30 kg (placeholder prior); take-off spread ±76 kg"
+   "detail": "40 ± 30 kg (placeholder prior); take-off spread ±76 kg",
+   "category": "Maturity",
+   "phase": "Conceptual design"
   },
   {
    "key": "mass.rotor_gearboxes",
@@ -230,7 +254,9 @@
    "days_to_lock": 66,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "292.4 ± 29 kg (handbook or parametric model); take-off spread ±74 kg"
+   "detail": "292.4 ± 29 kg (handbook or parametric model); take-off spread ±74 kg",
+   "category": "Maturity",
+   "phase": "Conceptual design"
   },
   {
    "key": "mass.fixed_equipment",
@@ -246,7 +272,9 @@
    "days_to_lock": 263,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "266.3 ± 27 kg (handbook or parametric model); take-off spread ±68 kg"
+   "detail": "266.3 ± 27 kg (handbook or parametric model); take-off spread ±68 kg",
+   "category": "Maturity",
+   "phase": "Preliminary design"
   },
   {
    "key": "hot-day hover: heat_exchanger power_heat_W",
@@ -258,11 +286,13 @@
    "value_high_kg": 15.73650001173628,
    "share": null,
    "exposure_kg": null,
-   "lock_date": null,
-   "days_to_lock": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 66,
    "schedule": "",
    "action": "argue the requirement or change the design that meets it",
-   "detail": "3.1 kg take-off per 1 % of the limit"
+   "detail": "3.1 kg take-off per 1 % of the limit",
+   "category": "Requirement",
+   "phase": "Conceptual design"
   },
   {
    "key": "engine-out hover 3/3: turboshaft power_shaft_W",
@@ -274,11 +304,13 @@
    "value_high_kg": 15.02952879027238,
    "share": null,
    "exposure_kg": null,
-   "lock_date": null,
-   "days_to_lock": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 66,
    "schedule": "",
    "action": "argue the requirement or change the design that meets it",
-   "detail": "3.0 kg take-off per 1 % of the limit"
+   "detail": "3.0 kg take-off per 1 % of the limit",
+   "category": "Requirement",
+   "phase": "Conceptual design"
   },
   {
    "key": "hover: gearbox power_input_W",
@@ -290,11 +322,13 @@
    "value_high_kg": 14.149846197015941,
    "share": null,
    "exposure_kg": null,
-   "lock_date": null,
-   "days_to_lock": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 66,
    "schedule": "",
    "action": "argue the requirement or change the design that meets it",
-   "detail": "2.8 kg take-off per 1 % of the limit"
+   "detail": "2.8 kg take-off per 1 % of the limit",
+   "category": "Requirement",
+   "phase": "Conceptual design"
   },
   {
    "key": "mass.motors",
@@ -310,7 +344,9 @@
    "days_to_lock": 66,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "425.6 ± 21 kg (handbook or parametric model); take-off spread ±54 kg"
+   "detail": "425.6 ± 21 kg (handbook or parametric model); take-off spread ±54 kg",
+   "category": "Maturity",
+   "phase": "Conceptual design"
   },
   {
    "key": "engine-out hover 1/3: turboshaft power_shaft_W",
@@ -322,11 +358,13 @@
    "value_high_kg": 12.09921478272625,
    "share": null,
    "exposure_kg": null,
-   "lock_date": null,
-   "days_to_lock": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 66,
    "schedule": "",
    "action": "argue the requirement or change the design that meets it",
-   "detail": "2.4 kg take-off per 1 % of the limit"
+   "detail": "2.4 kg take-off per 1 % of the limit",
+   "category": "Requirement",
+   "phase": "Conceptual design"
   },
   {
    "key": "mass.nacelles",
@@ -342,7 +380,9 @@
    "days_to_lock": 263,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "194.8 ± 19 kg (handbook or parametric model); take-off spread ±49 kg"
+   "detail": "194.8 ± 19 kg (handbook or parametric model); take-off spread ±49 kg",
+   "category": "Maturity",
+   "phase": "Preliminary design"
   },
   {
    "key": "mass.landing_gear",
@@ -358,7 +398,9 @@
    "days_to_lock": 263,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "258.4 ± 19 kg (handbook or parametric model); take-off spread ±49 kg"
+   "detail": "258.4 ± 19 kg (handbook or parametric model); take-off spread ±49 kg",
+   "category": "Maturity",
+   "phase": "Preliminary design"
   },
   {
    "key": "mass.heat_exchanger",
@@ -374,7 +416,9 @@
    "days_to_lock": 66,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "126.9 ± 19 kg (handbook or parametric model); take-off spread ±48 kg"
+   "detail": "126.9 ± 19 kg (handbook or parametric model); take-off spread ±48 kg",
+   "category": "Maturity",
+   "phase": "Conceptual design"
   },
   {
    "key": "hot-day hover: turboshaft power_shaft_W",
@@ -386,11 +430,13 @@
    "value_high_kg": 10.825272079892706,
    "share": null,
    "exposure_kg": null,
-   "lock_date": null,
-   "days_to_lock": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 66,
    "schedule": "",
    "action": "argue the requirement or change the design that meets it",
-   "detail": "2.2 kg take-off per 1 % of the limit"
+   "detail": "2.2 kg take-off per 1 % of the limit",
+   "category": "Requirement",
+   "phase": "Conceptual design"
   },
   {
    "key": "engine-out hover 2/3: turboshaft power_shaft_W",
@@ -402,11 +448,13 @@
    "value_high_kg": 8.577321348416481,
    "share": null,
    "exposure_kg": null,
-   "lock_date": null,
-   "days_to_lock": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 66,
    "schedule": "",
    "action": "argue the requirement or change the design that meets it",
-   "detail": "1.7 kg take-off per 1 % of the limit"
+   "detail": "1.7 kg take-off per 1 % of the limit",
+   "category": "Requirement",
+   "phase": "Conceptual design"
   },
   {
    "key": "input.cell_to_pack",
@@ -422,7 +470,9 @@
    "days_to_lock": 66,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "0.7 ± 0.025 - (handbook or parametric model); take-off spread ±41 kg"
+   "detail": "0.7 ± 0.025 - (handbook or parametric model); take-off spread ±41 kg",
+   "category": "Maturity",
+   "phase": "Conceptual design"
   },
   {
    "key": "gap.tilt_joint_crossings",
@@ -438,7 +488,9 @@
    "days_to_lock": 263,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "20 ± 15 kg (placeholder prior); take-off spread ±38 kg"
+   "detail": "20 ± 15 kg (placeholder prior); take-off spread ±38 kg",
+   "category": "Maturity",
+   "phase": "Preliminary design"
   },
   {
    "key": "mass.generator_gearboxes",
@@ -454,7 +506,9 @@
    "days_to_lock": 66,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "144.2 ± 14 kg (handbook or parametric model); take-off spread ±37 kg"
+   "detail": "144.2 ± 14 kg (handbook or parametric model); take-off spread ±37 kg",
+   "category": "Maturity",
+   "phase": "Conceptual design"
   },
   {
    "key": "mass.generators",
@@ -470,7 +524,9 @@
    "days_to_lock": 66,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "281.7 ± 14 kg (handbook or parametric model); take-off spread ±36 kg"
+   "detail": "281.7 ± 14 kg (handbook or parametric model); take-off spread ±36 kg",
+   "category": "Maturity",
+   "phase": "Conceptual design"
   },
   {
    "key": "input.drag_excrescence",
@@ -486,7 +542,9 @@
    "days_to_lock": 66,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "1.27 ± 0.1 - (handbook or parametric model); take-off spread ±34 kg"
+   "detail": "1.27 ± 0.1 - (handbook or parametric model); take-off spread ±34 kg",
+   "category": "Maturity",
+   "phase": "Conceptual design"
   },
   {
    "key": "static_margin",
@@ -498,11 +556,13 @@
    "value_high_kg": 5.108006200528813,
    "share": null,
    "exposure_kg": null,
-   "lock_date": null,
-   "days_to_lock": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 66,
    "schedule": "",
    "action": "argue the requirement or change the design that meets it",
-   "detail": "1.0 kg take-off per 1 % of the limit"
+   "detail": "1.0 kg take-off per 1 % of the limit",
+   "category": "Margin policy",
+   "phase": "Conceptual design"
   },
   {
    "key": "mass.turboshafts",
@@ -518,7 +578,9 @@
    "days_to_lock": 66,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "421.7 ± 11 kg (handbook or parametric model); take-off spread ±27 kg"
+   "detail": "421.7 ± 11 kg (handbook or parametric model); take-off spread ±27 kg",
+   "category": "Maturity",
+   "phase": "Conceptual design"
   },
   {
    "key": "input.capacity_end_of_life",
@@ -534,7 +596,9 @@
    "days_to_lock": 263,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "0.8 ± 0.05 - (handbook or parametric model); take-off spread ±24 kg"
+   "detail": "0.8 ± 0.05 - (handbook or parametric model); take-off spread ±24 kg",
+   "category": "Maturity",
+   "phase": "Preliminary design"
   },
   {
    "key": "mass.tails",
@@ -550,7 +614,9 @@
    "days_to_lock": 263,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "82.87 ± 8.3 kg (handbook or parametric model); take-off spread ±21 kg"
+   "detail": "82.87 ± 8.3 kg (handbook or parametric model); take-off spread ±21 kg",
+   "category": "Maturity",
+   "phase": "Preliminary design"
   },
   {
    "key": "bus-out hover 1/3: motor torque_Nm",
@@ -562,11 +628,13 @@
    "value_high_kg": 1.8886307817011527,
    "share": null,
    "exposure_kg": null,
-   "lock_date": null,
-   "days_to_lock": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 66,
    "schedule": "",
    "action": "argue the requirement or change the design that meets it",
-   "detail": "0.4 kg take-off per 1 % of the limit"
+   "detail": "0.4 kg take-off per 1 % of the limit",
+   "category": "Technology and material",
+   "phase": "Conceptual design"
   },
   {
    "key": "cn_beta_per_rad",
@@ -578,11 +646,13 @@
    "value_high_kg": 1.8600928664691443,
    "share": null,
    "exposure_kg": null,
-   "lock_date": null,
-   "days_to_lock": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 66,
    "schedule": "",
    "action": "argue the requirement or change the design that meets it",
-   "detail": "0.4 kg take-off per 1 % of the limit"
+   "detail": "0.4 kg take-off per 1 % of the limit",
+   "category": "Margin policy",
+   "phase": "Conceptual design"
   },
   {
    "key": "mass.protection_and_bus_tie",
@@ -598,7 +668,9 @@
    "days_to_lock": 66,
    "schedule": "no plan",
    "action": "plan the work that narrows it",
-   "detail": "28.47 ± 5.7 kg (handbook or parametric model); take-off spread ±14 kg"
+   "detail": "28.47 ± 5.7 kg (handbook or parametric model); take-off spread ±14 kg",
+   "category": "Maturity",
+   "phase": "Conceptual design"
   },
   {
    "key": "engine-out hover 3/3: generator torque_Nm",
@@ -610,11 +682,13 @@
    "value_high_kg": 0.3757525818205183,
    "share": null,
    "exposure_kg": null,
-   "lock_date": null,
-   "days_to_lock": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 66,
    "schedule": "",
    "action": "argue the requirement or change the design that meets it",
-   "detail": "0.1 kg take-off per 1 % of the limit"
+   "detail": "0.1 kg take-off per 1 % of the limit",
+   "category": "Technology and material",
+   "phase": "Conceptual design"
   },
   {
    "key": "engine-out hover 1/3: generator torque_Nm",
@@ -626,11 +700,13 @@
    "value_high_kg": 0.37335709154668817,
    "share": null,
    "exposure_kg": null,
-   "lock_date": null,
-   "days_to_lock": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 66,
    "schedule": "",
    "action": "argue the requirement or change the design that meets it",
-   "detail": "0.1 kg take-off per 1 % of the limit"
+   "detail": "0.1 kg take-off per 1 % of the limit",
+   "category": "Technology and material",
+   "phase": "Conceptual design"
   },
   {
    "key": "engine-out hover 2/3: generator torque_Nm",
@@ -642,11 +718,13 @@
    "value_high_kg": 0.369203183972787,
    "share": null,
    "exposure_kg": null,
-   "lock_date": null,
-   "days_to_lock": null,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 66,
    "schedule": "",
    "action": "argue the requirement or change the design that meets it",
-   "detail": "0.1 kg take-off per 1 % of the limit"
+   "detail": "0.1 kg take-off per 1 % of the limit",
+   "category": "Technology and material",
+   "phase": "Conceptual design"
   },
   {
    "key": "trade.wing_material",
@@ -662,7 +740,9 @@
    "days_to_lock": 66,
    "schedule": "",
    "action": "best option: Aluminium (the XV-15's) (the data has decided it)",
-   "detail": "Material and technology: P(better than Graphite-epoxy (baseline)) = 0 %"
+   "detail": "Technology and material: P(better than Graphite-epoxy (baseline)) = 0 %",
+   "category": "Technology and material",
+   "phase": "Conceptual design"
   },
   {
    "key": "trade.hv_voltage",
@@ -678,7 +758,9 @@
    "days_to_lock": 66,
    "schedule": "",
    "action": "price it with the sizing: assumptions_for_bus_voltage at 540, 756, 800, 1,000 V, with and without DC-DC",
-   "detail": "Design decision without option data; moves gap.hv_installation, mass.battery, mass.motors"
+   "detail": "Architecture without option data; moves gap.hv_installation, mass.battery, mass.motors",
+   "category": "Architecture",
+   "phase": "Conceptual design"
   },
   {
    "key": "trade.tilt_load_path",
@@ -694,7 +776,9 @@
    "days_to_lock": 263,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Design decision without option data; moves gap.tilt_fittings, mass.wing, mass.nacelles, gap.wing_strength"
+   "detail": "Architecture without option data; moves gap.tilt_fittings, mass.wing, mass.nacelles, gap.wing_strength",
+   "category": "Architecture",
+   "phase": "Preliminary design"
   },
   {
    "key": "trade.failure_architecture",
@@ -710,7 +794,9 @@
    "days_to_lock": 66,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Design decision without option data; moves mass.motors, mass.generators, mass.battery"
+   "detail": "Architecture without option data; moves mass.motors, mass.generators, mass.battery",
+   "category": "Architecture",
+   "phase": "Conceptual design"
   },
   {
    "key": "trade.thermal_architecture",
@@ -726,7 +812,9 @@
    "days_to_lock": 66,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Design decision without option data; moves mass.heat_exchanger, gap.coolant_loop"
+   "detail": "Architecture without option data; moves mass.heat_exchanger, gap.coolant_loop",
+   "category": "Architecture",
+   "phase": "Conceptual design"
   },
   {
    "key": "trade.redundancy_level",
@@ -742,7 +830,9 @@
    "days_to_lock": 66,
    "schedule": "",
    "action": "price it with the sizing: redundancy on/off, count_strings_battery 1 to 3",
-   "detail": "Risk tolerance without option data; moves mass.motors, mass.protection_and_bus_tie, mass.battery"
+   "detail": "Margin policy without option data; moves mass.motors, mass.protection_and_bus_tie, mass.battery",
+   "category": "Margin policy",
+   "phase": "Conceptual design"
   },
   {
    "key": "trade.rotor_span",
@@ -758,7 +848,9 @@
    "days_to_lock": 66,
    "schedule": "",
    "action": "price it with the sizing: clearance_rotor_fuselage_m and the span cap",
-   "detail": "Design decision without option data; moves Rotor radius capped by the span (rotor diameter against span), mass.rotors, mass.wing"
+   "detail": "Architecture without option data; moves Rotor radius capped by the span (rotor diameter against span), mass.rotors, mass.wing",
+   "category": "Architecture",
+   "phase": "Conceptual design"
   },
   {
    "key": "trade.battery_reserve",
@@ -774,7 +866,9 @@
    "days_to_lock": 66,
    "schedule": "",
    "action": "price it with the sizing: free_soc_reserve with bounds_soc_reserve; factor_capacity_ageing_battery",
-   "detail": "Risk tolerance without option data; moves mass.battery, input.capacity_end_of_life"
+   "detail": "Margin policy without option data; moves mass.battery, input.capacity_end_of_life",
+   "category": "Margin policy",
+   "phase": "Conceptual design"
   },
   {
    "key": "trade.cell_selection",
@@ -790,7 +884,9 @@
    "days_to_lock": 66,
    "schedule": "",
    "action": "price it with the sizing: machine database units (count_units_motor, count_units_generator)",
-   "detail": "Material and technology without option data; moves mass.battery, mass.motors, mass.generators, input.cell_to_pack, input.capacity_end_of_life"
+   "detail": "Technology and material without option data; moves mass.battery, mass.motors, mass.generators, input.cell_to_pack, input.capacity_end_of_life",
+   "category": "Technology and material",
+   "phase": "Conceptual design"
   },
   {
    "key": "trade.payload_range",
@@ -806,7 +902,9 @@
    "days_to_lock": 66,
    "schedule": "",
    "action": "price it with the sizing: HaloRequirements mass_payload_kg, range_m, velocity_max_m_s, altitude_cruise_m",
-   "detail": "Requirement without option data; moves mass.battery"
+   "detail": "Requirement without option data; moves mass.battery",
+   "category": "Requirement",
+   "phase": "Conceptual design"
   },
   {
    "key": "trade.conversion_actuator",
@@ -822,7 +920,9 @@
    "days_to_lock": 263,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Design decision without option data; moves gap.conversion_actuators"
+   "detail": "Architecture without option data; moves gap.conversion_actuators",
+   "category": "Architecture",
+   "phase": "Preliminary design"
   },
   {
    "key": "trade.tilt_joint_crossings",
@@ -838,7 +938,9 @@
    "days_to_lock": 263,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Design decision without option data; moves gap.tilt_joint_crossings, gap.coolant_loop, mass.motors"
+   "detail": "Architecture without option data; moves gap.tilt_joint_crossings, gap.coolant_loop, mass.motors",
+   "category": "Architecture",
+   "phase": "Preliminary design"
   },
   {
    "key": "trade.rotor_hub",
@@ -854,7 +956,9 @@
    "days_to_lock": 263,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Design decision without option data; moves mass.rotors, gap.tilt_fittings"
+   "detail": "Architecture without option data; moves mass.rotors, gap.tilt_fittings",
+   "category": "Architecture",
+   "phase": "Preliminary design"
   },
   {
    "key": "trade.fitting_material",
@@ -870,7 +974,9 @@
    "days_to_lock": 538,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Material and technology without option data; moves gap.tilt_fittings"
+   "detail": "Technology and material without option data; moves gap.tilt_fittings",
+   "category": "Technology and material",
+   "phase": "Detailed design"
   },
   {
    "key": "trade.fuselage_material",
@@ -886,7 +992,9 @@
    "days_to_lock": 263,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Material and technology without option data; moves mass.fuselage"
+   "detail": "Technology and material without option data; moves mass.fuselage",
+   "category": "Technology and material",
+   "phase": "Preliminary design"
   },
   {
    "key": "trade.rotor_construction",
@@ -902,7 +1010,9 @@
    "days_to_lock": 263,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Material and technology without option data; moves mass.rotors"
+   "detail": "Technology and material without option data; moves mass.rotors",
+   "category": "Technology and material",
+   "phase": "Preliminary design"
   },
   {
    "key": "trade.hover_cases",
@@ -918,7 +1028,9 @@
    "days_to_lock": 66,
    "schedule": "",
    "action": "price it with the sizing: HaloRequirements altitude_hover_hot_m, temperature_hover_hot_K, duration_engine_out_hover_s",
-   "detail": "Requirement without option data; moves mass.heat_exchanger, mass.battery, mass.generators"
+   "detail": "Requirement without option data; moves mass.heat_exchanger, mass.battery, mass.generators",
+   "category": "Requirement",
+   "phase": "Conceptual design"
   },
   {
    "key": "trade.weight_margin",
@@ -934,7 +1046,9 @@
    "days_to_lock": 66,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Risk tolerance without option data"
+   "detail": "Margin policy without option data",
+   "category": "Margin policy",
+   "phase": "Conceptual design"
   },
   {
    "key": "trade.load_factors",
@@ -950,7 +1064,9 @@
    "days_to_lock": 66,
    "schedule": "",
    "action": "price it with the sizing: load_factor_ultimate, load_factor_jump",
-   "detail": "Risk tolerance without option data; moves mass.wing, gap.wing_strength"
+   "detail": "Margin policy without option data; moves mass.wing, gap.wing_strength",
+   "category": "Margin policy",
+   "phase": "Conceptual design"
   },
   {
    "key": "trade.whirl_margin",
@@ -966,7 +1082,9 @@
    "days_to_lock": 263,
    "schedule": "",
    "action": "price it with the sizing: frequency_torsion_wing_per_rev, frequency_beam_wing_per_rev",
-   "detail": "Risk tolerance without option data; moves mass.wing"
+   "detail": "Margin policy without option data; moves mass.wing",
+   "category": "Margin policy",
+   "phase": "Preliminary design"
   },
   {
    "key": "trade.assurance_level",
@@ -982,7 +1100,9 @@
    "days_to_lock": 66,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Risk tolerance without option data; moves mass.systems, mass.fixed_equipment"
+   "detail": "Verification without option data; moves mass.systems, mass.fixed_equipment",
+   "category": "Verification",
+   "phase": "Conceptual design"
   },
   {
    "key": "trade.structure_joining",
@@ -998,7 +1118,9 @@
    "days_to_lock": 538,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Material and technology without option data; moves mass.fuselage, mass.wing"
+   "detail": "Technology and material without option data; moves mass.fuselage, mass.wing",
+   "category": "Technology and material",
+   "phase": "Detailed design"
   },
   {
    "key": "trade.hv_installation_standard",
@@ -1014,7 +1136,9 @@
    "days_to_lock": 538,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Design decision without option data; moves gap.hv_installation"
+   "detail": "Architecture without option data; moves gap.hv_installation",
+   "category": "Architecture",
+   "phase": "Detailed design"
   },
   {
    "key": "trade.integration_rig",
@@ -1030,7 +1154,9 @@
    "days_to_lock": 1086,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Risk tolerance without option data; moves gap.hv_installation, gap.conversion_actuators"
+   "detail": "Verification without option data; moves gap.hv_installation, gap.conversion_actuators",
+   "category": "Verification",
+   "phase": "Test and validation"
   },
   {
    "key": "trade.envelope_expansion",
@@ -1046,7 +1172,9 @@
    "days_to_lock": 1086,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Risk tolerance without option data"
+   "detail": "Verification without option data",
+   "category": "Verification",
+   "phase": "Test and validation"
   },
   {
    "key": "trade.means_of_compliance",
@@ -1062,7 +1190,9 @@
    "days_to_lock": 1086,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Risk tolerance without option data; moves mass.wing"
+   "detail": "Verification without option data; moves mass.wing",
+   "category": "Verification",
+   "phase": "Test and validation"
   },
   {
    "key": "trade.maintenance_concept",
@@ -1078,7 +1208,9 @@
    "days_to_lock": 1724,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Design decision without option data; moves gap.tilt_fittings, mass.rotor_gearboxes, mass.battery"
+   "detail": "Architecture without option data; moves gap.tilt_fittings, mass.rotor_gearboxes, mass.battery",
+   "category": "Architecture",
+   "phase": "After entry into service"
   },
   {
    "key": "trade.battery_life",
@@ -1094,7 +1226,9 @@
    "days_to_lock": 1724,
    "schedule": "",
    "action": "price it with the sizing: factor_capacity_ageing_battery",
-   "detail": "Risk tolerance without option data; moves mass.battery, input.capacity_end_of_life"
+   "detail": "Margin policy without option data; moves mass.battery, input.capacity_end_of_life",
+   "category": "Margin policy",
+   "phase": "After entry into service"
   },
   {
    "key": "trade.growth_reserve",
@@ -1110,7 +1244,9 @@
    "days_to_lock": 1724,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
-   "detail": "Risk tolerance without option data"
+   "detail": "Margin policy without option data",
+   "category": "Margin policy",
+   "phase": "After entry into service"
   }
  ],
  "quantities": [
@@ -1842,6 +1978,24 @@
    "source": "trade register (examples/halo_trades.py)",
    "kind": "register",
    "summary": "0 added, 2 retired below the line"
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register (examples/halo_trades.py)",
+   "kind": "register",
+   "summary": "0 added, 0 retired below the line"
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register (examples/halo_trades.py)",
+   "kind": "register",
+   "summary": "0 added, 0 retired below the line"
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register (examples/halo_trades.py)",
+   "kind": "register",
+   "summary": "0 added, 0 retired below the line"
   }
  ],
  "history": [
@@ -2660,6 +2814,210 @@
      "value_kg": 6.29
     }
    ]
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register",
+   "sigma_takeoff_kg": 462.24,
+   "margin_99_kg": 1075.3,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 129.22
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 39.4
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 30.81
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 26.24
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 24.88
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 23.3
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 17.38
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 14.82
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 10.99
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 10.99
+    },
+    {
+     "key": "mass.rotor_gearboxes",
+     "value_kg": 10.44
+    },
+    {
+     "key": "mass.fixed_equipment",
+     "value_kg": 8.65
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register",
+   "sigma_takeoff_kg": 462.24,
+   "margin_99_kg": 1075.3,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 129.22
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 39.4
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 30.81
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 26.24
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 24.88
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 23.3
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 17.38
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 14.82
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 10.99
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 10.99
+    },
+    {
+     "key": "mass.rotor_gearboxes",
+     "value_kg": 10.44
+    },
+    {
+     "key": "mass.fixed_equipment",
+     "value_kg": 8.65
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register",
+   "sigma_takeoff_kg": 462.24,
+   "margin_99_kg": 1075.3,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 129.22
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 39.4
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 30.81
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 26.24
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 24.88
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 23.3
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 17.38
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 14.82
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 10.99
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 10.99
+    },
+    {
+     "key": "mass.rotor_gearboxes",
+     "value_kg": 10.44
+    },
+    {
+     "key": "mass.fixed_equipment",
+     "value_kg": 8.65
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    }
+   ]
   }
  ],
  "trades": [
@@ -2667,7 +3025,7 @@
    "key": "trade.hv_voltage",
    "label": "HV bus voltage and regulation (floating or DC-DC; 540 to 1,000 V)",
    "owner": "Electrical",
-   "category": "Design decision",
+   "category": "Architecture",
    "discipline": "Electrical",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -2694,7 +3052,7 @@
    "key": "trade.tilt_load_path",
    "label": "Tilt mechanism: spindle station, bearings and fitting concept",
    "owner": "Structures",
-   "category": "Design decision",
+   "category": "Architecture",
    "discipline": "Structures",
    "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
@@ -2722,7 +3080,7 @@
    "key": "trade.failure_architecture",
    "label": "Failure architecture: interconnect shaft or electrical cross-strapping",
    "owner": "Electrical",
-   "category": "Design decision",
+   "category": "Architecture",
    "discipline": "Electrical",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -2753,7 +3111,7 @@
    "key": "trade.thermal_architecture",
    "label": "Thermal architecture: ram-air exchanger, liquid loop or nacelle-local",
    "owner": "Thermal",
-   "category": "Design decision",
+   "category": "Architecture",
    "discipline": "Thermal",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -2774,7 +3132,7 @@
    "key": "trade.redundancy_level",
    "label": "Redundancy: lanes, buses and battery strings (2/2/2 today)",
    "owner": "Electrical",
-   "category": "Risk tolerance",
+   "category": "Margin policy",
    "discipline": "Electrical",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -2796,7 +3154,7 @@
    "key": "trade.rotor_span",
    "label": "Rotor diameter against wing span",
    "owner": "Configuration",
-   "category": "Design decision",
+   "category": "Architecture",
    "discipline": "Configuration",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -2860,7 +3218,7 @@
    "key": "trade.battery_reserve",
    "label": "Battery reserve and end-of-life sizing (30 % reserve, 80 % capacity)",
    "owner": "Chief engineer",
-   "category": "Risk tolerance",
+   "category": "Margin policy",
    "discipline": "Electrical",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -2881,7 +3239,7 @@
    "key": "trade.cell_selection",
    "label": "Electric powertrain technology: cells, pack and machines (50G, Evolito, Helix today)",
    "owner": "Electrical",
-   "category": "Material and technology",
+   "category": "Technology and material",
    "discipline": "Electrical",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -2994,7 +3352,7 @@
    "key": "trade.wing_material",
    "label": "Wing primary structure: material and cover concept",
    "owner": "Structures",
-   "category": "Material and technology",
+   "category": "Technology and material",
    "discipline": "Structures",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -3101,7 +3459,7 @@
    "key": "trade.conversion_actuator",
    "label": "Conversion actuation: electromechanical or hydraulic, redundancy and stiffness",
    "owner": "Flight controls and systems",
-   "category": "Design decision",
+   "category": "Architecture",
    "discipline": "Flight controls",
    "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
@@ -3130,7 +3488,7 @@
    "key": "trade.tilt_joint_crossings",
    "label": "Power across the tilt joint: inverters in nacelle or fuselage, AC or DC, flex loops or slip rings, coolant swivel or nacelle-local cooling",
    "owner": "Electrical",
-   "category": "Design decision",
+   "category": "Architecture",
    "discipline": "Electrical",
    "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
@@ -3178,7 +3536,7 @@
    "key": "trade.rotor_hub",
    "label": "Rotor hub: gimballed or hingeless",
    "owner": "Rotor and drive",
-   "category": "Design decision",
+   "category": "Architecture",
    "discipline": "Rotor and drive",
    "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
@@ -3382,7 +3740,7 @@
    "key": "trade.fitting_material",
    "label": "Tilt spindle and fittings: titanium, steel or composite",
    "owner": "Structures",
-   "category": "Material and technology",
+   "category": "Technology and material",
    "discipline": "Structures",
    "lock_gate": "Detailed design",
    "lock_date": "2028-03-31",
@@ -3545,7 +3903,7 @@
    "key": "decided.engines",
    "label": "Turboshafts: off-the-shelf or sized",
    "owner": "Chief engineer",
-   "category": "Design decision",
+   "category": "Architecture",
    "discipline": "Propulsion",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -3599,7 +3957,7 @@
    "key": "decided.cell_scaling",
    "label": "Battery: stretch the cell further or accept the pack",
    "owner": "Chief engineer",
-   "category": "Material and technology",
+   "category": "Technology and material",
    "discipline": "Electrical",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -3653,7 +4011,7 @@
    "key": "decided.turbines_fuselage",
    "label": "Turbogenerator location",
    "owner": "Configuration",
-   "category": "Design decision",
+   "category": "Architecture",
    "discipline": "Configuration",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -3671,7 +4029,7 @@
    "key": "decided.fuselage",
    "label": "Fuselage shape and length",
    "owner": "Configuration",
-   "category": "Design decision",
+   "category": "Architecture",
    "discipline": "Configuration",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -3689,7 +4047,7 @@
    "key": "decided.redundancy_default",
    "label": "Redundancy default",
    "owner": "Electrical",
-   "category": "Risk tolerance",
+   "category": "Margin policy",
    "discipline": "Electrical",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -3707,7 +4065,7 @@
    "key": "decided.real_machines",
    "label": "Machines: rubber scaling or catalogue units",
    "owner": "Electrical",
-   "category": "Material and technology",
+   "category": "Technology and material",
    "discipline": "Electrical",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -3725,7 +4083,7 @@
    "key": "decided.nacelles_tilt",
    "label": "Tilt concept",
    "owner": "Configuration",
-   "category": "Design decision",
+   "category": "Architecture",
    "discipline": "Configuration",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -3743,7 +4101,7 @@
    "key": "decided.geared_rotors",
    "label": "Drive: direct or geared",
    "owner": "Rotor and drive",
-   "category": "Design decision",
+   "category": "Architecture",
    "discipline": "Rotor and drive",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -3761,7 +4119,7 @@
    "key": "decided.ruddervator_limit",
    "label": "Ruddervator deflection limit",
    "owner": "Flight controls and systems",
-   "category": "Risk tolerance",
+   "category": "Margin policy",
    "discipline": "Flight controls",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -3779,7 +4137,7 @@
    "key": "trade.fuselage_material",
    "label": "Fuselage structure: material and construction",
    "owner": "Structures",
-   "category": "Material and technology",
+   "category": "Technology and material",
    "discipline": "",
    "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
@@ -3804,7 +4162,7 @@
    "key": "trade.rotor_construction",
    "label": "Rotor blades and hub: material and construction",
    "owner": "Rotor and drive",
-   "category": "Material and technology",
+   "category": "Technology and material",
    "discipline": "",
    "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
@@ -3846,7 +4204,7 @@
    "key": "trade.weight_margin",
    "label": "Weight margin policy: confidence level and management reserve",
    "owner": "Chief engineer",
-   "category": "Risk tolerance",
+   "category": "Margin policy",
    "discipline": "",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -3869,7 +4227,7 @@
    "key": "trade.load_factors",
    "label": "Design loads: ultimate and jump take-off load factors (4.5, 2.0)",
    "owner": "Structures",
-   "category": "Risk tolerance",
+   "category": "Margin policy",
    "discipline": "",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -3890,7 +4248,7 @@
    "key": "trade.whirl_margin",
    "label": "Whirl-flutter margin: frequency placement or flutter-speed margin",
    "owner": "Structures",
-   "category": "Risk tolerance",
+   "category": "Margin policy",
    "discipline": "",
    "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
@@ -3915,7 +4273,7 @@
    "key": "trade.assurance_level",
    "label": "Certification basis and design assurance levels",
    "owner": "Chief engineer",
-   "category": "Risk tolerance",
+   "category": "Verification",
    "discipline": "",
    "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
@@ -3941,7 +4299,7 @@
    "key": "trade.structure_joining",
    "label": "Primary structure manufacturing and joining: integrated composite, bonded or fastened, machined metal",
    "owner": "Structures",
-   "category": "Material and technology",
+   "category": "Technology and material",
    "discipline": "",
    "lock_gate": "Detailed design",
    "lock_date": "2028-03-31",
@@ -3962,7 +4320,7 @@
    "key": "trade.hv_installation_standard",
    "label": "HV installation standard: insulation, connectors, shielding and segregation",
    "owner": "Electrical",
-   "category": "Design decision",
+   "category": "Architecture",
    "discipline": "",
    "lock_gate": "Detailed design",
    "lock_date": "2028-03-31",
@@ -3982,7 +4340,7 @@
    "key": "trade.integration_rig",
    "label": "Integration rig before first flight: HV powertrain and conversion on an iron bird",
    "owner": "Chief engineer",
-   "category": "Risk tolerance",
+   "category": "Verification",
    "discipline": "",
    "lock_gate": "Test and validation",
    "lock_date": "2029-09-30",
@@ -4008,7 +4366,7 @@
    "key": "trade.envelope_expansion",
    "label": "Envelope expansion: build-up flight test or model-based clearance of the conversion corridor",
    "owner": "Flight test",
-   "category": "Risk tolerance",
+   "category": "Verification",
    "discipline": "",
    "lock_gate": "Test and validation",
    "lock_date": "2029-09-30",
@@ -4026,7 +4384,7 @@
    "key": "trade.means_of_compliance",
    "label": "Means of compliance: test or analysis credit for whirl flutter and failure cases",
    "owner": "Chief engineer",
-   "category": "Risk tolerance",
+   "category": "Verification",
    "discipline": "",
    "lock_gate": "Test and validation",
    "lock_date": "2029-09-30",
@@ -4051,7 +4409,7 @@
    "key": "trade.maintenance_concept",
    "label": "Maintenance concept: on-condition or scheduled for tilt mechanism, gearboxes and packs",
    "owner": "Chief engineer",
-   "category": "Design decision",
+   "category": "Architecture",
    "discipline": "",
    "lock_gate": "After entry into service",
    "lock_date": "2031-06-30",
@@ -4078,7 +4436,7 @@
    "key": "trade.battery_life",
    "label": "Battery replacement policy: pack life against end-of-life sizing",
    "owner": "Electrical",
-   "category": "Risk tolerance",
+   "category": "Margin policy",
    "discipline": "",
    "lock_gate": "After entry into service",
    "lock_date": "2031-06-30",
@@ -4099,7 +4457,7 @@
    "key": "trade.growth_reserve",
    "label": "In-service growth reserve: weight and power held back for modifications",
    "owner": "Chief engineer",
-   "category": "Risk tolerance",
+   "category": "Margin policy",
    "discipline": "",
    "lock_gate": "After entry into service",
    "lock_date": "2031-06-30",

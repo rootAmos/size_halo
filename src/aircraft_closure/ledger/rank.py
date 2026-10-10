@@ -44,6 +44,8 @@ class Priority:
     schedule: str                     # "", "no plan", "plan lands after lock", "past lock"
     action: str                       # the next planned activity or what is missing
     detail: str
+    category: str = ""                # decision type
+    phase: str = ""                   # programme phase in which it locks
 
 
 def _days(iso, today):
@@ -98,7 +100,8 @@ def priorities(ledger, today=None):
         if q.sensitivity is None:
             out.append(Priority(q.key, q.label, "blind spot", q.owner, None, None, None, None, None, q.lock_date,
                                 _days(q.lock_date, today), schedule, "compute its sensitivity",
-                                f"{mean:.4g} ± {sigma:.2g} {q.unit}; no take-off sensitivity yet"))
+                                f"{mean:.4g} ± {sigma:.2g} {q.unit}; no take-off sensitivity yet",
+                                q.category, q.lock_gate))
             continue
         spread = abs(q.sensitivity) * sigma
         after = abs(q.sensitivity) * (activity.sigma_after if activity else 0.5 * sigma)
@@ -109,7 +112,8 @@ def priorities(ledger, today=None):
             planned, planned, full, spread ** 2 / sigma_total ** 2 if sigma_total > 0 else 0.0,
             unbooked + 2 * spread, q.lock_date, _days(q.lock_date, today),
             schedule, activity.label if activity else "plan the work that narrows it",
-            f"{mean:.4g} ± {sigma:.2g} {q.unit} ({fidelity_tiers[q.fidelity()]}); take-off spread ±{spread:.0f} kg"))
+            f"{mean:.4g} ± {sigma:.2g} {q.unit} ({fidelity_tiers[q.fidelity()]}); take-off spread ±{spread:.0f} kg",
+            q.category, q.lock_gate))
     for limit in ledger.limits.values():
         if not limit.binding:
             continue
@@ -118,7 +122,7 @@ def priorities(ledger, today=None):
             limit.key, limit.label, "relax limit", limit.owner, price * limit.relaxation_low,
             price * limit.relaxation_low, price * limit.relaxation_high, None, None, limit.lock_date,
             _days(limit.lock_date, today), "", "argue the requirement or change the design that meets it",
-            f"{price / 100:.1f} kg take-off per 1 % of the limit"))
+            f"{price / 100:.1f} kg take-off per 1 % of the limit", limit.category, limit.lock_gate))
     for trade in ledger.trades.values():
         if trade.status != "open":
             continue
@@ -145,7 +149,8 @@ def _trade_priority(ledger, trade, today):
                         f"price it with the sizing: {trade.model_hook}" if trade.model_hook
                         else "owner to estimate each option against a ledger quantity",
                         f"{trade.category or 'Trade'} without option data"
-                        + (f"; moves {', '.join(trade.affects)}" if trade.affects else ""))
+                        + (f"; moves {', '.join(trade.affects)}" if trade.affects else ""),
+                        trade.category, trade.lock_gate)
     (base_mean, base_sigma), best = impacts[0], min(range(1, len(impacts)), key=lambda i: impacts[i][0])
     gain = base_mean - impacts[best][0]
     sigma = math.hypot(base_sigma, impacts[best][1])
@@ -156,4 +161,4 @@ def _trade_priority(ledger, trade, today):
         gain + z_90 * sigma, None, z_90 * sigma, trade.lock_date, days, schedule,
         f"best option: {trade.options[best].label} ({ready})",
         f"{trade.category + ': ' if trade.category else ''}P(better than {trade.options[0].label}) = "
-        f"{100 * probability:.0f} %")
+        f"{100 * probability:.0f} %", trade.category, trade.lock_gate)
