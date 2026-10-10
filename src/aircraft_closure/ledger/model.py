@@ -125,6 +125,8 @@ class Trade:
     category: str = ""                # decision type: requirement, architecture, technology and material, margin
                                       # policy, increase maturity or verification
     precedent: str = ""               # what comparable programmes chose and what it cost them
+    block: str = ""                   # "Block 0" (gates the first flight article) or "Block 1" (final design)
+    block0_choice: str = ""           # the simpler choice flown first
     sources: list = field(default_factory=list)   # [label, url] pairs behind the precedent
 
 
@@ -139,3 +141,4 @@ class Ledger:
     trades: dict = field(default_factory=dict)
     runs: list = field(default_factory=list)      # every ingest: date, source, summary
     history: list = field(default_factory=list)   # ranking snapshots, for trends and burn-down
+    schedule: list = field(default_factory=list)  # plan tasks: lane, task, start, end (start == end: milestone)

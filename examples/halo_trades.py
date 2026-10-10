@@ -11,6 +11,7 @@ price its options, the model hook. Trades dropped from an earlier register are m
 for the record, never ranked). Decided entries record the decision and its date.
 """
 from aircraft_closure.ledger.model import Trade
+from examples.halo_schedule import block0_phases
 
 # Decision types: the second axis of the ledger, beside the programme phase.
 REQUIREMENT, ARCHITECTURE, TECHNOLOGY, MARGIN, MATURITY, VERIFICATION = (
@@ -27,8 +28,7 @@ decision_types = {
 # Programme phases, each with the date its decisions lock (placeholder programme calendar).
 CONCEPTUAL, PRELIMINARY, DETAILED, TEST, IN_SERVICE = (
     "Conceptual design", "Preliminary design", "Detailed design", "Test and validation", "After entry into service")
-phases = {CONCEPTUAL: "2026-12-15", PRELIMINARY: "2027-06-30", DETAILED: "2028-03-31", TEST: "2029-09-30",
-          IN_SERVICE: "2031-06-30"}
+phases = dict(block0_phases)          # the twelve-month plan to first flight (examples/halo_schedule.py)
 # Gate names used before the ledger was organised by phase.
 renamed_gates = {"Concept freeze": CONCEPTUAL, "Preliminary design review": PRELIMINARY,
                  "Critical design review": DETAILED, "First article": TEST}

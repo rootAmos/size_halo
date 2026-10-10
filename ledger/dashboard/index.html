@@ -98,6 +98,8 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
 .tag.model { background: var(--accent-soft); color: var(--accent); }
 .tag.owner { background: var(--rule-soft); color: var(--muted); }
 .tag.decided { background: var(--ink); color: var(--panel); }
+.tag.b0 { background: var(--accent-soft); color: var(--accent); }
+.tag.b1 { background: color-mix(in srgb, var(--t-margin) 16%, transparent); color: var(--t-margin); }
 @media (prefers-reduced-motion: no-preference) { tbody tr.row { transition: background .12s; } }
 </style>
 
@@ -114,17 +116,25 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
 
   <section class="panel" aria-labelledby="h-matrix">
     <div style="display:grid;gap:4px">
-      <h2 id="h-matrix">Where the weight is at stake</h2>
-      <p class="lede">Programme phase against decision type: the take-off weight each cell's decisions can save, shaded by size.</p>
+      <h2 id="h-matrix">Where the weight opportunity is</h2>
+      <p class="lede">Programme phase against decision type: the weight opportunity (take-off lb each cell's decisions can save), shaded by size.</p>
     </div>
     <div class="tablewrap" id="matrix"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-plan">
+    <div style="display:grid;gap:4px">
+      <h2 id="h-plan">Twelve months to first flight</h2>
+      <p class="lede" id="plan-lede">A simpler Block 0 article flies first; the final design (Block 1) runs in parallel and learns from the rig and the Block 0 build.</p>
+    </div>
+    <div class="tablewrap" id="gantt"></div>
   </section>
 
   <div class="grid2">
     <section class="panel" aria-labelledby="h-rank">
       <div style="display:grid;gap:4px">
         <h2 id="h-rank">What to work on next</h2>
-        <p class="lede">Grouped by the phase in which each decision locks and ranked within it by the take-off weight it can save. Increasing maturity saves the 99 % margin we no longer have to carry; the other types save weight directly. Bars show the range on a common scale.</p>
+        <p class="lede">Grouped by the phase in which each decision locks and ranked within it by its weight opportunity: the take-off weight it can save. Increasing maturity saves the 99 % margin we no longer have to carry; the other types save weight directly. Bars show the range on a common scale.</p>
       </div>
       <div class="controls">
         <div class="controls" id="kinds" role="group" aria-label="Filter by decision type"></div>
@@ -132,13 +142,13 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
         <select id="owner"><option value="">All owners</option></select>
         <label for="sort" class="sub">Sort</label>
         <select id="sort">
-          <option value="value">Weight at stake</option>
-          <option value="urgency">Weight per week to lock</option>
+          <option value="value">Weight opportunity</option>
+          <option value="urgency">Weight opportunity per week to lock</option>
         </select>
       </div>
       <div class="tablewrap">
         <table>
-          <thead><tr><th>#</th><th>Decision</th><th>Type</th><th>Saving, lb</th><th class="num">Expected</th><th>Lock</th><th>Owner</th></tr></thead>
+          <thead><tr><th>#</th><th>Decision</th><th>Type</th><th>Weight opportunity, lb</th><th class="num">Expected</th><th>Lock</th><th>Owner</th></tr></thead>
           <tbody id="rows"><tr><td colspan="7" class="empty">The ranking appears once the ledger loads.</td></tr></tbody>
         </table>
       </div>
@@ -147,7 +157,7 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
     <div style="display:grid;gap:20px;align-content:start;min-width:0">
       <section class="panel" aria-labelledby="h-map">
         <h2 id="h-map">Risk against schedule</h2>
-        <p class="lede">Weight at stake against days left before each item locks. Top left is where to look first.</p>
+        <p class="lede">Weight opportunity against days left before each decision locks. Top left is where to look first.</p>
         <div id="map"></div>
         <div class="legend" id="legend"></div>
       </section>
@@ -221,7 +231,7 @@ function filtered() {
 
 function schedulePill(r) {
   if (!r.schedule) return r.lock_date ? `<span class="num">${esc(r.lock_date)}</span><div class="sub num">${r.days_to_lock} days</div>` : `<span class="sub">no lock date</span>`;
-  const cls = r.schedule === "past lock" || r.schedule === "plan lands after lock" ? "crit" : "warn";
+  const cls = r.schedule === "past lock" || r.schedule === "overdue" ? "crit" : "warn";
   return `<span class="num">${esc(r.lock_date || "")}</span><div><span class="pill ${cls}">${esc(r.schedule)}</span></div>`;
 }
 
@@ -239,6 +249,7 @@ function detail(r) {
     `<div><h3>Next action</h3><div>${esc(r.action)}</div></div>`];
   const t = (V.trades || []).find(t => t.key === r.key);
   if (t) {
+    if (t.block) parts.push(`<div><h3>${esc(t.block)}</h3><div>${t.block === "Block 0" ? "Must lock for the first flight article." : "Locks on the Block 1 calendar."}${t.block0_choice ? ` Block 0 choice: ${esc(t.block0_choice)}.` : ""}</div></div>`);
     if (t.precedent) parts.push(`<div><h3>Precedent</h3><div>${esc(t.precedent)}</div>${(t.sources || []).map(([l, u]) => `<div class="sub"><a href="${esc(u)}" target="_blank" rel="noopener">${esc(l)}</a></div>`).join("")}</div>`);
     if (t.note) parts.push(`<div><h3>Note</h3><div>${esc(t.note)}</div></div>`);
   }
@@ -262,7 +273,7 @@ function table() {
     const group = rows.filter(r => r.phase === phase);
     if (!group.length) return;
     const stake = group.reduce((t, r) => t + (r.value_kg || 0), 0);
-    html += `<tr class="phase"><td colspan="7"><span class="eyebrow">Phase ${pi + 1}</span><b>${esc(phase)}</b><span class="sub">locks ${esc(date)} · ${group.length} decisions · ${fmt(stake)} lb at stake</span></td></tr>`;
+    html += `<tr class="phase"><td colspan="7"><span class="eyebrow">Phase ${pi + 1}</span><b>${esc(phase)}</b><span class="sub">locks ${esc(date)} · ${group.length} decisions · ${fmt(stake)} lb weight opportunity</span></td></tr>`;
     html += group.map(r => {
       const rank = V.priorities.indexOf(r) + 1;
       const head = `<tr class="row" tabindex="0" data-key="${esc(r.key)}" aria-expanded="${state.open === r.key}">
@@ -327,12 +338,12 @@ function riskMap() {
   const ymax = Math.max(1, ...pts.map(p => p.r.value_kg * LB)) * 1.1;
   const X = d => L + (d - xmin) / (xmax - xmin) * (W - L - R), Y = v => T + (1 - v / ymax) * (H - T - B);
   const yt = niceTicks(ymax), xt = niceTicks(xmax);
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weight at stake against days to lock" style="width:100%;height:auto;display:block">`;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weight opportunity against days to lock" style="width:100%;height:auto;display:block">`;
   s += yt.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--rule-soft)"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${v.toLocaleString("en-US")}</text>`).join("");
   s += xt.map(d => `<text x="${X(d)}" y="${H - B + 16}" text-anchor="middle">${d}</text>`).join("");
   if (xmin < 0) s += `<rect x="${X(xmin)}" y="${T}" width="${X(0) - X(xmin)}" height="${H - T - B}" fill="var(--crit)" fill-opacity=".08"/>`;
   s += `<line x1="${X(0)}" x2="${X(0)}" y1="${T}" y2="${H - B}" stroke="var(--rule)"/>`;
-  s += `<text x="${(L + W - R) / 2}" y="${H - B + 34}" text-anchor="middle">days to lock</text><text x="12" y="${T + 8}" transform="rotate(-90 12 ${T + 8})" text-anchor="end">lb at stake</text>`;
+  s += `<text x="${(L + W - R) / 2}" y="${H - B + 34}" text-anchor="middle">days to lock</text><text x="12" y="${T + 8}" transform="rotate(-90 12 ${T + 8})" text-anchor="end">weight opportunity, lb</text>`;
   pts.slice().reverse().forEach(p => {
     const cx = X(p.r.days_to_lock), cy = Y(p.r.value_kg * LB);
     s += `<circle cx="${cx}" cy="${cy}" r="${p.rank <= 8 ? 6 : 4}" fill="${kindColor(p.r.category)}" fill-opacity="${p.rank <= 8 ? .9 : .45}" stroke="var(--panel)" stroke-width="1"><title>${esc(p.r.label)}: ${fmt(p.r.value_kg)} lb, ${p.r.days_to_lock} days</title></circle>`;
@@ -371,8 +382,49 @@ function register() {
     const items = trades.filter(t => t.lock_gate === phase).sort((a, b) => order(a) - order(b) || a.category.localeCompare(b.category));
     const nd = items.filter(t => t.status === "decided").length;
     return `<div class="gate"><span class="eyebrow">Phase ${i + 1}</span><h3>${esc(phase)}</h3><div class="when">locks ${esc(date)} · ${items.length - nd} open${nd ? `, ${nd} decided` : ""}</div><ul>${items.map(t =>
-      `<li>${tagOf(t)}<span>${esc(t.label)}<div class="sub">${esc(t.category)} · ${esc(t.owner)}${t.status === "decided" ? ` · ${esc(t.decision)}${t.decided_date ? " (" + esc(t.decided_date) + ")" : ""}` : ""}${t.precedent ? " · precedent on file" : ""}</div></span></li>`).join("")}</ul></div>`;
+      `<li>${tagOf(t)}<span>${esc(t.label)}${t.block ? ` <span class="tag ${t.block === "Block 0" ? "b0" : "b1"}">${esc(t.block)}</span>` : ""}${t.status === "open" && t.block0_choice ? `<div class="sub">Block 0: ${esc(t.block0_choice)}</div>` : ""}<div class="sub">${esc(t.category)} · ${esc(t.owner)}${t.status === "decided" ? ` · ${esc(t.decision)}${t.decided_date ? " (" + esc(t.decided_date) + ")" : ""}` : ""}${t.precedent ? " · precedent on file" : ""}</div></span></li>`).join("")}</ul></div>`;
   }).join("")}</div>`;
+}
+
+function gantt() {
+  const tasks = V.schedule || [];
+  if (!tasks.length) { $("gantt").innerHTML = `<p class="sub">No schedule in the ledger yet.</p>`; return; }
+  const ff = (V.baseline || {}).first_flight;
+  const t = d => Date.parse(d) / 864e5;
+  const lanes = [...new Set(tasks.map(k => k.lane))];
+  const lo = Math.min(...tasks.map(k => t(k.start))), hi = Math.max(...tasks.map(k => t(k.end)));
+  const W = 980, L = 170, R = 20, T = 34, RH = 30, laneGap = 10;
+  const rows = []; lanes.forEach(l => tasks.filter(k => k.lane === l).forEach(k => rows.push(k)));
+  const laneStart = {}; let y = T;
+  lanes.forEach(l => { laneStart[l] = y; y += tasks.filter(k => k.lane === l && k.start !== k.end).length * RH + (tasks.some(k => k.lane === l && k.start === k.end) ? 0 : 0) + laneGap; });
+  const H = y + 24;
+  const X = d => L + (t(d) - lo) / (hi - lo) * (W - L - R);
+  const months = []; { const d0 = new Date(lo * 864e5); let d = new Date(Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth() + 1, 1)); while (t(d.toISOString().slice(0, 10)) <= hi) { months.push(d.toISOString().slice(0, 10)); d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)); } }
+  const mname = d => ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].at(Number(d.slice(5, 7)) - 1) + (d.slice(5, 7) === "01" ? " " + d.slice(2, 4) : "");
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Twelve-month plan to first flight" style="width:100%;min-width:760px;height:auto;display:block">`;
+  s += months.map(m => `<line x1="${X(m)}" x2="${X(m)}" y1="${T - 8}" y2="${H - 20}" stroke="var(--rule-soft)"/><text x="${X(m) + 3}" y="${T - 14}">${mname(m)}</text>`).join("");
+  const today = (V.as_of || "");
+  if (today && t(today) >= lo && t(today) <= hi) s += `<line x1="${X(today)}" x2="${X(today)}" y1="${T - 8}" y2="${H - 20}" stroke="var(--muted)" stroke-dasharray="2 3"/><text x="${X(today) + 3}" y="${H - 6}">today</text>`;
+  if (ff) s += `<line x1="${X(ff)}" x2="${X(ff)}" y1="${T - 8}" y2="${H - 20}" stroke="var(--crit)" stroke-width="1.5"/><text class="lab" x="${X(ff) + 4}" y="${H - 6}" style="fill:var(--crit)">first flight ${esc(ff)}</text>`;
+  lanes.forEach((l, li) => {
+    const y0 = laneStart[l];
+    const bars = tasks.filter(k => k.lane === l && k.start !== k.end), stones = tasks.filter(k => k.lane === l && k.start === k.end);
+    const color = l.startsWith("Block 1") ? "var(--t-margin)" : l === "Test" ? "var(--crit)" : "var(--accent)";
+    s += `<text class="lab" x="0" y="${y0 + 18}">${esc(l)}</text>`;
+    if (li) s += `<line x1="0" x2="${W - R}" y1="${y0 - laneGap / 2}" y2="${y0 - laneGap / 2}" stroke="var(--rule)"/>`;
+    bars.forEach((k, i) => {
+      const yy = y0 + i * RH + 6, x0 = X(k.start), x1 = Math.max(X(k.end), x0 + 3);
+      const label = esc(k.task), inside = (x1 - x0) > label.length * 6.2 + 10;
+      s += `<rect x="${x0}" y="${yy}" width="${x1 - x0}" height="18" rx="4" fill="${color}" fill-opacity=".22" stroke="${color}"><title>${label}: ${esc(k.start)} to ${esc(k.end)}</title></rect>`;
+      s += inside ? `<text class="lab" x="${x0 + 6}" y="${yy + 13}">${label}</text>` : `<text x="${x1 + 5}" y="${yy + 13}">${label}</text>`;
+    });
+    stones.forEach(k => {
+      const x = X(k.start), yy = y0 + Math.max(bars.length - 1, 0) * RH + 15;
+      const crit = k.start === ff;
+      s += `<path d="M${x} ${yy - 7}l7 7l-7 7l-7 -7z" fill="${crit ? "var(--crit)" : "var(--ink)"}"><title>${esc(k.task)}: ${esc(k.start)}</title></path>`;
+    });
+  });
+  $("gantt").innerHTML = s + `</svg><div class="legend" style="margin-top:8px">${tasks.filter(k => k.start === k.end).map(k => `<span><span class="num">${esc(k.start)}</span> ${esc(k.task)}</span>`).join("")}</div>`;
 }
 
 function log() {
@@ -381,6 +433,6 @@ function log() {
 }
 
 fetch("view.json", { cache: "no-store" }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(v => {
-  V = v; summary(); matrix(); controls(); table(); riskMap(); burn(); register(); log();
+  V = v; summary(); gantt(); matrix(); controls(); table(); riskMap(); burn(); register(); log();
 }).catch(() => { $("meta").textContent = "The ledger view (view.json) did not load. Re-run the ledger export and republish."; });
 </script>

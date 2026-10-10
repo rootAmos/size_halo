@@ -30,6 +30,7 @@ from aircraft_closure.ledger.model import Evidence, Ledger, Quantity
 from aircraft_closure.ledger.store import load, save, snapshot, view
 from examples.halo_oew_uncertainty import item_definitions, maturity_levels
 from examples.halo_maturity import apply_paths
+from examples.halo_schedule import apply_schedule
 from examples.halo_trades import phases, register
 
 directory = "ledger"
@@ -157,6 +158,7 @@ def seed(result, today):
         q.allowance = maturity_levels[maturity] * mean
     classify(ledger)
     apply_paths(ledger)
+    apply_schedule(ledger)
     ledger.history.clear()                     # the ingest's snapshot predates the allowances and plans
     snapshot(ledger, source_sizing, today)
     return ledger
@@ -207,6 +209,7 @@ def main(argv=None):
         added, retired = register(ledger, gates, today.isoformat())
         classify(ledger)
         apply_paths(ledger)
+        apply_schedule(ledger)
         ledger.runs.append(dict(date=today.isoformat(), source="trade register (examples/halo_trades.py)",
                                 kind="register", summary=f"{added} added, {retired} retired below the line"))
         snapshot(ledger, "trade register", today)

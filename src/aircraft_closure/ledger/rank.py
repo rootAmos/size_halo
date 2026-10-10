@@ -16,7 +16,8 @@ is the same kg divided by the growth factor):
   decided it.
 
 Anything without a sensitivity, or a trade without option data, is a **blind spot**: listed, never valued at zero.
-Schedule: a priority whose lock date passes before its planned work lands, or that has no plan, is flagged.
+Schedule: a priority past its lock date, whose next step is overdue, or that has no plan, is flagged. Steps after the
+lock date are expected (installed weight, weighing): maturity keeps rising after a commitment.
 """
 import math
 from dataclasses import dataclass
@@ -41,7 +42,7 @@ class Priority:
     exposure_kg: Optional[float]      # take-off kg at risk: unbooked mean (gaps) plus a 2-sigma overrun
     lock_date: Optional[str]
     days_to_lock: Optional[int]
-    schedule: str                     # "", "no plan", "plan lands after lock", "past lock"
+    schedule: str                     # "", "no plan", "overdue", "past lock"
     action: str                       # the next planned activity or what is missing
     detail: str
     category: str = ""                # decision type
@@ -57,8 +58,8 @@ def _schedule(lock_date, activity, today):
         return "past lock"
     if activity is None:
         return "no plan"
-    if lock_date and activity.due > lock_date:
-        return "plan lands after lock"
+    if date.fromisoformat(activity.due) < today:
+        return "overdue"
     return ""
 
 
