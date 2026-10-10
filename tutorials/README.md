@@ -73,6 +73,7 @@ The tutorials below explain how the model works underneath; dip into them when a
 | 23 | [Weights in depth](23_weights_in_depth.ipynb) | 10 s | the stiffness-sized tiltrotor wing and its validation, the growth factor as a multiplier, empty-weight growth allowance and uncertainty |
 | 24 | [The geometry model in OpenVSP](24_openvsp_geometry.ipynb) | 1 min | snapshot from a sizing result, the OpenVSP model tree, STEP/STL exports and renders, VSPAERO and parasite-drag cross-checks (needs OpenVSP) |
 | 25 | [Structures](25_structures.ipynb) | 2 min first time | OpenVSP internal structure, layout weight back-check, CalculiX frequencies and ultimate jump take-off strain (needs OpenVSP and CalculiX) |
+| 26 | [Whirl flutter: raising the flutter speed](26_whirl_flutter.ipynb) | 30 s (needs `output/structure/reference.json`) | the Halo flutter shortfall against 1.15 V_D, V-g plot, and every lever tried: wing stiffnesses, torsion priced by AFDD, nacelle CG, mast, delta-3, pitch-lag; scoreboard of knots against kilograms |
 
 Tutorial 19 solves the current reference with the fast Scholz aerodynamics (about a minute, within 0.3 % of the 15,179 lb reference)
 and caches it in `tutorials/.cache/`; tutorials 20-25 reuse it. The cache is keyed on a hash of `src/`, `examples/` and `data/`,

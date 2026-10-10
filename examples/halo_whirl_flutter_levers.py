@@ -16,7 +16,7 @@ import numpy as onp
 from aircraft_closure.aeroelasticity.whirl_flutter import cantilever_wing_nacelle_airframe
 from examples import halo_whirl_flutter as hw
 
-reference = json.loads(Path("output/structure/reference.json").read_text())
+reference = json.loads((Path(__file__).resolve().parents[1] / "output/structure/reference.json").read_text())
 wing = reference["wing_afdd"]
 mass_tip_kg, chord_m = reference["mass_tip_kg"], reference["chord_wing_m"]
 mass_wing_kg_m = reference["mass_wing_kg"] / reference["span_wing_m"]
@@ -33,14 +33,19 @@ def airframe(x_cg_m=0.5, x_hub_m=reference["length_mast_m"]):
         damping_structural=(0.03, 0.03, 0.03))
 
 
-def row(name, frame=None, **rotor_changes):
+def flutter_kt(frame=None, speeds=None, **rotor_changes):
+    """[(calibrated kt, mode)] at each rotor speed (default: the two critical ones) for one change."""
     frame = frame or airframe()
-    cells = []
-    for speed in speeds_rad_s:
+    results = []
+    for speed in speeds or speeds_rad_s:
         rotor = replace(hw.rotor_for(reference["radius_rotor_m"], reference["count_blades"], reference["solidity"],
                                      speed), **rotor_changes)
-        v_kt, label = hw.calibrated_kt(frame, rotor, speed)
-        cells.append(f"{v_kt:4.0f} kt ({label})")
+        results.append(hw.calibrated_kt(frame, rotor, speed))
+    return results
+
+
+def row(name, frame=None, **rotor_changes):
+    cells = [f"{v_kt:4.0f} kt ({label})" for v_kt, label in flutter_kt(frame, **rotor_changes)]
     print(f"{name:28s} " + "   ".join(cells), flush=True)
 
 
