@@ -227,8 +227,13 @@ def plot_trim_free_body(ax=None, path=None, alpha_deg=6.0, gamma_deg=6.0, tilt_d
                     zorder=7)
 
     def angle_arc(center, radius, start_deg, end_deg, color, label=None, label_at=None, size=14, lw=1.5):
+        """Arc from the reference direction `start_deg` to the measured one `end_deg`, arrowhead at the measured end."""
         ax.add_patch(Arc(center, 2 * radius, 2 * radius, theta1=min(start_deg, end_deg),
                          theta2=max(start_deg, end_deg), color=color, lw=lw, zorder=4))
+        sense = 1.0 if end_deg >= start_deg else -1.0
+        step_deg = min(abs(end_deg - start_deg), onp.degrees(0.25 / radius))
+        ax.add_patch(FancyArrowPatch(center + radius * unit(end_deg - sense * step_deg), center + radius * unit(end_deg),
+                                     arrowstyle="-|>", mutation_scale=11, color=color, lw=lw, zorder=5))
         if label:
             mid = 0.5 * (start_deg + end_deg)
             position = center + (label_at if label_at is not None else 1.22 * radius) * unit(mid)
