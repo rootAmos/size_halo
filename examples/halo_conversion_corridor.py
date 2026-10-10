@@ -291,11 +291,17 @@ def plot_trim_free_body(ax=None, path=None, alpha_deg=6.0, gamma_deg=6.0, tilt_d
     scale = 2.8
     v_axial = onp.cos(onp.radians(alpha_deg + tilt_deg))
     v_edge = onp.sin(onp.radians(alpha_deg + tilt_deg))
-    ax.text(*(origin + onp.array([-1.6, 3.4])), "velocity at the rotor", fontsize=12, color=purple)
+    ax.text(*(origin + onp.array([-2.4, 3.5])), "the same V, moved to the hub and split\nalong / across the shaft",
+            fontsize=11, color=purple, va="bottom")
+    # The flight velocity copied to the hub (dotted), with a leader to the enlarged inset.
+    ax.add_patch(FancyArrowPatch(hub, hub + 1.6 * unit(gamma_deg), arrowstyle="-|>", mutation_scale=14, color=purple,
+                                 lw=1.4, ls=(0, (2, 2)), zorder=6))
+    ax.annotate("", xy=origin + onp.array([-0.5, 0.0]), xytext=hub + 1.8 * unit(gamma_deg),
+                arrowprops=dict(arrowstyle="->", color=purple, lw=0.8, ls="--", connectionstyle="arc3,rad=-0.2"))
     line(origin - 0.6 * s, origin + 2.8 * s, grey, lw=1.0, ls="-.")
     ax.text(*(origin + 2.9 * s), "shaft", color=grey, fontsize=9)
     line(origin - 3.0 * n, origin + 0.8 * n, grey, lw=0.8, ls=":")
-    ax.text(*(origin + 0.9 * n + onp.array([-0.1, 0.1])), "disc plane", color=grey, fontsize=9, ha="right")
+    ax.text(*(origin + 0.9 * n + onp.array([-0.1, 0.1])), r"plane $\perp$ shaft", color=grey, fontsize=9, ha="right")
     arrow(origin, scale * unit(gamma_deg), ink, r"$V$", offset=(0.3, 0.0), lw=1.8)
     arrow(origin, scale * v_axial * s, purple, r"$V\cos(\alpha+\tau)$ axial", offset=(-1.2, 0.35), ha="left",
           size=11, lw=1.8)
