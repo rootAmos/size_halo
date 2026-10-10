@@ -23,6 +23,7 @@ class Generator:
     loss_model: Any = field(default_factory=McDonaldMotorLossModel)
     mass_model: Any = None          # e.g. TorqueDensityMassModel(); None: power / specific power
     thermal_model: Any = None       # Tier 19: LumpedThermalModel or None (see Motor)
+    power_peak_W: Any = None        # plan 040: peak-power corner (see Motor)
 
     def get_mass(self):
         if self.mass_model is not None:

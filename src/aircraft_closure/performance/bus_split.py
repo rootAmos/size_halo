@@ -240,6 +240,8 @@ def _machine_margins(name, machine, speed_rad_s, torque_Nm, voltage_V):
     margins = []
     if machine.thermal_model is None:
         margins.append(margin_below(f"{name} power_shaft_W", speed_rad_s * torque_Nm, machine.power_rated_W))
+    if getattr(machine, "power_peak_W", None) is not None:
+        margins.append(margin_below(f"{name} power_peak_W", speed_rad_s * torque_Nm, machine.power_peak_W))
     return margins + [
         margin_below(f"{name} torque_Nm", torque_Nm, machine.max_torque_Nm),
         margin_below(f"{name} speed_rad_s", speed_rad_s, machine.max_speed_rad_s),

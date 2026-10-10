@@ -489,6 +489,12 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
     if generator_model.thermal_model is None:
         opti.subject_to(generator_model.loss_model.speed_peak_efficiency_rad_s * torque_generator_Nm / scale_power_W
                         <= generator_model.power_rated_W / scale_power_W)
+    # Plan 040: the peak-power corner holds with or without a thermal model.
+    if getattr(motor, "power_peak_W", None) is not None:
+        opti.subject_to(forces.power_shaft_motor_W / scale_power_W <= motor.power_peak_W / scale_power_W)
+    if getattr(generator_model, "power_peak_W", None) is not None:
+        opti.subject_to(generator_model.loss_model.speed_peak_efficiency_rad_s * torque_generator_Nm / scale_power_W
+                        <= generator_model.power_peak_W / scale_power_W)
     opti.subject_to(list(thermal.constraints))
     if not limits.allow_battery_charging:
         opti.subject_to(supply.battery.power_electric_W / scale_power_W >= 0)

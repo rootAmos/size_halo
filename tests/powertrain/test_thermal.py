@@ -142,6 +142,19 @@ class MachineThermalParameterTests(unittest.TestCase):
         self.assertIn("motor torque_Nm", labels(thermal))
         self.assertIn("generator power_shaft_W", labels(thermal))
 
+    def test_peak_power_corner_holds_with_the_thermal_model(self):
+        """Plan 040: `power_peak_W` bounds omega x Q whether or not the machine has a thermal model."""
+        shaft = MechanicalPortValue(400.0, 200.0)                  # 80 kW
+        electrical = ElectricalPortValue(800.0, 100.0)
+        values = {"turboshaft.shaft": shaft, "generator.shaft": shaft, "generator.electrical": electrical,
+                  "battery.electrical": electrical, "motor.electrical": electrical, "motor.shaft": shaft,
+                  "gearbox.shaft_in": shaft, "gearbox.shaft_out": shaft, "propulsor.shaft": shaft}
+        for motor_thermal in (None, thermal):
+            topology = build_reference_topology(1, motor=Motor(thermal_model=motor_thermal, power_peak_W=100e3))
+            margins = {m.label: m.value for m in operating_margins(topology, values)}
+            self.assertAlmostEqual(margins["motor power_peak_W"], 0.2)
+        self.assertNotIn("motor power_peak_W", {m.label for m in operating_margins(build_reference_topology(1), values)})
+
 
 class HeatExchangerTests(unittest.TestCase):
     exchanger = RamAirHeatExchanger(power_rated_W=200000.0, specific_power_W_kg=1000.0, temperature_coolant_C=60.0,

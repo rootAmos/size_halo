@@ -455,8 +455,9 @@ class HaloAssumptions:
     # strings and lanes, the healthy bus its own, the lanes of a rotor may share torque unequally, and the bus tie is
     # "open" (each bus on its own sources) or "closed" (the tie feeds the failed bus); "both" sizes to both tie
     # states (two engine-out hovers). Per bus needs redundancy with two buses, the ECM pack and no electrical layer;
-    # otherwise the hover is lumped.
-    engine_out_bus_model: str = "both"
+    # otherwise the hover is lumped. Default "lumped" keeps the v3.7 reference; "both" adds about 1,200 lb with the
+    # peak-power corner below (re-baseline before switching it on).
+    engine_out_bus_model: str = "lumped"
     # ---- Plan 033 machine database and gearbox stages (refines Tier 13) ----
     # Machine mass: "units" (whole units of real machines, plan 035, the default), "torque_density"
     # (TorqueDensityMassModel above, the rubber reference until plan 035) or "database"
@@ -487,6 +488,12 @@ class HaloAssumptions:
     torque_peak_unit_motor_Nm: float = 1500.0
     power_continuous_unit_motor_W: float = 1400.0 * 1800 * u.rpm
     speed_max_unit_motor_rad_s: float = 2500 * u.rpm
+    # Plan 040: published peak power per unit (D1500: 285 kW at 1,800 rpm, a 30 s rating; SPX242: 380 kW). With the
+    # thermal model the continuous power is not a bound (temperature is), so this peak-power corner is what caps
+    # omega x Q between the torque and speed limits. None: no peak-power bound (the v3.7 reference); set 285e3 and
+    # 380e3 to apply the datasheet peaks.
+    power_peak_unit_motor_W: Any = None
+    power_peak_unit_generator_W: Any = None
     # Generator unit: Helix SPX242 demonstrator (31.2 kg, 470 N m peak, 315 kW continuous, 17,000 rpm max).
     mass_unit_generator_kg: float = 31.2
     torque_peak_unit_generator_Nm: float = 470.0
@@ -888,10 +895,12 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
         uprating = a.factor_uprating_power_units    # plan 048: uprated continuous power only
         motor = unit_machine(motor, a.count_units_motor, UnitMachineMassModel(
             a.mass_unit_motor_kg, a.torque_peak_unit_motor_Nm, uprating * a.power_continuous_unit_motor_W,
-            a.speed_max_unit_motor_rad_s, specific_power_inverter_W_kg=inverter, factor_uprating_power=uprating))
+            a.speed_max_unit_motor_rad_s, specific_power_inverter_W_kg=inverter, factor_uprating_power=uprating,
+            power_peak_unit_W=a.power_peak_unit_motor_W))
         generator = unit_machine(generator, a.count_units_generator, UnitMachineMassModel(
             a.mass_unit_generator_kg, a.torque_peak_unit_generator_Nm, uprating * a.power_continuous_unit_generator_W,
-            a.speed_max_unit_generator_rad_s, specific_power_inverter_W_kg=inverter, factor_uprating_power=uprating))
+            a.speed_max_unit_generator_rad_s, specific_power_inverter_W_kg=inverter, factor_uprating_power=uprating,
+            power_peak_unit_W=a.power_peak_unit_generator_W))
     # Tier 19: with thermal machines the drive is rated on its own (the motor's rating is continuous).
     # Tier 18: `motor` is one lane motor; the drive takes all of a rotor's lanes.
     lanes = count_lanes_motor(a)
@@ -1232,6 +1241,7 @@ def unit_machine(rubber, count_units, units):
     count = count_units if count_units is not None else units.count_units_relaxed(rubber)
     return replace(rubber, max_torque_Nm=count * units.torque_peak_unit_Nm,
                    power_rated_W=count * units.power_continuous_unit_W, max_speed_rad_s=units.speed_max_unit_rad_s,
+                   power_peak_W=None if units.power_peak_unit_W is None else count * units.power_peak_unit_W,
                    mass_model=replace(units, count_units=count))
 
 
