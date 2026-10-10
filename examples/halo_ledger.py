@@ -22,6 +22,7 @@ import argparse
 import json
 import os
 import pickle
+import re
 from dataclasses import replace
 from datetime import date
 
@@ -105,10 +106,20 @@ limit_patterns = (
 )
 
 
+def plain_condition(condition, duration_s=60.0):
+    """'engine-out hover 3/3' -> 'engine-out hover, 40-60 s': the sizing splits the 60 s engine-out hover into time
+    slices so the battery model follows charge and voltage through it; k/n is slice k of n."""
+    match = re.fullmatch(r"(.*) (\d+)/(\d+)", condition)
+    if not match:
+        return condition
+    base, k, n = match.group(1), int(match.group(2)), int(match.group(3))
+    return f"{base}, {duration_s * (k - 1) / n:.0f}-{duration_s * k / n:.0f} s"
+
+
 def limit_names(margins):
     names, limit_owners = {}, {}
     for label, _, _ in margins:
-        condition = label.split(":")[0] if ":" in label else ""
+        condition = plain_condition(label.split(":")[0]) if ":" in label else ""
         for pattern, name, owner, category, action in limit_patterns:
             if pattern in label:
                 names[label], limit_owners[label] = name.format(c=condition), owner
@@ -126,6 +137,9 @@ def classify(ledger):
         match = next((row for row in limit_patterns if row[0] in key), None)
         limit.category = match[3] if match else "Requirement"
         limit.action = match[4] if match else ""
+        if match:
+            condition = plain_condition(key.split(":")[0]) if ":" in key else ""
+            limit.label = match[1].format(c=condition)
         limit.lock_gate, limit.lock_date = phase, limit.lock_date or phases[phase]
 
 
