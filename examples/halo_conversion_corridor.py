@@ -287,29 +287,33 @@ def plot_trim_free_body(ax=None, path=None, alpha_deg=6.0, gamma_deg=6.0, tilt_d
 
     # Inset: the velocity at the rotor, split into the axial component (the rotor model's inflow) and the edgewise
     # component in the disc plane (the edgewise advance-ratio limit).
-    origin = onp.array([8.2, 4.6])
+    origin = onp.array([7.0, 3.6])
     scale = 2.8
     v_axial = onp.cos(onp.radians(alpha_deg + tilt_deg))
     v_edge = onp.sin(onp.radians(alpha_deg + tilt_deg))
-    ax.text(*(origin + onp.array([-2.4, 3.5])), "the same V, moved to the hub and split\nalong / across the shaft",
+    ax.text(*(origin + onp.array([-1.0, 4.0])), "the same V at the hub, drawn in the rotor's axes\n(shaft horizontal)",
             fontsize=11, color=purple, va="bottom")
     # The flight velocity copied to the hub (dotted), with a leader to the enlarged inset.
     ax.add_patch(FancyArrowPatch(hub, hub + 1.6 * unit(gamma_deg), arrowstyle="-|>", mutation_scale=14, color=purple,
                                  lw=1.4, ls=(0, (2, 2)), zorder=6))
     ax.annotate("", xy=origin + onp.array([-0.5, 0.0]), xytext=hub + 1.8 * unit(gamma_deg),
                 arrowprops=dict(arrowstyle="->", color=purple, lw=0.8, ls="--", connectionstyle="arc3,rad=-0.2"))
-    line(origin - 0.6 * s, origin + 2.8 * s, grey, lw=1.0, ls="-.")
-    ax.text(*(origin + 2.9 * s), "shaft", color=grey, fontsize=9)
-    line(origin - 3.0 * n, origin + 0.8 * n, grey, lw=0.8, ls=":")
-    ax.text(*(origin + 0.9 * n + onp.array([-0.1, 0.1])), r"plane $\perp$ shaft", color=grey, fontsize=9, ha="right")
-    arrow(origin, scale * unit(gamma_deg), ink, r"$V$", offset=(0.3, 0.0), lw=1.8)
-    arrow(origin, scale * v_axial * s, purple, r"$V\cos(\alpha+\tau)$ axial", offset=(-1.2, 0.35), ha="left",
+    # Drawn in the rotor's own axes: the shaft is the horizontal reference axis, the disc plane the vertical one, and
+    # V sits above the shaft axis at alpha + tau, measured from the axis (the edgewise sense is shown as positive).
+    axis_x, axis_y = onp.array([1.0, 0.0]), onp.array([0.0, 1.0])
+    line(origin - 0.4 * axis_x, origin + 3.6 * axis_x, grey, lw=1.2, ls="-")
+    ax.text(*(origin + 3.7 * axis_x), "shaft\n(axial)", color=grey, fontsize=9, va="center")
+    line(origin - 0.4 * axis_y, origin + 3.4 * axis_y, grey, lw=1.2, ls="-")
+    ax.text(*(origin + 3.5 * axis_y), "disc plane (edgewise)", color=grey, fontsize=9, ha="center")
+    v_end = origin + scale * (v_axial * axis_x + v_edge * axis_y)
+    arrow(origin, v_end - origin, ink, r"$V$", offset=(0.25, 0.2), lw=2.0, size=14)
+    arrow(origin, scale * v_axial * axis_x, purple, r"$V\cos(\alpha+\tau)$", offset=(0.0, -0.4), size=11, lw=1.8)
+    arrow(origin, scale * v_edge * axis_y, purple, r"$V\sin(\alpha+\tau)$", offset=(-0.15, 0.0), ha="right",
           size=11, lw=1.8)
-    arrow(origin, -scale * v_edge * n, purple, r"$V\sin(\alpha+\tau)$ edgewise", offset=(-1.0, -0.6), ha="left",
-          size=11, lw=1.8)
-    line(origin + scale * v_axial * s, origin + scale * unit(gamma_deg), purple, lw=0.8, ls=":")
-    line(origin - scale * v_edge * n, origin + scale * unit(gamma_deg), purple, lw=0.8, ls=":")
-    angle_arc(origin, 0.9, gamma_deg, shaft_deg, ink, r"$\alpha+\tau$", label_at=1.45, size=11, lw=1.0)
+    line(origin + scale * v_axial * axis_x, v_end, purple, lw=0.8, ls=":")
+    line(origin + scale * v_edge * axis_y, v_end, purple, lw=0.8, ls=":")
+    angle_v_deg = alpha_deg + tilt_deg
+    angle_arc(origin, 1.0, 0.0, angle_v_deg, ink, r"$\alpha+\tau$", label_at=1.45, size=11, lw=1.0)
 
     # Forces (wind axes for L, D; vertical W; thrust along the tip-path normal).
     arrow(hub, 4.8 * unit(thrust_deg), red, r"$nT(1-f_{dl})$", offset=(0.25, 0.3), ha="left", size=14)
