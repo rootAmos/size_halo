@@ -8,10 +8,11 @@
   "mass_payload_kg": 900.0
  },
  "gates": {
-  "Concept freeze": "2026-12-15",
-  "Preliminary design review": "2027-06-30",
-  "Critical design review": "2028-03-31",
-  "First article": "2028-12-31"
+  "Conceptual design": "2026-12-15",
+  "Preliminary design": "2027-06-30",
+  "Detailed design": "2028-03-31",
+  "Test and validation": "2029-09-30",
+  "After entry into service": "2031-06-30"
  },
  "portfolio": {
   "sigma_takeoff_kg": 462.23656582239454,
@@ -865,8 +866,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2027-06-30",
-   "days_to_lock": 263,
+   "lock_date": "2028-03-31",
+   "days_to_lock": 538,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Material and technology without option data; moves gap.tilt_fittings"
@@ -982,6 +983,134 @@
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Risk tolerance without option data; moves mass.systems, mass.fixed_equipment"
+  },
+  {
+   "key": "trade.structure_joining",
+   "label": "Primary structure manufacturing and joining: integrated composite, bonded or fastened, machined metal",
+   "kind": "blind spot",
+   "owner": "Structures",
+   "value_kg": null,
+   "value_low_kg": null,
+   "value_high_kg": null,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": "2028-03-31",
+   "days_to_lock": 538,
+   "schedule": "",
+   "action": "owner to estimate each option against a ledger quantity",
+   "detail": "Material and technology without option data; moves mass.fuselage, mass.wing"
+  },
+  {
+   "key": "trade.hv_installation_standard",
+   "label": "HV installation standard: insulation, connectors, shielding and segregation",
+   "kind": "blind spot",
+   "owner": "Electrical",
+   "value_kg": null,
+   "value_low_kg": null,
+   "value_high_kg": null,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": "2028-03-31",
+   "days_to_lock": 538,
+   "schedule": "",
+   "action": "owner to estimate each option against a ledger quantity",
+   "detail": "Design decision without option data; moves gap.hv_installation"
+  },
+  {
+   "key": "trade.integration_rig",
+   "label": "Integration rig before first flight: HV powertrain and conversion on an iron bird",
+   "kind": "blind spot",
+   "owner": "Chief engineer",
+   "value_kg": null,
+   "value_low_kg": null,
+   "value_high_kg": null,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": "2029-09-30",
+   "days_to_lock": 1086,
+   "schedule": "",
+   "action": "owner to estimate each option against a ledger quantity",
+   "detail": "Risk tolerance without option data; moves gap.hv_installation, gap.conversion_actuators"
+  },
+  {
+   "key": "trade.envelope_expansion",
+   "label": "Envelope expansion: build-up flight test or model-based clearance of the conversion corridor",
+   "kind": "blind spot",
+   "owner": "Flight test",
+   "value_kg": null,
+   "value_low_kg": null,
+   "value_high_kg": null,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": "2029-09-30",
+   "days_to_lock": 1086,
+   "schedule": "",
+   "action": "owner to estimate each option against a ledger quantity",
+   "detail": "Risk tolerance without option data"
+  },
+  {
+   "key": "trade.means_of_compliance",
+   "label": "Means of compliance: test or analysis credit for whirl flutter and failure cases",
+   "kind": "blind spot",
+   "owner": "Chief engineer",
+   "value_kg": null,
+   "value_low_kg": null,
+   "value_high_kg": null,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": "2029-09-30",
+   "days_to_lock": 1086,
+   "schedule": "",
+   "action": "owner to estimate each option against a ledger quantity",
+   "detail": "Risk tolerance without option data; moves mass.wing"
+  },
+  {
+   "key": "trade.maintenance_concept",
+   "label": "Maintenance concept: on-condition or scheduled for tilt mechanism, gearboxes and packs",
+   "kind": "blind spot",
+   "owner": "Chief engineer",
+   "value_kg": null,
+   "value_low_kg": null,
+   "value_high_kg": null,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": "2031-06-30",
+   "days_to_lock": 1724,
+   "schedule": "",
+   "action": "owner to estimate each option against a ledger quantity",
+   "detail": "Design decision without option data; moves gap.tilt_fittings, mass.rotor_gearboxes, mass.battery"
+  },
+  {
+   "key": "trade.battery_life",
+   "label": "Battery replacement policy: pack life against end-of-life sizing",
+   "kind": "blind spot",
+   "owner": "Electrical",
+   "value_kg": null,
+   "value_low_kg": null,
+   "value_high_kg": null,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": "2031-06-30",
+   "days_to_lock": 1724,
+   "schedule": "",
+   "action": "price it with the sizing: factor_capacity_ageing_battery",
+   "detail": "Risk tolerance without option data; moves mass.battery, input.capacity_end_of_life"
+  },
+  {
+   "key": "trade.growth_reserve",
+   "label": "In-service growth reserve: weight and power held back for modifications",
+   "kind": "blind spot",
+   "owner": "Chief engineer",
+   "value_kg": null,
+   "value_low_kg": null,
+   "value_high_kg": null,
+   "share": null,
+   "exposure_kg": null,
+   "lock_date": "2031-06-30",
+   "days_to_lock": 1724,
+   "schedule": "",
+   "action": "owner to estimate each option against a ledger quantity",
+   "detail": "Risk tolerance without option data"
   }
  ],
  "quantities": [
@@ -1701,6 +1830,18 @@
    "source": "trade register (examples/halo_trades.py)",
    "kind": "register",
    "summary": "0 added, 0 retired below the line"
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register (examples/halo_trades.py)",
+   "kind": "register",
+   "summary": "8 added, 0 retired below the line"
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register (examples/halo_trades.py)",
+   "kind": "register",
+   "summary": "0 added, 2 retired below the line"
   }
  ],
  "history": [
@@ -2383,6 +2524,142 @@
      "value_kg": 6.29
     }
    ]
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register",
+   "sigma_takeoff_kg": 462.24,
+   "margin_99_kg": 1075.3,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 129.22
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 39.4
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 30.81
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 26.24
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 24.88
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 23.3
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 17.38
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 14.82
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 10.99
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 10.99
+    },
+    {
+     "key": "mass.rotor_gearboxes",
+     "value_kg": 10.44
+    },
+    {
+     "key": "mass.fixed_equipment",
+     "value_kg": 8.65
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register",
+   "sigma_takeoff_kg": 462.24,
+   "margin_99_kg": 1075.3,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 129.22
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 39.4
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 30.81
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 26.24
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 24.88
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 23.3
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 17.38
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 14.82
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 10.99
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 10.99
+    },
+    {
+     "key": "mass.rotor_gearboxes",
+     "value_kg": 10.44
+    },
+    {
+     "key": "mass.fixed_equipment",
+     "value_kg": 8.65
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    }
+   ]
   }
  ],
  "trades": [
@@ -2392,7 +2669,7 @@
    "owner": "Electrical",
    "category": "Design decision",
    "discipline": "Electrical",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "open",
    "decision": "",
@@ -2419,7 +2696,7 @@
    "owner": "Structures",
    "category": "Design decision",
    "discipline": "Structures",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "open",
    "decision": "",
@@ -2447,7 +2724,7 @@
    "owner": "Electrical",
    "category": "Design decision",
    "discipline": "Electrical",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "open",
    "decision": "",
@@ -2478,7 +2755,7 @@
    "owner": "Thermal",
    "category": "Design decision",
    "discipline": "Thermal",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "open",
    "decision": "",
@@ -2499,7 +2776,7 @@
    "owner": "Electrical",
    "category": "Risk tolerance",
    "discipline": "Electrical",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "open",
    "decision": "",
@@ -2521,7 +2798,7 @@
    "owner": "Configuration",
    "category": "Design decision",
    "discipline": "Configuration",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "open",
    "decision": "",
@@ -2543,7 +2820,7 @@
    "owner": "Rotor and drive",
    "category": "",
    "discipline": "Rotor and drive",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "retired",
    "decision": "",
@@ -2563,7 +2840,7 @@
    "owner": "Rotor and drive",
    "category": "",
    "discipline": "Rotor and drive",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "retired",
    "decision": "",
@@ -2585,7 +2862,7 @@
    "owner": "Chief engineer",
    "category": "Risk tolerance",
    "discipline": "Electrical",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "open",
    "decision": "",
@@ -2606,7 +2883,7 @@
    "owner": "Electrical",
    "category": "Material and technology",
    "discipline": "Electrical",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "open",
    "decision": "",
@@ -2635,7 +2912,7 @@
    "owner": "Electrical",
    "category": "Material and technology",
    "discipline": "Electrical",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "retired",
    "decision": "",
@@ -2656,7 +2933,7 @@
    "owner": "Rotor and drive",
    "category": "",
    "discipline": "Rotor and drive",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "retired",
    "decision": "",
@@ -2677,7 +2954,7 @@
    "owner": "Flight controls and systems",
    "category": "Design decision",
    "discipline": "Configuration",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "retired",
    "decision": "",
@@ -2698,7 +2975,7 @@
    "owner": "Structures",
    "category": "",
    "discipline": "Structures",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "retired",
    "decision": "",
@@ -2719,7 +2996,7 @@
    "owner": "Structures",
    "category": "Material and technology",
    "discipline": "Structures",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "open",
    "decision": "",
@@ -2745,7 +3022,7 @@
    "owner": "Chief engineer",
    "category": "Requirement",
    "discipline": "Requirements",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "retired",
    "decision": "",
@@ -2765,7 +3042,7 @@
    "owner": "Chief engineer",
    "category": "Requirement",
    "discipline": "Requirements",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "open",
    "decision": "",
@@ -2785,7 +3062,7 @@
    "owner": "Chief engineer",
    "category": "",
    "discipline": "Requirements",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "retired",
    "decision": "",
@@ -2805,7 +3082,7 @@
    "owner": "Chief engineer",
    "category": "",
    "discipline": "Requirements",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "retired",
    "decision": "",
@@ -2826,7 +3103,7 @@
    "owner": "Flight controls and systems",
    "category": "Design decision",
    "discipline": "Flight controls",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "open",
    "decision": "",
@@ -2855,7 +3132,7 @@
    "owner": "Electrical",
    "category": "Design decision",
    "discipline": "Electrical",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "open",
    "decision": "",
@@ -2882,7 +3159,7 @@
    "owner": "Structures",
    "category": "",
    "discipline": "Structures",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "retired",
    "decision": "",
@@ -2903,7 +3180,7 @@
    "owner": "Rotor and drive",
    "category": "Design decision",
    "discipline": "Rotor and drive",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "open",
    "decision": "",
@@ -2924,7 +3201,7 @@
    "owner": "Structures",
    "category": "",
    "discipline": "Structures",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "retired",
    "decision": "",
@@ -2944,7 +3221,7 @@
    "owner": "Electrical",
    "category": "",
    "discipline": "Electrical",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "retired",
    "decision": "",
@@ -2965,7 +3242,7 @@
    "owner": "Electrical",
    "category": "",
    "discipline": "Electrical",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "retired",
    "decision": "",
@@ -2985,7 +3262,7 @@
    "owner": "Electrical",
    "category": "",
    "discipline": "Electrical",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "retired",
    "decision": "",
@@ -3006,7 +3283,7 @@
    "owner": "Electrical",
    "category": "",
    "discipline": "Electrical",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "retired",
    "decision": "",
@@ -3026,7 +3303,7 @@
    "owner": "Flight controls and systems",
    "category": "",
    "discipline": "Flight controls",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "retired",
    "decision": "",
@@ -3046,7 +3323,7 @@
    "owner": "Systems",
    "category": "",
    "discipline": "Systems",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "retired",
    "decision": "",
@@ -3066,7 +3343,7 @@
    "owner": "Systems",
    "category": "",
    "discipline": "Systems",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "retired",
    "decision": "",
@@ -3086,7 +3363,7 @@
    "owner": "Structures",
    "category": "",
    "discipline": "Structures",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "retired",
    "decision": "",
@@ -3107,8 +3384,8 @@
    "owner": "Structures",
    "category": "Material and technology",
    "discipline": "Structures",
-   "lock_gate": "Preliminary design review",
-   "lock_date": "2027-06-30",
+   "lock_gate": "Detailed design",
+   "lock_date": "2028-03-31",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -3127,7 +3404,7 @@
    "owner": "Structures",
    "category": "",
    "discipline": "Structures",
-   "lock_gate": "Critical design review",
+   "lock_gate": "Detailed design",
    "lock_date": "2028-03-31",
    "status": "retired",
    "decision": "",
@@ -3148,7 +3425,7 @@
    "owner": "Electrical",
    "category": "",
    "discipline": "Electrical",
-   "lock_gate": "Critical design review",
+   "lock_gate": "Detailed design",
    "lock_date": "2028-03-31",
    "status": "retired",
    "decision": "",
@@ -3169,7 +3446,7 @@
    "owner": "Thermal",
    "category": "",
    "discipline": "Thermal",
-   "lock_gate": "Critical design review",
+   "lock_gate": "Detailed design",
    "lock_date": "2028-03-31",
    "status": "retired",
    "decision": "",
@@ -3189,8 +3466,8 @@
    "owner": "Manufacturing",
    "category": "",
    "discipline": "Manufacturing",
-   "lock_gate": "First article",
-   "lock_date": "2028-12-31",
+   "lock_gate": "Test and validation",
+   "lock_date": "2029-09-30",
    "status": "retired",
    "decision": "",
    "decided_date": "",
@@ -3209,8 +3486,8 @@
    "owner": "Manufacturing",
    "category": "",
    "discipline": "Manufacturing",
-   "lock_gate": "First article",
-   "lock_date": "2028-12-31",
+   "lock_gate": "Test and validation",
+   "lock_date": "2029-09-30",
    "status": "retired",
    "decision": "",
    "decided_date": "",
@@ -3229,8 +3506,8 @@
    "owner": "Manufacturing",
    "category": "",
    "discipline": "Manufacturing",
-   "lock_gate": "First article",
-   "lock_date": "2028-12-31",
+   "lock_gate": "Test and validation",
+   "lock_date": "2029-09-30",
    "status": "retired",
    "decision": "",
    "decided_date": "",
@@ -3249,8 +3526,8 @@
    "owner": "Weights",
    "category": "",
    "discipline": "Manufacturing",
-   "lock_gate": "First article",
-   "lock_date": "2028-12-31",
+   "lock_gate": "Test and validation",
+   "lock_date": "2029-09-30",
    "status": "retired",
    "decision": "",
    "decided_date": "",
@@ -3270,8 +3547,8 @@
    "owner": "Chief engineer",
    "category": "Design decision",
    "discipline": "Propulsion",
-   "lock_gate": "",
-   "lock_date": null,
+   "lock_gate": "Conceptual design",
+   "lock_date": "2026-12-15",
    "status": "decided",
    "decision": "Fixed 2 x 1,120 hp off-the-shelf engines; never a design variable",
    "decided_date": "2026-10-03",
@@ -3288,8 +3565,8 @@
    "owner": "Chief engineer",
    "category": "Requirement",
    "discipline": "Requirements",
-   "lock_gate": "",
-   "lock_date": null,
+   "lock_gate": "Conceptual design",
+   "lock_date": "2026-12-15",
    "status": "decided",
    "decision": "210 kt; 250 kt is infeasible with the fixed engines",
    "decided_date": "2026-10-03",
@@ -3306,8 +3583,8 @@
    "owner": "Chief engineer",
    "category": "Requirement",
    "discipline": "Requirements",
-   "lock_gate": "",
-   "lock_date": null,
+   "lock_gate": "Conceptual design",
+   "lock_date": "2026-12-15",
    "status": "decided",
    "decision": "900 kg",
    "decided_date": "2026-10-03",
@@ -3324,8 +3601,8 @@
    "owner": "Chief engineer",
    "category": "Material and technology",
    "discipline": "Electrical",
-   "lock_gate": "",
-   "lock_date": null,
+   "lock_gate": "Conceptual design",
+   "lock_date": "2026-12-15",
    "status": "decided",
    "decision": "Equivalent-circuit 50G pack; no further cell power scaling",
    "decided_date": "2026-10-03",
@@ -3344,13 +3621,13 @@
    "discipline": "Structures",
    "lock_gate": "",
    "lock_date": null,
-   "status": "decided",
+   "status": "retired",
    "decision": "NDARC tiltrotor wing (AFDD)",
    "decided_date": "2026-10-03",
    "model_hook": "",
    "affects": [],
    "options": 0,
-   "note": "",
+   "note": "Analysis-method choice, not an aircraft decision (retired 2026-10-10)",
    "precedent": "",
    "sources": []
   },
@@ -3362,13 +3639,13 @@
    "discipline": "Aerodynamics",
    "lock_gate": "",
    "lock_date": null,
-   "status": "decided",
+   "status": "retired",
    "decision": "AeroBuildup by default",
    "decided_date": "2026-10-04",
    "model_hook": "",
    "affects": [],
    "options": 0,
-   "note": "",
+   "note": "Analysis-method choice, not an aircraft decision (retired 2026-10-10)",
    "precedent": "",
    "sources": []
   },
@@ -3378,8 +3655,8 @@
    "owner": "Configuration",
    "category": "Design decision",
    "discipline": "Configuration",
-   "lock_gate": "",
-   "lock_date": null,
+   "lock_gate": "Conceptual design",
+   "lock_date": "2026-12-15",
    "status": "decided",
    "decision": "In the fuselage, behind the rear spar",
    "decided_date": "2026-10-04",
@@ -3396,8 +3673,8 @@
    "owner": "Configuration",
    "category": "Design decision",
    "discipline": "Configuration",
-   "lock_gate": "",
-   "lock_date": null,
+   "lock_gate": "Conceptual design",
+   "lock_date": "2026-12-15",
    "status": "decided",
    "decision": "Boxy unpressurized section, 1.68 m wide, 2.0 m deep, 11 m long",
    "decided_date": "2026-10-04",
@@ -3414,8 +3691,8 @@
    "owner": "Electrical",
    "category": "Risk tolerance",
    "discipline": "Electrical",
-   "lock_gate": "",
-   "lock_date": null,
+   "lock_gate": "Conceptual design",
+   "lock_date": "2026-12-15",
    "status": "decided",
    "decision": "2 lanes, 2 buses, 2 strings, switchable",
    "decided_date": "2026-10-04",
@@ -3432,8 +3709,8 @@
    "owner": "Electrical",
    "category": "Material and technology",
    "discipline": "Electrical",
-   "lock_gate": "",
-   "lock_date": null,
+   "lock_gate": "Conceptual design",
+   "lock_date": "2026-12-15",
    "status": "decided",
    "decision": "Best-in-class catalogue units, whole unit counts",
    "decided_date": "2026-10-04",
@@ -3450,8 +3727,8 @@
    "owner": "Configuration",
    "category": "Design decision",
    "discipline": "Configuration",
-   "lock_gate": "",
-   "lock_date": null,
+   "lock_gate": "Conceptual design",
+   "lock_date": "2026-12-15",
    "status": "decided",
    "decision": "Whole tip nacelles tilt",
    "decided_date": "2026-10-04",
@@ -3468,8 +3745,8 @@
    "owner": "Rotor and drive",
    "category": "Design decision",
    "discipline": "Rotor and drive",
-   "lock_gate": "",
-   "lock_date": null,
+   "lock_gate": "Conceptual design",
+   "lock_date": "2026-12-15",
    "status": "decided",
    "decision": "Geared rotors and a step-up gearbox to each generator",
    "decided_date": "",
@@ -3486,8 +3763,8 @@
    "owner": "Flight controls and systems",
    "category": "Risk tolerance",
    "discipline": "Flight controls",
-   "lock_gate": "",
-   "lock_date": null,
+   "lock_gate": "Conceptual design",
+   "lock_date": "2026-12-15",
    "status": "decided",
    "decision": "±25 deg",
    "decided_date": "2026-10-05",
@@ -3504,7 +3781,7 @@
    "owner": "Structures",
    "category": "Material and technology",
    "discipline": "",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "open",
    "decision": "",
@@ -3529,7 +3806,7 @@
    "owner": "Rotor and drive",
    "category": "Material and technology",
    "discipline": "",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "open",
    "decision": "",
@@ -3549,7 +3826,7 @@
    "owner": "Chief engineer",
    "category": "Requirement",
    "discipline": "",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "open",
    "decision": "",
@@ -3571,7 +3848,7 @@
    "owner": "Chief engineer",
    "category": "Risk tolerance",
    "discipline": "",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "open",
    "decision": "",
@@ -3594,7 +3871,7 @@
    "owner": "Structures",
    "category": "Risk tolerance",
    "discipline": "",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "open",
    "decision": "",
@@ -3615,7 +3892,7 @@
    "owner": "Structures",
    "category": "Risk tolerance",
    "discipline": "",
-   "lock_gate": "Preliminary design review",
+   "lock_gate": "Preliminary design",
    "lock_date": "2027-06-30",
    "status": "open",
    "decision": "",
@@ -3640,7 +3917,7 @@
    "owner": "Chief engineer",
    "category": "Risk tolerance",
    "discipline": "",
-   "lock_gate": "Concept freeze",
+   "lock_gate": "Conceptual design",
    "lock_date": "2026-12-15",
    "status": "open",
    "decision": "",
@@ -3659,6 +3936,182 @@
      "https://www.govinfo.gov/content/pkg/FR-2024-10-31/html/2024-25238.htm"
     ]
    ]
+  },
+  {
+   "key": "trade.structure_joining",
+   "label": "Primary structure manufacturing and joining: integrated composite, bonded or fastened, machined metal",
+   "owner": "Structures",
+   "category": "Material and technology",
+   "discipline": "",
+   "lock_gate": "Detailed design",
+   "lock_date": "2028-03-31",
+   "status": "open",
+   "decision": "",
+   "decided_date": "",
+   "model_hook": "",
+   "affects": [
+    "mass.fuselage",
+    "mass.wing"
+   ],
+   "options": 0,
+   "note": "Part and fastener count is weight",
+   "precedent": "",
+   "sources": []
+  },
+  {
+   "key": "trade.hv_installation_standard",
+   "label": "HV installation standard: insulation, connectors, shielding and segregation",
+   "owner": "Electrical",
+   "category": "Design decision",
+   "discipline": "",
+   "lock_gate": "Detailed design",
+   "lock_date": "2028-03-31",
+   "status": "open",
+   "decision": "",
+   "decided_date": "",
+   "model_hook": "",
+   "affects": [
+    "gap.hv_installation"
+   ],
+   "options": 0,
+   "note": "Partial discharge at altitude and EMI",
+   "precedent": "",
+   "sources": []
+  },
+  {
+   "key": "trade.integration_rig",
+   "label": "Integration rig before first flight: HV powertrain and conversion on an iron bird",
+   "owner": "Chief engineer",
+   "category": "Risk tolerance",
+   "discipline": "",
+   "lock_gate": "Test and validation",
+   "lock_date": "2029-09-30",
+   "status": "open",
+   "decision": "",
+   "decided_date": "",
+   "model_hook": "",
+   "affects": [
+    "gap.hv_installation",
+    "gap.conversion_actuators"
+   ],
+   "options": 0,
+   "note": "Buys schedule certainty at the cost of a rig",
+   "precedent": "X-57's integration problems (interference between inverters and onboard systems, a battery redesign) and late component shortages ended the programme before first flight.",
+   "sources": [
+    [
+     "NASA: X-57 project creates paths toward electric aviation",
+     "https://www.nasa.gov/centers-and-facilities/armstrong/x-57-project-creates-paths-toward-electric-aviation-2/"
+    ]
+   ]
+  },
+  {
+   "key": "trade.envelope_expansion",
+   "label": "Envelope expansion: build-up flight test or model-based clearance of the conversion corridor",
+   "owner": "Flight test",
+   "category": "Risk tolerance",
+   "discipline": "",
+   "lock_gate": "Test and validation",
+   "lock_date": "2029-09-30",
+   "status": "open",
+   "decision": "",
+   "decided_date": "",
+   "model_hook": "",
+   "affects": [],
+   "options": 0,
+   "note": "The computed corridor is edgewise-limited above 45 deg",
+   "precedent": "",
+   "sources": []
+  },
+  {
+   "key": "trade.means_of_compliance",
+   "label": "Means of compliance: test or analysis credit for whirl flutter and failure cases",
+   "owner": "Chief engineer",
+   "category": "Risk tolerance",
+   "discipline": "",
+   "lock_gate": "Test and validation",
+   "lock_date": "2029-09-30",
+   "status": "open",
+   "decision": "",
+   "decided_date": "",
+   "model_hook": "",
+   "affects": [
+    "mass.wing"
+   ],
+   "options": 0,
+   "note": "",
+   "precedent": "AW609 needed new criteria for the transition between modes; its special-class basis took effect in December 2024, twelve years after application.",
+   "sources": [
+    [
+     "Federal Register 2024-25238: AW609 airworthiness criteria",
+     "https://www.govinfo.gov/content/pkg/FR-2024-10-31/html/2024-25238.htm"
+    ]
+   ]
+  },
+  {
+   "key": "trade.maintenance_concept",
+   "label": "Maintenance concept: on-condition or scheduled for tilt mechanism, gearboxes and packs",
+   "owner": "Chief engineer",
+   "category": "Design decision",
+   "discipline": "",
+   "lock_gate": "After entry into service",
+   "lock_date": "2031-06-30",
+   "status": "open",
+   "decision": "",
+   "decided_date": "",
+   "model_hook": "",
+   "affects": [
+    "gap.tilt_fittings",
+    "mass.rotor_gearboxes",
+    "mass.battery"
+   ],
+   "options": 0,
+   "note": "Access and removal paths are set in design",
+   "precedent": "V-280 fixed its engines partly so that engine, drive shaft and gearbox can be removed independently, which Bell says cuts maintenance time.",
+   "sources": [
+    [
+     "The War Zone: V-280 against V-22, with Bell's head of tiltrotor systems",
+     "https://www.twz.com/21162/we-talk-v-280-valor-versus-v-22-osprey-with-bells-head-of-tiltrotor-systems"
+    ]
+   ]
+  },
+  {
+   "key": "trade.battery_life",
+   "label": "Battery replacement policy: pack life against end-of-life sizing",
+   "owner": "Electrical",
+   "category": "Risk tolerance",
+   "discipline": "",
+   "lock_gate": "After entry into service",
+   "lock_date": "2031-06-30",
+   "status": "open",
+   "decision": "",
+   "decided_date": "",
+   "model_hook": "factor_capacity_ageing_battery",
+   "affects": [
+    "mass.battery",
+    "input.capacity_end_of_life"
+   ],
+   "options": 0,
+   "note": "",
+   "precedent": "",
+   "sources": []
+  },
+  {
+   "key": "trade.growth_reserve",
+   "label": "In-service growth reserve: weight and power held back for modifications",
+   "owner": "Chief engineer",
+   "category": "Risk tolerance",
+   "discipline": "",
+   "lock_gate": "After entry into service",
+   "lock_date": "2031-06-30",
+   "status": "open",
+   "decision": "",
+   "decided_date": "",
+   "model_hook": "",
+   "affects": [],
+   "options": 0,
+   "note": "Fixed engines leave no power growth path",
+   "precedent": "",
+   "sources": []
   }
  ]
 }
