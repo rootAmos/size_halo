@@ -53,11 +53,15 @@ reproductions of `examples/` drivers and documented results). A notebook that st
 | 19 | [The Halo driver](19_halo_driver.ipynb) | 2 min first time | inputs, switches, design vector, aircraft builder, the problem, the result, named sets |
 | 20 | [Studies and extensions](20_studies_and_extensions.ipynb) | 2-3 min | starting points, discrete choices, warm-started studies, objectives, extending, testing |
 | **After sizing** | | | |
-| 21 | [Trim, corridor and trajectories](21_after_sizing_trajectories.ipynb) | 15 s | level-flight trim, the computed conversion corridor, direct-collocation transition and climb |
-| 22 | [Weights in depth](22_weights_in_depth.ipynb) | 10 s | the stiffness-sized tiltrotor wing and its validation, the growth factor as a multiplier, empty-weight growth allowance and uncertainty |
+| 21 | [The conversion corridor](21_conversion_corridor.ipynb) | 30 s | trim through the transition, corridor bounds and their binding limits, sensitivities, pitch authority |
+| 22 | [Trajectories](22_trajectories.ipynb) | 20 s | point-mass model, direct collocation, minimum-energy transition and minimum-time climb |
+| **Geometry, weights and structures** | | | |
+| 23 | [Weights in depth](23_weights_in_depth.ipynb) | 10 s | the stiffness-sized tiltrotor wing and its validation, the growth factor as a multiplier, empty-weight growth allowance and uncertainty |
+| 24 | [The geometry model in OpenVSP](24_openvsp_geometry.ipynb) | 1 min | snapshot from a sizing result, the OpenVSP model tree, STEP/STL exports and renders, VSPAERO and parasite-drag cross-checks (needs OpenVSP) |
+| 25 | [Structures](25_structures.ipynb) | 2 min first time | OpenVSP internal structure, layout weight back-check, CalculiX frequencies and ultimate jump take-off strain (needs OpenVSP and CalculiX) |
 
 Tutorial 19 solves the current reference with the fast Scholz aerodynamics (about a minute, within 0.3 % of the 15,179 lb reference)
-and caches it in `tutorials/.cache/`; tutorials 20-22 reuse it. The cache is keyed on a hash of `src/`, `examples/` and `data/`,
+and caches it in `tutorials/.cache/`; tutorials 20-25 reuse it. The cache is keyed on a hash of `src/`, `examples/` and `data/`,
 so any code change triggers a fresh solve.
 
 ## Where things are

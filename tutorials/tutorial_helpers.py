@@ -115,6 +115,29 @@ def quiet_solver():
             os.close(saved_fd)
 
 
+@contextlib.contextmanager
+def quiet_output():
+    """Silence stdout and stderr, Python and C level, inside the block (VSPAERO, OpenVSP meshing, CalculiX)."""
+    import io
+    import os
+    sys.stdout.flush()
+    sys.stderr.flush()
+    saved = {fd: os.dup(fd) for fd in (1, 2)}
+    with open(os.devnull, "w") as devnull, contextlib.redirect_stdout(io.StringIO()), \
+            contextlib.redirect_stderr(io.StringIO()):
+        for fd in (1, 2):
+            os.dup2(devnull.fileno(), fd)
+        try:
+            yield
+        finally:
+            for fd, saved_fd in saved.items():
+                os.dup2(saved_fd, fd)
+                os.close(saved_fd)
+
+
+output_dir = repo_root / "output" / "tutorials"     # files the tutorials write (not committed: output/ is ignored)
+
+
 # ---- the solve cache --------------------------------------------------------------------------------------------
 cache_dir = repo_root / "tutorials" / ".cache"
 
