@@ -72,11 +72,36 @@ limited-power trim. Pitch-lag coupling -0.2 (lag back / pitch up) is assumed, in
 gimballed stiff-inplane proprotors, with the frequency-placement margins kept alongside until the Halo check is
 done. Requirement: calibrated flutter speed at least 1.15 x V_D at every rotor speed.
 
+## Halo check (`examples/halo_whirl_flutter.py`, 2026-10-10)
+
+Airframe: the cantilever wing with a rigid tip nacelle from the sized AFDD wing (15,179 lb baseline:
+`examples/halo_structure_reference.py`, now also exporting the whirl inputs). Rotor: the Halo rotor (4.83 m, 3
+blades, solidity 0.060) with the XV-15 blade dynamics scaled (Lock number, per-rev frequencies, couplings).
+Assumed: nacelle CG 0.5 m ahead of the spindle, spindle on the elastic axis, free electric drive, sea level,
+V_D = 1.25 V_max.
+
+Concept-airframe check on the XV-15: the cantilever builder gives 303 kt calibrated against 335 kt from the NASTRAN
+hub modes, so it is about 10 % conservative (fuselage-fixed beam mode).
+
+| Rotor speed | Calibrated flutter speed |
+|---|---|
+| 23.8 rad/s (reserve loiter) | 262 kt |
+| 27.6 rad/s (climb, descent) | 272 kt |
+| 29.4 rad/s (cruise) | 274 kt |
+| 31.2 rad/s (climb, ceiling) | 275 kt |
+| 39.0 rad/s (maximum speed) | 265 kt |
+| Required, 1.15 x V_D (V_D = 1.25 x 210 kt) | 302 kt |
+
+- The margin is -9 to -13 % with wing beam critical; with the cantilever's 10 % conservatism removed it is about
+  -4 to 0 %: marginal, not cleared.
+- Torsion stiffness is the lever (at the maximum-speed rotor speed: x0.75 -> 237 kt, x1.25 -> 283, x1.5 -> 296);
+  beam stiffness helps less (x1.5 -> 276), chord stiffness does nothing.
+- The frequency-placement margins of plan 024 are met by this wing, so the proxy does not catch the shortfall.
+
 ## Next
 
-1. Halo check: cantilever airframe from the AFDD wing stiffnesses, tip mass and pylon inertia
-   (`output/structure/reference.json`, extended with the rotor speed at maximum speed and the pylon inertia),
-   calibrated flutter speed against 1.15 x V_D; stiffness sensitivities.
+1. Wing torsion for flutter: the GJ (or nacelle offset, delta-3) that clears 1.15 V_D, and its wing weight;
+   whole-aircraft symmetric and antisymmetric modes instead of the cantilever to remove its conservatism.
 2. In the loop: the least-damped eigenpair at 1.15 V_D / 0.84 as optimizer variables (A v = lambda v,
    normalization), Re(lambda) at or below a damping margin, so the wing is sized for flutter speed directly.
 3. Fidelity: blade torsion with control-system stiffness (pitch-lag from first principles rather than assumed),
