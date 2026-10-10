@@ -122,6 +122,39 @@ the airplane-mode rotor speeds.
   - delta-3 and pitch-lag;
   - replacing the cantilever with whole-aircraft modes, worth about 10 % on the XV-15.
 
+### Pylon and rotor-coupling levers (`examples/halo_whirl_flutter_levers.py`)
+
+Each row is one change from the reference. The table gives the calibrated flutter speed at the reserve-loiter
+(23.8 rad/s) and maximum-speed (39.0 rad/s) rotor speeds. The critical mode is wing beam unless noted. Required:
+302 kt.
+
+| Change | 23.8 rad/s | 39.0 rad/s |
+|---|---|---|
+| Reference (CG 0.5 m ahead, hub 1.0 m, delta-3 -18 deg, pitch-lag -0.2) | 262 | 265 |
+| Nacelle CG on the spindle (0 m) | 277 | 322 |
+| Nacelle CG 0.25 m ahead | 269 | 291 |
+| Nacelle CG 0.75 m ahead | 255 | 238 |
+| Hub 0.6 m ahead | 274 | 281 |
+| Hub 0.8 m ahead | 268 | 273 |
+| Hub 1.2 m ahead | 257 | 258 |
+| delta-3 -30 deg | 195 | 197 |
+| delta-3 -10 deg | 325 | 313 |
+| delta-3 0 deg | 412 (coning) | 364 |
+| Pitch-lag -0.4 | 251 | 253 |
+| Pitch-lag 0 | 274 | 277 |
+| Pitch-lag +0.2 | 285 | 289 |
+
+- delta-3 is the strongest lever. Reducing it from -18 to -10 deg clears 1.15 V_D at both rotor speeds (+4 to +8 %)
+  for no weight. It is also where the model is least validated: the XV-15 knockdown was fitted at -18 deg.
+  Smaller delta-3 raises airplane-mode flapping and moves the gimbal frequency, and at 0 deg the rotor's own coning
+  mode becomes critical. Any delta-3 change needs a flapping and loads check.
+- Nacelle mass placement matters at high rotor speed: CG on the spindle gives 322 kt at 39 rad/s, but only 277 kt at
+  reserve loiter.
+- A shorter mast helps modestly (0.6 m: +12 to +16 kt). Pitch-lag toward positive helps (+0.2: +23 kt), but pitch-lag
+  beyond about +0.2 has not been checked against the collective lag mode.
+- Proposed path: delta-3 about -10 deg plus the CG as close to the spindle as the layout allows, verified on
+  whole-aircraft modes; torsion stiffness only for what remains.
+
 ## Next
 
 1. Wing torsion for flutter: the GJ (or nacelle offset, delta-3) that clears 1.15 V_D, and its wing weight;
