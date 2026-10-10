@@ -58,7 +58,7 @@ def view(ledger, today=None):
         quantities.append(dict(
             key=q.key, label=q.label, kind=q.kind, unit=q.unit, owner=q.owner, mean=mean, sigma=sigma,
             fidelity=q.fidelity(), sensitivity=q.sensitivity, allowance=q.allowance, lock_date=q.lock_date,
-            next_activity=None if activity is None else asdict(activity),
+            next_activity=None if activity is None else asdict(activity), plan=[asdict(a) for a in q.plan],
             evidence=[asdict(e) for e in sorted(q.evidence, key=lambda e: e.date)], note=q.note))
     return dict(
         name=ledger.name, as_of=today.isoformat(), growth_factor=ledger.growth_factor, baseline=ledger.baseline,

@@ -57,7 +57,7 @@ class Quantity:
     plan: list = field(default_factory=list)
     sizing_keys: tuple = ()           # result keys that sum to this item ("pt:" = powertrain instance)
     note: str = ""
-    category: str = "Maturity"        # decision type: how far to firm up the estimate before committing
+    category: str = "Increase maturity"  # decision type: how far to firm up the estimate before committing
 
     def belief(self):
         """(mean, sigma) from the evidence rule above; (nan, nan) with no evidence."""
@@ -95,6 +95,7 @@ class Limit:
     note: str = ""
     category: str = "Requirement"
     lock_gate: str = ""
+    action: str = ""                  # what to do about it (default: argue the limit or change the design)
 
 
 @dataclass
@@ -122,7 +123,7 @@ class Trade:
     model_hook: str = ""              # how the sizing can price the options ("" = owner estimate needed)
     decided_date: str = ""            # ISO date of the decision, when decided
     category: str = ""                # decision type: requirement, architecture, technology and material, margin
-                                      # policy, maturity or verification
+                                      # policy, increase maturity or verification
     precedent: str = ""               # what comparable programmes chose and what it cost them
     sources: list = field(default_factory=list)   # [label, url] pairs behind the precedent
 

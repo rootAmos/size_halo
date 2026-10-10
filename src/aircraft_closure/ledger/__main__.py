@@ -26,7 +26,7 @@ def print_ranking(ledger, top):
                                                       f"({r.value_low_kg * lb_per_kg:,.0f} to "
                                                       f"{r.value_high_kg * lb_per_kg:,.0f})")
         flag = f"  [{r.schedule}]" if r.schedule else ""
-        print(f"{i:3d}. {r.label} | {r.kind} | {value} | {r.owner}{flag}\n      next: {r.action}")
+        print(f"{i:3d}. {r.label} | {r.phase} | {r.category} | {value} | {r.owner}{flag}\n      next: {r.action}")
 
 
 def main(argv=None):

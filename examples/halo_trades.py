@@ -2,8 +2,8 @@
 
 Only decisions that shape the aircraft are listed, on two axes: the programme phase in which they lock (conceptual,
 preliminary and detailed design, test and validation, after entry into service) and the decision type
-(`decision_types`: requirement, architecture, technology and material, margin policy, maturity, verification). The
-ledger's uncertain quantities are maturity decisions; its binding limits are requirement, architecture, technology or
+(`decision_types`: requirement, architecture, technology and material, margin policy, increase maturity, verification). The
+ledger's uncertain quantities are increase-maturity decisions; its binding limits are requirement, architecture, technology or
 margin decisions.
 
 Each open trade names its owner, the gate where it locks, the ledger items it moves and, where the sizing can already
@@ -14,7 +14,7 @@ from aircraft_closure.ledger.model import Trade
 
 # Decision types: the second axis of the ledger, beside the programme phase.
 REQUIREMENT, ARCHITECTURE, TECHNOLOGY, MARGIN, MATURITY, VERIFICATION = (
-    "Requirement", "Architecture", "Technology and material", "Margin policy", "Maturity", "Verification")
+    "Requirement", "Architecture", "Technology and material", "Margin policy", "Increase maturity", "Verification")
 decision_types = {
     REQUIREMENT: "What it must do; negotiated with the customer",
     ARCHITECTURE: "How the parts fit together and how they fail",
