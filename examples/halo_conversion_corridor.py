@@ -186,13 +186,18 @@ def plot_corridor(corridor, sizing, model, path):
     plt.close(fig)
 
 
-def plot_trim_free_body(ax=None, path=None, pitch_deg=8.0, tilt_deg=60.0, tilt_disc_deg=7.0):
-    """Side-view free-body diagram of the level-flight trim that defines the corridor (illustrative angles).
+def plot_trim_free_body(ax=None, path=None, alpha_deg=6.0, gamma_deg=6.0, tilt_deg=60.0, tilt_disc_deg=7.0,
+                        deflection_tail_deg=-10.0):
+    """Side-view free-body diagram of a tiltrotor in conversion (illustrative angles; returns the axes).
 
-    Angles: pitch alpha (body x-axis from the velocity; level flight, so attitude = angle of attack), nacelle angle
-    tau (shaft from the body x-axis, 90 = hover), disc tilt theta (tip-path-plane normal, i.e. the thrust, from the
-    shaft). Forces: net thrust n T (1 - f_dl) at the hub, wing lift L and drag D, tail lift from the ruddervator
-    L_tail(delta), weight W at the CG; the moment balance is about the CG. Returns the axes."""
+    Drawn for a general flight path so the three angles are distinct: flight-path angle gamma (horizon to the
+    velocity), angle of attack alpha (velocity to the body x-axis) and pitch attitude Theta = alpha + gamma (horizon to
+    the body x-axis). The corridor trims level flight, gamma = 0, so there pitch = angle of attack (`pitch_deg` in
+    `TrimPoint`). Nacelle angle tau (body x-axis to the shaft, 90 = hover), disc tilt theta_d (shaft to the thrust,
+    the tip-path-plane normal), ruddervator delta. Forces in wind axes: net thrust at the hub, wing lift (normal to V)
+    and drag (along -V), tail lift, weight; the moment balance is about the CG. At the hub the velocity splits into
+    the axial component V cos(alpha + tau) (the rotor model's inflow) and the edgewise one V sin(alpha + tau)
+    (the edgewise advance-ratio limit)."""
     import numpy as onp
     import matplotlib
     import matplotlib.pyplot as plt
@@ -201,93 +206,144 @@ def plot_trim_free_body(ax=None, path=None, pitch_deg=8.0, tilt_deg=60.0, tilt_d
     own = ax is None
     if own:
         matplotlib.use("Agg")
-        fig, ax = plt.subplots(figsize=(11, 8))
+        fig, ax = plt.subplots(figsize=(12, 9.5))
+    pitch_deg = alpha_deg + gamma_deg
     a = onp.radians(pitch_deg)
+    ink, blue, red, green, orange, grey, purple = ("#222222", "#1f6fb4", "#c0392b", "#2e8b57", "#d35400", "#8a8a8a",
+                                                   "#7d3c98")
 
-    def world(x, z):                                   # body (forward, up) -> world (flight direction, up)
+    def world(x, z):                                   # body (forward, up) -> world (horizon, up)
         return onp.array([x * onp.cos(a) - z * onp.sin(a), x * onp.sin(a) + z * onp.cos(a)])
 
-    def unit(angle_deg):                               # world direction at angle_deg above the velocity
+    def unit(angle_deg):                               # world direction at angle_deg above the horizon
         return onp.array([onp.cos(onp.radians(angle_deg)), onp.sin(onp.radians(angle_deg))])
 
-    def arrow(start, vector, color, label, offset=(0, 0), lw=2.2, ha="center"):
-        ax.add_patch(FancyArrowPatch(start, start + vector, arrowstyle="-|>", mutation_scale=16, color=color, lw=lw))
-        tip = start + vector
-        ax.text(tip[0] + offset[0], tip[1] + offset[1], label, color=color, fontsize=11, ha=ha, va="center")
+    def arrow(start, vector, color, label=None, offset=(0.0, 0.0), lw=2.4, ha="center", size=13, style="-|>"):
+        ax.add_patch(FancyArrowPatch(start, start + vector, arrowstyle=style, mutation_scale=18, color=color, lw=lw,
+                                     zorder=6))
+        if label:
+            tip = start + vector
+            ax.text(tip[0] + offset[0], tip[1] + offset[1], label, color=color, fontsize=size, ha=ha, va="center",
+                    zorder=7)
 
-    def angle_arc(center, radius, start_deg, end_deg, label, color, label_radius=1.25):
+    def angle_arc(center, radius, start_deg, end_deg, color, label=None, label_at=None, size=14, lw=1.5):
         ax.add_patch(Arc(center, 2 * radius, 2 * radius, theta1=min(start_deg, end_deg),
-                         theta2=max(start_deg, end_deg), color=color, lw=1.4))
-        mid = onp.radians(0.5 * (start_deg + end_deg))
-        ax.text(center[0] + label_radius * radius * onp.cos(mid), center[1] + label_radius * radius * onp.sin(mid),
-                label, color=color, fontsize=12, ha="center", va="center")
+                         theta2=max(start_deg, end_deg), color=color, lw=lw, zorder=4))
+        if label:
+            mid = 0.5 * (start_deg + end_deg)
+            position = center + (label_at if label_at is not None else 1.22 * radius) * unit(mid)
+            ax.text(*position, label, color=color, fontsize=size, ha="center", va="center", zorder=7)
 
-    ink, blue, red, green, orange, grey = "#222222", "#1f6fb4", "#c0392b", "#2e8b57", "#e67e22", "#888888"
-    # Airframe (body axes): fuselage, wing section at the spindle, V-tail with the ruddervator deflected.
-    fuselage = [world(x, z) for x, z in ((4.2, 0.0), (3.4, 0.75), (-4.5, 0.6), (-6.6, 0.9), (-6.9, 0.9), (-6.4, -0.1),
-                                         (-4.5, -0.55), (3.4, -0.75))]
-    ax.add_patch(Polygon(fuselage, closed=True, facecolor="#e8eef5", edgecolor=ink, lw=1.2))
-    spindle, cg = world(0.0, 1.0), world(-0.35, 0.0)
-    wing = [world(x, z) for x, z in ((0.9, 1.0), (0.0, 1.12), (-1.1, 1.0), (0.0, 0.94))]
-    ax.add_patch(Polygon(wing, closed=True, facecolor="#c9d6e3", edgecolor=ink, lw=1.0))
-    hinge, deflection_deg = world(-6.75, 0.95), -12.0
-    elevator_end = hinge + 0.9 * unit(pitch_deg + 180 + deflection_deg)
-    ax.plot([hinge[0], elevator_end[0]], [hinge[1], elevator_end[1]], color=orange, lw=3)
-    # Body x-axis and the velocity (level flight: gamma = 0).
-    ax.plot(*zip(world(-8.2, 0.0), world(6.0, 0.0)), color=grey, lw=1, ls="--")
-    ax.text(*world(6.1, 0.0), "body x", color=grey, fontsize=9, va="center")
-    origin = onp.array([5.0, -2.8])
-    arrow(origin, onp.array([2.4, 0.0]), ink, "V  (level: gamma = 0)", offset=(0.15, 0), ha="left")
-    ax.plot([cg[0], cg[0] + 5.3], [cg[1], cg[1]], color=ink, lw=0.8, ls=":")
-    angle_arc(cg, 5.0, 0.0, pitch_deg, "", blue)
-    ax.text(cg[0] + 5.25, cg[1] + 0.35, "alpha = pitch", color=blue, fontsize=12, va="center")
-    # Nacelle: shaft from the spindle at tau above the body x-axis, hub a mast length out; tip-path plane at theta.
-    mast = 2.4
+    def line(p, q, color=grey, lw=1.0, ls="--", zorder=2):
+        ax.plot([p[0], q[0]], [p[1], q[1]], color=color, lw=lw, ls=ls, zorder=zorder)
+
+    # Airframe in body axes: fuselage with tail boom, wing section at the spindle, V-tail with a deflected ruddervator.
+    outline = ((5.3, 0.05), (5.0, 0.5), (4.3, 0.85), (2.6, 1.05), (-2.4, 1.0), (-4.6, 0.8), (-6.6, 1.0),
+               (-7.3, 1.05), (-7.2, 0.7), (-4.6, -0.15), (-2.4, -0.8), (2.6, -0.88), (4.4, -0.62), (5.1, -0.25))
+    ax.add_patch(Polygon([world(*p) for p in outline], closed=True, facecolor="#e9eff6", edgecolor=ink, lw=1.3,
+                         zorder=3))
+    ax.add_patch(Polygon([world(*p) for p in ((4.1, 0.55), (3.3, 0.9), (2.3, 0.95), (2.3, 0.45))], closed=True,
+                         facecolor="#cfd9e4", edgecolor=ink, lw=0.8, zorder=3))           # canopy
+    spindle, cg = world(0.2, 1.1), world(-0.45, 0.1)
+    airfoil = [world(0.2 + 1.2 * x, 1.1 + z) for x, z in ((1.0, 0.0), (0.75, 0.12), (0.2, 0.2), (-0.4, 0.18),
+                                                           (-1.0, 0.04), (-1.0, -0.02), (-0.4, -0.06), (0.4, -0.06))]
+    ax.add_patch(Polygon(airfoil, closed=True, facecolor="#b9c8d8", edgecolor=ink, lw=1.0, zorder=5))
+    tail = [world(*p) for p in ((-6.1, 1.0), (-6.5, 2.2), (-7.0, 2.25), (-7.15, 1.05))]
+    ax.add_patch(Polygon(tail, closed=True, facecolor="#cfd9e4", edgecolor=ink, lw=1.0, zorder=3))
+    hinge = world(-7.1, 1.1)
+    line(hinge, hinge + 1.0 * unit(pitch_deg + 180), grey, lw=1.0, ls=":")
+    tab_end = hinge + 1.0 * unit(pitch_deg + 180 - deflection_tail_deg)
+    line(hinge, tab_end, orange, lw=3.5, ls="-", zorder=5)
+
+    # Reference directions at the CG: horizon, velocity (gamma), body x (alpha, pitch).
+    line(cg + onp.array([-9.0, 0.0]), cg + onp.array([7.5, 0.0]), grey, lw=1.0, ls="--")
+    ax.text(*(cg + onp.array([7.6, 0.0])), "horizon", color=grey, fontsize=10, va="center")
+    line(cg, cg + 7.0 * unit(gamma_deg), ink, lw=1.0, ls=":")
+    line(world(-8.0, 0.1) - world(0, 0.1) + cg, cg + 7.6 * unit(pitch_deg), grey, lw=1.0, ls="-.")
+    ax.text(*(cg + 7.7 * unit(pitch_deg)), "body $x$", color=grey, fontsize=10, va="center")
+    arrow(cg + 7.0 * unit(gamma_deg), 1.6 * unit(gamma_deg), ink, r"$V$", offset=(0.35, 0.05), size=15)
+    angle_arc(cg, 5.4, 0.0, gamma_deg, purple, r"$\gamma$", label_at=5.75)
+    angle_arc(cg, 6.4, gamma_deg, pitch_deg, blue, r"$\alpha$", label_at=6.8)
+    angle_arc(cg, 4.4, 0.0, pitch_deg, ink, lw=1.0)
+    ax.text(*(cg + 4.15 * unit(-6.0)), r"pitch $\Theta=\alpha+\gamma$", color=ink, fontsize=12, va="center")
+
+    # Nacelle about the spindle, hub a mast length out along the shaft; tip-path plane normal to the thrust.
+    mast = 2.6
     shaft_deg, thrust_deg = pitch_deg + tilt_deg, pitch_deg + tilt_deg + tilt_disc_deg
-    hub = spindle + mast * unit(shaft_deg)
-    ax.plot([spindle[0], hub[0]], [spindle[1], hub[1]], color=ink, lw=5, solid_capstyle="round")
-    shaft_end = spindle + (mast + 2.8) * unit(shaft_deg)
-    ax.plot([spindle[0], shaft_end[0]], [spindle[1], shaft_end[1]], color=grey, lw=1, ls="--")
-    ax.text(*(shaft_end + 0.3 * unit(shaft_deg - 90)), "shaft", color=grey, fontsize=9, va="center")
-    ax.plot(*zip(spindle, spindle + 3.2 * unit(pitch_deg)), color=grey, lw=0.8, ls=":")
-    angle_arc(spindle, 1.35, pitch_deg, shaft_deg, "tau", green)
-    disc = [hub + 3.0 * unit(thrust_deg + 90), hub - 3.0 * unit(thrust_deg + 90)]
-    ax.plot(*zip(*disc), color=ink, lw=2.5)
-    ax.text(*(disc[1] + onp.array([0.2, -0.1])), "tip-path plane", fontsize=9, ha="left", va="top")
-    angle_arc(hub, 3.0, shaft_deg, thrust_deg, "", red)
-    ax.text(*(hub + 3.0 * unit(thrust_deg) + 0.5 * unit(thrust_deg + 90)), "theta", color=red, fontsize=12,
-            ha="right", va="center")
-    # Forces.
-    arrow(hub, 4.4 * unit(thrust_deg), red, "n T (1 - f_dl)", offset=(0.3, 0.25), ha="left")
-    arrow(spindle + onp.array([-2.6, 0.3]), onp.array([0.0, 3.0]), blue, "L  (normal to V)", offset=(0.0, 0.35))
-    arrow(spindle - onp.array([1.3, -0.1]), onp.array([-2.4, 0.0]), blue, "D", offset=(-0.35, 0))
-    arrow(cg, onp.array([0.0, -3.4]), ink, "W", offset=(0.0, -0.35))
-    tail_point = world(-6.75, 0.95)
-    arrow(tail_point, onp.array([0.0, -1.9]), orange, "L_tail(delta)", offset=(0.0, -0.35))
-    ax.text(*(elevator_end + onp.array([-0.15, 0.35])), "delta", color=orange, fontsize=12, ha="right")
-    # Moment about the CG and the reference points.
-    ax.add_patch(Arc(cg, 1.6, 1.6, theta1=40, theta2=320, color=ink, lw=1.4))
-    ax.add_patch(FancyArrowPatch(cg + 0.8 * unit(305), cg + 0.8 * unit(325), arrowstyle="-|>", mutation_scale=12,
-                                 color=ink, lw=1.4))
-    ax.text(*(cg + onp.array([0.6, -1.6])), "M_y about CG", fontsize=10, ha="left")
-    for point, name, dx in ((cg, "CG", -0.35), (spindle, "spindle", 0.3), (hub, "hub", 0.3)):
-        ax.plot(*point, "o", color="white", mec=ink, ms=7, zorder=5)
-        ax.text(point[0] + dx, point[1] - 0.35, name, fontsize=9, ha="right" if dx < 0 else "left")
+    s, n = unit(shaft_deg), unit(shaft_deg + 90)
+    hub = spindle + mast * s
+    nacelle = [spindle - 0.6 * s + 0.42 * n, hub - 0.25 * s + 0.42 * n, hub + 0.35 * s + 0.15 * n,
+               hub + 0.35 * s - 0.15 * n, hub - 0.25 * s - 0.42 * n, spindle - 0.6 * s - 0.42 * n]
+    ax.add_patch(Polygon(nacelle, closed=True, facecolor="#dfe6ee", edgecolor=ink, lw=1.2, zorder=5))
+    line(spindle, spindle + (mast + 3.4) * s, grey, lw=1.0, ls="-.")
+    ax.text(*(spindle + (mast + 3.5) * s + 0.25 * unit(shaft_deg - 90)), "shaft", color=grey, fontsize=10)
+    line(spindle, spindle + 2.6 * unit(pitch_deg), grey, lw=0.8, ls=":")
+    angle_arc(spindle, 1.6, pitch_deg, shaft_deg, green, r"$\tau$", label_at=1.95)
+    disc_dir = unit(thrust_deg + 90)
+    line(hub + 3.3 * disc_dir, hub - 3.3 * disc_dir, ink, lw=3.0, ls="-", zorder=5)
+    line(hub + 3.3 * n, hub - 3.3 * n, grey, lw=0.8, ls=":")
+    ax.text(*(hub - 3.4 * disc_dir + onp.array([0.15, -0.25])), "tip-path plane", fontsize=10, ha="left")
+    angle_arc(hub, 3.3, shaft_deg, thrust_deg, red, r"$\theta_d$", label_at=3.75)
+
+    # Inset: the velocity at the rotor, split into the axial component (the rotor model's inflow) and the edgewise
+    # component in the disc plane (the edgewise advance-ratio limit).
+    origin = onp.array([8.2, 4.6])
+    scale = 2.8
+    v_axial = onp.cos(onp.radians(alpha_deg + tilt_deg))
+    v_edge = onp.sin(onp.radians(alpha_deg + tilt_deg))
+    ax.text(*(origin + onp.array([-1.6, 3.4])), "velocity at the rotor", fontsize=12, color=purple)
+    line(origin - 0.6 * s, origin + 2.8 * s, grey, lw=1.0, ls="-.")
+    ax.text(*(origin + 2.9 * s), "shaft", color=grey, fontsize=9)
+    line(origin - 3.0 * n, origin + 0.8 * n, grey, lw=0.8, ls=":")
+    ax.text(*(origin + 0.9 * n + onp.array([-0.1, 0.1])), "disc plane", color=grey, fontsize=9, ha="right")
+    arrow(origin, scale * unit(gamma_deg), ink, r"$V$", offset=(0.3, 0.0), lw=1.8)
+    arrow(origin, scale * v_axial * s, purple, r"$V\cos(\alpha+\tau)$ axial", offset=(-1.2, 0.35), ha="left",
+          size=11, lw=1.8)
+    arrow(origin, -scale * v_edge * n, purple, r"$V\sin(\alpha+\tau)$ edgewise", offset=(-1.0, -0.6), ha="left",
+          size=11, lw=1.8)
+    line(origin + scale * v_axial * s, origin + scale * unit(gamma_deg), purple, lw=0.8, ls=":")
+    line(origin - scale * v_edge * n, origin + scale * unit(gamma_deg), purple, lw=0.8, ls=":")
+    angle_arc(origin, 0.9, gamma_deg, shaft_deg, ink, r"$\alpha+\tau$", label_at=1.45, size=11, lw=1.0)
+
+    # Forces (wind axes for L, D; vertical W; thrust along the tip-path normal).
+    arrow(hub, 4.8 * unit(thrust_deg), red, r"$nT(1-f_{dl})$", offset=(0.25, 0.3), ha="left", size=14)
+    line(hub, hub + 2.0 * unit(gamma_deg), ink, lw=0.8, ls=":")
+    angle_arc(hub, 1.7, gamma_deg, thrust_deg, red, lw=1.0)
+    ax.text(*(hub + 1.9 * unit(thrust_deg) + onp.array([-0.2, 0.0])), r"$\alpha+\tau+\theta_d$", color=red,
+            fontsize=11, ha="right", va="center")
+    wing_ac = world(-0.75, 1.3)
+    arrow(wing_ac, 3.4 * unit(gamma_deg + 90), blue, r"$L$  ($\perp V$)", offset=(0.0, 0.35))
+    arrow(wing_ac, 2.8 * unit(gamma_deg + 180), blue, r"$D$  ($\parallel -V$)", offset=(-0.2, 0.35), ha="right")
+    arrow(cg, onp.array([0.0, -3.6]), ink, r"$W$", offset=(0.0, -0.4), size=15)
+    tail_ac = world(-6.6, 1.6)
+    arrow(tail_ac, 1.9 * unit(gamma_deg - 90), orange, r"$L_{tail}(\delta)$", offset=(0.0, -0.45))
+    ax.text(*(tab_end + onp.array([-0.15, 0.3])), r"$\delta$", color=orange, fontsize=15, ha="right")
+    ax.add_patch(Arc(cg, 1.7, 1.7, theta1=60, theta2=330, color=ink, lw=1.5, zorder=6))
+    ax.add_patch(FancyArrowPatch(cg + 0.85 * unit(52), cg + 0.85 * unit(75), arrowstyle="-|>", mutation_scale=13,
+                                 color=ink, lw=1.5, zorder=6))
+    ax.text(*(cg + onp.array([-0.6, -2.1])), r"$M_y$ about CG (nose-up +)", fontsize=11, ha="right")
+    for point, name, dx, dy in ((cg, "CG", -0.35, -0.45), (spindle, "spindle", 0.35, -0.4), (hub, "hub", 0.35, -0.5)):
+        ax.plot(*point, "o", color="white", mec=ink, ms=7, zorder=8)
+        ax.text(point[0] + dx, point[1] + dy, name, fontsize=10, ha="right" if dx < 0 else "left", zorder=8)
+
     # Equations and limits.
-    text = ("Trim: 3 equations, 4 unknowns (T, alpha, delta, theta); the spare one is spent on least rotor power\n"
-            "  F_x:  n T (1 - f_dl) cos(alpha + tau + theta) - D = 0\n"
-            "  F_z:  n T (1 - f_dl) sin(alpha + tau + theta) + L + L_tail(delta) - W = 0\n"
-            "  M_y:  M_aero(alpha, delta) + n T (1 - f_dl) (x_hub sin(tau + theta) - z_hub cos(tau + theta)) = 0\n"
-            "        (nose-up positive; x_hub, z_hub: hub forward of and above the CG, a mast length out along the shaft)\n"
-            "Limits that bound the corridor:\n"
-            "  -5 <= alpha <= 12 deg      |delta| <= 25 deg      |theta| <= 10 deg x sin(tau)\n"
-            "  edgewise mu = V |sin(alpha + tau)| / (Omega R) <= 0.28      rotor power <= drive rating      C_T / sigma\n"
-            "  alpha <= alpha_stall (unblown wing)      V cos(alpha + tau + theta) >= 0      placard speed")
-    ax.text(-8.8, -4.6, text, fontsize=9, family="monospace", va="top")
-    ax.set_title(f"Level-flight trim that defines the conversion corridor (illustrative: alpha {pitch_deg:.0f} deg, "
-                 f"tau {tilt_deg:.0f} deg, theta {tilt_disc_deg:.0f} deg)", fontsize=12)
-    ax.set_xlim(-9, 11)
-    ax.set_ylim(-9.0, 9.0)
+    lines = [
+        (r"Trim: three equations, four unknowns ($T$, $\alpha$, $\delta$, $\theta_d$); the spare freedom is spent on least rotor power", ink),
+        (r"$\parallel V$:  $nT(1-f_{dl})\cos(\alpha+\tau+\theta_d) - D - W\sin\gamma = 0$", ink),
+        (r"$\perp V$:  $nT(1-f_{dl})\sin(\alpha+\tau+\theta_d) + L + L_{tail}(\delta) - W\cos\gamma = 0$", ink),
+        (r"$M_y$:  $M_{aero}(\alpha,\delta) + nT(1-f_{dl})\,[x_{hub}\sin(\tau+\theta_d) - z_{hub}\cos(\tau+\theta_d)] = 0$"
+         r"   ($x_{hub}, z_{hub}$: hub ahead of / above the CG)", ink),
+        (r"Corridor: level flight, $\gamma = 0$, so pitch $\Theta$ = angle of attack $\alpha$", purple),
+        (r"Limits:  $-5^\circ \leq \alpha \leq 12^\circ$,   $|\delta| \leq 25^\circ$,   $|\theta_d| \leq 10^\circ\,\sin\tau$,   "
+         r"$\mu_e = V|\sin(\alpha+\tau)|/\Omega R \leq 0.28$,   $P_{rotor} \leq$ drive rating,", ink),
+        (r"            $C_T/\sigma$ max,   $\alpha \leq \alpha_{stall}$ (unblown wing),   $V\cos(\alpha+\tau+\theta_d) \geq 0$,   placard speed", ink),
+    ]
+    for k, (text, color) in enumerate(lines):
+        ax.text(-9.3, -5.0 - 0.62 * k, text, fontsize=11.5, color=color, va="top")
+    ax.set_title("Tiltrotor in conversion: angles, forces and moments of the corridor trim (illustrative angles)",
+                 fontsize=14)
+    ax.set_xlim(-9.5, 12.5)
+    ax.set_ylim(-9.6, 10.0)
     ax.set_aspect("equal")
     ax.axis("off")
     if own:
