@@ -1,0 +1,83 @@
+# Plan 040: reduced-order proprotor whirl flutter
+
+## Goal
+
+Replace the frequency-placement proxy for whirl flutter (plan 024: wing torsion and beam frequencies above a set
+number per rev) with a flutter speed from a coupled rotor-pylon-wing model, so the sizing can trade wing stiffness,
+nacelle mass and offset, and rotor parameters against flutter speed directly (`docs/NEXT_STEPS.md` item 1).
+
+## Scope
+
+In: the coupled model, the XV-15 comparison against CAMRAD II with a calibration, tests. Out (next): the Halo
+flutter check, the constraint inside `asb.Opti`.
+
+## Model (`aircraft_closure.aeroelasticity.whirl_flutter`)
+
+Johnson's proprotor formulation (NASA TN D-7677; TM X-73213) at conceptual order, in `aerosandbox.numpy` so the
+matrices stay symbolic in the design inputs:
+
+- **Rotor:** gimbal (tip-path-plane tilt, gimbal spring); blade lag (cyclic, collective) and coning bending as
+  elastic rotations along the section principal axes pitched by the collective at 0.75 R (about 45 deg in cruise),
+  which couples lag with flap; quasi-static pitch couplings: pitch-gimbal (delta-3, growing with collective from
+  the pitch-horn-level collective), pitch-lag, pitch-cone; drive train locked to the nacelle (antisymmetric,
+  interconnect shaft) or free on its inertia with a governor (symmetric).
+- **Aerodynamics:** blade element linearized about the steady high-inflow state (inflow angle kept), uniform steady
+  angle of attack from the rotor thrust, Prandtl-Glauert lift slope on the helical Mach number with optional lift
+  divergence, quasi-steady, no tip loss, no dynamic inflow.
+- **Hub loads:** thrust, in-plane forces (aerodynamic, thrust tilt with the blade slope, blade inertia), gimbal
+  spring, gyroscopic hub, shaft torque perturbation, and the steady thrust and drag torque turning with the shaft.
+- **Airframe:** any linear model seen from the hub: published hub modes (CAMRAD QFREQ/QMASS/QDAMP/LSHAPE/ASHAPE),
+  or a three-mode cantilever wing with a rigid tip nacelle built from the AFDD wing stiffnesses. No wing
+  aerodynamics (the CAMRAD practice in the XV-15 study).
+
+`whirl_modes` and `flutter_speed` are numerical checks (eigenvalues, a scan, then bisection) outside the optimizer.
+
+## Verification (tests/aeroelasticity)
+
+- Gimbal modes at (nu - 1) and (nu + 1)/rev in vacuum; cantilever tip-mass frequencies; steady thrust reproduced.
+- Classical propeller whirl (Reed): a stiff propeller on a soft pylon loses stability in **backward** whirl while
+  forward whirl stays damped; flutter speed rises with pylon stiffness; a gimbal is more stable than a stiff
+  propeller.
+- Mirror image with opposite rotation gives identical eigenvalues (sign conventions).
+- Damping and stiffness matrices stay CasADi expressions in wing torsion stiffness and rotor speed.
+- XV-15 regression (below).
+
+## XV-15 comparison (`examples/whirl_flutter_xv15.py`)
+
+Inputs from NASA/TP-2004-212262 (Acree, Peyran, Johnson): stick-model hub modes for the 0.23 and 0.15 t/c wings,
+the steel-blade gimballed rotor deck (Lock number 3.76 from the blade mass distribution; gimbal 1.02/rev; lag
+1.80/rev and coning 1.52/rev by Ritz on the deck's chordwise and flapwise stiffness, the coning matching the 1.55
+used by the weights; delta-3 -18 deg with the horn level at 20.5 deg collective, TM X-73213), 458 rpm, sea level,
+limited-power trim. Pitch-lag coupling -0.2 (lag back / pitch up) is assumed, inside the range of Johnson's figure.
+
+| Model build | 0.23 t/c | 0.15 t/c |
+|---|---|---|
+| Rigid in-plane, fixed delta-3, incompressible | stable to 500 kt | stable to 500 kt |
+| + pitched lag/coning, delta-3(collective), Prandtl-Glauert, pitch-lag | 399 kt (sym beam) | 342 kt (sym beam) |
+| x knockdown 0.84 (set on the thick wing) | 335 kt | **287 kt** |
+| CAMRAD II (flexible blades and pitch dynamics) | 335 kt (antisym beam) | 275 kt (antisym beam) |
+
+- The model reproduces the thick-to-thin drop (57 kt against 60) without tuning; the calibrated thin-wing boundary
+  is 4 % above CAMRAD's.
+- The rigid-blade result agrees with the report's rigid-blade case: the instability needs the blade bending and
+  pitch couplings, as Acree and Johnson both state.
+- Uncalibrated, the model is about 64 kt high (non-conservative), and its critical mode is symmetric beam where
+  CAMRAD's is antisymmetric beam. Remaining differences: blade torsion and pitch dynamics (Johnson: mostly
+  quasi-static, but they move the boundary), real bending mode shapes, CAMRAD's airfoil tables.
+- Sensitivities: trim thrust has almost no effect; the structural damping convention matters (QDAMP as g/2 versus a
+  damping ratio moves the thin wing from 342 to 383 kt); pitch-lag beyond -0.5 destabilizes the rotor's collective
+  lag mode instead.
+
+**Decision:** use the model with the 0.84 airspeed knockdown (XV-15-calibrated, like the weight factors) for
+gimballed stiff-inplane proprotors, with the frequency-placement margins kept alongside until the Halo check is
+done. Requirement: calibrated flutter speed at least 1.15 x V_D at every rotor speed.
+
+## Next
+
+1. Halo check: cantilever airframe from the AFDD wing stiffnesses, tip mass and pylon inertia
+   (`output/structure/reference.json`, extended with the rotor speed at maximum speed and the pylon inertia),
+   calibrated flutter speed against 1.15 x V_D; stiffness sensitivities.
+2. In the loop: the least-damped eigenpair at 1.15 V_D / 0.84 as optimizer variables (A v = lambda v,
+   normalization), Re(lambda) at or below a damping margin, so the wing is sized for flutter speed directly.
+3. Fidelity: blade torsion with control-system stiffness (pitch-lag from first principles rather than assumed),
+   then a second calibration aircraft (JVX/V-22 data) for the knockdown.
