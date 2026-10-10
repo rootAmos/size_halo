@@ -1,11 +1,11 @@
 """Twelve months to first flight: a simpler Block 0 flight article first, the final design (Block 1) in parallel.
 
-First flight is a hover in helicopter mode, nacelles locked at 90 deg, on 2027-10-11 (twelve months from
-2026-10-11); conversion is cleared afterwards by build-up flight test. Block 0 takes the low-risk, fast option on every
+First flight is a hover in helicopter mode, nacelles locked at 90 deg, on 2027-10-10 (twelve months from
+2026-10-10); conversion is cleared afterwards by build-up flight test. Block 0 takes the low-risk, fast option on every
 trade that gates first flight; the rest lock on the Block 1 calendar, informed by the integration rig, the Block 0
 build and its flight data. Every date here is a proposal.
 """
-first_flight = "2027-10-11"
+first_flight = "2027-10-10"
 
 # Phase lock dates. Block 0: the twelve-month plan. Block 1: the final design, which locks later on the same phases.
 block0_phases = {"Conceptual design": "2026-12-15", "Preliminary design": "2027-03-15",
@@ -60,7 +60,7 @@ blocks = {
 
 # Gantt: (lane, task, start, end); start == end is a milestone.
 schedule = (
-    ("Block 0 design", "Configuration freeze and supplier selection", "2026-10-12", "2026-12-15"),
+    ("Block 0 design", "Configuration freeze and supplier selection", "2026-10-10", "2026-12-15"),
     ("Block 0 design", "Configuration freeze", "2026-12-15", "2026-12-15"),
     ("Block 0 design", "Preliminary design", "2026-12-15", "2027-03-15"),
     ("Block 0 design", "Preliminary design review", "2027-03-15", "2027-03-15"),

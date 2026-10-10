@@ -6,13 +6,13 @@
   "mass_takeoff_kg": 6885.064235165387,
   "mass_empty_kg": 5048.620948255306,
   "mass_payload_kg": 900.0,
-  "first_flight": "2027-10-11"
+  "first_flight": "2027-10-10"
  },
  "gates": {
   "Conceptual design": "2026-12-15",
   "Preliminary design": "2027-03-15",
   "Detailed design": "2027-06-15",
-  "Test and validation": "2027-10-11",
+  "Test and validation": "2027-10-10",
   "After entry into service": "2030-12-31"
  },
  "portfolio": {
@@ -1151,8 +1151,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2027-10-11",
-   "days_to_lock": 366,
+   "lock_date": "2027-10-10",
+   "days_to_lock": 365,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Verification without option data; moves gap.hv_installation, gap.conversion_actuators",
@@ -1169,8 +1169,8 @@
    "value_high_kg": null,
    "share": null,
    "exposure_kg": null,
-   "lock_date": "2027-10-11",
-   "days_to_lock": 366,
+   "lock_date": "2027-10-10",
+   "days_to_lock": 365,
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Verification without option data",
@@ -1301,7 +1301,7 @@
     },
     {
      "label": "Weigh the first article (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 4.078701048389687,
      "owner": "Structures",
      "done": false
@@ -1369,7 +1369,7 @@
     },
     {
      "label": "Weigh the first article (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 0.828736532011344,
      "owner": "Structures",
      "done": false
@@ -1437,7 +1437,7 @@
     },
     {
      "label": "Weigh the first article (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 5.601857656759409,
      "owner": "Structures",
      "done": false
@@ -1505,7 +1505,7 @@
     },
     {
      "label": "Weigh the first article (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 1.9483127296469636,
      "owner": "Structures",
      "done": false
@@ -1573,7 +1573,7 @@
     },
     {
      "label": "Weigh the first article (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 2.5838654122113915,
      "owner": "Structures",
      "done": false
@@ -1634,7 +1634,7 @@
     },
     {
      "label": "Weigh installed systems on the first article (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 6.109072625802008,
      "owner": "Flight controls and systems",
      "done": false
@@ -1695,7 +1695,7 @@
     },
     {
      "label": "Weigh installed systems on the first article (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 3.99388081785,
      "owner": "Systems",
      "done": false
@@ -1756,7 +1756,7 @@
     },
     {
      "label": "Weigh the first blade set and hub (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 10.123227550958145,
      "owner": "Rotor and drive",
      "done": false
@@ -1817,7 +1817,7 @@
     },
     {
      "label": "Weigh the first gearbox (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 4.386226349029273,
      "owner": "Rotor and drive",
      "done": false
@@ -1878,7 +1878,7 @@
     },
     {
      "label": "Weigh the first gearbox (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 2.1625377462125224,
      "owner": "Rotor and drive",
      "done": false
@@ -1939,7 +1939,7 @@
     },
     {
      "label": "Weigh the delivered unit with its installation kit (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 6.383362697409256,
      "owner": "Electrical",
      "done": false
@@ -2000,7 +2000,7 @@
     },
     {
      "label": "Weigh the delivered unit with its installation kit (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 4.225499999999999,
      "owner": "Electrical",
      "done": false
@@ -2032,7 +2032,7 @@
    "lock_date": "2026-12-15",
    "next_activity": {
     "label": "Weigh the delivered unit with its installation kit (test and validation)",
-    "due": "2027-10-11",
+    "due": "2027-10-10",
     "sigma_after": 6.325811365647103,
     "owner": "Propulsion",
     "done": false
@@ -2061,7 +2061,7 @@
     },
     {
      "label": "Weigh the delivered unit with its installation kit (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 6.325811365647103,
      "owner": "Propulsion",
      "done": false
@@ -2122,7 +2122,7 @@
     },
     {
      "label": "Weigh the first pack (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 4.751205070660537,
      "owner": "Electrical",
      "done": false
@@ -2183,7 +2183,7 @@
     },
     {
      "label": "Weigh the delivered unit with its installation kit (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 1.9035641727945993,
      "owner": "Thermal",
      "done": false
@@ -2244,7 +2244,7 @@
     },
     {
      "label": "Weigh the delivered unit with its installation kit (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 0.42711322360768217,
      "owner": "Electrical",
      "done": false
@@ -2312,7 +2312,7 @@
     },
     {
      "label": "Weigh the installed HV system (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 4.95,
      "owner": "Electrical",
      "done": false
@@ -2380,7 +2380,7 @@
     },
     {
      "label": "Weigh the first fittings (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 1.05,
      "owner": "Structures",
      "done": false
@@ -2441,7 +2441,7 @@
     },
     {
      "label": "Weigh the delivered actuators (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 0.6749999999999999,
      "owner": "Flight controls and systems",
      "done": false
@@ -2502,7 +2502,7 @@
     },
     {
      "label": "Weigh the installed loop with fluid (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 0.8,
      "owner": "Thermal",
      "done": false
@@ -2563,7 +2563,7 @@
     },
     {
      "label": "Weigh the installed crossings (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 0.4,
      "owner": "Electrical",
      "done": false
@@ -2624,7 +2624,7 @@
     },
     {
      "label": "Static test of the wing box (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 0.8,
      "owner": "Structures",
      "done": false
@@ -2685,7 +2685,7 @@
     },
     {
      "label": "Flight-test drag polar (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 0.015,
      "owner": "Aerodynamics",
      "done": false
@@ -2793,7 +2793,7 @@
     },
     {
      "label": "Pack ageing data from test and validation (test and validation)",
-     "due": "2027-10-11",
+     "due": "2027-10-10",
      "sigma_after": 0.01,
      "owner": "Electrical",
      "done": false
@@ -2884,6 +2884,12 @@
    "source": "trade register (examples/halo_trades.py)",
    "kind": "register",
    "summary": "0 added, 2 retired below the line"
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register (examples/halo_trades.py)",
+   "kind": "register",
+   "summary": "0 added, 0 retired below the line"
   },
   {
    "date": "2026-10-10",
@@ -4294,13 +4300,81 @@
      "value_kg": 5.13
     }
    ]
+  },
+  {
+   "date": "2026-10-10",
+   "source": "trade register",
+   "sigma_takeoff_kg": 462.24,
+   "margin_99_kg": 1075.3,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 79.53
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.7
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.73
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 21.98
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 15.04
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 9.7
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 9.37
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 7.96
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 7.43
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    },
+    {
+     "key": "engine-out hover 3/3: turboshaft power_shaft_W",
+     "value_kg": 6.01
+    },
+    {
+     "key": "hover: gearbox power_input_W",
+     "value_kg": 5.66
+    },
+    {
+     "key": "mass.wing",
+     "value_kg": 5.13
+    }
+   ]
   }
  ],
  "schedule": [
   {
    "lane": "Block 0 design",
    "task": "Configuration freeze and supplier selection",
-   "start": "2026-10-12",
+   "start": "2026-10-10",
    "end": "2026-12-15"
   },
   {
@@ -4396,13 +4470,13 @@
   {
    "lane": "Test",
    "task": "First flight: hover, helicopter mode",
-   "start": "2027-10-11",
-   "end": "2027-10-11"
+   "start": "2027-10-10",
+   "end": "2027-10-10"
   },
   {
    "lane": "Test",
    "task": "Envelope expansion to conversion",
-   "start": "2027-10-11",
+   "start": "2027-10-10",
    "end": "2028-03-31"
   },
   {
@@ -5865,7 +5939,7 @@
    "category": "Verification",
    "discipline": "",
    "lock_gate": "Test and validation",
-   "lock_date": "2027-10-11",
+   "lock_date": "2027-10-10",
    "status": "open",
    "decision": "",
    "decided_date": "",
@@ -5893,7 +5967,7 @@
    "category": "Verification",
    "discipline": "",
    "lock_gate": "Test and validation",
-   "lock_date": "2027-10-11",
+   "lock_date": "2027-10-10",
    "status": "open",
    "decision": "",
    "decided_date": "",

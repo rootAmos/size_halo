@@ -392,17 +392,18 @@ function gantt() {
   const ff = (V.baseline || {}).first_flight;
   const t = d => Date.parse(d) / 864e5;
   const lanes = [...new Set(tasks.map(k => k.lane))];
-  const lo = Math.min(...tasks.map(k => t(k.start))), hi = Math.max(...tasks.map(k => t(k.end)));
+  const monthStart = (d, add) => { const x = new Date(d * 864e5); return t(new Date(Date.UTC(x.getUTCFullYear(), x.getUTCMonth() + add, 1)).toISOString().slice(0, 10)); };
+  const lo = monthStart(Math.min(...tasks.map(k => t(k.start))), 0), hi = monthStart(Math.max(...tasks.map(k => t(k.end))), 1);
   const W = 980, L = 170, R = 20, T = 34, RH = 30, laneGap = 10;
   const rows = []; lanes.forEach(l => tasks.filter(k => k.lane === l).forEach(k => rows.push(k)));
   const laneStart = {}; let y = T;
   lanes.forEach(l => { laneStart[l] = y; y += tasks.filter(k => k.lane === l && k.start !== k.end).length * RH + (tasks.some(k => k.lane === l && k.start === k.end) ? 0 : 0) + laneGap; });
   const H = y + 24;
   const X = d => L + (t(d) - lo) / (hi - lo) * (W - L - R);
-  const months = []; { const d0 = new Date(lo * 864e5); let d = new Date(Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth() + 1, 1)); while (t(d.toISOString().slice(0, 10)) <= hi) { months.push(d.toISOString().slice(0, 10)); d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)); } }
-  const mname = d => ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].at(Number(d.slice(5, 7)) - 1) + (d.slice(5, 7) === "01" ? " " + d.slice(2, 4) : "");
+  const months = []; { let d = new Date(lo * 864e5); while (t(d.toISOString().slice(0, 10)) < hi) { months.push(d.toISOString().slice(0, 10)); d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)); } }
+  const mname = (d, i) => ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].at(Number(d.slice(5, 7)) - 1) + (d.slice(5, 7) === "01" || i === 0 ? " " + d.slice(2, 4) : "");
   let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Twelve-month plan to first flight" style="width:100%;min-width:760px;height:auto;display:block">`;
-  s += months.map(m => `<line x1="${X(m)}" x2="${X(m)}" y1="${T - 8}" y2="${H - 20}" stroke="var(--rule-soft)"/><text x="${X(m) + 3}" y="${T - 14}">${mname(m)}</text>`).join("");
+  s += months.map((m, i) => `<line x1="${X(m)}" x2="${X(m)}" y1="${T - 8}" y2="${H - 20}" stroke="var(--rule-soft)"/><text x="${X(m) + 3}" y="${T - 14}">${mname(m, i)}</text>`).join("");
   const today = (V.as_of || "");
   if (today && t(today) >= lo && t(today) <= hi) s += `<line x1="${X(today)}" x2="${X(today)}" y1="${T - 8}" y2="${H - 20}" stroke="var(--muted)" stroke-dasharray="2 3"/><text x="${X(today) + 3}" y="${H - 6}">today</text>`;
   if (ff) s += `<line x1="${X(ff)}" x2="${X(ff)}" y1="${T - 8}" y2="${H - 20}" stroke="var(--crit)" stroke-width="1.5"/><text class="lab" x="${X(ff) + 4}" y="${H - 6}" style="fill:var(--crit)">first flight ${esc(ff)}</text>`;
