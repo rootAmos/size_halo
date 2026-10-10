@@ -26,9 +26,10 @@ from dataclasses import replace
 from datetime import date
 
 from aircraft_closure.ledger.ingest import ingest_sizing, set_sensitivity
-from aircraft_closure.ledger.model import Activity, Evidence, Ledger, Quantity
+from aircraft_closure.ledger.model import Evidence, Ledger, Quantity
 from aircraft_closure.ledger.store import load, save, snapshot, view
 from examples.halo_oew_uncertainty import item_definitions, maturity_levels
+from examples.halo_maturity import apply_paths
 from examples.halo_trades import phases, register
 
 directory = "ledger"
@@ -45,19 +46,6 @@ owners = {"Wing": "Structures", "Tails": "Structures", "Fuselage": "Structures",
           "Motors (with inverters)": "Electrical", "Generators (with inverters)": "Electrical",
           "Turboshafts": "Propulsion", "Battery": "Electrical", "Heat exchanger": "Thermal",
           "Protection and bus tie": "Electrical"}
-
-# Planned burn-down work already identified (docs/NEXT_STEPS.md); dates and target spreads are proposals.
-plans = {
-    "Wing": [Activity("FE: calibrated structure, root fittings and a buckling step", "2026-10-30", 0.06,
-                      "Structures")],
-    "Systems": [Activity("Second calibration aircraft (V-22 or AW609 group weights)", "2026-11-20", 0.09,
-                         "Weights")],
-    "Fuselage": [Activity("Second calibration aircraft (V-22 or AW609 group weights)", "2026-11-20", 0.07,
-                          "Weights")],
-    "Rotors": [Activity("Blade and hub layout weights", "2027-01-31", 0.05, "Rotor and drive")],
-    "Battery": [Activity("Pack layout: cell-to-pack fraction from a module design", "2026-12-01", 0.04,
-                         "Electrical")],
-}
 
 # (key, label, owner, mass kg, sigma kg, fidelity, gate, source, note)
 gaps = (
@@ -91,18 +79,28 @@ inputs = (
 # Margin label patterns -> (plain name, owner) for the binding limits. "{c}" is the flight condition.
 limit_patterns = (
     ("rotor_radius_m", "Rotor radius capped by the span (rotor diameter against span)", "Configuration",
-     "Architecture"),
+     "Architecture", "Re-layout for a larger rotor: span, rotor-fuselage clearance, wing-tip fitting station"),
     ("battery end voltage", "{c}: battery end voltage (2.5 V per cell cutoff)", "Electrical",
-     "Technology and material"),
-    ("heat_exchanger power_heat", "{c}: heat rejection at the exchanger rating", "Thermal", "Requirement"),
-    ("turboshaft power_shaft", "{c}: turboshaft power at the fixed 1,120 hp deck", "Propulsion", "Requirement"),
-    ("generator_gearbox power_input", "{c}: turboshaft power at the fixed 1,120 hp deck", "Propulsion", "Requirement"),
-    ("propulsor power_shaft", "{c}: rotor and gearbox power rating", "Rotor and drive", "Requirement"),
-    ("gearbox power_input", "{c}: rotor and gearbox power rating", "Rotor and drive", "Requirement"),
-    ("motor torque", "{c}: motor torque rating", "Electrical", "Technology and material"),
-    ("generator torque", "{c}: generator torque rating", "Electrical", "Technology and material"),
-    ("static_margin", "Static margin", "Flight controls and systems", "Margin policy"),
-    ("cn_beta", "Directional stability (Cn beta)", "Flight controls and systems", "Margin policy"),
+     "Technology and material", "Ask the cell supplier for a lower end-of-discharge voltage at the hover current, or "
+     "add series cells (ties to the bus-voltage trade)"),
+    ("heat_exchanger power_heat", "{c}: heat rejection at the exchanger rating", "Thermal", "Requirement",
+     "Take the hot-day hover case (4,000 ft, 95 F) to the customer with its weight price"),
+    ("turboshaft power_shaft", "{c}: turboshaft power at the fixed 1,120 hp deck", "Propulsion", "Requirement",
+     "Take this hover case to the customer with its weight price; confirm installed power with the engine supplier"),
+    ("generator_gearbox power_input", "{c}: turboshaft power at the fixed 1,120 hp deck", "Propulsion", "Requirement",
+     "Take this hover case to the customer with its weight price; confirm installed power with the engine supplier"),
+    ("propulsor power_shaft", "{c}: rotor and gearbox power rating", "Rotor and drive", "Requirement",
+     "Take the hover thrust-to-weight requirement to the customer with its weight price"),
+    ("gearbox power_input", "{c}: rotor and gearbox power rating", "Rotor and drive", "Requirement",
+     "Take the hover thrust-to-weight requirement to the customer with its weight price"),
+    ("motor torque", "{c}: motor torque rating", "Electrical", "Technology and material",
+     "Ask the machine supplier for a short-time torque rating for the failure case"),
+    ("generator torque", "{c}: generator torque rating", "Electrical", "Technology and material",
+     "Ask the machine supplier for a short-time torque rating for the failure case"),
+    ("static_margin", "Static margin", "Flight controls and systems", "Margin policy",
+     "Agree the minimum static margin with flight controls (augmented stability lets it fall)"),
+    ("cn_beta", "Directional stability (Cn beta)", "Flight controls and systems", "Margin policy",
+     "Agree the minimum directional stability with flight controls; V-tail sizing"),
 )
 
 
@@ -110,7 +108,7 @@ def limit_names(margins):
     names, limit_owners = {}, {}
     for label, _, _ in margins:
         condition = label.split(":")[0] if ":" in label else ""
-        for pattern, name, owner, category in limit_patterns:
+        for pattern, name, owner, category, action in limit_patterns:
             if pattern in label:
                 names[label], limit_owners[label] = name.format(c=condition), owner
                 break
@@ -119,12 +117,14 @@ def limit_names(margins):
 
 def classify(ledger):
     """Give every limit its decision type and phase (limits bind now: conceptual design), and every uncertain
-    quantity the maturity type."""
+    quantity the increase-maturity type."""
     phase = next(iter(phases))
     for q in ledger.quantities.values():
-        q.category = "Maturity"
+        q.category = "Increase maturity"
     for key, limit in ledger.limits.items():
-        limit.category = next((c for pattern, _, _, c in limit_patterns if pattern in key), "Requirement")
+        match = next((row for row in limit_patterns if row[0] in key), None)
+        limit.category = match[3] if match else "Requirement"
+        limit.action = match[4] if match else ""
         limit.lock_gate, limit.lock_date = phase, limit.lock_date or phases[phase]
 
 
@@ -140,8 +140,7 @@ def seed(result, today):
         sigma_fraction[key] = sigma
         gate = "Preliminary design" if group == "Airframe and systems" else "Conceptual design"
         ledger.quantities[key] = Quantity(
-            key, label, "mass", "kg", owners[label], gate, gates[gate], sizing_keys=tuple(keys),
-            plan=[replace(a) for a in plans.get(label, [])], note=f"{maturity}; {basis}")
+            key, label, "mass", "kg", owners[label], gate, gates[gate], sizing_keys=tuple(keys), note=f"{maturity}; {basis}")
     for key, label, owner, mass, sigma, fidelity, gate, source, note in gaps:
         ledger.quantities[key] = Quantity(key, label, "gap", "kg", owner, gate, gates[gate],
                                           evidence=[Evidence(today.isoformat(), mass, sigma, source, fidelity)],
@@ -156,8 +155,8 @@ def seed(result, today):
         q = ledger.quantities[slug(label)]
         mean = q.belief()[0]
         q.allowance = maturity_levels[maturity] * mean
-        q.plan = [replace(a, sigma_after=a.sigma_after * mean) for a in q.plan]   # fractions -> kg
     classify(ledger)
+    apply_paths(ledger)
     ledger.history.clear()                     # the ingest's snapshot predates the allowances and plans
     snapshot(ledger, source_sizing, today)
     return ledger
@@ -207,6 +206,7 @@ def main(argv=None):
         ledger = load(path_ledger)
         added, retired = register(ledger, gates, today.isoformat())
         classify(ledger)
+        apply_paths(ledger)
         ledger.runs.append(dict(date=today.isoformat(), source="trade register (examples/halo_trades.py)",
                                 kind="register", summary=f"{added} added, {retired} retired below the line"))
         snapshot(ledger, "trade register", today)

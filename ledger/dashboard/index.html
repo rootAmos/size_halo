@@ -78,6 +78,8 @@ svg .lab { fill: var(--ink); font-weight: 500; }
 .log .src { color: var(--muted); }
 a { color: var(--accent); }
 .empty { color: var(--muted); padding: 24px 0; }
+ol.path { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+ol.path li.done { color: var(--muted); }
 tr.phase td { background: var(--bg); border-bottom: 1px solid var(--rule); padding-top: 14px; }
 tr.phase b { font: 600 15px var(--display); margin: 0 8px; }
 table.matrix { min-width: 760px; }
@@ -122,7 +124,7 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
     <section class="panel" aria-labelledby="h-rank">
       <div style="display:grid;gap:4px">
         <h2 id="h-rank">What to work on next</h2>
-        <p class="lede">Grouped by the phase in which each decision locks and ranked within it by the take-off weight it can save. Maturity work saves the 99 % margin we no longer have to carry; the other types save weight directly. Bars show the range on a common scale.</p>
+        <p class="lede">Grouped by the phase in which each decision locks and ranked within it by the take-off weight it can save. Increasing maturity saves the 99 % margin we no longer have to carry; the other types save weight directly. Bars show the range on a common scale.</p>
       </div>
       <div class="controls">
         <div class="controls" id="kinds" role="group" aria-label="Filter by decision type"></div>
@@ -178,7 +180,7 @@ const TYPES = {
   "Architecture": { color: "--t-arch", q: "How the parts fit and fail" },
   "Technology and material": { color: "--t-tech", q: "What it is made of and with" },
   "Margin policy": { color: "--t-margin", q: "How much margin and redundancy we buy" },
-  "Maturity": { color: "--t-evid", q: "How far we firm up an estimate before we commit" },
+  "Increase maturity": { color: "--t-evid", q: "Firm up an estimate before we commit: select, verify, size, lay out, weigh" },
   "Verification": { color: "--t-verif", q: "How we will prove it" },
 };
 const state = { kinds: new Set(Object.keys(TYPES)), owner: "", sort: "value", open: null };
@@ -186,7 +188,7 @@ try { const s = JSON.parse(localStorage.getItem("ledger-view") || "{}"); if (s.s
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const fmt = (kg, d = 0) => kg == null || !isFinite(kg) ? "—" : (kg * LB).toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d });
-const kindColor = k => `var(${(TYPES[k] || TYPES["Maturity"]).color})`;
+const kindColor = k => `var(${(TYPES[k] || TYPES["Increase maturity"]).color})`;
 let V = null;
 
 function remember() { try { localStorage.setItem("ledger-view", JSON.stringify({ sort: state.sort, owner: state.owner })); } catch (e) {} }
@@ -239,6 +241,9 @@ function detail(r) {
   if (t) {
     if (t.precedent) parts.push(`<div><h3>Precedent</h3><div>${esc(t.precedent)}</div>${(t.sources || []).map(([l, u]) => `<div class="sub"><a href="${esc(u)}" target="_blank" rel="noopener">${esc(l)}</a></div>`).join("")}</div>`);
     if (t.note) parts.push(`<div><h3>Note</h3><div>${esc(t.note)}</div></div>`);
+  }
+  if (q && q.plan && q.plan.length) {
+    parts.push(`<div><h3>Maturity path</h3><ol class="path">${q.plan.map(a => `<li class="${a.done ? "done" : ""}">${a.done ? "✓ " : ""}${esc(a.label)} <span class="sub num">±${(+a.sigma_after).toPrecision(2)} ${esc(q.unit)}</span></li>`).join("")}</ol></div>`);
   }
   if (q) {
     parts.push(`<div><h3>Estimate history</h3><ul>${q.evidence.map(e => `<li><span class="num">${esc(e.date)}</span> ${esc(e.source)}: <span class="num">${(+e.value).toPrecision(4)} ± ${(+e.sigma).toPrecision(2)}</span> ${esc(q.unit)} <span class="sub">(tier ${e.fidelity})</span></li>`).join("")}</ul></div>`);

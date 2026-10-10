@@ -121,7 +121,7 @@ def priorities(ledger, today=None):
         out.append(Priority(
             limit.key, limit.label, "relax limit", limit.owner, price * limit.relaxation_low,
             price * limit.relaxation_low, price * limit.relaxation_high, None, None, limit.lock_date,
-            _days(limit.lock_date, today), "", "argue the requirement or change the design that meets it",
+            _days(limit.lock_date, today), "", limit.action or "argue the limit or change the design that meets it",
             f"{price / 100:.1f} kg take-off per 1 % of the limit", limit.category, limit.lock_gate))
     for trade in ledger.trades.values():
         if trade.status != "open":
