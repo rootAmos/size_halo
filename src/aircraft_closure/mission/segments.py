@@ -26,12 +26,14 @@ class HoverSegment:
     active_lane_count: Any = None
     active_battery_string_count: Any = None
     count_buses_failed: int = 0
+    bus_tie: Any = None                   # plan 040: "open" / "closed" for the per-bus engine-out (None: lumped)
 
     def duration_s(self):
         return self.duration_s_given
 
     def flight_condition(self, soc):
         return FlightCondition(mode="hover", velocity_m_s=0.0, altitude_m=self.altitude_m, thrust_to_weight=1.0,
+                               bus_tie=self.bus_tie,
                                active_generator_count=self.active_generator_count,
                                active_lane_count=self.active_lane_count,
                                active_battery_string_count=self.active_battery_string_count,

@@ -56,7 +56,9 @@ import aerosandbox as asb
 import aerosandbox.numpy as np
 
 from aircraft_closure.aerodynamics.slipstream import RotorState
+from aircraft_closure.core.margins import margin_below
 from aircraft_closure.core.ports import ElectricalPortValue, MechanicalPortValue
+from aircraft_closure.performance.bus_split import build_split_bus, check_split_supported
 from aircraft_closure.powertrain.compatibility import operating_margins
 from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery
 from aircraft_closure.powertrain.components.ntu_heat_exchanger import NtuRamAirHeatExchanger
@@ -85,6 +87,9 @@ class FlightCondition:
     active_lane_count: Any = None
     active_battery_string_count: Any = None
     count_buses_failed: int = 0
+    # Plan 040: None (lumped buses) or the bus tie state, "open" / "closed", of a per-bus engine-out hover
+    # (`bus_split`): the failed turbogenerator(s) on bus A, each bus with its own strings, lanes and voltage.
+    bus_tie: Any = None
 
     def __post_init__(self):
         if self.mode not in ("hover", "airplane"):
@@ -114,6 +119,7 @@ class FlightPoint:
     thermal: Any = None                    # Tier 19: PointThermal
     electrical: Any = None          # ElectricalLayerResult (Tier 15) or None without the electrical layer
     redundancy: Any = None          # RedundancyPointResult (Tier 18) or None without redundancy hardware or lanes
+    split: Any = None               # BusSplitResult (plan 040) for a per-bus engine-out point, else None
 
 
 @dataclass(frozen=True)
@@ -238,6 +244,14 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     torque_motor_Nm = (torque_gearbox_input_Nm if count_lanes_active == 1
                        else torque_gearbox_input_Nm / count_lanes_active)
     gear = gearbox_model.evaluate(speed_motor_rad_s, torque_gearbox_input_Nm)
+    if condition.bus_tie is not None:
+        return _build_split_point(
+            opti, aircraft, condition, weight_N=weight_N, atmosphere=atmosphere, rotor=rotor, rotor_model=rotor_model,
+            gear=gear, active_rotor_count=active_rotor_count, active_generator_count=active_generator_count,
+            torque_gearbox_input_Nm=torque_gearbox_input_Nm, speed_rotor_rad_s=speed_rotor_rad_s,
+            speed_motor_rad_s=speed_motor_rad_s, thrust_per_rotor_N=thrust_per_rotor_N, duration_s=duration_s,
+            voltage_rc_start_V=voltage_rc_start_V, temperature_start_C=temperature_start_C,
+            hybridization_electric_min=hybridization_electric_min)
 
     # With cooling (Tier 19) start at zero current: 50 A held through a long cruise drives the coulomb-counted SOC
     # chain far outside the cell data, and the battery loss there, through the exchanger's cubic pumping law,
@@ -471,3 +485,48 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
                        fuel_flow_kg_s=active_generator_count * engine.fuel_flow_kg_s,
                        margins=margins, heat_loads=heat_loads, thermal=thermal, electrical=electrical,
                        redundancy=redundancy)
+
+
+def _build_split_point(opti, aircraft, condition, *, weight_N, atmosphere, rotor, rotor_model, gear,
+                       active_rotor_count, active_generator_count, torque_gearbox_input_Nm, speed_rotor_rad_s,
+                       speed_motor_rad_s, thrust_per_rotor_N, duration_s, voltage_rc_start_V, temperature_start_C,
+                       hybridization_electric_min):
+    """Plan 040: the per-bus engine-out hover (`bus_split`); rotor, gearbox and speed limits as the lumped point."""
+    topology = aircraft.powertrain.topology
+    instances = topology.instances
+    motor_model = instances["motor"].component
+    gearbox_model = instances["gearbox"].component
+    check_split_supported(topology, condition, instances["battery"].component, "inverter_motor" in instances)
+    state = degraded_state(topology, condition)
+    power_scale_W = active_rotor_count * motor_model.power_rated_W * state.counts.count_lanes
+    split, heat_loads, thermal, margins_split, fuel_flow_kg_s, power_battery_W, power_demand_W = build_split_bus(
+        opti, aircraft, condition, heat_loads_shared=(HeatLoad("gearbox", gear.power_loss_W, active_rotor_count),),
+        atmosphere=atmosphere, active_rotor_count=active_rotor_count, active_generator_count=active_generator_count,
+        torque_gearbox_input_Nm=torque_gearbox_input_Nm, speed_motor_rad_s=speed_motor_rad_s, duration_s=duration_s,
+        voltage_rc_start_V=voltage_rc_start_V, temperature_start_C=temperature_start_C, power_scale_W=power_scale_W,
+        hybridization_electric_min=hybridization_electric_min)
+    opti.subject_to(speed_motor_rad_s <= motor_model.max_speed_rad_s)
+    if rotor_model.speed_tip_max_m_s is not None:
+        opti.subject_to(speed_rotor_rad_s * rotor_model.radius_m() <= rotor_model.speed_tip_max_m_s)
+    margins = (margin_below("gearbox power_input_W", speed_motor_rad_s * torque_gearbox_input_Nm,
+                            gearbox_model.power_rated_W),
+               margin_below("propulsor power_shaft_W", rotor.shaft_power_W,
+                            instances["propulsor"].component.max_shaft_power_W)) + margins_split
+    margins = tuple(type(m)(f"{condition.label}: {m.label}", m.value) for m in margins) + thermal.margins
+    bus_A, bus_B = split.buses["A"], split.buses["B"]
+    power_battery_bus_W = bus_A.power_battery_bus_W + bus_B.power_battery_bus_W
+    redundancy = RedundancyPointResult(
+        count_lanes_active=state.count_lanes_active, count_strings_active=state.count_strings_active,
+        count_buses_failed=0, torque_gearbox_input_Nm=torque_gearbox_input_Nm,
+        current_string_A=bus_B.current_battery_A / (state.count_strings_active / state.counts.count_buses),
+        power_loss_strings_W=0.0, current_tie_A=split.current_tie_A, power_loss_tie_W=split.power_loss_tie_W)
+    # The healthy bus (B) stands for the point in the lumped fields (battery, generator, engine, motor torque).
+    return FlightPoint(condition=condition, weight_N=weight_N, alpha_deg=None, aero=None,
+                       thrust_per_rotor_N=thrust_per_rotor_N, power_shaft_rotor_W=rotor.shaft_power_W,
+                       speed_rotor_rad_s=speed_rotor_rad_s, speed_motor_rad_s=speed_motor_rad_s,
+                       torque_motor_Nm=bus_B.torque_motor_Nm,
+                       power_electric_motors_W=bus_A.power_motors_W + bus_B.power_motors_W,
+                       hybridization_electric=power_battery_bus_W / power_demand_W, battery=bus_B.battery,
+                       generator=bus_B.generator, engine=bus_B.engine, power_battery_W=power_battery_W,
+                       fuel_flow_kg_s=fuel_flow_kg_s, margins=margins, heat_loads=heat_loads, thermal=thermal,
+                       redundancy=redundancy, split=split)
