@@ -38,8 +38,11 @@ def baseline_variant():
     return Variant("baseline", requirements, assumptions, result, 0.0, "cache")
 
 
-def size(label, requirements=None, assumptions=None, start=None, objective="mass_takeoff"):
-    """Size one variant. Unset `requirements` / `assumptions` default to the baseline's; `start` is a Variant to warm-start from."""
+def size(label, requirements=None, assumptions=None, start=None, objective="mass_takeoff", max_iter=1000):
+    """Size one variant. Unset `requirements` / `assumptions` default to the baseline's; `start` is a Variant to warm-start from.
+
+    `max_iter` caps IPOPT on the warm start (a good warm start converges in a few hundred iterations), so a bad one fails fast and
+    the full strategy takes over."""
     base = baseline_variant()
     requirements = requirements if requirements is not None else base.requirements
     assumptions = assumptions if assumptions is not None else base.assumptions
@@ -47,7 +50,7 @@ def size(label, requirements=None, assumptions=None, start=None, objective="mass
     time_start_s = time.perf_counter()
     try:
         with quiet_solver():
-            result = solve_halo_sizing(requirements, assumptions, initial=start.result, objective=objective)
+            result = solve_halo_sizing(requirements, assumptions, initial=start.result, objective=objective, max_iter=max_iter)
         started_from = start.label
     except RuntimeError:
         print(f"[{label}: the warm start from '{start.label}' failed; trying the full starting-point strategy (can take minutes)]")

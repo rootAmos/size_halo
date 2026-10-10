@@ -21,6 +21,20 @@ The discipline tutorials end with a **Limits and next steps** section: what the 
 Each notebook ends with `check_summary()`: the `check(...)` lines verify the claims the text makes (closed-form identities,
 reproductions of `examples/` drivers and documented results). A notebook that still passes still tells the truth about the code.
 
+## Start here if you want to size aircraft: the workbook
+
+Hands-on exercises in `workbook/`, each a variant you size yourself and read like a designer (change one input, `size(...)` it warm-started from the
+baseline in about 30 s, then `compare`, `weight_changes` and `binding_changes` say what moved, where and why). The helpers are in `sizing_workbench.py`.
+
+| Notebook | You will | Run time |
+|---|---|---|
+| [W1 Your first variant](workbook/W1_first_variant.ipynb) | change payload and range; read the growth factor, where the weight went and what sized it | 3 min |
+| [W2 Requirements and engines](workbook/W2_requirements_and_engines.ipynb) | tell binding from non-binding requirements (190 kt changes nothing; the hot-day hover costs about 690 lb); bigger and rubber engines | 7 min |
+| [W3 Technology and architecture](workbook/W3_technology_and_architecture.ipynb) | a better cell, the price of redundancy (about 1,240 lb), and a model switch that goes the "wrong" way | 4 min |
+| [W4 Trade studies](workbook/W4_trade_studies.ipynb) | chained range and payload sweeps, slopes, growth factors and unit-count steps; a sweep of your own | 15 min |
+
+The tutorials below explain how the model works underneath; dip into them when a workbook result needs explaining.
+
 ## The series (run in order)
 
 | # | Notebook | Run time | What you can do afterwards |
