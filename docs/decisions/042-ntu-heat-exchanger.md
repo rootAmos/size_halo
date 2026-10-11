@@ -101,6 +101,14 @@ duct above, a fan rating, and labelled mass allowances.
     tips and back at 0.9 kg/m, tube plus glycol).
   These are the author's estimates, not from Kellermann 2021 (whose mass equations are not published) or
   OpenConcept (which carries no duct or fan mass); they are kept explicit so they can be replaced.
+- **Duct margins** at every thermal point: the core-exit total pressure (after the diffuser and core losses, with
+  the fan) at or above ambient, so the nozzle can expel the flow; and the nozzle no larger than the core face. The
+  duct keeps its pressure finite for iterates whose losses exceed the inlet pressure (a smooth floor at 10 % of
+  ambient); without the first margin that floor and the expansion floor let the optimizer "pass" the flow at a
+  vanishing exit velocity through a huge nozzle (found in the second full solve, see the log).
+- **Positivity.** The per-point air flow, the core counts, the nozzle area and the fan rating are log-transformed
+  Opti variables: an Opti lower bound is a constraint that iterates may violate, and the core's fractional
+  Reynolds powers return NaN for a negative flow (found in the third full solve).
 - **Trajectory** (plan 036): only the mass-per-watt model is supported there for now (it raises otherwise).
 
 ## Verification (tests/thermal)
@@ -115,12 +123,22 @@ duct above, a fan rating, and labelled mass allowances.
 - CasADi: every output is an expression in the core counts, nozzle area and mass flow inside `asb.Opti`.
 - Reference case: Kellermann's 30 % split design point (96.3 kW, top of climb) as an order-of-magnitude check on
   core size and mass.
+- Sizing option (`tests/powertrain/test_ntu_heat_exchanger.py`, `tests/performance/test_flight_point_ntu_cooling.py`,
+  `tests/integration/test_halo_ntu_cooling.py`): the mass items add up with the stated allowances; the heat Q* that
+  zeroes the margin is what the core rejects with the coolant entering at T_c + Q*/C_c and leaving at T_c; more air
+  rejects more and costs more pressure; the duct-pressure margin is negative in hover without the fan and
+  positive with it; a small `asb.Opti` sizes core, nozzle and fan for a hot-day hover and a cruise point (hover
+  heat and fan margins bind, both residuals zero, under the old 127 kg); in a flight point the duct residual is
+  zero, the core covers the heat, the extra thrust equals the duct drag and the fan power joins the bus demand;
+  the Halo build installs the option's cooler and keeps the mass-per-watt one by default.
 
 ## Assumptions
 
 - Coolant 50 % water-glycol, properties constant at the mean temperature; air properties at the core inlet.
 - Aluminium core (2,700 kg/m³, 190 W/(m K)); fin 0.102 mm, plate 0.2 mm, case 2 mm (OpenConcept defaults).
-- Diffuser, nozzle and fan masses are not yet in this plan; the coolant loop gap stays in the ledger.
+- Sizing option: duct, fan and pump/pipe allowances as above (author estimates); coolant flow fixed at 2.0 kg/s;
+  pump power not charged (about 0.6 kW at the solved 153 kPa coolant-side loss, 50 % pump efficiency); a
+  fixed-geometry duct (one nozzle area; no exit flap), no inlet spillage drag, fan efficiency 0.6 as before.
 
 ## Progress log
 
@@ -136,3 +154,40 @@ duct above, a fan rating, and labelled mass allowances.
   drag. Next: the `heat_exchanger_model="ntu"` option in the sizing (core counts and nozzle area as design
   variables, one air-flow variable per thermal point, hover fan pressure rise per hover point), then a
   re-solve of the reference.
+- 2026-10-10/11: sizing option `heat_exchanger_model="ntu"` built (above); 14 new tests pass, with the existing
+  thermal, flight-point thermal, hot-day, duct and core modules (83 tests in the touched modules, including the
+  trajectory thermal tests). Full solves from the cached reference (15,179 lb), one slot each:
+  1. NTU: stopped on NaN (`Invalid_Number_Detected`, 283 s): iterates with a negative core-exit pressure.
+  2. NTU with the pressure floor: converged to 14,292 lb, but on a loophole (a 1 MPa air-side loss, exit velocity
+     0.8 m/s through a huge nozzle). Rejected; the duct margins were added.
+  3. NTU with the duct margins: iteration limit (2,426 s) with thousands of NaN evaluations from negative flows.
+  4. NTU with log-transformed variables: converged in 118 s (reproduced in 112 s by a second run): **14,297 lb,
+     -882 lb**, every margin met.
+  5. Default with the final code: 15,179.0 lb (unchanged, twice).
+  6. Both with relaxed machine units (`integer_units=False`) to split the change: default 14,300 lb (generator
+     2.004 units), NTU 13,853 lb (1.945 units): the cooler itself is worth **-447 lb**; the rest (-435 lb) is the
+     generator falling from 3 whole units to 2, because the reference sits 0.2 % above the 2-unit threshold.
+
+  NTU result (integer units): cooler 47.6 kg (core 9.2, ducts 4.2, fans 4.3, pump and pipes 30) against 126.9 kg;
+  core 1.03 m wide x 0.34 m tall x 0.067 m deep (counts 708 x 11.1 x 21.7), nozzle 0.082 m2, fan rating 8.6 kW.
+  Hot-day hover: 3.6 kg/s of air, effectiveness 0.59, fan 8.6 kW (5.4 kW before); the hot-day hover still binds
+  (heat rejection and fan rating), and so do the cold-start take-off, landing and engine-out hovers' heat
+  rejection. Cruise cooling drag 53 N (2.9 N before; 4.5 kW of propulsive power at 85 m/s): the one nozzle is
+  sized for hover, so cruise runs 5.3 kg/s through it, twice what the heat needs; the Meredith recovery is in the
+  net (exit 75 m/s). Coolant-side loss 153 kPa. Machine units: motor 2, generator 2 (3 before). Figure:
+  `docs/figures/ntu_heat_exchanger.png` (`python -m examples.ntu_heat_exchanger_figure` on the four pickles).
+  Not done: an exit flap (per-point nozzle area), which should cut most of the cruise drag; pump power; the
+  trajectory with this cooler.
+
+## Slide summary
+
+**A sized ε-NTU cooler weighs 48 kg, not 127 kg, and the Halo closes at 14,297 lb (-882 lb).**
+
+- Cooler 47.6 kg: core 9 kg (1.03 x 0.34 x 0.07 m), ducts 4, fans 4 (8.6 kW), pump and pipes 30 (estimate).
+- Hot-day hover still sizes it: fan 8.6 kW (was 5.4 kW); cruise cooling drag 53 N (was 3 N) through a duct whose
+  fixed nozzle is sized for hover.
+- With machine units relaxed the cooler alone is worth -447 lb; the other -435 lb is the generator dropping from 3
+  units to 2, since the reference sat 0.2 % over the threshold.
+
+Caveat: half the saving is a whole-unit step on a knife edge, and the allowances (30 kg pump and pipes, 12 kg/m2
+ducts, 2 kW/kg fans) are author estimates; the mass-per-watt model stays the default until they are checked.
