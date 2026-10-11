@@ -9,7 +9,8 @@ is a dimensionless calibration multiplier. CG sits at 40 % of the MAC.
 Tier 20: `Wing.mass_model` selects an interchangeable wing mass submodel.
 None keeps Raymer (the simplest model); `TiltrotorWingMassModel` is the AFDD
 tiltrotor wing (NDARC sec. 19-1.1), sized by torsion and bending frequencies
-in per rev and by a jump take-off.
+in per rev and by a jump take-off. Plan 054: `BottomUpWingMassModel` sizes the
+wing box item by item with the same frequency placement and keeps the layout.
 """
 from dataclasses import dataclass, field
 from typing import Any
@@ -19,7 +20,7 @@ import aerosandbox.library.weights.raymer_general_aviation_weights as raymer
 import aerosandbox.numpy as np
 import aerosandbox.tools.units as u
 
-from aircraft_closure.weights import afdd
+from aircraft_closure.weights import afdd, wing_box
 
 
 def _trapezoid_chords_m(area_m2, aspect_ratio, taper_ratio):
@@ -256,3 +257,48 @@ class TiltrotorWingMassModel:
         """Realized (torsion, beam, chord) wing frequencies as fractions of a rotor speed (whirl-flutter margins)."""
         return (masses.frequency_torsion_rad_s / speed_rotor_rad_s, masses.frequency_beam_rad_s / speed_rotor_rad_s,
                 masses.frequency_chord_rad_s / speed_rotor_rad_s)
+
+
+@dataclass(frozen=True)
+class BottomUpWingMassModel:
+    """Bottom-up tiltrotor wing box for `Wing.mass_model` (plan 054; `weights.wing_box`): every primary item sized
+    for its own load case, no calibration factor, the sized layout in the result. Same frequency placement and
+    tip-mass inputs as `TiltrotorWingMassModel`; `offset_cg_tip_m` is the tip mass ahead of the box (airplane-mode
+    inertia torque)."""
+    mass_tip_kg: Any
+    radius_gyration_pylon_m: Any
+    speed_rotor_design_rad_s: Any
+    width_fuselage_m: Any
+    offset_cg_tip_m: Any = 0.5
+    frequency_torsion_per_rev: Any = 1.087
+    frequency_beam_per_rev: Any = 0.432
+    frequency_chord_per_rev: Any = 0.825
+    thickness_to_chord: Any = 0.23
+    material: Any = field(default_factory=wing_box.graphite_epoxy_wing_box_material)
+    layout: Any = field(default_factory=wing_box.WingBoxLayout)
+    count_rotors: int = 2
+    load_factor_ultimate: Any = 4.5
+    load_factor_jump: Any = 2.0
+    smoothing: Any = 0.0
+
+    def masses(self, wing, condition):
+        return wing_box.size_wing_box(
+            span_m=wing.span_m(), chord_m=wing.chord_mean_m(), thickness_to_chord=self.thickness_to_chord,
+            mass_design_kg=condition.mass_design_kg, mass_tip_kg=self.mass_tip_kg,
+            radius_gyration_pylon_m=self.radius_gyration_pylon_m, offset_cg_tip_m=self.offset_cg_tip_m,
+            speed_rotor_design_rad_s=self.speed_rotor_design_rad_s,
+            frequency_torsion_per_rev=self.frequency_torsion_per_rev, frequency_beam_per_rev=self.frequency_beam_per_rev,
+            frequency_chord_per_rev=self.frequency_chord_per_rev, width_attachment_m=self.width_fuselage_m,
+            material=self.material, layout=self.layout, load_factor_ultimate=self.load_factor_ultimate,
+            load_factor_jump=self.load_factor_jump, count_rotors=self.count_rotors, smoothing=self.smoothing)
+
+    def mass_kg(self, wing, condition):
+        return self.masses(wing, condition).total()
+
+    def strain_cap_jump_ultimate(self, masses, wing, condition, **_):
+        """(beam, peak) ultimate strain of the lower cover at the root station; the box is sized for it, so the
+        peak sits at or below the allowable by construction (plan 054)."""
+        peak = masses.strain_root_lower_cover
+        return peak / self.layout.factor_peak_root, peak
+
+    frequency_per_rev = staticmethod(TiltrotorWingMassModel.frequency_per_rev)

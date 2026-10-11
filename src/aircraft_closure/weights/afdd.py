@@ -139,6 +139,16 @@ class TiltrotorWingMasses:
                 + self.mass_fold_kg)
 
 
+def wing_tiltrotor_mode_inertias(span_m, mass_tip_kg, radius_gyration_pylon_m, mass_design_kg, count_tips=2):
+    """NDARC's single-mode wing relations (sec. 19-1.1): (bending, torsion) terms such that a stiffness EI or GJ
+    gives the frequency sqrt(stiffness / term). The AFDD wing and the bottom-up wing box (plan 054) both place
+    the wing frequencies with them."""
+    factor_mode = 1 - count_tips * mass_tip_kg / mass_design_kg
+    bending_mass_kg_m3 = span_m**3 / 24 * 0.5 * mass_tip_kg * factor_mode
+    torsion_inertia_kg_m3 = 0.5 * span_m * 0.5 * mass_tip_kg * radius_gyration_pylon_m**2
+    return bending_mass_kg_m3, torsion_inertia_kg_m3
+
+
 def wing_tiltrotor_afdd_masses(span_m, chord_m, thickness_to_chord, fraction_chord_torque_box, mass_design_kg,
                                mass_tip_kg, radius_gyration_pylon_m, speed_rotor_design_rad_s,
                                frequency_torsion_per_rev, frequency_beam_per_rev, frequency_chord_per_rev,
@@ -180,12 +190,11 @@ def wing_tiltrotor_afdd_masses(span_m, chord_m, thickness_to_chord, fraction_cho
     factor_beam, factor_chord, factor_torsion, factor_spar_cap = section_form_factors_tiltrotor_wing(
         thickness_to_chord, fraction_chord_torque_box)
     fraction_tip = count_tips * mass_tip_kg / mass_design_kg
-    factor_mode = 1 - fraction_tip
     frequency_torsion_rad_s = frequency_torsion_per_rev * speed_rotor_design_rad_s
     frequency_beam_rad_s = frequency_beam_per_rev * speed_rotor_design_rad_s
     frequency_chord_rad_s = frequency_chord_per_rev * speed_rotor_design_rad_s
-    bending_mass_kg_m3 = span_m**3 / 24 * 0.5 * mass_tip_kg * factor_mode
-    torsion_inertia_kg_m3 = 0.5 * span_m * 0.5 * mass_tip_kg * radius_gyration_pylon_m**2
+    bending_mass_kg_m3, torsion_inertia_kg_m3 = wing_tiltrotor_mode_inertias(
+        span_m, mass_tip_kg, radius_gyration_pylon_m, mass_design_kg, count_tips)
 
     # Torque box from the torsion frequency (ideal shape: a tube of radius t, J = F_T A t^2 / 4).
     stiffness_torsion_Nm2 = frequency_torsion_rad_s**2 * torsion_inertia_kg_m3
