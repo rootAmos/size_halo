@@ -209,6 +209,7 @@ class TiltrotorWingMassModel:
     count_rotors: int = 2
     load_factor_jump: Any = 2.0                          # NDARC / Johnson practice (2-g jump take-off)
     smoothing: Any = 0.0                                 # > 0 rounds the max(0, .) steps for gradient-based sizing
+    area_spar_added_m2: Any = 0.0                        # plan 043: caps added for the ultimate cap-strain margin
 
     def masses(self, wing, condition):
         m = self.material
@@ -232,10 +233,23 @@ class TiltrotorWingMassModel:
             efficiency_torque_box=self.efficiency_torque_box,
             correction_spar_stiffness=self.correction_spar_stiffness, smoothing=self.smoothing,
             ratio_depth_spar_cap=self.ratio_depth_spar_cap,
-            thickness_min_torque_box_m=self.thickness_min_torque_box_m)
+            thickness_min_torque_box_m=self.thickness_min_torque_box_m, area_spar_added_m2=self.area_spar_added_m2)
 
     def mass_kg(self, wing, condition):
         return self.masses(wing, condition).total()
+
+    def strain_cap_jump_ultimate(self, masses, wing, condition, factor_load_carrying=1.0, factor_peak=1.0,
+                                 distance_station_m=0.3):
+        """(beam, peak) spar-cap strain of the ultimate jump take-off at `distance_station_m` outboard of the
+        fuselage side (plan 043; `afdd.strain_cap_jump_ultimate`), for the `masses` of this model on `wing`."""
+        m = self.material
+        moment_Nm = afdd.moment_jump_station_ultimate_Nm(
+            condition.mass_design_kg, self.mass_tip_kg, wing.span_m(), self.width_fuselage_m, distance_station_m,
+            load_factor_jump=self.load_factor_jump, count_rotors=self.count_rotors)
+        return afdd.strain_cap_jump_ultimate(
+            wing.chord_mean_m(), self.thickness_to_chord, self.fraction_chord_torque_box, self.ratio_depth_spar_cap,
+            masses.area_torque_box_m2, masses.area_spar_m2, m.modulus_torque_box_Pa, m.modulus_spar_Pa, moment_Nm,
+            factor_load_carrying=factor_load_carrying, factor_peak=factor_peak)
 
     @staticmethod
     def frequency_per_rev(masses, speed_rotor_rad_s):
