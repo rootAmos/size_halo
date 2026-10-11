@@ -128,9 +128,10 @@ class TiltrotorWingMasses:
     moment_jump_ultimate_Nm: Any
     area_torque_box_m2: Any
     area_spar_m2: Any
+    mass_spar_strain_kg: Any = 0.0    # plan 043: spar caps added for the ultimate cap-strain margin
 
     def mass_primary_kg(self):
-        return self.mass_torque_box_kg + self.mass_spar_stiffness_kg + self.mass_spar_jump_kg
+        return self.mass_torque_box_kg + self.mass_spar_stiffness_kg + self.mass_spar_jump_kg + self.mass_spar_strain_kg
 
     def total(self):
         """Wing group: primary structure, fairings, control surfaces, fittings and fold/tilt."""
@@ -149,7 +150,7 @@ def wing_tiltrotor_afdd_masses(span_m, chord_m, thickness_to_chord, fraction_cho
                                fraction_fold=0.0, efficiency_torque_box=1.0, efficiency_spar=1.0,
                                correction_spar_stiffness=1.0, correction_spar_strength=1.0,
                                correction_moment_spar=1.0, smoothing=0.0, ratio_depth_spar_cap=1.0,
-                               thickness_min_torque_box_m=0.0):
+                               thickness_min_torque_box_m=0.0, area_spar_added_m2=0.0):
     """AFDD tiltrotor wing (NDARC Theory, NASA/TP-2009-215402, sec. 19-1.1; Chappell and Peyran, SAWE 2107, 1992).
 
     Consistent SI, so NDARC's unit factor is 1. The torque box is sized by the torsion frequency, spar caps by the
@@ -168,6 +169,10 @@ def wing_tiltrotor_afdd_masses(span_m, chord_m, thickness_to_chord, fraction_cho
     - `thickness_min_torque_box_m`: minimum wall gauge of the torque box, applied over its perimeter
       (2 x (box chord + cap depth)); the frequency-sized wall area is at least that. A plan 031 CalculiX check found
       the NDARC caps 29 % over-strained in the jump take-off and the box walls 0.67 mm on the Halo layout.
+
+    Plan 043 option: `area_spar_added_m2` (default 0) is spar-cap area (all caps, constant along the span like the
+    jump caps) added on top of NDARC's sizing, e.g. by the optimizer for the ultimate cap-strain margin
+    (`strain_cap_jump_ultimate`). It adds mass, beam stiffness and cap area; NDARC's own sizing chain is unchanged.
     """
     g_m_s2 = 9.80665
     thickness_m = thickness_to_chord * chord_m
@@ -232,16 +237,18 @@ def wing_tiltrotor_afdd_masses(span_m, chord_m, thickness_to_chord, fraction_cho
                                        smoothing * moment_jump_ultimate_Nm)
     area_spar_jump_m2 = 2 * moment_deficit_Nm / (strain_ultimate * modulus_spar_Pa * depth_cap_m)
     mass_spar_jump_kg = correction_spar_strength * area_spar_jump_m2 * density_spar_kg_m3 * span_m / efficiency_spar
+    mass_spar_strain_kg = correction_spar_strength * area_spar_added_m2 * density_spar_kg_m3 * span_m / efficiency_spar
 
     mass_fittings_kg = ratio_fittings * (mass_torque_box_kg + mass_spar_stiffness_kg + mass_spar_jump_kg
-                                         + mass_fairing_kg + mass_control_surfaces_kg)
-    mass_fold_kg = fraction_fold * (mass_torque_box_kg + mass_spar_stiffness_kg + mass_spar_jump_kg + mass_fairing_kg
-                                    + mass_control_surfaces_kg + mass_fittings_kg + count_tips * mass_tip_kg)
+                                         + mass_spar_strain_kg + mass_fairing_kg + mass_control_surfaces_kg)
+    mass_fold_kg = fraction_fold * (mass_torque_box_kg + mass_spar_stiffness_kg + mass_spar_jump_kg
+                                    + mass_spar_strain_kg + mass_fairing_kg + mass_control_surfaces_kg
+                                    + mass_fittings_kg + count_tips * mass_tip_kg)
 
     # Realized stiffness (jump caps add beam stiffness) and the frequencies they give.
     stiffness_chord_Nm2 = stiffness_chord_box_Nm2 + modulus_spar_Pa * area_spar_chord_m2 * chord_torque_box_m**2 / 4
     stiffness_beam_Nm2 = (stiffness_beam_box_Nm2 + stiffness_spar_Nm2
-                          + modulus_spar_Pa * area_spar_jump_m2 * depth_cap_m**2 / 4)
+                          + modulus_spar_Pa * (area_spar_jump_m2 + area_spar_added_m2) * depth_cap_m**2 / 4)
     return TiltrotorWingMasses(
         mass_torque_box_kg=mass_torque_box_kg, mass_spar_stiffness_kg=mass_spar_stiffness_kg,
         mass_spar_jump_kg=mass_spar_jump_kg, mass_fairing_kg=mass_fairing_kg,
@@ -252,7 +259,42 @@ def wing_tiltrotor_afdd_masses(span_m, chord_m, thickness_to_chord, fraction_cho
         frequency_beam_rad_s=np.sqrt(stiffness_beam_Nm2 / bending_mass_kg_m3),
         frequency_chord_rad_s=np.sqrt(stiffness_chord_Nm2 / bending_mass_kg_m3),
         moment_jump_ultimate_Nm=moment_jump_ultimate_Nm, area_torque_box_m2=area_torque_box_m2,
-        area_spar_m2=area_spar_m2 + area_spar_jump_m2)
+        area_spar_m2=area_spar_m2 + area_spar_jump_m2 + area_spar_added_m2, mass_spar_strain_kg=mass_spar_strain_kg)
+
+
+def strain_cap_jump_ultimate(chord_m, thickness_to_chord, fraction_chord_torque_box, ratio_depth_spar_cap,
+                             area_torque_box_m2, area_spar_m2, modulus_torque_box_Pa, modulus_spar_Pa,
+                             moment_station_Nm, factor_load_carrying=1.0, factor_peak=1.0):
+    """Peak spar-cap strain at a wing station (plan 043): beam theory on the AFDD section times a peak factor.
+
+    The section is the one the CalculiX check (`export.openvsp.fe_wing.properties_from_afdd`) builds from the AFDD
+    breakdown: a rectangular box between the spars, `fraction_chord_torque_box` of the chord wide and the cap depth
+    (`ratio_depth_spar_cap` x thickness) deep, its walls of one gauge (the torque-box wall area over the perimeter,
+    modulus `modulus_torque_box_Pa`), plus the spar caps (all four, `area_spar_m2`, modulus `modulus_spar_Pa`) at
+    half the depth from the neutral axis. `factor_load_carrying` multiplies both areas (the load-carrying share of
+    the weight calibration: 1 + share x (factor - 1)). Beam strain = M (d/2) / EI. `factor_peak` scales it to the
+    peak front-cap strain of the shell model (root shear lag under the clamp, cap strips over the spars, mesh
+    peak); it is calibrated on one CalculiX result and assumed constant across designs.
+    Returns (beam strain, peak strain), both may be symbolic.
+    """
+    depth_m = ratio_depth_spar_cap * thickness_to_chord * chord_m
+    width_m = fraction_chord_torque_box * chord_m
+    thickness_wall_m = factor_load_carrying * area_torque_box_m2 / (2 * (width_m + depth_m))
+    stiffness_box_Nm2 = modulus_torque_box_Pa * thickness_wall_m * (2 * width_m * (depth_m / 2)**2 + depth_m**3 / 6)
+    stiffness_caps_Nm2 = modulus_spar_Pa * factor_load_carrying * area_spar_m2 * (depth_m / 2)**2
+    strain_beam = moment_station_Nm * (depth_m / 2) / (stiffness_box_Nm2 + stiffness_caps_Nm2)
+    return strain_beam, factor_peak * strain_beam
+
+
+def moment_jump_station_ultimate_Nm(mass_design_kg, mass_tip_kg, span_m, width_fuselage_m, distance_station_m,
+                                    load_factor_jump=2.0, count_rotors=2, factor_safety=1.5):
+    """Ultimate wing bending moment of the jump take-off at a station `distance_station_m` outboard of the
+    fuselage side (plan 043), with the load of the CalculiX check: at each rotor (span ends) the rotor thrust
+    n W / count_rotors less the tip inertia n m_tip g, times the 1.5 factor of safety; the wing's own inertia relief
+    is neglected (conservative, as in the FE deck)."""
+    g_m_s2 = 9.80665
+    force_tip_N = factor_safety * load_factor_jump * g_m_s2 * (mass_design_kg / count_rotors - mass_tip_kg)
+    return force_tip_N * (span_m / 2 - width_fuselage_m / 2 - distance_station_m)
 
 
 if __name__ == "__main__":
