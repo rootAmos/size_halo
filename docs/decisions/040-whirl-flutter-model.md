@@ -165,6 +165,18 @@ Each row is one change from the reference. The table gives the calibrated flutte
 - Proposed path: delta-3 about -10 deg plus the CG as close to the spindle as the layout allows, verified on
   whole-aircraft modes; torsion stiffness only for what remains.
 
+Combinations (the rows above are one change at a time):
+
+| Change | 23.8 rad/s | 39.0 rad/s |
+|---|---|---|
+| Nacelle CG on the spindle + hub 0.6 m | 291 | 347 |
+| delta-3 -10 deg + nacelle CG 0.25 m | 333 | 342 |
+| delta-3 -10 deg + nacelle CG on the spindle | 341 | 353 (gimbal) |
+| delta-3 -10 deg + CG on the spindle + hub 0.6 m | 364 | 389 (gimbal) |
+
+- The geometry levers alone do not clear 1.15 V_D at the reserve-loiter rotor speed; with delta-3 they add more than
+  their separate gains. With the CG on the spindle the gimbal mode becomes critical at the maximum-speed rotor speed.
+
 ## Assumptions
 
 Collected from the sections above:
@@ -192,6 +204,7 @@ Collected from the sections above:
 - 2026-10-10: audited against the restored AGENTS.md; References, Assumptions and this log added. The
   pylon-CG follow-up that sat uncommitted on the merged branch moved to its own branch,
   `feat/whirl-pylon-cg` (work in progress, no plan yet).
+- 2026-10-11: lever combinations (delta-3 with CG and hub position) added to the lever table.
 
 ## Next
 
