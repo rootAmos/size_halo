@@ -240,6 +240,8 @@ class HaloAssumptions:
     factor_resistance_ageing_battery: float = 1.5  # end of life: +50 % resistance (assumed)
     temperature_cell_battery_C: float = 25.0      # thermally managed pack (assumed)
     fraction_mass_cells_battery: float = 0.7      # cell / pack mass (assumed; cylindrical-cell packs ~0.65-0.75)
+    # Plan 044: None makes the pack's parallel count a design variable; a number fixes it (battery-energy sweeps).
+    count_parallel_battery_fixed: Any = None
     # Points per mission segment (take-off hover, climb, cruise, loiter, descent, landing hover) so OCV and
     # resistance follow SOC through long segments; and points in the 60 s engine-out hover (SOC 0.30 -> 0.10).
     subsegments_mission: tuple = (1, 1, 4, 1, 1, 1)
@@ -970,6 +972,8 @@ class HaloSizingResult:
     # current, its smallest margin and its binding margins.
     count_lanes_motor: int = 1
     failure_cases: tuple = ()
+    # Plan 044: the mission range (a variable with objective "range", else the requirement).
+    range_m: Any = None
 
 
 def count_parallel_guess(guess, assumptions):
@@ -1012,7 +1016,9 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
 
     objective "mass_takeoff" minimizes take-off mass at the required payload; "payload" makes payload a
     variable and maximizes it (the aircraft is sized around fixed engines, plan 017); "cost" minimizes the
-    cost per mission of `HaloAssumptions.cost_model` at the required payload (Tier 22).
+    cost per mission of `HaloAssumptions.cost_model` at the required payload (Tier 22); "fuel" minimizes the
+    mission fuel burnt and "range" makes the mission range a variable and maximizes it, both at the required
+    payload (plan 044).
 
     With no `initial`, `solve_halo_sizing_multistart` tries an ordered list of starting points, each one
     independent coupled solve, and returns the first that converges; `result.start` records which start
@@ -1075,7 +1081,7 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
 def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None,
                            verbose=False, max_iter=3000, initial=None, objective="mass_takeoff"):
     """One coupled solve from `initial` (None: the generic guess). Raises RuntimeError if IPOPT fails."""
-    if objective not in ("mass_takeoff", "payload", "cost"):
+    if objective not in objectives:
         raise ValueError(f"Unknown objective '{objective}'.")
     factors = factors if factors is not None else calibration_factors()
     lapse_exponent = fit_lapse_exponent()
@@ -1122,8 +1128,9 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
             init_guess=guess.power_max_discharge_battery_W, scale=1e6, lower_bound=1e4),
         energy_capacity_battery_J=None if is_ecm else opti.variable(
             init_guess=guess.energy_capacity_battery_J, scale=1e8, lower_bound=1e6),
-        count_parallel_battery=opti.variable(
-            init_guess=count_parallel_guess(guess, a), scale=10.0, lower_bound=1.0) if is_ecm else None,
+        count_parallel_battery=(a.count_parallel_battery_fixed if a.count_parallel_battery_fixed is not None
+                                else opti.variable(init_guess=count_parallel_guess(guess, a), scale=10.0,
+                                                   lower_bound=1.0)) if is_ecm else None,
         area_disk_m2=opti.variable(init_guess=guess.area_disk_m2, scale=10.0, lower_bound=5.0, upper_bound=120.0),
         mass_fuel_kg=opti.variable(init_guess=guess.mass_fuel_kg, scale=500.0, lower_bound=0.0),
     )
@@ -1174,6 +1181,11 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
             lower_bound=low, upper_bound=high))
     soc_reserve = design.soc_reserve if design.soc_reserve is not None else soc_minimum
     altitude_cruise_m = design.altitude_cruise_m if design.altitude_cruise_m is not None else r.altitude_cruise_m
+    if objective == "range":
+        # Plan 044: the mission range is a variable (the cruise distance follows it); the payload stays required.
+        r = replace(r, range_m=opti.variable(init_guess=initial.range_m if initial is not None
+                                             and getattr(initial, "range_m", None) is not None else r.range_m,
+                                             scale=1e5, lower_bound=100e3))
     mission = halo_mission(replace(r, altitude_cruise_m=altitude_cruise_m), velocity_cruise_m_s=opti.variable(
         init_guess=initial.velocity_cruise_m_s if initial else 110.0, scale=50.0, lower_bound=60.0,
         upper_bound=r.velocity_max_m_s), velocity_loiter_m_s=opti.variable(
@@ -1321,12 +1333,8 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         energy_discharge_battery_J=sum(np.softmax(e, 0.0, softness=softness_energy_J) for e in energies_point_J),
         energy_recharge_ground_J=(soc_take_off - flown.soc_end) * design.energy_capacity_battery_J,
         duration_mission_s=flown.duration_s)
-    if objective == "payload":
-        opti.minimize(-r.mass_payload_kg / 100)
-    elif objective == "cost":
-        opti.minimize(cost.per_mission_usd / scale_objective_cost_usd)
-    else:
-        opti.minimize(mass_takeoff_kg / 1000)
+    opti.minimize(halo_objective(objective, mass_takeoff_kg, r.mass_payload_kg, flown.mass_fuel_burnt_kg, r.range_m,
+                                 cost.per_mission_usd))
 
     solution = opti.solve(verbose=verbose, max_iter=max_iter)
     value = lambda expression: float(solution.value(expression))
@@ -1356,6 +1364,7 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         segments=tuple(dict(label=s.segment.label, duration_s=value(s.duration_s), fuel_kg=value(s.mass_fuel_burnt_kg),
                             battery_kWh=value(s.energy_battery_chemical_J) / 3.6e6, soc_end=value(s.soc_end),
                             hybridization=value(s.point.hybridization_electric),
+                            hybridization_mean=value(hybridization_mean(s)),
                             power_rotors_W=value(a.count_rotors * s.point.power_shaft_rotor_W),
                             power_turboshafts_W=value((s.point.condition.active_generator_count
                                                        or a.count_turbogenerators) * s.point.engine.power_shaft_W),
@@ -1396,7 +1405,40 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         heat_exchanger=heat_exchanger_summary(aircraft.powertrain, value) if thermal else None,
         count_lanes_motor=lanes,
         failure_cases=tuple(failure_summary(label, failure, instances, value) for label, failure in failures),
+        range_m=value(r.range_m),
     )
+
+
+def hybridization_mean(segment):
+    """Plan 044: the battery share of the motors' electrical energy over a mission segment (its sub-segments
+    weighted by motor power and time); `segment.point.hybridization_electric` is the first sub-segment's only."""
+    points = segment.subsegments or (segment,)
+    energy_J = sum(p.point.power_electric_motors_W * p.duration_s for p in points)
+    energy_battery_J = sum(p.point.hybridization_electric * p.point.power_electric_motors_W * p.duration_s
+                           for p in points)
+    return energy_battery_J / energy_J
+
+
+# Sizing objectives: "mass_takeoff" (default), "payload" (maximised, a variable), "cost" (per mission, Tier 22),
+# "fuel" (mission fuel burnt) and "range" (maximised, a variable; plan 044).
+objectives = ("mass_takeoff", "payload", "cost", "fuel", "range")
+scale_objective_fuel_kg = 100.0
+scale_objective_range_m = 1e5
+
+
+def halo_objective(objective, mass_takeoff_kg, mass_payload_kg, mass_fuel_burnt_kg, range_m, cost_per_mission_usd):
+    """The scaled quantity `asb.Opti.minimize` receives for `objective` (payload and range are maximised)."""
+    if objective == "mass_takeoff":
+        return mass_takeoff_kg / 1000
+    if objective == "payload":
+        return -mass_payload_kg / 100
+    if objective == "cost":
+        return cost_per_mission_usd / scale_objective_cost_usd
+    if objective == "fuel":
+        return mass_fuel_burnt_kg / scale_objective_fuel_kg
+    if objective == "range":
+        return -range_m / scale_objective_range_m
+    raise ValueError(f"Unknown objective '{objective}'.")
 
 
 def failure_hover_cases(assumptions):
@@ -1619,6 +1661,10 @@ def objective_value(result, objective):
         return -result.mass_payload_kg
     if objective == "cost":
         return result.cost.per_mission_usd
+    if objective == "fuel":
+        return result.mass_fuel_burnt_kg
+    if objective == "range":
+        return -result.range_m
     raise ValueError(f"Unknown objective '{objective}'.")
 
 
@@ -1632,7 +1678,7 @@ def default_starts(requirements, assumptions, objective):
        the thermal model it is a later fallback, after payload continuation.
        "thermal_off" (thermal model without the layer): the same problem without the thermal model (plan 028);
        from the generic guess, and with AeroBuildup from the thermal Scholz design, IPOPT can fail.
-    2. "mass_objective" (objective "cost" only): the same problem at minimum take-off mass.
+    2. "mass_objective" (objectives "cost", "fuel" and "range"): the same problem at minimum take-off mass.
     3. "scholz_aero" (AeroBuildup only): the same problem with the Scholz hand-check aerodynamics (plan 025).
     4. "constant_battery" (equivalent-circuit pack only): the same requirements with the constant-OCV battery,
        without the electrical layer, at minimum take-off mass (plans 022 and 023).
@@ -1651,7 +1697,7 @@ def default_starts(requirements, assumptions, objective):
             starts.append("strings_off")
     if a.thermal_model:
         starts.append("electrical_off" if a.electrical_layer else "thermal_off")
-    if objective == "cost":
+    if objective in ("cost", "fuel", "range"):
         starts.append("mass_objective")
     if a.aerodynamics_model == "buildup":
         starts.append("scholz_aero")
