@@ -136,6 +136,10 @@ Laminar flow, with free transition from NeuralFoil (pressure gradient per sectio
 - **Even laminar does not fix the shape.** The 1971 points rise more steeply with C_P than any model curve, which
   points to scatter or a data-definition issue (propulsive force, torque station).
 
+**Full laminar sweep** (`xv15_airplane_laminar`, dotted in the figure): RMS 0.094 and bias +0.037 over 46
+points, against 0.072 and -0.041 turbulent. The laminar curves land on the high-C_P plateau (about 0.90 at 120 and
+160 kt) but overshoot on the steep low-C_P side. The test points lie between the two settings.
+
 **Decision:** keep forced 5 % transition, the JVX calibration, as the default. Laminar flow in cruise is the
 optimistic bound: about +0.04-0.05 in cruise efficiency for a blade that holds it.
 

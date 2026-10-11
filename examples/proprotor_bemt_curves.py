@@ -23,7 +23,7 @@ Model error is read off the curve: each measured point is compared with the curv
 """
 import csv
 import pickle
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import numpy as onp
@@ -251,7 +251,8 @@ def _curve(rotor, condition, solidity, kind):
     return Curve(condition, x, y, error)
 
 
-groups = ("jvx_hover", "jvx_airplane", "xv15_hover", "xv15_airplane", "xv15_hover_plan047", "xv15_airplane_plan047")
+groups = ("jvx_hover", "jvx_airplane", "xv15_hover", "xv15_airplane", "xv15_hover_plan047", "xv15_airplane_plan047",
+          "xv15_airplane_laminar")
 cache_dir = root / "output"
 
 
@@ -261,8 +262,10 @@ def study_group(key):
         rotor = jvx_rotor(BladeElementRotor().drag_factor)
     else:
         rotor = xv15_rotor(airfoils="plan-047" if key.endswith("plan047") else "64-series")
+        if key.endswith("laminar"):      # free transition in clean inflow (plan 052 laminar-flow bound)
+            rotor = replace(rotor, sections=replace(rotor.sections, fraction_chord_transition=1.0, n_crit=9.0))
     solidity = solidity_jvx if key.startswith("jvx") else solidity_xv15
-    conditions = dict(zip(groups, jvx_conditions() + xv15_conditions() + xv15_conditions()))[key]
+    conditions = dict(zip(groups, jvx_conditions() + xv15_conditions() + xv15_conditions() + xv15_conditions()[1:]))[key]
     kind = "power_propeller" if key.startswith("xv15_airplane") else "blade_loading"
     curves = [_curve(rotor, condition, solidity, kind) for condition in conditions]
     cache_dir.mkdir(exist_ok=True)
@@ -299,8 +302,8 @@ def make_figure(curves, path=root / "docs" / "figures" / "proprotor_bemt_curves.
     import matplotlib.pyplot as plt
     plt.rcParams.update({"font.size": 12, "axes.edgecolor": ink_muted, "axes.labelcolor": ink, "xtick.color": ink_muted,
                          "ytick.color": ink_muted, "axes.spines.top": False, "axes.spines.right": False})
-    figure = plt.figure(figsize=(18, 11), facecolor="white")
-    grid = figure.add_gridspec(2, 6, hspace=0.38, wspace=0.55)
+    figure = plt.figure(figsize=(19, 12), facecolor="white")
+    grid = figure.add_gridspec(2, 6, hspace=0.48, wspace=0.6)
     panels = [(figure.add_subplot(grid[0, 0:3]), curves["jvx_hover"], "JVX hover (TM-2016-219070)",
                "$C_T/\\sigma$", "Figure of merit"),
               (figure.add_subplot(grid[0, 3:6]), curves["jvx_airplane"], "JVX airplane mode",
@@ -322,30 +325,38 @@ def make_figure(curves, path=root / "docs" / "figures" / "proprotor_bemt_curves.
         if group[0].condition.axial_velocity_m_s == 0:
             r_attached, _, n_attached = rms(group, attached)
             title += (f"\nRMS {r_attached:.3f} for $C_T/\\sigma \\leq$ {blade_loading_attached:.2f} ({n_attached} pts); "
-                      "drop above: outboard shock-buffet in the section model")
-        ax.set(xlabel=xlabel, ylabel=ylabel, title=title)
+                      "drop above: outboard buffet")
+        ax.set(xlabel=xlabel, ylabel=ylabel)
+        ax.set_title(title, fontsize=11)
         ax.legend(frameon=False, fontsize=10, loc="lower right", title="Line BEM, markers test", title_fontsize=10)
     airplane = curves["xv15_airplane"]
     speeds = sorted({int(c.condition.label.split(" kt")[0]) for c in airplane})
     tips = sorted({int(c.condition.label.split(", ")[1].split(" ")[0]) for c in airplane}, reverse=True)
     for j, v_kt in enumerate(speeds):
         ax = figure.add_subplot(grid[1, 3 + j])
-        for curve in [c for c in curves.get("xv15_airplane_plan047", []) if c.condition.label.startswith(f"{v_kt} kt")]:
+        for curve in [c for c in curves.get("xv15_airplane_laminar", []) if c.condition.label.startswith(f"{v_kt} kt")]:
             tip = int(curve.condition.label.split(", ")[1].split(" ")[0])
-            ax.plot(curve.x, curve.y, "--", color=palette[tips.index(tip)], lw=1, alpha=0.7)
+            ax.plot(curve.x, curve.y, ":", color=palette[tips.index(tip)], lw=1.8)
         for curve in [c for c in airplane if c.condition.label.startswith(f"{v_kt} kt")]:
             tip = int(curve.condition.label.split(", ")[1].split(" ")[0])
             k = tips.index(tip)
             ax.plot(curve.condition.measured_x, curve.condition.measured_y, markers[k], color=palette[k], ms=7,
                     mfc="none", mew=1.4)
             ax.plot(curve.x, curve.y, "-", color=palette[k], lw=2, label=f"{tip} ft/s")
-        ax.set(xlabel="$C_P = P/\\rho n^3 D^5$", title=f"XV-15 airplane, {v_kt} kt", ylim=(0.3, 1.0))
+        ax.set(xlabel="$C_P = P/\\rho n^3 D^5$", ylim=(0.3, 1.0))
+        ax.set_title(f"{v_kt} kt", fontsize=11)
         if j == 0:
             ax.set_ylabel("Propulsive efficiency")
+        if j == 0 and "xv15_airplane_laminar" in curves:
+            ax.plot([], [], "-", color=ink_muted, lw=2, label="turbulent (default)")
+            ax.plot([], [], ":", color=ink_muted, lw=1.8, label="laminar bound")
         ax.legend(frameon=False, fontsize=9, loc="lower right")
     r, bias, n = rms(airplane)
-    figure.text(0.74, 0.475, f"XV-15 airplane mode (CR-114363, digitized), 64-series airfoils (dashed: plan 047 camber): RMS {r:.3f}, bias {bias:+.3f} ({n} points)",
-                ha="center", fontsize=12, color=ink)
+    laminar = (f"\nlaminar bound (dotted): RMS {rms(curves['xv15_airplane_laminar'])[0]:.3f}, "
+               f"bias {rms(curves['xv15_airplane_laminar'])[1]:+.3f}") if "xv15_airplane_laminar" in curves else ""
+    figure.text(0.74, 0.462, "XV-15 airplane mode (CR-114363, digitized), 64-series airfoils\n"
+                f"turbulent (solid, default): RMS {r:.3f}, bias {bias:+.3f}{laminar}",
+                ha="center", va="bottom", fontsize=11, color=ink)
     figure.suptitle("Blade-element momentum rotor (plan 047, one drag factor fitted on JVX) against full-scale data",
                     fontsize=15, color=ink)
     figure.savefig(path, dpi=110, bbox_inches="tight")
