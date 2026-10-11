@@ -22,8 +22,8 @@ cases = {
     "power_1.10": dict(factor_uprating_power_units=1.10),
     "power_1.10_ntu": dict(factor_uprating_power_units=1.10, heat_exchanger_model="ntu"),
     "v3_6": dict(factor_uprating_power_units=1.0),    # the catalogue rating: must reproduce 15,179 lb
-    "v3_7": dict(),                                   # the defaults (10 % uprating, inverter at catalogue mass)
-    "v3_7_ntu": dict(heat_exchanger_model="ntu"),
+    "v3_7": dict(allowances_heat_exchanger="published"),   # plan 048 baseline (hose lines), 14,357 lb
+    "v3_8": dict(),                                   # the defaults (plan 053: metal-tube coolant lines)
 }
 
 if __name__ == "__main__":

@@ -45,7 +45,8 @@ tests. Where the source gives only lb, the kg value is converted (1 lb = 0.45359
 | v3.4 | 7,362 kg (16,231 lb) | 900 kg | 210 kt | Whole real machine units instead of rubber scaling, redundancy (from v3.3.1), gearbox stages (from v3.3.2), drag corrections (from v3.3.3) all on by default (plan 035) | v3.3 | No pinned set (plan 036 changed the trim drag inside `drag_corrections`) | `docs/decisions/035-final-reference.md` |
 | v3.5 | 7,395 kg (16,303 lb) | 900 kg | 210 kt | Trim drag from the tail load (tail efficiency 0.9, cos tail dihedral, Scholz downwash) replaces the flat 2 % (plan 036) | v3.4 | No pinned set. `solve_halo_sizing(assumptions=assumptions_v3_5)` restores the pre-layout settings, the mass-per-watt cooler and catalogue machine ratings on the current code (not test-pinned) | `docs/decisions/036-trim-and-trajectory-states.md` |
 | v3.6 | 6,885 kg (15,179 lb) | 900 kg | 210 kt | Layout line (v3.3.4, v3.3.5) merged into v3.5: drawn-layout fuselage, turbogenerators in the fuselage, corrected AFDD spar caps and minimum gauge, nacelle inertia from components. Lighter mainly in the fuselage and systems groups | v3.5 and v3.3.5 | `solve_halo_sizing(requirements_v3_6, assumptions_v3_6)` | `docs/decisions/037-halo-reference-layout.md`, `docs/decisions/038-wing-caps-pylon.md` (summary: `docs/RESULTS.md` section 3) |
-| **v3.7 (current baseline)** | **6,512 kg (14,357 lb)** | 900 kg | 210 kt | Epsilon-NTU offset-strip-fin cooler in a ram-air duct (plan 042: 58 kg against 127 kg, pump and lines from published models, plan 051) and machine units uprated 10 % in continuous power on the same hardware (plan 048: the generator needs 2.004 catalogue units, now 2 uprated units instead of 3) | v3.6 | `solve_halo_sizing()` | `docs/decisions/048-machine-unit-uprating.md`, `docs/decisions/042-ntu-heat-exchanger.md` |
+| v3.7 | 6,512 kg (14,357 lb) | 900 kg | 210 kt | Epsilon-NTU offset-strip-fin cooler in a ram-air duct (plan 042: 58 kg against 127 kg, pump and lines from published models, plan 051) and machine units uprated 10 % in continuous power on the same hardware (plan 048: the generator needs 2.004 catalogue units, now 2 uprated units instead of 3) | v3.6 | `solve_halo_sizing(requirements_v3_7, assumptions_v3_7)` | `docs/decisions/048-machine-unit-uprating.md`, `docs/decisions/042-ntu-heat-exchanger.md` |
+| **v3.8 (current baseline)** | **6,455 kg (14,231 lb)** | 900 kg | 210 kt | Coolant lines as aluminium tube in one loop per wing, flexible hose only across the nacelle tilt joints (plan 053): pump and lines 15.6 kg instead of 39.8, cooler 33.6 kg, about 3.3 kW/kg | v3.7 | `solve_halo_sizing()` | `docs/decisions/053-coolant-tube-lines.md` |
 
 Steps that analysed an existing version without re-sizing it get no version of their own: trajectory
 optimization (Tier 14, `docs/decisions/019-trajectory-optimization.md`), design-space practice (Tier 22,
@@ -83,7 +84,8 @@ flowchart TD
     v3_3_4 --> v3_3_5["v3.3.5 plan 038 wing caps<br/>13,038 lb"]
     v3_5 --> v3_6["v3.6<br/>15,179 lb"]
     v3_3_5 -. merged .-> v3_6
-    v3_6 --> v3_7["v3.7 current baseline, plan 048<br/>14,357 lb"]
+    v3_6 --> v3_7["v3.7 plan 048<br/>14,357 lb"]
+    v3_7 --> v3_8["v3.8 current baseline, plan 053<br/>14,231 lb"]
 ```
 
 ## Development step to version

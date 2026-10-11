@@ -22,19 +22,19 @@ inputs without restructuring the model.
 | Stability | static margin and directional stability (Cn_β) margins |
 | Fixed input | two off-the-shelf 1,120 hp turboshafts; the engines are bought, not designed, so they are not a design variable |
 
-## Baseline design v3.7
+## Baseline design v3.8
 
 | | |
 |---|---|
-| **Take-off weight** | **14,357 lb** (6,512 kg), 822 lb lighter than v3.6 |
-| Empty weight (OEW) | 10,365 lb (4,701 kg), of which powertrain 5,705 lb (55 %) |
-| Fuel / battery | 2,008 lb, 10 % reserve included / 61.5 kWh, 920 lb, two isolated strings |
+| **Take-off weight** | **14,231 lb** (6,455 kg), 948 lb lighter than v3.6 |
+| Empty weight (OEW) | 10,248 lb (4,648 kg), of which powertrain 5,610 lb (55 %) |
+| Fuel / battery | 1,999 lb, 10 % reserve included / 60.2 kWh, 900 lb, two isolated strings |
 | Mission cruise | 165 kt at 10,000 ft, L/D 9.0 (cruise speed is optimized for weight; 210 kt is a dash capability) |
 | Turboshafts | 2 × 1,120 hp in the fuselage |
-| Rotors | 2 × 30.8 ft diameter, disk loading 9.6 lb/ft², tip speed 782 ft/s; rotor radius capped by the span |
-| Wing | 240 ft², 38.3 ft span, wing loading 59.9 lb/ft² |
+| Rotors | 2 × 30.7 ft diameter, disk loading 9.6 lb/ft², tip speed 782 ft/s; rotor radius capped by the span |
+| Wing | 238 ft², 38.2 ft span, wing loading 59.8 lb/ft² |
 | Drive | per rotor, 2 motor lanes of stacked axial-flux units behind one 4.5:1 stage; generators of 2 units each, all units uprated 10 % in continuous power (plan 048); two cross-strapped DC buses |
-| Cooling | epsilon-NTU offset-strip-fin core in a ram-air duct with a hover fan, 58 kg (plans 042, 051) |
+| Cooling | epsilon-NTU offset-strip-fin core in a ram-air duct with a hover fan and metal-tube coolant loops, one per wing, 33.6 kg, about 3.3 kW/kg (plans 042, 053) |
 | Fuselage | 36.1 ft long, unpressurized box section 5.5 × 6.6 ft |
 
 The empty-weight breakdown and figures below are still those of v3.6 (15,179 lb) until they are regenerated.
@@ -87,7 +87,8 @@ reserve loiter, except where the table says otherwise.
 | v3.4 | 16,231 lb | as v3.0, **plus bus-out and string-out failure hovers** | Whole units of real machines, 2 lanes/2 buses/2 strings redundancy, gearbox stages, drag corrections |
 | v3.5 | 16,303 lb | as v3.4 | Trim drag from the tail load |
 | v3.6 | 15,179 lb | as v3.4 (the requirements table above) | Layout line (v3.3.4, v3.3.5) merged into v3.5, with every model on |
-| **v3.7 (baseline)** | **14,357 lb** | as v3.4 | Epsilon-NTU cooler (plan 042) and machine units uprated 10 % in continuous power (plan 048) |
+| v3.7 | 14,357 lb | as v3.4 | Epsilon-NTU cooler (plan 042) and machine units uprated 10 % in continuous power (plan 048) |
+| **v3.8 (baseline)** | **14,231 lb** | as v3.4 | Coolant lines as metal tube, one loop per wing (plan 053) |
 
 ## Modules overview: What it does
 

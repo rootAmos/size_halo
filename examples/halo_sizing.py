@@ -410,8 +410,10 @@ class HaloAssumptions:
     mass_duct_per_area_heat_exchanger_kg_m2: float = 12.0  # "ntu": inlet, diffuser, nozzle per m2 core face (estimate)
     mass_pump_pipes_heat_exchanger_kg: float = 30.0        # "ntu": pump, lines to the tips, loop coolant (estimate)
     # Plan 051: "estimate" (the 30 kg above) or "published" (pump and lines from OpenConcept's models; ducts and fans
-    # keep the estimates, which no source replaces). "published" is the v3.7 default (plan 048, author 2026-10-11).
-    allowances_heat_exchanger: str = "published"
+    # keep the estimates, which no source replaces). "published" was the v3.7 default (plan 048). Plan 053 "tube":
+    # metal tube in one loop per wing, hose only across the nacelle tilt joints; the v3.8 default (author 2026-10-11:
+    # "the coolant lines were never going to be hose").
+    allowances_heat_exchanger: str = "tube"
     # ---- Tier 18 redundancy (plan 032) ----
     # True: `count_lanes_motor` lane motors per rotor (each 1/N of the torque, on a combining gearbox input),
     # `count_buses` cross-strapped buses joined by normally open ties (contactor + cable), `count_strings_battery`
@@ -2310,6 +2312,10 @@ assumptions_plan038 = HaloAssumptions(**pre_plan035)
 # v3.6 (15,179 lb): today's defaults with the mass-per-watt cooler and the machine units at their catalogue
 # continuous power (plan 048 made the plan 042 epsilon-NTU cooler and the 10 % uprating the defaults: v3.7).
 requirements_v3_6 = HaloRequirements()
+# v3.7 (14,357 lb): the plan 048 baseline, coolant lines as OpenConcept's reinforced hose (plan 053 made metal tube
+# the default: v3.8).
+requirements_v3_7 = HaloRequirements()
+assumptions_v3_7 = HaloAssumptions(allowances_heat_exchanger="published")
 assumptions_v3_6 = HaloAssumptions(factor_uprating_power_units=1.0, heat_exchanger_model="mass_per_watt")
 # v3.5 on the current code (not test-pinned): the pre-layout settings with the v3.6 cooler and units.
 assumptions_v3_5 = HaloAssumptions(**pre_layout, factor_uprating_power_units=1.0, heat_exchanger_model="mass_per_watt")

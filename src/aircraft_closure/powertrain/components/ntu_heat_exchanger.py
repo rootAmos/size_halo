@@ -30,6 +30,13 @@ point needs two more unknowns that the caller's `asb.Opti` owns: the air mass fl
     (D + t) π t ρ_hose plus the coolant π D² / 4 ρ_coolant per metre (OpenConcept defaults: D 25.4 mm, p_design
     1.03 MPa, σ 2.07 MPa, ρ_hose 1,356 kg/m³: 0.85 kg/m wall and 0.53 kg/m coolant). Chapman et al. count only the
     coolant in their lines (wall mass neglected), so OpenConcept's is the more complete published model.
+* `allowances="tube"` (plan 053, the v3.8 default): the lines are metal tube, not hose. One loop per wing
+  (`count_loops`, each carrying its share of the coolant flow), each loop's bore scaled from `diameter_line_m` for
+  the same velocity (D / sqrt(count_loops)); aluminium tube (`density_tube_kg_m3`) with wall max(minimum gauge
+  `thickness_min_tube_m`, D p_design / (2 `stress_allowable_tube_Pa`)), the minimum gauge governing at loop
+  pressures; flexible hose (the published model above) only across each tilting nacelle joint
+  (`length_hose_joint_m` per loop, supply and return); the pump as in "published". Check, not input: the whole
+  cooling system then lands near 3 kW/kg of heat, the order of NASA's published systems (3.1-6.7 kW/kg, plan 051).
   Ducts and fans keep the estimates: Kellermann et al. 2021 do not publish their duct or fan masses, Chapman et al.
   neglect inlet and nozzle masses (they assume these scale with the core), OpenConcept carries none, and Chapman's
   fan correlation (mass from air flow, fitted to small cooling fans) is not credible at tens of kW (plan 051).
@@ -90,7 +97,7 @@ class NtuRamAirHeatExchanger:
     specific_power_fan_W_kg: Any = 2000.0         # electric fan, motor and controller
     mass_duct_per_area_kg_m2: Any = 12.0          # inlet, diffuser and nozzle per m2 of core face
     mass_pump_pipes_kg: Any = 30.0                # pump, lines to the tips and back, loop coolant outside the core
-    allowances: str = "estimate"                  # "estimate" (plan 042) or "published" (plan 051: pump and lines)
+    allowances: str = "estimate"                  # "estimate" (plan 042), "published" (plan 051) or "tube" (plan 053)
     power_rated_pump_W: Any = 1700.0              # "published": electrical rating
     specific_power_pump_W_kg: Any = 450.0         # "published": OpenConcept SimplePump, 1/450 kg/W
     length_lines_m: Any = 26.0                    # "published": supply and return to both tips
@@ -98,27 +105,53 @@ class NtuRamAirHeatExchanger:
     pressure_design_line_Pa: Any = 1.03e6
     stress_allowable_line_Pa: Any = 2.07e6
     density_line_kg_m3: Any = 1356.3
+    count_loops: int = 2                          # "tube": one coolant loop per wing (motors and inverters at each tip)
+    density_tube_kg_m3: Any = 2700.0              # "tube": aluminium alloy
+    stress_allowable_tube_Pa: Any = 90e6          # "tube": about a third of 6061-T6 yield
+    thickness_min_tube_m: Any = 1e-3              # "tube": minimum gauge (handling, fittings, corrosion)
+    length_hose_joint_m: Any = 1.5                # "tube": flexible hose per loop across the nacelle tilt joint
     power_heat_scale_W: Any = 1e5                 # normalizes the heat-rejection margin
     coolant: Any = field(default_factory=water_glycol_properties)
 
-    def mass_lines_per_length_kg_m(self):
+    def mass_lines_per_length_kg_m(self, diameter_m=None):
         """Hose wall plus the coolant in it, per metre (OpenConcept `SimpleHose`)."""
-        diameter_m = self.diameter_line_m
+        diameter_m = self.diameter_line_m if diameter_m is None else diameter_m
         thickness_m = diameter_m * self.pressure_design_line_Pa / (2 * self.stress_allowable_line_Pa)
         return ((diameter_m + thickness_m) * math.pi * thickness_m * self.density_line_kg_m3
+                + math.pi * diameter_m**2 / 4 * self.coolant.density_kg_m3)
+
+    def diameter_loop_m(self):
+        """Tube bore per loop: the same coolant velocity as one line carrying the whole flow."""
+        return self.diameter_line_m / math.sqrt(self.count_loops)
+
+    def mass_tube_per_length_kg_m(self):
+        """Metal tube wall plus the coolant in it, per metre, at the loop bore."""
+        diameter_m = self.diameter_loop_m()
+        thickness_m = max(self.thickness_min_tube_m,
+                          diameter_m * self.pressure_design_line_Pa / (2 * self.stress_allowable_tube_Pa))
+        return ((diameter_m + thickness_m) * math.pi * thickness_m * self.density_tube_kg_m3
                 + math.pi * diameter_m**2 / 4 * self.coolant.density_kg_m3)
 
     def mass_pump_pipes_published_kg(self):
         return (self.power_rated_pump_W / self.specific_power_pump_W_kg
                 + self.length_lines_m * self.mass_lines_per_length_kg_m())
 
+    def mass_pump_pipes_tube_kg(self):
+        """Pump, metal tube in `count_loops` loops sharing `length_lines_m`, hose only at each tilt joint."""
+        length_tube_m = self.length_lines_m - self.count_loops * self.length_hose_joint_m
+        return (self.power_rated_pump_W / self.specific_power_pump_W_kg
+                + length_tube_m * self.mass_tube_per_length_kg_m()
+                + self.count_loops * self.length_hose_joint_m * self.mass_lines_per_length_kg_m(self.diameter_loop_m()))
+
     def mass_breakdown(self):
         if self.allowances == "estimate":
             mass_pump_pipes_kg = self.mass_pump_pipes_kg
         elif self.allowances == "published":
             mass_pump_pipes_kg = self.mass_pump_pipes_published_kg()
+        elif self.allowances == "tube":
+            mass_pump_pipes_kg = self.mass_pump_pipes_tube_kg()
         else:
-            raise ValueError(f"Unknown allowances '{self.allowances}' (\"estimate\" or \"published\").")
+            raise ValueError(f"Unknown allowances '{self.allowances}' (\"estimate\", \"published\" or \"tube\").")
         return NtuMassBreakdown(mass_core_kg=self.core.get_mass(),
                                 mass_ducts_kg=self.mass_duct_per_area_kg_m2 * self.core.area_frontal_m2(),
                                 mass_fans_kg=self.power_rated_fan_W / self.specific_power_fan_W_kg,
