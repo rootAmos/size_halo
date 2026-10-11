@@ -101,7 +101,40 @@ Aspect ratio 2 % lower does not close (IPOPT: infeasible): the reference sits on
 to the span, engine-out power with the fixed engines), so its aspect-ratio derivative holds upward only. The
 ledger should mark such one-sided inputs.
 
-Fixed-aircraft mode (plan 045 off-design, maximum range) does not converge at 100 % or 90 % payload, with or
-without lifted inputs (diagnostic with nothing lifted: maximum iterations), so the failure is the off-design
-solve at high payload, not the parameters. Open: continue from the half-payload point (`start`), or answer
-"range per input" with the sizing objective "range".
+### Fixed aircraft (36f08aa): range per input at 80 % payload
+
+The reference point for the fixed-aircraft payload and range ranking is **80 % of the design payload** (720 kg),
+maximum range with full tanks (459 nm, take-off 6,705 kg; one solve, 113-208 s). At 90-100 % the off-design solve
+does not converge (the full-payload corner has take-off mass, tanks and payload all at their limits); the trends do
+not depend on the payload fraction, so 80 % is accepted as the reference (decision 2026-10-11).
+
+Calibration factors (wing and fuselage weight factors, excrescence factor; kind "calibration") are recorded but not
+ranked: they are always large levers because they stand in for design confidence.
+
+Range drivers (impact x uncertainty, share of the range variance):
+
+| input | share | range at 1 sigma |
+|---|---|---|
+| miscellaneous drag area (+-25 %) | 68 % | +-10 nm |
+| payload (+-50 kg) | 10 % | +-4 nm |
+| hover duration (+-15 s) | 7 % | +-3 nm |
+| equipment mass (+-15 %) | 6.5 % | +-3 nm |
+| inverter specific power | 4 % | +-2 nm |
+
+Design levers (elasticity, % per %):
+
+| input | range | cruise L/D |
+|---|---|---|
+| wing aspect ratio | +0.290 | +0.468 |
+| wing t/c | -0.076 | -0.114 |
+
+- Wing t/c reaches the aerodynamics only since 36f08aa: the thickness-scaled section family is now the default
+  (identical to the NACA 2423 coordinates at 23 %), and the spar-cap depth follows t/c. Before, t/c read +0.005 on
+  range because the coordinate airfoil ignored it and the cap depth cancelled.
+- Aspect ratio holds in one direction only: the reference sits on binding limits (rotor clearance, engine-out power),
+  so its derivatives are valid for an increase.
+- Thinner and longer wings are flutter-limited: plan 040 (calibrated flutter speed 262 kt against 302 kt) and plan
+  055 (flutter in the sizing loop) bound these levers.
+- Every sigma except the wing factor's is a placeholder prior until its owner sets it.
+- Not yet checked by re-solve in fixed mode (`--check` re-solves aspect ratio); the static-margin row is suspect
+  (static margin sits at its limit yet shows non-zero derivatives).
