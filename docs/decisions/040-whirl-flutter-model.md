@@ -11,6 +11,16 @@ nacelle mass and offset, and rotor parameters against flutter speed directly (`d
 In: the coupled model, the XV-15 comparison against CAMRAD II with a calibration, tests. Out (next): the Halo
 flutter check, the constraint inside `asb.Opti`.
 
+## References
+
+- Johnson, "Dynamics of Tilting Proprotor Aircraft in Cruise Flight", NASA TN D-7677, 1974: the proprotor and
+  wing formulation (quasi-steady blade-element derivatives at high inflow, gimbal, lag, wing modes).
+- Johnson, NASA TM X-73213: pitch couplings and the XV-15 delta-3 with the pitch horn level at 20.5 deg
+  collective.
+- Acree, Peyran and Johnson, NASA/TP-2004-212262: XV-15 stick-model hub modes for the 0.23 and 0.15 t/c wings,
+  the steel-blade gimballed rotor deck, and the CAMRAD II flutter boundaries used for the calibration.
+- Reed, classical propeller whirl flutter (rigid propeller on a flexible pylon): the limiting case in the tests.
+
 ## Model (`aircraft_closure.aeroelasticity.whirl_flutter`)
 
 Johnson's proprotor formulation (NASA TN D-7677; TM X-73213) at conceptual order, in `aerosandbox.numpy` so the
@@ -154,6 +164,34 @@ Each row is one change from the reference. The table gives the calibrated flutte
   beyond about +0.2 has not been checked against the collective lag mode.
 - Proposed path: delta-3 about -10 deg plus the CG as close to the spindle as the layout allows, verified on
   whole-aircraft modes; torsion stiffness only for what remains.
+
+## Assumptions
+
+Collected from the sections above:
+
+- Rotor: XV-15 blade dynamics scaled to the Halo rotor (Lock number, per-rev frequencies, couplings);
+  pitch-lag -0.2 (inside Johnson's range, not measured); quasi-steady aerodynamics, no tip loss, no dynamic
+  inflow; Prandtl-Glauert on the helical Mach number.
+- Airframe: three-mode cantilever wing with a rigid tip nacelle from the sized AFDD wing, about 10 %
+  conservative against the XV-15 NASTRAN hub modes; no wing aerodynamics (the CAMRAD practice).
+- Halo installation: nacelle CG 0.5 m ahead of the spindle, spindle on the elastic axis, free electric drive,
+  sea level, V_D = 1.25 V_max.
+- Calibration: airspeed knockdown 0.84, fitted on the XV-15 thick wing at delta-3 -18 deg; least validated
+  away from that delta-3.
+- Requirement: calibrated flutter speed at least 1.15 V_D at every airplane-mode rotor speed.
+- `whirl_modes` and `flutter_speed` are numerical checks (eigenvalues, a scan, then bisection) outside the
+  optimizer; the matrices stay symbolic (tested).
+
+## Progress log
+
+- 2026-10-10 15:21: model and XV-15 calibration (82a65fa).
+- 2026-10-10 15:45: Halo check against 1.15 V_D (c491fcb).
+- 2026-10-10 17:04: torsion stiffness and wing weight to clear it (0c02ac5).
+- 2026-10-10 17:28: pylon and pitch-coupling levers (c596dae).
+- 2026-10-10 17:33: tutorial 26 (d80106a); merged to main in PR #17.
+- 2026-10-10: audited against the restored AGENTS.md; References, Assumptions and this log added. The
+  pylon-CG follow-up that sat uncommitted on the merged branch moved to its own branch,
+  `feat/whirl-pylon-cg` (work in progress, no plan yet).
 
 ## Next
 

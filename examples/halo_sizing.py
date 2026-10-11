@@ -46,6 +46,7 @@ from aircraft_closure.aerodynamics.buildup import BuildupAerodynamics
 from aircraft_closure.aerodynamics.scholz import ScholzAerodynamics
 from aircraft_closure.aerodynamics.simple import SimpleAerodynamics
 from aircraft_closure.aerodynamics.slipstream import BlownWing
+from aircraft_closure.aerodynamics.wing_section import SectionClMaxSurrogate, WingSectionFamily
 from aircraft_closure.controls.stability import DirectionalStability, LongitudinalStability
 from aircraft_closure.core.margins import margin_above, margin_below, margin_report
 from aircraft_closure.mission.cost import CostBreakdown, CostModel
@@ -60,6 +61,8 @@ from aircraft_closure.powertrain.components.converters import ConverterLossModel
 from aircraft_closure.powertrain.components.gearbox import Gearbox, GearStageModel
 from aircraft_closure.powertrain.components.generator import Generator
 from aircraft_closure.powertrain.components.heat_exchanger import RamAirHeatExchanger
+from aircraft_closure.powertrain.components.ntu_heat_exchanger import NtuRamAirHeatExchanger, with_core_counts
+from aircraft_closure.powertrain.components.ram_air_duct import RamAirDuct
 from aircraft_closure.powertrain.components.motor import (DatabaseMassModel, Motor, TorqueDensityMassModel,
                                                           UnitMachineMassModel,
                                                           rubber_machine)
@@ -182,6 +185,10 @@ class HaloAssumptions:
     # Tier 12: momentum + profile rotor calibrated on JVX (rotor speed, solidity and tip speed matter); False
     # restores the Tier 10c actuator disk with the two constant coefficients above.
     rotor_speed_physics: bool = True
+    # Plan 047: lower bound on the solidity design variable. 0.06 is the original bound; the blade-element design
+    # (examples/halo_blade_design.py) finds 0.067 is the least solidity that hovers at the sizing's figure of merit
+    # with a 2 deg section stall margin outboard of 0.4 R.
+    solidity_min: float = 0.06
     # Plan 017 (decided 2026-10-03): off-the-shelf turboshafts, power fixed by the engine deck (1,120 hp SLS, the
     # user-supplied GASP_TS deck); a non-OEM cannot raise power available. None restores a sized (rubber) engine.
     power_rated_turboshaft_fixed_W: Any = 1120 * u.hp
@@ -240,6 +247,8 @@ class HaloAssumptions:
     factor_resistance_ageing_battery: float = 1.5  # end of life: +50 % resistance (assumed)
     temperature_cell_battery_C: float = 25.0      # thermally managed pack (assumed)
     fraction_mass_cells_battery: float = 0.7      # cell / pack mass (assumed; cylindrical-cell packs ~0.65-0.75)
+    # Plan 044: None makes the pack's parallel count a design variable; a number fixes it (battery-energy sweeps).
+    count_parallel_battery_fixed: Any = None
     # Points per mission segment (take-off hover, climb, cruise, loiter, descent, landing hover) so OCV and
     # resistance follow SOC through long segments; and points in the 60 s engine-out hover (SOC 0.30 -> 0.10).
     subsegments_mission: tuple = (1, 1, 4, 1, 1, 1)
@@ -339,6 +348,19 @@ class HaloAssumptions:
     # Reserve SOC: the mission SOC floor, which is also where the engine-out hover starts (0.30 when fixed).
     free_soc_reserve: bool = False
     bounds_soc_reserve: tuple = (0.20, 0.90)
+    # Plan 046 wing section. "naca2423": the coordinate airfoil (the reference). "family": the CST family around it
+    # (`aerodynamics.wing_section`) at `thickness_to_chord_wing` and `camber_wing`, with NeuralFoil polars that are
+    # differentiable in both and section maximum lift scaling the stall cl_max; the same thickness sizes the AFDD
+    # wing. The free flags make thickness and camber design variables ("family" only).
+    wing_section_model: str = "naca2423"
+    camber_wing: float = 0.02
+    free_thickness_to_chord_wing: bool = False
+    bounds_thickness_to_chord_wing: tuple = (0.15, 0.28)
+    free_camber_wing: bool = False
+    bounds_camber_wing: tuple = (0.0, 0.04)
+    # Plan 046: floor on the realized wing (torsion, beam) stiffness in N m2 (None: none). Holding the 23 % wing's
+    # stiffness keeps the plan 040 whirl-flutter inputs, which the frequency-placement margins do not.
+    stiffness_min_wing_Nm2: Any = None
     # Cost per mission for objective="cost" and for every result's `cost` (src/aircraft_closure/mission/cost.py).
     cost_model: Any = field(default_factory=CostModel)
     # Plan 034: drag AeroBuildup and the Scholz build-up leave out. Excrescence, leakage and protuberance as a factor
@@ -378,6 +400,14 @@ class HaloAssumptions:
     # Heat loads cooled elsewhere: the gearboxes' own oil coolers, assumed inside the XV-15-calibrated AFDD drive
     # system weights (they include the lubrication systems). Their heat is still reported.
     sources_excluded_heat_exchanger: tuple = ("gearbox", "generator_gearbox")
+    # Plan 042: "mass_per_watt" (the default above: mass = rating / specific power, quadratic loss law) or "ntu" (an
+    # offset-strip-fin core by ε-NTU in a ram-air duct with a hover fan: core counts, nozzle area and fan rating are
+    # design variables; per point an air-flow unknown with the duct residual, and a fan pressure rise in hover).
+    heat_exchanger_model: str = "mass_per_watt"
+    mass_flow_coolant_heat_exchanger_kg_s: float = 2.0     # "ntu": fixed water-glycol flow (16 K rise at 121 kW)
+    specific_power_fan_heat_exchanger_W_kg: float = 2000.0  # "ntu": fan, motor and controller (author estimate)
+    mass_duct_per_area_heat_exchanger_kg_m2: float = 12.0  # "ntu": inlet, diffuser, nozzle per m2 core face (estimate)
+    mass_pump_pipes_heat_exchanger_kg: float = 30.0        # "ntu": pump, lines to the tips, loop coolant (estimate)
     # ---- Tier 18 redundancy (plan 032) ----
     # True: `count_lanes_motor` lane motors per rotor (each 1/N of the torque, on a combining gearbox input),
     # `count_buses` cross-strapped buses joined by normally open ties (contactor + cable), `count_strings_battery`
@@ -463,9 +493,18 @@ class HaloDesign:
     altitude_cruise_m: Any = None                 # Tier 22 freed trades; None: the fixed values
     aspect_ratio_wing: Any = None
     soc_reserve: Any = None
+    thickness_to_chord_wing: Any = None           # plan 046 ("family" section); None: the assumption values
+    camber_wing: Any = None
     power_rated_heat_exchanger_W: Any = None      # Tier 19 thermal: heat rejected at the reference difference
     power_rated_gearbox_W: Any = None             # Tier 19 thermal: rotor gearbox rating; None: the motor rating
     area_spar_strain_m2: Any = None               # plan 043: spar caps added for the cap-strain margin; None: 0
+    # Plan 042 "ntu" heat exchanger: core counts (air channels across, fin lengths along the air, layers), duct
+    # nozzle area and hover fan rating; None with the mass-per-watt model.
+    count_wide_heat_exchanger: Any = None
+    count_long_heat_exchanger: Any = None
+    count_tall_heat_exchanger: Any = None
+    area_nozzle_heat_exchanger_m2: Any = None
+    power_rated_fan_heat_exchanger_W: Any = None
 
 
 def battery_thermal(assumptions):
@@ -643,6 +682,20 @@ def ratio_reference_gear_stages():
 def stage_mass_ratio(stage_model, ratio):
     """Plan 033: drive mass relative to the AFDD drive at the XV-15 calibration ratio; `ratio` is fast/slow (>= 1)."""
     return stage_model.mass_factor(ratio) / stage_model.mass_factor(ratio_reference_gear_stages())
+
+
+def halo_wing_section(design, assumptions):
+    """Plan 046: (thickness ratio, camber, airfoil) of the wing; design values override the assumptions."""
+    a, d = assumptions, design
+    thickness = d.thickness_to_chord_wing if d.thickness_to_chord_wing is not None else a.thickness_to_chord_wing
+    camber = d.camber_wing if d.camber_wing is not None else a.camber_wing
+    if a.wing_section_model == "naca2423":
+        if d.thickness_to_chord_wing is not None or d.camber_wing is not None:
+            raise ValueError("A thickness or camber design variable needs wing_section_model='family'.")
+        return thickness, camber, asb.Airfoil("naca2423")
+    if a.wing_section_model == "family":
+        return thickness, camber, WingSectionFamily().airfoil(thickness, camber)
+    raise ValueError(f"Unknown wing section model '{a.wing_section_model}'.")
 
 
 def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None,
@@ -827,14 +880,14 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                                       else speed_rotor_design_rad_s),
             width_fuselage_m=a.diameter_fuselage_m, frequency_torsion_per_rev=a.frequency_torsion_wing_per_rev,
             frequency_beam_per_rev=a.frequency_beam_wing_per_rev, frequency_chord_per_rev=a.frequency_chord_wing_per_rev,
-            thickness_to_chord=a.thickness_to_chord_wing, material=materials[a.wing_material](),
+            thickness_to_chord=halo_wing_section(d, a)[0], material=materials[a.wing_material](),
             count_rotors=a.count_rotors, load_factor_jump=a.load_factor_jump, smoothing=a.smoothing_wing_tiltrotor,
             area_spar_added_m2=d.area_spar_strain_m2 if d.area_spar_strain_m2 is not None else 0.0))
     else:
         raise ValueError(f"Unknown wing weight model '{a.wing_weight_model}'.")
     aspect_ratio_wing = d.aspect_ratio_wing if d.aspect_ratio_wing is not None else a.aspect_ratio_wing
     wing = Wing(area_m2=d.area_wing_m2, aspect_ratio=aspect_ratio_wing, taper_ratio=1.0, x_le_root_m=d.x_le_wing_m,
-                z_m=1.2, airfoil=asb.Airfoil("naca2423"), **wing_mass)
+                z_m=1.2, airfoil=halo_wing_section(d, a)[2], **wing_mass)
     x_rotor_m = d.x_le_wing_m + 0.25 * wing.chord_root_m()
     z_rotor_m = wing.z_m + a.length_mast_m
     if a.turbogenerators_on_wing_tips:
@@ -879,15 +932,30 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
             locations = locations + (InstalledInstance("protection_bus_tie", x_m=x_bus_m, z_m=z_bus_m),
                                      InstalledInstance("cable_bus_tie", x_m=x_bus_m, z_m=z_bus_m))
     cooling = None
+    if a.heat_exchanger_model not in ("mass_per_watt", "ntu"):
+        raise ValueError(f"Unknown heat exchanger model '{a.heat_exchanger_model}'.")
     if a.thermal_model:
         # One ram-air cooler for every heat load, in the fuselage at the wing (the loop runs to the tips).
-        cooling = InstalledCooling(RamAirHeatExchanger(
-            power_rated_W=d.power_rated_heat_exchanger_W, specific_power_W_kg=a.specific_power_heat_exchanger_W_kg,
-            temperature_coolant_C=a.temperature_coolant_C,
-            delta_temperature_ref_C=a.delta_temperature_ref_heat_exchanger_C,
-            effectiveness=a.effectiveness_heat_exchanger, pressure_drop_ref_Pa=a.pressure_drop_ref_heat_exchanger_Pa,
-            efficiency_fan=a.efficiency_fan_heat_exchanger), x_m=x_rotor_m, z_m=0.0,
-            sources_excluded=a.sources_excluded_heat_exchanger)
+        if a.heat_exchanger_model == "ntu":
+            exchanger = with_core_counts(NtuRamAirHeatExchanger(
+                duct=RamAirDuct(efficiency_fan=a.efficiency_fan_heat_exchanger),
+                temperature_coolant_C=a.temperature_coolant_C,
+                mass_flow_coolant_kg_s=a.mass_flow_coolant_heat_exchanger_kg_s,
+                specific_power_fan_W_kg=a.specific_power_fan_heat_exchanger_W_kg,
+                mass_duct_per_area_kg_m2=a.mass_duct_per_area_heat_exchanger_kg_m2,
+                mass_pump_pipes_kg=a.mass_pump_pipes_heat_exchanger_kg),
+                d.count_wide_heat_exchanger, d.count_long_heat_exchanger, d.count_tall_heat_exchanger,
+                d.area_nozzle_heat_exchanger_m2, d.power_rated_fan_heat_exchanger_W)
+        else:
+            exchanger = RamAirHeatExchanger(
+                power_rated_W=d.power_rated_heat_exchanger_W, specific_power_W_kg=a.specific_power_heat_exchanger_W_kg,
+                temperature_coolant_C=a.temperature_coolant_C,
+                delta_temperature_ref_C=a.delta_temperature_ref_heat_exchanger_C,
+                effectiveness=a.effectiveness_heat_exchanger,
+                pressure_drop_ref_Pa=a.pressure_drop_ref_heat_exchanger_Pa,
+                efficiency_fan=a.efficiency_fan_heat_exchanger)
+        cooling = InstalledCooling(exchanger, x_m=x_rotor_m, z_m=0.0,
+                                   sources_excluded=a.sources_excluded_heat_exchanger)
     return Aircraft(
         wing=wing,
         horizontal_tail=HorizontalTail(area_m2=d.area_horizontal_tail_m2, aspect_ratio=3.27, taper_ratio=1.0,
@@ -987,6 +1055,8 @@ class HaloSizingResult:
     # Plan 043 ("afdd_tiltrotor" wing): ultimate jump take-off spar-cap strain at the critical station (beam, peak,
     # allowable, margin = 1 - peak / allowable), the load-carrying factor on the AFDD areas and the added cap area.
     wing_strain: Any = None
+    # Plan 044: the mission range (a variable with objective "range", else the requirement).
+    range_m: Any = None
 
 
 def factor_load_carrying_wing(wing, assumptions):
@@ -1034,7 +1104,9 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
 
     objective "mass_takeoff" minimizes take-off mass at the required payload; "payload" makes payload a
     variable and maximizes it (the aircraft is sized around fixed engines, plan 017); "cost" minimizes the
-    cost per mission of `HaloAssumptions.cost_model` at the required payload (Tier 22).
+    cost per mission of `HaloAssumptions.cost_model` at the required payload (Tier 22); "fuel" minimizes the
+    mission fuel burnt and "range" makes the mission range a variable and maximizes it, both at the required
+    payload (plan 044).
 
     With no `initial`, `solve_halo_sizing_multistart` tries an ordered list of starting points, each one
     independent coupled solve, and returns the first that converges; `result.start` records which start
@@ -1097,7 +1169,7 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
 def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None,
                            verbose=False, max_iter=3000, initial=None, objective="mass_takeoff"):
     """One coupled solve from `initial` (None: the generic guess). Raises RuntimeError if IPOPT fails."""
-    if objective not in ("mass_takeoff", "payload", "cost"):
+    if objective not in objectives:
         raise ValueError(f"Unknown objective '{objective}'.")
     factors = factors if factors is not None else calibration_factors()
     lapse_exponent = fit_lapse_exponent()
@@ -1119,6 +1191,7 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         # Tier 18: a start with a different lane count keeps its total motor torque per rotor.
         guess = replace(guess, torque_peak_motor_Nm=guess.torque_peak_motor_Nm * initial.count_lanes_motor / lanes)
     is_ecm = a.battery_model == "ecm"
+    is_ntu = a.heat_exchanger_model == "ntu"
     design = HaloDesign(
         x_le_wing_m=opti.variable(init_guess=guess.x_le_wing_m, lower_bound=3.0, upper_bound=8.5),
         area_wing_m2=opti.variable(init_guess=guess.area_wing_m2, scale=10.0, lower_bound=5.0, upper_bound=60.0),
@@ -1130,7 +1203,7 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         # Tier 19: the cooler's rating and the drive's own rating (the motor's becomes continuous).
         power_rated_heat_exchanger_W=opti.variable(
             init_guess=guess.power_rated_heat_exchanger_W if guess.power_rated_heat_exchanger_W is not None
-            else 3e5, scale=1e5, lower_bound=1e3) if a.thermal_model else None,
+            else 3e5, scale=1e5, lower_bound=1e3) if a.thermal_model and not is_ntu else None,
         power_rated_gearbox_W=opti.variable(
             init_guess=guess.power_rated_gearbox_W if guess.power_rated_gearbox_W is not None
             else (initial.power_rated_motor_W if initial is not None else 7e5), scale=1e6,
@@ -1144,11 +1217,27 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
             init_guess=guess.power_max_discharge_battery_W, scale=1e6, lower_bound=1e4),
         energy_capacity_battery_J=None if is_ecm else opti.variable(
             init_guess=guess.energy_capacity_battery_J, scale=1e8, lower_bound=1e6),
-        count_parallel_battery=opti.variable(
-            init_guess=count_parallel_guess(guess, a), scale=10.0, lower_bound=1.0) if is_ecm else None,
+        count_parallel_battery=(a.count_parallel_battery_fixed if a.count_parallel_battery_fixed is not None
+                                else opti.variable(init_guess=count_parallel_guess(guess, a), scale=10.0,
+                                                   lower_bound=1.0)) if is_ecm else None,
         area_disk_m2=opti.variable(init_guess=guess.area_disk_m2, scale=10.0, lower_bound=5.0, upper_bound=120.0),
         mass_fuel_kg=opti.variable(init_guess=guess.mass_fuel_kg, scale=500.0, lower_bound=0.0),
     )
+    if a.thermal_model and is_ntu:
+        # Plan 042: the ε-NTU cooler's size (core counts), nozzle area and fan rating; the default guess is a core of
+        # about 0.9 x 0.6 x 0.09 m that rejects about 110 kW on the hot day.
+        # Log-transformed (positive at every iterate: the core's fractional powers need it).
+        def ntu_variable(name, default, scale, lower_bound):
+            value = getattr(guess, name)
+            value = value if value is not None else default
+            return opti.variable(init_guess=value, scale=value, lower_bound=lower_bound, log_transform=True)
+        design = replace(design,
+                         count_wide_heat_exchanger=ntu_variable("count_wide_heat_exchanger", 600.0, 100.0, 10.0),
+                         count_long_heat_exchanger=ntu_variable("count_long_heat_exchanger", 15.0, 10.0, 1.0),
+                         count_tall_heat_exchanger=ntu_variable("count_tall_heat_exchanger", 40.0, 10.0, 2.0),
+                         area_nozzle_heat_exchanger_m2=ntu_variable("area_nozzle_heat_exchanger_m2", 0.15, 0.1, 0.005),
+                         power_rated_fan_heat_exchanger_W=ntu_variable("power_rated_fan_heat_exchanger_W", 10e3, 1e4,
+                                                                       100.0))
     if a.machine_mass_by_torque:
         # Tier 13: motor speed, rotor gear ratio and (with a step-up gearbox) generator speed are trades.
         design = replace(design, speed_peak_motor_rad_s=opti.variable(
@@ -1168,7 +1257,7 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         speed_sound_sea_level_m_s = asb.Atmosphere(altitude=0).speed_of_sound()
         design = replace(design,
                          solidity=opti.variable(init_guess=guess.solidity if guess.solidity is not None else 0.10,
-                                                lower_bound=0.06, upper_bound=0.14),
+                                                lower_bound=a.solidity_min, upper_bound=0.14),
                          speed_tip_m_s=opti.variable(
                              init_guess=guess.speed_tip_m_s if guess.speed_tip_m_s is not None else 220.0, scale=100.0,
                              lower_bound=150.0, upper_bound=a.mach_tip_hover_max * speed_sound_sea_level_m_s))
@@ -1199,8 +1288,29 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         design = replace(design, soc_reserve=opti.variable(
             init_guess=guess.soc_reserve if guess.soc_reserve is not None else soc_minimum,
             lower_bound=low, upper_bound=high))
+    if a.free_thickness_to_chord_wing:
+        low, high = a.bounds_thickness_to_chord_wing
+        design = replace(design, thickness_to_chord_wing=opti.variable(
+            init_guess=guess.thickness_to_chord_wing if guess.thickness_to_chord_wing is not None
+            else a.thickness_to_chord_wing, scale=0.1, lower_bound=low, upper_bound=high))
+    if a.free_camber_wing:
+        low, high = a.bounds_camber_wing
+        design = replace(design, camber_wing=opti.variable(
+            init_guess=guess.camber_wing if guess.camber_wing is not None else a.camber_wing, scale=0.01,
+            lower_bound=low, upper_bound=high))
+    cl_max = r.cl_max
+    if a.wing_section_model == "family":
+        # Plan 046: aircraft maximum lift scaled with the section's (NeuralFoil surrogate, 1 at the base section).
+        thickness_wing, camber_wing, _ = halo_wing_section(design, a)
+        cl_max = r.cl_max * SectionClMaxSurrogate().ratio(thickness_wing, camber_wing)
+        aerodynamics = replace(aerodynamics, cl_max=cl_max)
     soc_reserve = design.soc_reserve if design.soc_reserve is not None else soc_minimum
     altitude_cruise_m = design.altitude_cruise_m if design.altitude_cruise_m is not None else r.altitude_cruise_m
+    if objective == "range":
+        # Plan 044: the mission range is a variable (the cruise distance follows it); the payload stays required.
+        r = replace(r, range_m=opti.variable(init_guess=initial.range_m if initial is not None
+                                             and getattr(initial, "range_m", None) is not None else r.range_m,
+                                             scale=1e5, lower_bound=100e3))
     mission = halo_mission(replace(r, altitude_cruise_m=altitude_cruise_m), velocity_cruise_m_s=opti.variable(
         init_guess=initial.velocity_cruise_m_s if initial else 110.0, scale=50.0, lower_bound=60.0,
         upper_bound=r.velocity_max_m_s), velocity_loiter_m_s=opti.variable(
@@ -1290,7 +1400,7 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
     radius_m = instances["propulsor"].component.radius_m()
     span_m = aircraft.wing.span_m()
     density_sea_level_kg_m3 = asb.Atmosphere(altitude=0).density()
-    lift_stall_N = 0.5 * density_sea_level_kg_m3 * r.velocity_stall_max_m_s**2 * design.area_wing_m2 * r.cl_max
+    lift_stall_N = 0.5 * density_sea_level_kg_m3 * r.velocity_stall_max_m_s**2 * design.area_wing_m2 * cl_max
     weight_N = mass_takeoff_kg * acceleration_gravity_m_s2
 
     design_margins = (
@@ -1326,6 +1436,11 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         if a.wing_strain_margin:
             all_margins += (margin_below("wing spar-cap strain, ultimate jump take-off", strain_peak_wing,
                                          strain_allowable_wing),)
+        if a.stiffness_min_wing_Nm2 is not None:
+            torsion_min_Nm2, beam_min_Nm2 = a.stiffness_min_wing_Nm2
+            all_margins += (margin_above("wing torsion stiffness_Nm2", wing_masses.stiffness_torsion_Nm2,
+                                         torsion_min_Nm2),
+                            margin_above("wing beam stiffness_Nm2", wing_masses.stiffness_beam_Nm2, beam_min_Nm2))
     if hover_hot is not None:
         # An alternative contingency to the engine-out reserve: from the end SOC down to the emergency floor.
         all_margins += hover_hot.margins + (
@@ -1356,12 +1471,8 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         energy_discharge_battery_J=sum(np.softmax(e, 0.0, softness=softness_energy_J) for e in energies_point_J),
         energy_recharge_ground_J=(soc_take_off - flown.soc_end) * design.energy_capacity_battery_J,
         duration_mission_s=flown.duration_s)
-    if objective == "payload":
-        opti.minimize(-r.mass_payload_kg / 100)
-    elif objective == "cost":
-        opti.minimize(cost.per_mission_usd / scale_objective_cost_usd)
-    else:
-        opti.minimize(mass_takeoff_kg / 1000)
+    opti.minimize(halo_objective(objective, mass_takeoff_kg, r.mass_payload_kg, flown.mass_fuel_burnt_kg, r.range_m,
+                                 cost.per_mission_usd))
 
     solution = opti.solve(verbose=verbose, max_iter=max_iter)
     value = lambda expression: float(solution.value(expression))
@@ -1391,6 +1502,7 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         segments=tuple(dict(label=s.segment.label, duration_s=value(s.duration_s), fuel_kg=value(s.mass_fuel_burnt_kg),
                             battery_kWh=value(s.energy_battery_chemical_J) / 3.6e6, soc_end=value(s.soc_end),
                             hybridization=value(s.point.hybridization_electric),
+                            hybridization_mean=value(hybridization_mean(s)),
                             power_rotors_W=value(a.count_rotors * s.point.power_shaft_rotor_W),
                             power_turboshafts_W=value((s.point.condition.active_generator_count
                                                        or a.count_turbogenerators) * s.point.engine.power_shaft_W),
@@ -1437,7 +1549,40 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
                          area_spar_added_m2=value(design.area_spar_strain_m2)
                          if design.area_spar_strain_m2 is not None else 0.0) if is_afdd_wing else None,
         failure_cases=tuple(failure_summary(label, failure, instances, value) for label, failure in failures),
+        range_m=value(r.range_m),
     )
+
+
+def hybridization_mean(segment):
+    """Plan 044: the battery share of the motors' electrical energy over a mission segment (its sub-segments
+    weighted by motor power and time); `segment.point.hybridization_electric` is the first sub-segment's only."""
+    points = segment.subsegments or (segment,)
+    energy_J = sum(p.point.power_electric_motors_W * p.duration_s for p in points)
+    energy_battery_J = sum(p.point.hybridization_electric * p.point.power_electric_motors_W * p.duration_s
+                           for p in points)
+    return energy_battery_J / energy_J
+
+
+# Sizing objectives: "mass_takeoff" (default), "payload" (maximised, a variable), "cost" (per mission, Tier 22),
+# "fuel" (mission fuel burnt) and "range" (maximised, a variable; plan 044).
+objectives = ("mass_takeoff", "payload", "cost", "fuel", "range")
+scale_objective_fuel_kg = 100.0
+scale_objective_range_m = 1e5
+
+
+def halo_objective(objective, mass_takeoff_kg, mass_payload_kg, mass_fuel_burnt_kg, range_m, cost_per_mission_usd):
+    """The scaled quantity `asb.Opti.minimize` receives for `objective` (payload and range are maximised)."""
+    if objective == "mass_takeoff":
+        return mass_takeoff_kg / 1000
+    if objective == "payload":
+        return -mass_payload_kg / 100
+    if objective == "cost":
+        return cost_per_mission_usd / scale_objective_cost_usd
+    if objective == "fuel":
+        return mass_fuel_burnt_kg / scale_objective_fuel_kg
+    if objective == "range":
+        return -range_m / scale_objective_range_m
+    raise ValueError(f"Unknown objective '{objective}'.")
 
 
 def failure_hover_cases(assumptions):
@@ -1576,6 +1721,11 @@ def thermal_trace(segment_points, other_points, value):
             mass_flow_air_kg_s=value(t.cooling.mass_flow_air_kg_s),
             delta_temperature_C=value(t.cooling.delta_temperature_C),
             power_heat_end_W=value(t.power_heat_end_W),
+            **(dict(pressure_drop_air_Pa=value(t.cooling.pressure_drop_Pa),
+                    pressure_drop_coolant_Pa=value(t.cooling.pressure_drop_coolant_Pa),
+                    effectiveness=value(t.cooling.effectiveness),
+                    velocity_exit_m_s=value(t.cooling.velocity_exit_m_s))
+               if hasattr(t.cooling, "residual_mass_flow_kg_s") else {}),
             power_to_coolant_W={name: value(power_W) for name, power_W in t.power_to_coolant_W.items()},
             temperatures_end_C={name: value(temperature) for name, temperature in t.temperatures_end_C.items()},
             power_shaft_motor_W=value(p.speed_motor_rad_s * p.torque_motor_Nm)))
@@ -1597,9 +1747,21 @@ def heat_exchanger_summary(powertrain, value):
         machines[name] = dict(power_rated_W=value(rating_W), mass_kg=value(component.get_mass()),
                               power_loss_continuous_W=value(parameters.power_loss_continuous_W),
                               time_constant_s=value(parameters.capacity_J_K * parameters.resistance_K_W))
-    return dict(power_rated_W=value(exchanger.power_rated_W), mass_kg=value(exchanger.get_mass()),
-                power_rated_gearbox_W=value(powertrain.topology.instances["gearbox"].component.power_rated_W),
-                machines=machines)
+    summary = dict(mass_kg=value(exchanger.get_mass()),
+                   power_rated_gearbox_W=value(powertrain.topology.instances["gearbox"].component.power_rated_W),
+                   machines=machines)
+    if isinstance(exchanger, NtuRamAirHeatExchanger):
+        # Plan 042: core size and the mass items (core, ducts, fans, pump and pipes).
+        core = exchanger.core
+        breakdown = exchanger.mass_breakdown()
+        summary.update(model="ntu", power_rated_fan_W=value(exchanger.power_rated_fan_W),
+                       area_nozzle_m2=value(exchanger.duct.area_nozzle_m2),
+                       counts=(value(core.count_wide), value(core.count_long), value(core.count_tall)),
+                       width_m=value(core.width_m()), height_m=value(core.height_m()), length_m=value(core.length_m()),
+                       masses_kg={f.name: value(getattr(breakdown, f.name)) for f in fields(breakdown)})
+    else:
+        summary.update(model="mass_per_watt", power_rated_W=value(exchanger.power_rated_W))
+    return summary
 
 
 def battery_trace(points, value):
@@ -1660,6 +1822,10 @@ def objective_value(result, objective):
         return -result.mass_payload_kg
     if objective == "cost":
         return result.cost.per_mission_usd
+    if objective == "fuel":
+        return result.mass_fuel_burnt_kg
+    if objective == "range":
+        return -result.range_m
     raise ValueError(f"Unknown objective '{objective}'.")
 
 
@@ -1673,7 +1839,7 @@ def default_starts(requirements, assumptions, objective):
        the thermal model it is a later fallback, after payload continuation.
        "thermal_off" (thermal model without the layer): the same problem without the thermal model (plan 028);
        from the generic guess, and with AeroBuildup from the thermal Scholz design, IPOPT can fail.
-    2. "mass_objective" (objective "cost" only): the same problem at minimum take-off mass.
+    2. "mass_objective" (objectives "cost", "fuel" and "range"): the same problem at minimum take-off mass.
     3. "scholz_aero" (AeroBuildup only): the same problem with the Scholz hand-check aerodynamics (plan 025).
     4. "constant_battery" (equivalent-circuit pack only): the same requirements with the constant-OCV battery,
        without the electrical layer, at minimum take-off mass (plans 022 and 023).
@@ -1692,7 +1858,7 @@ def default_starts(requirements, assumptions, objective):
             starts.append("strings_off")
     if a.thermal_model:
         starts.append("electrical_off" if a.electrical_layer else "thermal_off")
-    if objective == "cost":
+    if objective in ("cost", "fuel", "range"):
         starts.append("mass_objective")
     if a.aerodynamics_model == "buildup":
         starts.append("scholz_aero")
