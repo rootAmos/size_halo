@@ -105,6 +105,7 @@ Reduced-order, in `aerosandbox.numpy` (`aircraft_closure.weights.afdd`), so it s
   - CalculiX was found at the script's default path (`C:/Users/alexa/Documents/Xenon/Software/CalculiX/
     CalculiX-2.22.0-win-x64/bin/ccx.exe`, overridable with `CCX`); OpenVSP 3.53.1 (for the mesh) was put on
     `PYTHONPATH` from its install folder, nothing installed into the venv.
+- 2026-10-11: full suite 679 tests OK (8 skipped). PR #22.
 - Buckling (open item, `examples/halo_wing_buckling.py`, simply supported plates, 0.5 m rib pitch):
 
 | Wing | Wall gauge | Cover stress at ultimate / buckling | Web shear at ultimate / buckling |
