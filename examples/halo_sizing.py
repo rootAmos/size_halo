@@ -404,7 +404,7 @@ class HaloAssumptions:
     # Plan 042: "mass_per_watt" (the default above: mass = rating / specific power, quadratic loss law) or "ntu" (an
     # offset-strip-fin core by ε-NTU in a ram-air duct with a hover fan: core counts, nozzle area and fan rating are
     # design variables; per point an air-flow unknown with the duct residual, and a fan pressure rise in hover).
-    heat_exchanger_model: str = "mass_per_watt"
+    heat_exchanger_model: str = "ntu"    # v3.7 default (plan 048); "mass_per_watt" for v3.6 and earlier
     mass_flow_coolant_heat_exchanger_kg_s: float = 2.0     # "ntu": fixed water-glycol flow (16 K rise at 121 kW)
     specific_power_fan_heat_exchanger_W_kg: float = 2000.0  # "ntu": fan, motor and controller (author estimate)
     mass_duct_per_area_heat_exchanger_kg_m2: float = 12.0  # "ntu": inlet, diffuser, nozzle per m2 core face (estimate)
@@ -465,6 +465,13 @@ class HaloAssumptions:
     count_units_motor: Any = None
     count_units_generator: Any = None
     integer_units: bool = True
+    # Plan 048: a unit may run up to this factor above its catalogue continuous power (thermal and supplier margin on
+    # the same hardware: unit mass, peak torque and maximum speed unchanged; the inverter scales with the rated power).
+    # 1.0: the catalogue rating (v3.6 and earlier); 1.10: the author's assumption, the v3.7 default. A machine needing
+    # 2.004 units on power then fits in 2 uprated units instead of rounding up to 3. The integrated inverter keeps its
+    # catalogue mass (the same drive run harder). The thermal model still has to clear the machine temperature
+    # limits at the higher loading.
+    factor_uprating_power_units: float = 1.10
 
 
 @dataclass(frozen=True)
@@ -748,12 +755,13 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
         # variables) only places the efficiency map. n: `count_units_*`, or the relaxed count the rubber ratings
         # would need (used only to find n). The inverter is added unless it is a Tier 15 component.
         inverter = None if a.electrical_layer else a.specific_power_inverter_W_kg
+        uprating = a.factor_uprating_power_units    # plan 048: uprated continuous power only
         motor = unit_machine(motor, a.count_units_motor, UnitMachineMassModel(
-            a.mass_unit_motor_kg, a.torque_peak_unit_motor_Nm, a.power_continuous_unit_motor_W,
-            a.speed_max_unit_motor_rad_s, specific_power_inverter_W_kg=inverter))
+            a.mass_unit_motor_kg, a.torque_peak_unit_motor_Nm, uprating * a.power_continuous_unit_motor_W,
+            a.speed_max_unit_motor_rad_s, specific_power_inverter_W_kg=inverter, factor_uprating_power=uprating))
         generator = unit_machine(generator, a.count_units_generator, UnitMachineMassModel(
-            a.mass_unit_generator_kg, a.torque_peak_unit_generator_Nm, a.power_continuous_unit_generator_W,
-            a.speed_max_unit_generator_rad_s, specific_power_inverter_W_kg=inverter))
+            a.mass_unit_generator_kg, a.torque_peak_unit_generator_Nm, uprating * a.power_continuous_unit_generator_W,
+            a.speed_max_unit_generator_rad_s, specific_power_inverter_W_kg=inverter, factor_uprating_power=uprating))
     # Tier 19: with thermal machines the drive is rated on its own (the motor's rating is continuous).
     # Tier 18: `motor` is one lane motor; the drive takes all of a rotor's lanes.
     lanes = count_lanes_motor(a)
@@ -2066,7 +2074,8 @@ def _precursor(problem, factors, max_iter, cache, allow_continuation):
 # Named earlier baselines, so each tier's notebook keeps reproducing its own result. `pre_plan035` pins the
 # settings plan 035 changed (drag corrections, redundancy, unit-built machines, gearbox stages) to their earlier
 # values for every set below.
-pre_plan035 = dict(drag_corrections=False, redundancy=False, machine_mass_model="torque_density", gearbox_stages=False)
+pre_plan035 = dict(drag_corrections=False, redundancy=False, machine_mass_model="torque_density", gearbox_stages=False,
+                   heat_exchanger_model="mass_per_watt", factor_uprating_power_units=1.0)   # plan 048 defaults undone
 # Plans 037 and 038 (the drawn layout and the wing check): XV-15 fuselage calibration, turbogenerators at the tips,
 # round 12.8 m fuselage with the tail at 11.4 m, NDARC spar caps without a minimum gauge, XV-15 pylon ratio.
 pre_layout = dict(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None,
@@ -2294,6 +2303,12 @@ assumptions_plan037 = HaloAssumptions(**pre_plan035, ratio_radius_gyration_pylon
 # inertia from the tip components, turbogenerators by the layout (13,038 lb).
 requirements_plan038 = HaloRequirements(mass_payload_kg=900.0)
 assumptions_plan038 = HaloAssumptions(**pre_plan035)
+# v3.6 (15,179 lb): today's defaults with the mass-per-watt cooler and the machine units at their catalogue
+# continuous power (plan 048 made the plan 042 epsilon-NTU cooler and the 10 % uprating the defaults: v3.7).
+requirements_v3_6 = HaloRequirements()
+assumptions_v3_6 = HaloAssumptions(factor_uprating_power_units=1.0, heat_exchanger_model="mass_per_watt")
+# v3.5 on the current code (not test-pinned): the pre-layout settings with the v3.6 cooler and units.
+assumptions_v3_5 = HaloAssumptions(**pre_layout, factor_uprating_power_units=1.0, heat_exchanger_model="mass_per_watt")
 
 
 if __name__ == "__main__":
