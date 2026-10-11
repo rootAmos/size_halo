@@ -62,3 +62,9 @@ if __name__ == "__main__":
         row(f"delta-3 {delta3_deg:+.0f} deg", pitch_flap_coupling=onp.tan(onp.radians(delta3_deg)))
     for k in (-0.4, 0.0, 0.2):
         row(f"pitch-lag {k:+.1f} (ref {base.pitch_lag_coupling:+.1f})", pitch_lag_coupling=k)
+    # Combinations: the levers above are one change at a time.
+    delta3_m10 = onp.tan(onp.radians(-10.0))
+    row("CG 0 m + hub 0.6 m", airframe(x_cg_m=0.0, x_hub_m=0.6))
+    row("delta-3 -10 + CG 0.25 m", airframe(x_cg_m=0.25), pitch_flap_coupling=delta3_m10)
+    row("delta-3 -10 + CG 0 m", airframe(x_cg_m=0.0), pitch_flap_coupling=delta3_m10)
+    row("delta-3 -10 + CG 0 m + hub 0.6 m", airframe(x_cg_m=0.0, x_hub_m=0.6), pitch_flap_coupling=delta3_m10)
