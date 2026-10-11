@@ -16,7 +16,7 @@ from pathlib import Path
 import aerosandbox.tools.units as u
 import numpy as np
 
-from examples.halo_sizing import solve_halo_off_design, solve_halo_sizing
+from examples.halo_sizing import HaloAssumptions, HaloRequirements, solve_halo_off_design, solve_halo_sizing
 
 path_output = Path("output/payload_range")
 path_sized = path_output / "sized.pkl"
@@ -57,13 +57,19 @@ def load_sized(path):
 
 
 def sized_reference(path=path_sized):
-    """The sized reference (v3.6 defaults), from `path` or solved and saved there."""
-    if Path(path).exists():
+    """The sized reference (the current defaults), from `path` or solved and saved there.
+
+    The cache is used only if it was solved with today's default requirements and assumptions (their repr is saved
+    next to it): a default change (plan 048: v3.7) re-solves instead of silently reusing the old aircraft."""
+    key = repr((HaloRequirements(), HaloAssumptions()))
+    path_key = Path(str(path) + ".key")
+    if Path(path).exists() and path_key.exists() and path_key.read_text(encoding="utf-8") == key:
         return load_sized(path)
     sized = solve_halo_sizing()
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "wb") as file:
         pickle.dump(sized, file)
+    path_key.write_text(key, encoding="utf-8")
     return sized
 
 
