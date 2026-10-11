@@ -2,7 +2,7 @@
 import math
 import unittest
 
-from aircraft_closure.export.openvsp.snapshot import halo_plan027_snapshot, v_tail_equivalent
+from aircraft_closure.export.openvsp.snapshot import halo_plan027_snapshot, halo_reference_snapshot, v_tail_equivalent
 
 
 class VTailEquivalentTests(unittest.TestCase):
@@ -73,6 +73,24 @@ class HaloSnapshotTests(unittest.TestCase):
         self.assertAlmostEqual(nose[0], x_spindle_m - nacelle.length_mast_m - nacelle.offset_nose_m, places=9)
         self.assertAlmostEqual(nose[1], y_spindle_m, places=9)
         self.assertAlmostEqual(nose[2], z_spindle_m, places=9)
+
+
+class HaloReferenceSnapshotTests(unittest.TestCase):
+    reference = dict(span_wing_m=11.94, area_wing_m2=23.30, x_le_wing_m=4.62, radius_rotor_m=4.83, solidity=0.06,
+                     area_horizontal_tail_m2=5.25, area_vertical_tail_m2=2.73)
+
+    def test_solved_sizes_carry_through(self):
+        snapshot = halo_reference_snapshot(self.reference)
+        wing, tail = snapshot.wing, snapshot.v_tail
+        self.assertAlmostEqual(0.5 * (wing.chord_root_m + wing.chord_tip_m) * wing.span_m, 23.30, places=9)
+        self.assertAlmostEqual(wing.x_le_root_m + 0.25 * wing.chord_root_m, 4.62 + 0.25 * 23.30 / 11.94, places=12)
+        self.assertAlmostEqual(0.5 * (tail.chord_root_m + tail.chord_tip_m) * tail.span_m, 5.25 + 2.73, places=9)
+        self.assertEqual((snapshot.rotor.radius_m, snapshot.rotor.solidity), (4.83, 0.06))
+
+    def test_plan027_sizes_give_the_plan027_snapshot(self):
+        plan027 = dict(span_wing_m=11.441, area_wing_m2=21.388, x_le_wing_m=4.079, radius_rotor_m=4.582,
+                       solidity=0.089, area_horizontal_tail_m2=3.732, area_vertical_tail_m2=1.658)
+        self.assertEqual(halo_reference_snapshot(plan027), halo_plan027_snapshot())
 
 
 if __name__ == "__main__":
