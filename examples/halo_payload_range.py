@@ -72,7 +72,9 @@ def point_record(name, point):
     record = {k: v for k, v in asdict(point).items() if k != "result"}
     record.update(name=name, binding=list(result.binding), min_margin=result.min_margin, soc_end=result.soc_end,
                   offset_cg_trim_m=result.offset_cg_trim_m, closure_residual_kg=result.closure_residual_kg,
-                  segments=[dict(label=s["label"], duration_s=s["duration_s"], fuel_kg=s["fuel_kg"])
+                  velocity_cruise_m_s=result.velocity_cruise_m_s, velocity_loiter_m_s=result.velocity_loiter_m_s,
+                  lift_to_drag_cruise=result.lift_to_drag_cruise,
+                  segments=[{k: v for k, v in s.items() if isinstance(v, (int, float, str))}
                             for s in result.segments])
     return record
 
@@ -143,9 +145,6 @@ def plot(records, sized, path=path_figure):
     free = ok.get("ferry, free speeds")
     if free is not None:
         ax.plot([free["range_nm"]], [0], "D", ms=8, color=blue, mfc="#FFFFFF", mew=1.8, clip_on=False, zorder=5)
-        ax.annotate(f"Ferry at its own best speeds\n{free['range_nm']:,.0f} nm", (free["range_nm"], 0),
-                    xytext=(free["range_nm"] + 25, 880), fontsize=11.5, color=blue,
-                    arrowprops=dict(arrowstyle="-", color=blue, lw=1.0))
     checks = [ok[k] for k in ("short range", "payload-limited 1.1 x range") if k in ok]
     ax.plot([p["range_nm"] for p in checks], [p["mass_payload_kg"] * lb for p in checks], "s", ms=6, ls="none",
             color=blue, mfc="#FFFFFF", label="Maximum payload at a set range (check points)")
@@ -155,8 +154,9 @@ def plot(records, sized, path=path_figure):
                 arrowprops=dict(arrowstyle="-", color=ink, lw=1.2))
     ferry = ok.get("ferry")
     if ferry is not None:
-        ax.annotate(f"Ferry, tank-limited\n{ferry['range_nm']:,.0f} nm", (ferry["range_nm"], 0),
-                    xytext=(ferry["range_nm"] + 30, 300), fontsize=12.5, color=blue,
+        speeds = f"\n({free['range_nm']:,.0f} nm at its own best speeds)" if free is not None else ""
+        ax.annotate(f"Ferry, tank-limited\n{ferry['range_nm']:,.0f} nm{speeds}", (ferry["range_nm"], 0),
+                    xytext=(ferry["range_nm"] - 330, 230), fontsize=12.5, color=blue,
                     arrowprops=dict(arrowstyle="-", color=blue, lw=1.2))
     zero = ok.get("larger tanks, 0% payload")
     if zero is not None:

@@ -75,7 +75,72 @@ mass_payload_kg=..., ...)` maximizes range at that payload. `payload_range_diagr
 ## Progress log
 
 - 2026-10-10: plan written.
+- 2026-10-10: `OffDesign`, `solve_halo_off_design` and the `range` objective in `examples/halo_sizing.py`;
+  `solve_halo_sizing_once` split into `halo_design_variables` and `_solve_halo_coupled` with the default problem
+  built unchanged (same variables, constraints and order). Margins that depend only on the frozen design (rotor
+  clearance) are numbers off-design: reported, not constrained. `OffDesign.start` takes the take-off mass, payload,
+  fuel and range guesses from an earlier off-design point: the larger-tank zero-payload point (969 nm) failed
+  (restoration) from the sized point and solves when chained from the 25 % payload point; the ferry at free speeds
+  likewise. `examples/halo_payload_range.py` runs the points (one coupled solve each, about 1-2 min) and draws
+  `docs/figures/payload_range.png`. Starting reference: the cached v3.6 solve (6,885 kg, 15,179 lb).
+
+### Results (v3.6 reference: MTOW 6,885 kg, empty 5,049 kg, tanks 936 kg)
+
+| Point | Payload kg (lb) | Range nm | TOW kg | Fuel kg | End SOC | Binding limits |
+|---|---|---|---|---|---|---|
+| Design (max payload at 445 nm) | 900.0 (1,984) | 445.0 | 6,885 | 936 | 0.43 | payload, MTOW, tanks |
+| Max payload at 267 nm | 900 (1,984) | 267 | 6,553 | 604 | 0.59 | payload |
+| Max payload at 490 nm | 188 (415) | 490 | 6,173 | 936 | 0.30 | tanks, SOC floor |
+| Tanks full, 675 kg | 675 (1,488) | 462 | 6,660 | 936 | 0.30 | tanks, SOC floor |
+| Tanks full, 450 kg | 450 (992) | 475 | 6,435 | 936 | 0.30 | tanks, SOC floor |
+| Tanks full, 225 kg | 225 (496) | 487 | 6,210 | 936 | 0.30 | tanks, SOC floor |
+| Ferry (tanks full, no payload) | 0 | 500 | 5,985 | 936 | 0.30 | tanks, SOC floor |
+| Ferry, cruise/loiter speeds free | 0 | 505 | 5,985 | 936 | 0.30 | tanks, SOC floor |
+| Larger tanks, 675 kg | 675 (1,488) | 576 | 6,885 | 1,161 | 0.30 | MTOW, SOC floor |
+| Larger tanks, 450 kg | 450 (992) | 705 | 6,885 | 1,386 | 0.30 | MTOW, SOC floor |
+| Larger tanks, 225 kg | 225 (496) | 836 | 6,885 | 1,611 | 0.30 | MTOW, SOC floor |
+| Larger tanks, no payload | 0 | 969 | 6,885 | 1,836 | 0.30 | MTOW, SOC floor |
+
+- Design point reproduced: 900.0 kg over 445 nm at 6,885.1 kg and 936.4 kg fuel, empty mass 5,048.6 kg (equal to the
+  sizing within 0.1 kg); the CG stays on the trim point (offset < 1e-14 m, payload and fuel at the rotor station).
+  Every sizing margin holds at every point (smallest -1e-8, the frozen rotor-clearance margin, which was already
+  binding at the sizing).
+- "Maximum fuel at MTOW" coincides with the design point: the tanks hold exactly the design fuel, so the tank and
+  MTOW limits meet there. Below 445 nm the payload capacity (900 kg) limits; beyond it the tanks.
+- Tank-limited line: 13 to 17 nm per 225 kg of payload removed (445 to 500 nm). Larger tanks: about 58 nm per
+  100 kg of payload traded for fuel at MTOW, 969 nm at zero payload (1,836 kg fuel).
+- Battery: the design mission ends at SOC 0.43 (the battery is sized by the engine-out and failure hovers, not by
+  energy). Off-design the maximum-range solves use the battery down to the 0.30 mission floor: about 9 kWh of the
+  70 kWh pack, worth about 3 kg of fuel (2 nm). The engine-out reserve is still held from that floor.
+
+### Comparison with the first-order estimate
+
+| | Breguet (calibrated on the solved cruise) | Coupled off-design solve |
+|---|---|---|
+| Design point | 445 nm | 445 nm |
+| Ferry, tanks full | 526 nm | 500 nm (505 at free speeds) |
+| Zero payload, fuel to MTOW | 995 nm | 969 nm |
+| Payload traded for fuel at MTOW | 57 nm / 100 kg | 58 nm / 100 kg (first 225 kg) |
+
+The estimate holds the powertrain efficiency constant. The solve does not: at the ferry weight the cruise power is
+722 kW against 821 kW at the design point (L/D 9.26 against 9.07, so drag falls with weight as Breguet assumes),
+but the turboshafts run at lower part power and their fuel per kWh rises from 339 to 355 g/kWh (+5 %). That is the
+whole ferry difference (5 % of 450 nm of cruise, about 25 nm). On the larger-tank line the aircraft starts at MTOW
+like the design mission, so the two agree until the long cruise takes it to light weights late in the flight
+(26 nm, 3 %, at zero payload). Freeing the speeds gains only 5 nm: the optimizer cruises faster (178 kt against 165)
+to keep the engines at higher power, and loiters slower.
 
 ## Slide summary
 
-(to follow)
+**The sized Halo can now be flown off-design: 900 kg over 445 nm, 500 nm ferry on its own tanks, 969 nm if the
+tanks could be filled to MTOW.**
+
+- Design point reproduced exactly by the fixed-design solve (900 kg, 445 nm, 6,885 kg, 936 kg fuel); every hover,
+  engine-out, failure and stability requirement holds at every point.
+- Tanks sized to the design mission make the payload-range almost vertical: removing all 900 kg of payload adds only
+  55 nm (500 nm ferry). Larger tanks would trade about 58 nm per 100 kg of payload, to 969 nm.
+- The first-order Breguet estimate was 26 nm optimistic on the ferry: the turboshafts burn 5 % more fuel per kWh at
+  the lighter aircraft's part power.
+
+Caveat: tankage is free in the larger-tank line (no tank mass or volume model), the cabin limit is taken as the
+900 kg design payload, and the mission keeps the sized speeds and the design reserve rules.
