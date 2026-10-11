@@ -20,23 +20,28 @@ import aerosandbox.tools.units as u
 
 from aircraft_closure.trajectory.corridor import ComputedCorridor
 from examples.halo_conversion_corridor import run as run_corridor
-from examples.halo_sizing import solve_halo_sizing
+from examples.halo_sizing import HaloAssumptions, HaloRequirements, solve_halo_sizing
 from examples.trajectory_optimization import (describe, halo_trajectory_case, solve_min_energy_transition,
                                               solve_min_time_climb)
 
 
-def computed_corridor_case(sizing, assumed=None):
-    """The trajectory case of the sized aircraft with its computed corridor as the airspeed limits."""
-    assumed = assumed if assumed is not None else halo_trajectory_case(sizing)
-    bounds, _ = run_corridor(sizing, plot=False)
+def computed_corridor_case(sizing, assumed=None, requirements=HaloRequirements(), assumptions=HaloAssumptions()):
+    """The trajectory case of the sized aircraft with its computed corridor as the airspeed limits.
+    `requirements` and `assumptions` must be the ones `sizing` was solved with."""
+    r, a = requirements, assumptions
+    assumed = assumed if assumed is not None else halo_trajectory_case(sizing, r, a)
+    bounds, _ = run_corridor(sizing, plot=False, requirements=r, assumptions=a)
     corridor = ComputedCorridor.from_bounds(bounds, velocity_stall_m_s=assumed.corridor.velocity_stall_m_s)
-    return halo_trajectory_case(sizing, corridor=corridor)
+    return halo_trajectory_case(sizing, r, a, corridor=corridor)
 
 
-def run(sizing=None, path="output/trajectory/computed_corridor.png"):
-    sizing = sizing if sizing is not None else solve_halo_sizing()
-    assumed = halo_trajectory_case(sizing)
-    case = computed_corridor_case(sizing, assumed)
+def run(sizing=None, path="output/trajectory/computed_corridor.png", requirements=HaloRequirements(),
+        assumptions=HaloAssumptions()):
+    """`sizing`: a solved `HaloSizingResult` (solved here with `requirements` and `assumptions` when None)."""
+    r, a = requirements, assumptions
+    sizing = sizing if sizing is not None else solve_halo_sizing(r, a)
+    assumed = halo_trajectory_case(sizing, r, a)
+    case = computed_corridor_case(sizing, assumed, r, a)
     results = [solve_min_energy_transition(case), solve_min_time_climb(case)]
     for result in results:
         print(describe(result))

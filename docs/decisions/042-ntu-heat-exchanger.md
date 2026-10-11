@@ -109,7 +109,8 @@ duct above, a fan rating, and labelled mass allowances.
 - **Positivity.** The per-point air flow, the core counts, the nozzle area and the fan rating are log-transformed
   Opti variables: an Opti lower bound is a constraint that iterates may violate, and the core's fractional
   Reynolds powers return NaN for a negative flow (found in the third full solve).
-- **Trajectory** (plan 036): only the mass-per-watt model is supported there for now (it raises otherwise).
+- **Trajectory** (plan 036): only the mass-per-watt model is supported there for now (it raises otherwise). Plan 049 adds
+  the ε-NTU cooler to the trajectory.
 
 ## Verification (tests/thermal)
 

@@ -98,6 +98,8 @@ class TrajectoryResult:
     temperatures_C: Any = None            # plan 036: instance name -> node temperatures (thermal-modelled parts)
     drag_cooling_N: Any = None            # plan 036: ram-air cooling drag and fan power at each node
     power_fan_W: Any = None
+    mass_flow_air_kg_s: Any = None        # plan 049: ε-NTU cooler air flow and fan pressure rise at each node
+    pressure_rise_fan_Pa: Any = None
 
 
 def power_available_bus_W(model, altitude_m):
@@ -141,7 +143,9 @@ def _result(label, solution, model, trajectory):
         mass_fuel_burnt_kg=mass_kg[0] - mass_kg[-1], acceleration_m_s2=v(t.acceleration_m_s2),
         rate_gamma_rad_s=v(t.rate_gamma_rad_s), voltage_bus_V=v(t.supply.battery.voltage_V),
         temperatures_C={name: v(temperature) for name, temperature in t.thermal.temperatures_C.items()},
-        drag_cooling_N=v(t.thermal.drag_cooling_N), power_fan_W=v(t.thermal.power_fan_W))
+        drag_cooling_N=v(t.thermal.drag_cooling_N), power_fan_W=v(t.thermal.power_fan_W),
+        mass_flow_air_kg_s=None if t.thermal.mass_flow_air_kg_s is None else v(t.thermal.mass_flow_air_kg_s),
+        pressure_rise_fan_Pa=None if t.thermal.pressure_rise_fan_Pa is None else v(t.thermal.pressure_rise_fan_Pa))
 
 
 def _trimmed(opti, trajectory, index):
