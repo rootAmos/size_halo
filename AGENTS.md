@@ -9,7 +9,7 @@ AeroSandbox and CasADi own symbolic mathematics, optimization, and coupled solve
 1. Do not duplicate AeroSandbox functionality without a concrete reason.
 2. Preserve AeroSandbox/CasADi symbolic compatibility.
 3. Components build equations; `asb.Opti` owns optimization variables, constraints, objectives, and coupled solves.
-4. Do not hide iterative convergence loops when the same coupling can be exposed to CasADi.
+4. Do not hide iterative convergence loops when the same coupling can be exposed to CasADi. Numerical checks on a sized aircraft (an eigenvalue scan, a bisection for a flutter speed, an FE run) may iterate, provided they say so in their docstring, run outside the optimization and keep the model they evaluate symbolic.
 5. Use SI units internally.
 6. Append units to dimensional scalar variable names wherever practical.
 7. Avoid global ALL_CAPS constants.
