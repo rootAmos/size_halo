@@ -91,7 +91,9 @@ class BuildupAerodynamics:
             airplane.xyz_ref = [self.trim.x_cg_m(aircraft), 0.0, 0.0]     # moments about the CG (plan 036)
         for wing in airplane.wings:
             for xsec in wing.xsecs:
-                xsec.airfoil = TransitionAirfoil(xsec.airfoil, self.xtr_upper, self.xtr_lower, self.n_crit)
+                xsec.airfoil = (xsec.airfoil.with_transition(self.xtr_upper, self.xtr_lower, self.n_crit)
+                                if hasattr(xsec.airfoil, "with_transition")      # plan 046 parametric section
+                                else TransitionAirfoil(xsec.airfoil, self.xtr_upper, self.xtr_lower, self.n_crit))
         return airplane
 
     @staticmethod
