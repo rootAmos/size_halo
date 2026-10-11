@@ -65,6 +65,12 @@ class RamAirDuct:
         pressure_dynamic_face_Pa = (mass_flow_kg_s / area_face_m2)**2 / (2 * density_face_kg_m3)
         pressure_exit_total_Pa = (pressure_inlet_Pa - self.loss_diffuser * pressure_dynamic_face_Pa
                                   - pressure_drop_core_Pa + pressure_rise_fan_Pa)
+        # Smooth floor at 10 % of ambient: an optimizer iterate whose losses exceed the inlet pressure stays finite
+        # (not a NaN); it changes nothing (below 1e-30 Pa) above ambient. A caller sizing the duct must constrain
+        # `pressure_total_core_exit_Pa` (unfloored) >= ambient, or the floor and the expansion floor below would
+        # let a duct "pass" its flow at a vanishing exit velocity through an unbounded nozzle.
+        pressure_exit_total_raw_Pa = pressure_exit_total_Pa
+        pressure_exit_total_Pa = np.softmax(pressure_exit_total_Pa, 0.1 * pressure_Pa, softness=0.01 * pressure_Pa)
         temperature_exit_total_K = temperature_total_K + power_heat_W / (mass_flow_kg_s * cp)
         expansion = 1 - (pressure_Pa / pressure_exit_total_Pa)**exponent
         expansion = np.softmax(expansion, 1e-6, softness=1e-6)
@@ -80,7 +86,7 @@ class RamAirDuct:
             power_fan_W=mass_flow_kg_s * pressure_rise_fan_Pa / (density_face_kg_m3 * self.efficiency_fan),
             velocity_exit_m_s=velocity_exit_m_s,
             mach_exit=velocity_exit_m_s / np.sqrt(g * r * temperature_exit_K),
-            pressure_total_core_exit_Pa=pressure_exit_total_Pa, temperature_total_exit_K=temperature_exit_total_K)
+            pressure_total_core_exit_Pa=pressure_exit_total_raw_Pa, temperature_total_exit_K=temperature_exit_total_K)
 
 
 if __name__ == "__main__":

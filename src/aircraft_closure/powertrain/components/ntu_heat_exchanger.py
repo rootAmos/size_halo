@@ -13,6 +13,9 @@ point needs two more unknowns that the caller's `asb.Opti` owns: the air mass fl
 * Duct: heat addition Q_mean (the interval-mean heat, as the old drag law), core air-side pressure drop at the
   flow, diffuser and nozzle losses, fan pressure rise; net force F and drag -F (negative drag is the Meredith
   thrust); fan electrical power ṁ Δp_fan / (ρ_face η_fan), below the fan rating.
+* Duct margins: the core-exit total pressure must exceed ambient (otherwise the duct's smooth floors would let
+  a vanishing exit velocity "pass" the flow through an unbounded nozzle), and the nozzle is no larger than the
+  core face.
 * Mass: core (material and the coolant in it) plus explicit allowances, `mass_breakdown()`:
   ducts `mass_duct_per_area_kg_m2` x core face area; fans rating / `specific_power_fan_W_kg`; pump, pipes and
   loop coolant `mass_pump_pipes_kg` (fixed). The allowances are the author's estimates (plan 042).
@@ -42,6 +45,8 @@ class NtuHeatExchangerResult:
     pressure_drop_coolant_Pa: Any
     effectiveness: Any
     velocity_exit_m_s: Any
+    pressure_total_exit_Pa: Any         # core exit total pressure (with the fan), before the nozzle
+    pressure_ambient_Pa: Any
 
 
 @dataclass(frozen=True)
@@ -110,7 +115,8 @@ class NtuRamAirHeatExchanger:
             conductance_effective_W_K=conductance_effective_W_K,
             capacity_coolant_W_K=self.mass_flow_coolant_kg_s * self.coolant.specific_heat_J_kg_K,
             pressure_drop_coolant_Pa=core.coolant.pressure_drop_Pa, effectiveness=core.effectiveness,
-            velocity_exit_m_s=duct.velocity_exit_m_s)
+            velocity_exit_m_s=duct.velocity_exit_m_s, pressure_total_exit_Pa=duct.pressure_total_core_exit_Pa,
+            pressure_ambient_Pa=atmosphere.pressure())
 
     def power_heat_capacity_W(self, power_heat_W, result):
         """Heat the core rejects with the coolant entering at T_c + Q / C_coolant (Q = `power_heat_W`)."""
@@ -118,12 +124,18 @@ class NtuRamAirHeatExchanger:
                                                    + power_heat_W / result.capacity_coolant_W_K)
 
     def margins(self, power_heat_end_W, result, label):
-        """(heat demand reported as `power_heat_equivalent_W`, margins): heat rejection and fan rating."""
+        """(heat demand reported as `power_heat_equivalent_W`, margins): heat rejection, fan rating, the duct
+        exit total pressure above ambient (the nozzle can expel the flow: no reverse expansion) and the nozzle no
+        larger than the core face."""
         margin_heat = (result.conductance_effective_W_K * result.delta_temperature_C
                        - power_heat_end_W * (1 - result.conductance_effective_W_K / result.capacity_coolant_W_K))
         return power_heat_end_W, (
             Margin(f"{label}: heat_exchanger heat_rejection", margin_heat / self.power_heat_scale_W),
-            margin_below(f"{label}: heat_exchanger power_fan_W", result.power_fan_W, self.power_rated_fan_W))
+            margin_below(f"{label}: heat_exchanger power_fan_W", result.power_fan_W, self.power_rated_fan_W),
+            Margin(f"{label}: heat_exchanger pressure_exit_Pa",
+                   (result.pressure_total_exit_Pa - result.pressure_ambient_Pa) / 1e3),
+            margin_below(f"{label}: heat_exchanger area_nozzle_m2", self.duct.area_nozzle_m2,
+                         self.core.area_frontal_m2()))
 
 
 def with_core_counts(exchanger, count_wide, count_long, count_tall, area_nozzle_m2, power_rated_fan_W):

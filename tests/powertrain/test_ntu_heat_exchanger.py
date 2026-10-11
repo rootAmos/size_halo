@@ -53,6 +53,18 @@ class HeatRejectionTests(unittest.TestCase):
         self.assertLess(margins[0].value, 0.0)
         self.assertAlmostEqual(margins[1].value, 1 - r.power_fan_W / 8e3, places=12)
 
+    def test_duct_pressure_margin(self):
+        # Hover without the fan: the core exit is below ambient, so the duct cannot expel the flow (negative margin);
+        # with enough fan pressure it can.
+        _, without_fan = exchanger.margins(50e3, exchanger.evaluate(50e3, hot_day, 0.0, True, 3.0, 0.0), "h")
+        _, with_fan = exchanger.margins(50e3, exchanger.evaluate(50e3, hot_day, 0.0, True, 3.0, 2000.0), "h")
+        self.assertEqual([m.label for m in with_fan], ["h: heat_exchanger heat_rejection", "h: heat_exchanger power_fan_W",
+                                                       "h: heat_exchanger pressure_exit_Pa",
+                                                       "h: heat_exchanger area_nozzle_m2"])
+        self.assertLess(without_fan[2].value, 0.0)
+        self.assertGreater(with_fan[2].value, 0.0)
+        self.assertAlmostEqual(with_fan[3].value, 1 - 0.15 / exchanger.core.area_frontal_m2())
+
     def test_more_air_rejects_more(self):
         low = exchanger.evaluate(50e3, hot_day, 0.0, True, 2.0, 500.0)
         high = exchanger.evaluate(50e3, hot_day, 0.0, True, 6.0, 500.0)
@@ -91,6 +103,7 @@ class SizingInOptiTests(unittest.TestCase):
         self.assertGreater(s(hover.power_fan_W), 0.0)
         self.assertLess(s(design.get_mass()), 127.0)                             # the mass-per-watt reference
         self.assertLess(abs(s(level.drag_N)), 200.0)
+        self.assertGreaterEqual(s(level.pressure_total_exit_Pa), cruise.pressure() - 1e-3)
 
 
 if __name__ == "__main__":
