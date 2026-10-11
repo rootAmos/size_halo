@@ -5,7 +5,7 @@ import unittest
 from datetime import date
 from types import SimpleNamespace
 
-from aircraft_closure.ledger.ingest import ingest_evidence, ingest_sizing
+from aircraft_closure.ledger.ingest import ingest_drivers, ingest_evidence, ingest_sizing, price_trade
 from aircraft_closure.ledger.model import Activity, Evidence, Ledger, Quantity, Trade, TradeOption
 from aircraft_closure.ledger.rank import portfolio, priorities, z_99
 from aircraft_closure.ledger.store import load, save, view
@@ -103,6 +103,29 @@ class IngestTest(unittest.TestCase):
             again = load(path)
         self.assertEqual(again.quantities["a"].belief(), (380.0, 5.0))
         self.assertEqual(view(again, today)["priorities"][0]["key"], "b")
+
+    def test_priced_trade_ranks_by_its_best_option(self):
+        ledger = two_item_ledger()
+        ledger.trades["t"] = Trade("t", "delta-3", "Rotor")
+        price_trade(ledger, "t", [TradeOption("-18 deg", "", 0.0, 0.0), TradeOption("-11 deg", "", -178.0, 178.0)],
+                    "plan 055", today)
+        row = next(r for r in priorities(ledger, today) if r.key == "t")
+        self.assertEqual(row.kind, "decide trade")
+        self.assertAlmostEqual(row.value_kg, 178.0)
+        self.assertIn("still open", row.action)        # a 100 % spread keeps it undecided
+
+    def test_drivers_reach_the_view_and_round_trip(self):
+        ledger = two_item_ledger()
+        record = dict(label="Range", unit="nm", value=458.6, mode="fixed",
+                      risks=[dict(key="k", label="Misc drag", share=0.68, effect=-10.3, elasticity=-0.09, kind="model",
+                                  source="placeholder prior")], levers=[], blind=[], calibration=["Wing weight factor"])
+        ingest_drivers(ledger, {"range_m": record}, "plan 042", today)
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "ledger.json")
+            save(ledger, path)
+            again = load(path)
+        self.assertEqual(view(again, today)["drivers"]["range_m"]["risks"][0]["label"], "Misc drag")
+        self.assertEqual(again.runs[-1]["kind"], "drivers")
 
 
 if __name__ == "__main__":

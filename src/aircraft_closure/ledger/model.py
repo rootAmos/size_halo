@@ -142,3 +142,6 @@ class Ledger:
     runs: list = field(default_factory=list)      # every ingest: date, source, summary
     history: list = field(default_factory=list)   # ranking snapshots, for trends and burn-down
     schedule: list = field(default_factory=list)  # plan tasks: lane, task, start, end (start == end: milestone)
+    # Plan 042: what drives each performance output (range, payload, ...) by impact x uncertainty, from one
+    # parametric solve: {output key: {label, unit, value, mode, source, date, risks: [...], levers: [...]}}.
+    drivers: dict = field(default_factory=dict)

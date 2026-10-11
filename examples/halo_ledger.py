@@ -62,6 +62,10 @@ gaps = (
      "placeholder prior", "Owner to replace"),
     ("gap.tilt_joint_crossings", "HV and coolant crossings at the tilt joint", "Electrical", 20.0, 15.0, 0,
      "Preliminary design", "placeholder prior", "Flex loops or slip rings; swivel joints"),
+    ("gap.whirl_flutter", "Wing stiffness to clear whirl flutter at 1.15 V_D", "Structures", 70.3, 35.0, 1,
+     "Conceptual design", "plan 055 sizing (bf74c0f)",
+     "Take-off +393 lb on stiffness alone over the frequency-placement reference (calibrated flutter 262 kt against "
+     "302 kt), as empty mass at the growth factor; 0 if delta-3 -11 deg is accepted (trade.delta3)"),
     ("gap.wing_strength", "Wing structure added for ultimate strength", "Structures", 40.0, 45.0, 0,
      "Conceptual design", "placeholder prior",
      "FE peak cap strain 10 % over the ultimate allowable on raw gauges; 0.83 of it if the 1.33 calibration "

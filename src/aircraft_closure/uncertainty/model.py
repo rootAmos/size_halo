@@ -23,6 +23,7 @@ kinds = ("design", "technology", "model", "requirement", "operation", "calibrati
 class UncertainInput:
     key: str                          # "assumptions.solidity", "calibration.wing_tiltrotor"
     value: object                     # the value the solve used (float, int, bool or str)
+    label: str = ""                   # plain name for reports and the dashboard
     kind: str = "setting"
     sigma: Optional[float] = None     # one sigma, units of `value`
     low: Optional[float] = None

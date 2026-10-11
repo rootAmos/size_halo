@@ -1459,6 +1459,61 @@
    "sizing_keys": [],
    "note": "Assumed 80 % of rated",
    "category": "Increase maturity"
+  },
+  "gap.whirl_flutter": {
+   "key": "gap.whirl_flutter",
+   "label": "Wing stiffness to clear whirl flutter at 1.15 V_D",
+   "kind": "gap",
+   "unit": "kg",
+   "owner": "Structures",
+   "lock_gate": "Conceptual design",
+   "lock_date": "2026-12-15",
+   "evidence": [
+    {
+     "date": "2026-10-11",
+     "value": 70.3,
+     "sigma": 35.0,
+     "source": "plan 055 sizing (bf74c0f)",
+     "fidelity": 1,
+     "note": "take-off +393 lb over the proxy"
+    }
+   ],
+   "sensitivity": 2.5368810508980673,
+   "sensitivity_source": "growth factor, latest sizing",
+   "allowance": 0.0,
+   "plan": [
+    {
+     "label": "Flapping and loads with delta-3 free; flutter-in-the-loop sizing as the reference (plan 055) (conceptual design)",
+     "due": "2026-12-15",
+     "sigma_after": 24.604999999999997,
+     "owner": "Structures",
+     "done": false
+    },
+    {
+     "label": "Whole-aircraft symmetric and antisymmetric modes instead of the cantilever (about 10 % conservative) (preliminary design)",
+     "due": "2027-03-15",
+     "sigma_after": 14.06,
+     "owner": "Structures",
+     "done": false
+    },
+    {
+     "label": "Second calibration aircraft (V-22 or JVX) for the flutter knockdown (preliminary design)",
+     "due": "2027-03-15",
+     "sigma_after": 8.436,
+     "owner": "Structures",
+     "done": false
+    },
+    {
+     "label": "Ground vibration test of the first article; flutter clearance in flight (test and validation)",
+     "due": "2027-10-10",
+     "sigma_after": 2.109,
+     "owner": "Structures",
+     "done": false
+    }
+   ],
+   "sizing_keys": [],
+   "note": "Take-off +393 lb on stiffness alone over the frequency-placement reference (calibrated flutter 262 kt against 302 kt), as empty mass at the growth factor; 0 if delta-3 -11 deg is accepted (trade.delta3)",
+   "category": "Increase maturity"
   }
  },
  "limits": {
@@ -3037,12 +3092,13 @@
    "lock_date": "2027-03-15",
    "status": "open",
    "decision": "",
-   "note": "Frequency placement is a proxy for the flutter boundary",
+   "note": "Frequency placement is a proxy the reference meets while fluttering at 262 kt against 302 kt (plan 040). Plan 055 sizes against the calibrated flutter speed directly: +393 lb on stiffness alone (gap.whirl_flutter); recommended margin policy: 1.15 V_D on the calibrated flutter speed",
    "discipline": "",
    "affects": [
-    "mass.wing"
+    "mass.wing",
+    "gap.whirl_flutter"
    ],
-   "model_hook": "frequency_torsion_wing_per_rev, frequency_beam_wing_per_rev",
+   "model_hook": "whirl_flutter_model frequency or eigenpair (plan 055)",
    "decided_date": "",
    "category": "Margin policy",
    "precedent": "XV-15 and V-22 use 23 % thick wings to keep whirl flutter beyond dive speed, at a drag and speed cost; a 15 % NASA design lost stiffness, and tailoring recovered stability at about 18 %. Halo's NACA 2423 follows the same precedent.",
@@ -3274,6 +3330,82 @@
    "block": "Block 1",
    "block0_choice": "",
    "sources": []
+  },
+  "trade.wing_planform": {
+   "key": "trade.wing_planform",
+   "label": "Wing aspect ratio and thickness against whirl flutter (AR 6.12, 23 % today)",
+   "owner": "Structures",
+   "options": [
+    {
+     "label": "AR 6.12, 23 % (today)",
+     "quantity": "",
+     "delta_mean": 0.0,
+     "delta_sigma": 0.0,
+     "source": "plan 055 sizing (bf74c0f); sigma 25% of the change, assumed"
+    },
+    {
+     "label": "AR 7.0, 28 % (thickness at its bound)",
+     "quantity": "",
+     "delta_mean": -137.89224446843448,
+     "delta_sigma": 34.47306111710862,
+     "source": "plan 055 sizing (bf74c0f); sigma 25% of the change, assumed"
+    }
+   ],
+   "lock_gate": "Conceptual design",
+   "lock_date": "2026-12-15",
+   "status": "open",
+   "decision": "",
+   "note": "Against the frequency proxy the optimizer thins and stretches the wing into flutter (AR 8.5: 188 kt); against the calibrated flutter speed it goes longer and thicker. Section chosen offline, thickness scaled only",
+   "discipline": "",
+   "affects": [
+    "mass.wing",
+    "gap.whirl_flutter"
+   ],
+   "model_hook": "free_aspect_ratio_wing, free_thickness_to_chord_wing with whirl_flutter_model eigenpair (plan 055)",
+   "decided_date": "",
+   "category": "Architecture",
+   "precedent": "",
+   "block": "",
+   "block0_choice": "",
+   "sources": []
+  },
+  "trade.delta3": {
+   "key": "trade.delta3",
+   "label": "Rotor pitch-flap coupling delta-3 (-18 deg today, the XV-15's)",
+   "owner": "Rotor and drive",
+   "options": [
+    {
+     "label": "-18 deg (the XV-15's)",
+     "quantity": "",
+     "delta_mean": 0.0,
+     "delta_sigma": 0.0,
+     "source": "plan 055 sizing (bf74c0f); sigma 25% of the change, assumed"
+    },
+    {
+     "label": "-11 deg (flapping cost not modelled)",
+     "quantity": "",
+     "delta_mean": -178.26201340820643,
+     "delta_sigma": 178.26201340820643,
+     "source": "plan 055 sizing (bf74c0f); sigma 100% of the change, assumed"
+    }
+   ],
+   "lock_gate": "Preliminary design",
+   "lock_date": "2027-03-15",
+   "status": "open",
+   "decision": "",
+   "note": "The strongest whirl-flutter lever, free of weight in the model; its cost is gimbal flapping (limit 9 deg: the XV-15's 12 deg stop less 3 deg), not modelled yet, and the flutter calibration was fitted at -18 deg",
+   "discipline": "",
+   "affects": [
+    "gap.whirl_flutter",
+    "mass.rotors"
+   ],
+   "model_hook": "free_delta3 (plan 055)",
+   "decided_date": "",
+   "category": "Architecture",
+   "precedent": "",
+   "block": "",
+   "block0_choice": "",
+   "sources": []
   }
  },
  "runs": [
@@ -3408,6 +3540,30 @@
    "source": "trade register (examples/halo_trades.py)",
    "kind": "register",
    "summary": "0 added, 0 retired below the line"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "kind": "evidence",
+   "summary": "Wing stiffness to clear whirl flutter at 1.15 V_D: 70.3 ± 35 kg → belief 70.3 ± 35"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "kind": "trade",
+   "summary": "Rotor pitch-flap coupling delta-3 (-18 deg today, the XV-15's): 2 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "kind": "trade",
+   "summary": "Wing aspect ratio and thickness against whirl flutter (AR 6.12, 23 % today): 2 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 fixed aircraft, 80 % payload (36f08aa)",
+   "kind": "drivers",
+   "summary": "top driver of Range: Miscellaneous drag area; Cruise L/D: Miscellaneous drag area"
   }
  ],
  "history": [
@@ -4906,6 +5062,210 @@
      "value_kg": 5.13
     }
    ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 21.58
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 14.77
+    },
+    {
+     "key": "gap.whirl_flutter",
+     "value_kg": 14.71
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 9.52
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 9.2
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 7.82
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 7.29
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    },
+    {
+     "key": "engine-out hover 3/3: turboshaft power_shaft_W",
+     "value_kg": 6.01
+    },
+    {
+     "key": "hover: gearbox power_input_W",
+     "value_kg": 5.66
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 21.58
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 14.77
+    },
+    {
+     "key": "gap.whirl_flutter",
+     "value_kg": 14.71
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 9.52
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 9.2
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 7.82
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 7.29
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    },
+    {
+     "key": "engine-out hover 3/3: turboshaft power_shaft_W",
+     "value_kg": 6.01
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 21.58
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 14.77
+    },
+    {
+     "key": "gap.whirl_flutter",
+     "value_kg": 14.71
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 9.52
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 9.2
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 7.82
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 7.29
+    },
+    {
+     "key": "hot-day hover: heat_exchanger power_heat_W",
+     "value_kg": 6.29
+    }
+   ]
   }
  ],
  "schedule": [
@@ -5029,5 +5389,157 @@
    "start": "2027-12-15",
    "end": "2027-12-15"
   }
- ]
+ ],
+ "drivers": {
+  "range_m": {
+   "label": "Range",
+   "unit": "nm",
+   "value": 458.5801250979965,
+   "mode": "fixed",
+   "risks": [
+    {
+     "key": "assumptions.drag_area_misc_buildup_m2",
+     "label": "Miscellaneous drag area",
+     "share": 0.6799122551376441,
+     "effect": 10.33432901468378,
+     "elasticity": -0.08972639015319239,
+     "kind": "model",
+     "source": "placeholder prior: XV-15 fittings +-25 %"
+    },
+    {
+     "key": "requirements.mass_payload_kg",
+     "label": "Payload",
+     "share": 0.10231765792330375,
+     "effect": 4.0089546615737275,
+     "elasticity": -0.1258862823902917,
+     "kind": "requirement",
+     "source": "placeholder prior: customer payload not frozen"
+    },
+    {
+     "key": "requirements.duration_hover_s",
+     "label": "Hover time per mission",
+     "share": 0.07102132876648758,
+     "effect": 3.340029065977056,
+     "elasticity": -0.02913365741930754,
+     "kind": "requirement",
+     "source": "placeholder prior"
+    },
+    {
+     "key": "assumptions.mass_equipment_kg",
+     "label": "Equipment mass",
+     "share": 0.06548330107091509,
+     "effect": 3.207163729258999,
+     "elasticity": -0.046553223006392315,
+     "kind": "model",
+     "source": "placeholder prior: +-15 %"
+    },
+    {
+     "key": "assumptions.specific_power_inverter_W_kg",
+     "label": "Inverter specific power",
+     "share": 0.036609476273190805,
+     "effect": 2.398018932092641,
+     "elasticity": 0.02614612802484839,
+     "kind": "technology",
+     "source": "placeholder prior"
+    },
+    {
+     "key": "assumptions.load_factor_ultimate",
+     "label": "Ultimate load factor",
+     "share": 0.02648750894686067,
+     "effect": 2.039747491420287,
+     "elasticity": -0.08006333645122374,
+     "kind": "requirement",
+     "source": "placeholder prior: certification basis open"
+    }
+   ],
+   "levers": [
+    {
+     "key": "assumptions.aspect_ratio_wing",
+     "label": "Wing aspect ratio",
+     "elasticity": 0.28991435978863056,
+     "note": "One-sided: rotor clearance and engine-out power bind, so the derivative holds for an increase only. Flutter-limited: with whirl flutter in the loop the optimum is AR 7.0-7.2 (plan 055)."
+    },
+    {
+     "key": "assumptions.thickness_to_chord_wing",
+     "label": "Wing thickness ratio",
+     "elasticity": -0.07578407345864376,
+     "note": "Flutter-limited: thinner raises L/D but lowers the flutter speed (plan 046: 18 % flutters at 230 kt); with flutter in the loop the optimum is 27-28 % (plan 055)."
+    }
+   ],
+   "blind": [],
+   "calibration": [
+    "Excrescence drag factor",
+    "Fuselage weight factor",
+    "Wing weight factor"
+   ],
+   "source": "plan 042 fixed aircraft, 80 % payload (36f08aa)",
+   "date": "2026-10-11"
+  },
+  "lift_to_drag_cruise": {
+   "label": "Cruise L/D",
+   "unit": "",
+   "value": 9.11703925160706,
+   "mode": "fixed",
+   "risks": [
+    {
+     "key": "assumptions.drag_area_misc_buildup_m2",
+     "label": "Miscellaneous drag area",
+     "share": 0.9940001831054984,
+     "effect": 0.2888800862167335,
+     "elasticity": -0.12615861730831995,
+     "kind": "model",
+     "source": "placeholder prior: XV-15 fittings +-25 %"
+    },
+    {
+     "key": "requirements.mass_payload_kg",
+     "label": "Payload",
+     "share": 0.00223295149012064,
+     "effect": 0.013691909408391429,
+     "elasticity": -0.021625825011785768,
+     "kind": "requirement",
+     "source": "placeholder prior: customer payload not frozen"
+    },
+    {
+     "key": "assumptions.mass_equipment_kg",
+     "label": "Equipment mass",
+     "share": 0.0014290889536772166,
+     "effect": 0.010953527526713169,
+     "elasticity": -0.007997311822662235,
+     "kind": "model",
+     "source": "placeholder prior: +-15 %"
+    },
+    {
+     "key": "assumptions.specific_power_inverter_W_kg",
+     "label": "Inverter specific power",
+     "share": 0.0013863872699028522,
+     "effect": 0.010788638812383105,
+     "elasticity": 0.005916744742807481,
+     "kind": "technology",
+     "source": "placeholder prior"
+    }
+   ],
+   "levers": [
+    {
+     "key": "assumptions.aspect_ratio_wing",
+     "label": "Wing aspect ratio",
+     "elasticity": 0.4679944722187662,
+     "note": "One-sided: rotor clearance and engine-out power bind, so the derivative holds for an increase only. Flutter-limited: with whirl flutter in the loop the optimum is AR 7.0-7.2 (plan 055)."
+    },
+    {
+     "key": "assumptions.thickness_to_chord_wing",
+     "label": "Wing thickness ratio",
+     "elasticity": -0.11448287933902579,
+     "note": "Flutter-limited: thinner raises L/D but lowers the flutter speed (plan 046: 18 % flutters at 230 kt); with flutter in the loop the optimum is 27-28 % (plan 055)."
+    }
+   ],
+   "blind": [],
+   "calibration": [
+    "Excrescence drag factor",
+    "Fuselage weight factor",
+    "Wing weight factor"
+   ],
+   "source": "plan 042 fixed aircraft, 80 % payload (36f08aa)",
+   "date": "2026-10-11"
+  }
+ }
 }

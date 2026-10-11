@@ -138,3 +138,14 @@ Design levers (elasticity, % per %):
 - Every sigma except the wing factor's is a placeholder prior until its owner sets it.
 - Not yet checked by re-solve in fixed mode (`--check` re-solves aspect ratio); the static-margin row is suspect
   (static margin sits at its limit yet shows non-zero derivatives).
+
+### War room (2026-10-11)
+
+`examples/halo_war_room.py` feeds results into the master ledger without re-solving, and the dashboard gains a
+"What drives range" panel (ledger field `drivers`):
+
+- Range and cruise L/D drivers of the fixed aircraft (above), calibration factors not ranked.
+- Plan 055 (whirl flutter in the loop, PR #37): `gap.whirl_flutter` (+393 lb take-off on stiffness alone over the
+  frequency-placement reference) and two priced trades: delta-3 (-11 deg saves 393 lb; spread 100 % of the gain
+  until the flapping cost, limit 9 deg, is modelled) and the wing planform (AR 7.0, 28 %: -304 lb with delta-3 held).
+  They rank first and second.

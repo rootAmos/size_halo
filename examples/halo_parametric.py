@@ -93,6 +93,39 @@ def report(parametric, inputs):
     return elasticity
 
 
+# Outputs shown in the war room (plan 042: payload and range first), with display units.
+war_room_outputs = {"range_m": ("Range", "nm", 1 / 1852.0), "lift_to_drag_cruise": ("Cruise L/D", "", 1.0)}
+
+
+def driver_records(parametric, inputs, outputs=war_room_outputs, top=6):
+    """{output key: record} for `Ledger.drivers`: risks by share of the output's variance (1-sigma effect in display
+    units), levers (design inputs) by elasticity. Calibration factors and settings are left out (not ranked)."""
+    by_key = {i.key: i for i in inputs}
+    unused = set(parametric.get("inputs_unused", ()))
+    jacobian = np.asarray(parametric["jacobian"], dtype=float)
+    elasticity = elasticities(jacobian, parametric["output_values"], parametric["input_values"])
+    used = [k for k, key in enumerate(parametric["inputs"]) if key not in unused]
+    columns = [by_key[parametric["inputs"][k]] for k in used]
+    drivers = rank_drivers(parametric["outputs"], columns, jacobian[:, used], elasticity[:, used])
+    values = dict(zip(parametric["outputs"], parametric["output_values"]))
+    records = {}
+    for key, (label, unit, scale) in outputs.items():
+        if key not in drivers:
+            continue
+        risks, levers, blind = drivers[key]
+        name = lambda k: by_key[k].label or k
+        records[key] = dict(
+            label=label, unit=unit, value=values[key] * scale, mode=parametric["mode"],
+            risks=[dict(key=d.input_key, label=name(d.input_key), share=d.share, effect=d.spread * scale,
+                        elasticity=d.elasticity, kind=by_key[d.input_key].kind, source=by_key[d.input_key].source)
+                   for d in risks if d.share >= 1e-3][:top],
+            levers=[dict(key=d.input_key, label=name(d.input_key), elasticity=d.elasticity,
+                         note=by_key[d.input_key].note) for d in levers],
+            blind=[name(k) for k in blind],
+            calibration=[name(i.key) for i in inputs if i.kind == "calibration" and i.key in parametric["inputs"]])
+    return records
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true", help="re-solve a few entries by central difference")

@@ -96,8 +96,19 @@ open_trades = (
     ("trade.load_factors", "Design loads: ultimate and jump take-off load factors (4.5, 2.0)", MARGIN, "Structures",
      CONCEPTUAL, ["mass.wing", "gap.wing_strength"], "load_factor_ultimate, load_factor_jump", ""),
     ("trade.whirl_margin", "Whirl-flutter margin: frequency placement or flutter-speed margin", MARGIN, "Structures",
-     PRELIMINARY, ["mass.wing"], "frequency_torsion_wing_per_rev, frequency_beam_wing_per_rev",
-     "Frequency placement is a proxy for the flutter boundary"),
+     PRELIMINARY, ["mass.wing", "gap.whirl_flutter"], "whirl_flutter_model frequency or eigenpair (plan 055)",
+     "Frequency placement is a proxy the reference meets while fluttering at 262 kt against 302 kt (plan 040). "
+     "Plan 055 sizes against the calibrated flutter speed directly: +393 lb on stiffness alone (gap.whirl_flutter); "
+     "recommended margin policy: 1.15 V_D on the calibrated flutter speed"),
+    ("trade.wing_planform", "Wing aspect ratio and thickness against whirl flutter (AR 6.12, 23 % today)",
+     ARCHITECTURE, "Structures", CONCEPTUAL, ["mass.wing", "gap.whirl_flutter"],
+     "free_aspect_ratio_wing, free_thickness_to_chord_wing with whirl_flutter_model eigenpair (plan 055)",
+     "Against the frequency proxy the optimizer thins and stretches the wing into flutter (AR 8.5: 188 kt); against "
+     "the calibrated flutter speed it goes longer and thicker. Section chosen offline, thickness scaled only"),
+    ("trade.delta3", "Rotor pitch-flap coupling delta-3 (-18 deg today, the XV-15's)", ARCHITECTURE,
+     "Rotor and drive", PRELIMINARY, ["gap.whirl_flutter", "mass.rotors"], "free_delta3 (plan 055)",
+     "The strongest whirl-flutter lever, free of weight in the model; its cost is gimbal flapping (limit 9 deg: "
+     "the XV-15's 12 deg stop less 3 deg), not modelled yet, and the flutter calibration was fitted at -18 deg"),
     ("trade.assurance_level", "Certification basis and design assurance levels", VERIFICATION, "Chief engineer",
      CONCEPTUAL, ["mass.systems", "mass.fixed_equipment"], "", "Drives redundancy and avionics weight"),
     # ---- Detailed design, test and validation, in service ---------------------------------------------------------

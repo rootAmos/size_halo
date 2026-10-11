@@ -81,6 +81,13 @@ paths = {
         ("Supplier datasheet and bend-radius layout", PRELIMINARY, 0.15),
         ("Mock-up and conversion-cycle test", DETAILED, 0.06),
         ("Weigh the installed crossings", TEST, 0.02)),
+    "gap.whirl_flutter": (
+        ("Flapping and loads with delta-3 free; flutter-in-the-loop sizing as the reference (plan 055)", CONCEPTUAL,
+         0.35),
+        ("Whole-aircraft symmetric and antisymmetric modes instead of the cantilever (about 10 % conservative)",
+         PRELIMINARY, 0.2),
+        ("Second calibration aircraft (V-22 or JVX) for the flutter knockdown", PRELIMINARY, 0.12),
+        ("Ground vibration test of the first article; flutter clearance in flight", TEST, 0.03)),
     "gap.wing_strength": (
         ("FE with calibrated structure, root fittings and a buckling step", CONCEPTUAL, 0.6),
         ("Size stiffeners or sandwich covers to a non-negative margin", PRELIMINARY, 0.25),

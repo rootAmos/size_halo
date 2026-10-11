@@ -87,6 +87,30 @@ def ingest_evidence(ledger, key, value, sigma, source, fidelity, today=None, not
     snapshot(ledger, source, today)
 
 
+def ingest_drivers(ledger, drivers, source, today=None):
+    """Plan 042: replace the driver table of each output in `drivers` ({output key: record}, see
+    `Ledger.drivers`) and log it. Calibration factors are not in the records (they are not ranked)."""
+    today = today or date.today()
+    for key, record in drivers.items():
+        ledger.drivers[key] = dict(record, source=source, date=today.isoformat())
+    tops = [f"{r['label']}: {r['risks'][0]['label']}" for r in drivers.values() if r.get("risks")]
+    ledger.runs.append(dict(date=today.isoformat(), source=source, kind="drivers",
+                            summary="top driver of " + "; ".join(tops) if tops else "drivers updated"))
+
+
+def price_trade(ledger, key, options, source, today=None, note=None):
+    """Set a trade's options ([TradeOption], the first the reference) from a sizing outside the trade-study runner
+    (e.g. a plan's results table), log it and re-rank."""
+    today = today or date.today()
+    trade = ledger.trades[key]
+    trade.options = list(options)
+    if note is not None:
+        trade.note = note
+    ledger.runs.append(dict(date=today.isoformat(), source=source, kind="trade",
+                            summary=f"{trade.label}: {len(options)} options priced"))
+    snapshot(ledger, source, today)
+
+
 def set_sensitivity(ledger, key, sensitivity, source, today=None):
     """Record a take-off sensitivity found by a re-solve (finite difference) for a model input."""
     today = today or date.today()
