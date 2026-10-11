@@ -8,13 +8,15 @@ Values are in SI, as the dataclass that holds them. `sigma` is one standard devi
 Kinds:
 - "design": we choose it. Its value is not uncertain; it is ranked by impact alone, as a lever.
 - "technology", "model", "requirement", "operation": uncertain; ranked by impact x uncertainty, as a risk.
+- "calibration": a factor that tunes a model to reference aircraft (wing, fuselage weight, excrescence drag). Always
+  a large lever because it stands in for low design confidence, so it is recorded, not ranked.
 - "setting": a modelling switch or count (flags, solver options); recorded, not ranked.
 """
 import math
 from dataclasses import dataclass
 from typing import Optional
 
-kinds = ("design", "technology", "model", "requirement", "operation", "setting")
+kinds = ("design", "technology", "model", "requirement", "operation", "calibration", "setting")
 
 
 @dataclass
@@ -50,8 +52,8 @@ class UncertainInput:
 
     @property
     def ranked(self):
-        """Lever or risk: numeric and not a setting."""
-        return self.numeric and self.kind != "setting"
+        """Lever or risk: numeric, and neither a setting nor a calibration factor."""
+        return self.numeric and self.kind not in ("setting", "calibration")
 
 
 @dataclass

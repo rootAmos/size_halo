@@ -1,4 +1,4 @@
-"""Plan 046: the wing-section thickness reaches the AFDD wing and its stiffness; the default is unchanged."""
+"""Plan 046: the wing-section thickness reaches the AFDD wing and its stiffness; the family is the default (plan 042)."""
 import unittest
 from dataclasses import replace
 
@@ -16,8 +16,8 @@ design = HaloDesign(
     area_disk_m2=73.4, mass_fuel_kg=936.0, solidity=0.06, speed_tip_m_s=238.2, speed_peak_motor_rad_s=204.5,
     reduction_ratio=4.53, speed_peak_generator_rad_s=580.5, count_parallel_battery=22.95,
     speed_rotor_wing_design_rad_s=56.3, power_rated_heat_exchanger_W=1.27e5, power_rated_gearbox_W=7.57e5)
-base = replace(HaloAssumptions(), count_units_motor=2, count_units_generator=3)
-family = replace(base, wing_section_model="family")
+family = replace(HaloAssumptions(), count_units_motor=2, count_units_generator=3)
+base = replace(family, wing_section_model="naca2423")
 condition = StructuralDesignCondition(mass_design_kg=6885.0, load_factor_ultimate=4.5, velocity_cruise_m_s=85.0,
                                       altitude_cruise_m=3000.0, lift_to_drag_cruise=9.0)
 
@@ -28,9 +28,9 @@ def wing_masses(design_, assumptions):
 
 
 class HaloWingSectionTests(unittest.TestCase):
-    def test_default_is_the_coordinate_naca2423(self):
-        a = HaloAssumptions()
-        self.assertEqual(a.wing_section_model, "naca2423")
+    def test_coordinate_naca2423_option(self):
+        self.assertEqual(HaloAssumptions().wing_section_model, "family")
+        a = replace(HaloAssumptions(), wing_section_model="naca2423")
         self.assertFalse(a.free_thickness_to_chord_wing)
         self.assertIsNone(a.stiffness_min_wing_Nm2)
         thickness, _, airfoil = halo_wing_section(design, a)
@@ -55,6 +55,12 @@ class HaloWingSectionTests(unittest.TestCase):
         self.assertGreater(float(thin.mass_torque_box_kg), float(thick.mass_torque_box_kg))
         self.assertGreater(float(thin.total()), float(thick.total()))
         self.assertGreaterEqual(float(thin.stiffness_torsion_Nm2), 0.99 * float(thick.stiffness_torsion_Nm2))
+
+    def test_spar_cap_depth_follows_the_assumed_thickness(self):
+        """The cap depth scales with t/c whether t/c is a design value or the assumption (a lifted input)."""
+        ratios = [build_halo_aircraft(design, HaloRequirements(), replace(family, thickness_to_chord_wing=t)
+                                      ).wing.mass_model.ratio_depth_spar_cap for t in (0.18, 0.23)]
+        self.assertAlmostEqual(ratios[0], ratios[1], places=12)
 
     def test_symbolic_thickness_in_the_wing_mass(self):
         opti = asb.Opti()

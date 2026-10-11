@@ -42,7 +42,7 @@ def rank_drivers(output_keys, inputs, jacobian, elasticity):
     derivative marks an input whose impact is not computed yet.
     """
     jacobian, elasticity = np.asarray(jacobian, dtype=float), np.asarray(elasticity, dtype=float)
-    sigmas = [None if i.kind == "design" else i.spread() for i in inputs]
+    sigmas = [None if i.kind == "design" or not i.ranked else i.spread() for i in inputs]
     contribution, _ = output_spreads(jacobian, sigmas)
     shares = variance_shares(jacobian, sigmas)
     result = {}

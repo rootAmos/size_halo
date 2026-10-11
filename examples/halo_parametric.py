@@ -27,7 +27,7 @@ path_inputs = Path("ledger/inputs.json")
 path_runs = Path("ledger/runs")
 # Fixed-aircraft mode flies this share of the design payload for maximum range: the full-payload corner of the
 # payload-range diagram (take-off mass, tanks and payload all at their limits) is degenerate for IPOPT.
-fraction_payload_fixed = 0.9
+fraction_payload_fixed = 0.8
 # Entries re-solved by central difference under --check: (mode, output, input, relative step).
 checks = (("resized", "mass_takeoff_kg", "assumptions.aspect_ratio_wing", 0.02),
           ("resized", "mass_takeoff_kg", "assumptions.fraction_mass_cells_battery", 0.02),
@@ -73,6 +73,9 @@ def report(parametric, inputs):
         print(f"{key:<{width}}" + "".join(f"{elasticity[i, k]:>13.3f}" for i in range(len(parametric["outputs"]))))
     if unused:
         print(f"\nNot read by the active models (zero by construction): {', '.join(sorted(unused))}")
+    calibration = [i.key for i in inputs if i.kind == "calibration" and i.key in parametric["inputs"]]
+    if calibration:
+        print(f"Calibration factors, not ranked (proxies for design confidence): {', '.join(calibration)}")
     drivers = rank_drivers(parametric["outputs"], columns, jacobian[:, used], elasticity[:, used])
     for output, value in zip(parametric["outputs"], parametric["output_values"]):
         risks, levers, blind = drivers[output]

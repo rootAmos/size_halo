@@ -298,8 +298,9 @@ class HaloAssumptions:
     length_mast_m: float = 1.0                           # spindle to rotor hub (the plan 031 layout)
     offset_drive_pylon_m: float = 0.6                    # spindle to the motor and rotor gearbox (assumed)
     radius_gyration_cowling_m: float = 0.8               # cowling about the spindle (3.4 m nacelle, assumed)
-    # Plan 038 (the CalculiX check of plan 031): spar-cap separation / wing thickness. None: the wing airfoil's depth at
-    # the spars (AeroSandbox `local_thickness`, mean of the two stations); 1.0: NDARC.
+    # Plan 038 (the CalculiX check of plan 031): spar-cap separation / wing thickness. None: the base section's depth at
+    # the spars over its own thickness (AeroSandbox `local_thickness`, mean of the two stations), a constant of the
+    # thickness-scaled family, so the cap depth follows t/c; 1.0: NDARC.
     ratio_depth_spar_cap: Any = None
     fraction_chord_front_spar: float = 0.15
     fraction_chord_rear_spar: float = 0.60
@@ -350,11 +351,13 @@ class HaloAssumptions:
     # Reserve SOC: the mission SOC floor, which is also where the engine-out hover starts (0.30 when fixed).
     free_soc_reserve: bool = False
     bounds_soc_reserve: tuple = (0.20, 0.90)
-    # Plan 046 wing section. "naca2423": the coordinate airfoil (the reference). "family": the CST family around it
+    # Plan 046 wing section. "family" (the reference from plan 042): the CST family around NACA 2423
     # (`aerodynamics.wing_section`) at `thickness_to_chord_wing` and `camber_wing`, with NeuralFoil polars that are
     # differentiable in both and section maximum lift scaling the stall cl_max; the same thickness sizes the AFDD
-    # wing. The free flags make thickness and camber design variables ("family" only).
-    wing_section_model: str = "naca2423"
+    # wing, so aero and structure read one section. At 23 % it is the coordinate airfoil exactly. "naca2423": the
+    # coordinate airfoil, whatever `thickness_to_chord_wing` says (kept as a check). The free flags make thickness
+    # and camber design variables ("family" only).
+    wing_section_model: str = "family"
     camber_wing: float = 0.02
     free_thickness_to_chord_wing: bool = False
     bounds_thickness_to_chord_wing: tuple = (0.15, 0.28)
@@ -871,9 +874,10 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
         if a.ratio_depth_spar_cap is not None:
             ratio_depth_spar_cap = a.ratio_depth_spar_cap
         else:
-            depths = asb.Airfoil("naca2423").local_thickness(np.array([a.fraction_chord_front_spar,
-                                                                       a.fraction_chord_rear_spar]))
-            ratio_depth_spar_cap = float(np.mean(depths)) / a.thickness_to_chord_wing
+            section = WingSectionFamily()
+            depths = asb.Airfoil(section.base_name).local_thickness(np.array([a.fraction_chord_front_spar,
+                                                                              a.fraction_chord_rear_spar]))
+            ratio_depth_spar_cap = float(np.mean(depths)) / section.thickness_base
         materials = dict(graphite_epoxy=graphite_epoxy_wing_material, aluminium=aluminium_wing_material)
         wing_mass = dict(mass_factor=factors.wing_tiltrotor, mass_model=TiltrotorWingMassModel(
             mass_tip_kg=mass_tip_kg, radius_gyration_pylon_m=radius_gyration_pylon_m,
