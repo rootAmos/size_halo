@@ -1092,6 +1092,8 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         raise ValueError("Objective 'range' is for an off-design solve (a sized aircraft).")
     if off_design is not None:
         initial = off_design.sized
+    # Operating guesses (take-off mass, payload, fuel, range): an earlier off-design point if given (plan 045).
+    start = off_design.start if off_design is not None and off_design.start is not None else initial
     factors = factors if factors is not None else calibration_factors()
     lapse_exponent = fit_lapse_exponent()
     a, r = assumptions, requirements
@@ -1105,7 +1107,7 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         torque_peak_motor_Nm=2500.0, torque_peak_generator_Nm=2000.0, power_rated_turboshaft_W=1.0e6,
         mass_turboshaft_bare_kg=230.0, power_max_discharge_battery_W=1.0e6, energy_capacity_battery_J=1.8e8,
         area_disk_m2=40.0, mass_fuel_kg=1000.0)
-    mass_takeoff_kg = opti.variable(init_guess=initial.mass_takeoff_kg if initial else 6000.0, scale=1000.0,
+    mass_takeoff_kg = opti.variable(init_guess=start.mass_takeoff_kg if start else 6000.0, scale=1000.0,
                                     lower_bound=1000.0)
     lanes = count_lanes_motor(assumptions)
     if initial is not None and initial.count_lanes_motor != lanes:
@@ -1115,13 +1117,14 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         design = halo_design_variables(opti, guess, initial, a, r)
     else:
         # Plan 045: the sized aircraft, frozen; only the fuel loaded is free (tank limit as a margin below).
-        design = replace(guess, mass_fuel_kg=opti.variable(init_guess=guess.mass_fuel_kg, scale=500.0,
+        design = replace(guess, mass_fuel_kg=opti.variable(init_guess=start.mass_fuel_kg, scale=500.0,
                                                            lower_bound=0.0))
     soc_reserve = design.soc_reserve if design.soc_reserve is not None else soc_minimum
     altitude_cruise_m = design.altitude_cruise_m if design.altitude_cruise_m is not None else r.altitude_cruise_m
     if objective == "range":
         # Plan 045: the mission range is the free quantity (take-off to landing ground distance).
-        r = replace(r, range_m=opti.variable(init_guess=r.range_m, scale=1e5, lower_bound=0.0))
+        r = replace(r, range_m=opti.variable(init_guess=start.range_m if start.range_m is not None else r.range_m,
+                                             scale=1e5, lower_bound=0.0))
     if off_design is not None and off_design.hold_speeds:
         velocities = dict(velocity_cruise_m_s=initial.velocity_cruise_m_s,
                           velocity_loiter_m_s=initial.velocity_loiter_m_s)
@@ -1135,7 +1138,7 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
 
     # ---- Aircraft, mission, requirements ----------------------------------------------
     if objective == "payload":
-        mass_payload_kg = opti.variable(init_guess=initial.mass_payload_kg if initial else 600.0, scale=100.0,
+        mass_payload_kg = opti.variable(init_guess=start.mass_payload_kg if start else 600.0, scale=100.0,
                                         lower_bound=0.0)
         r = replace(r, mass_payload_kg=mass_payload_kg)
     aircraft = build_halo_aircraft(design, r, a, factors, lapse_exponent)
@@ -1919,12 +1922,13 @@ class OffDesign:
     capacity_fuel_kg: Any
     capacity_payload_kg: Any
     hold_speeds: bool = True
+    start: Any = None                 # an earlier off-design HaloSizingResult: guesses for mass, fuel, range
 
     @classmethod
-    def of(cls, sized, larger_tanks=False, hold_speeds=True):
+    def of(cls, sized, larger_tanks=False, hold_speeds=True, start=None):
         """Limits of the sized aircraft: MTOW, tanks holding the design fuel (or unlimited), the design payload."""
         return cls(sized, sized.mass_takeoff_kg, None if larger_tanks else sized.mass_fuel_kg, sized.mass_payload_kg,
-                   hold_speeds)
+                   hold_speeds, start)
 
     def structural_condition(self, assumptions, altitude_cruise_m):
         return StructuralDesignCondition(mass_design_kg=self.mass_design_kg,
@@ -1972,20 +1976,21 @@ class OffDesignPoint:
 
 
 def solve_halo_off_design(sized, range_nm=None, mass_payload_kg=None, requirements=HaloRequirements(),
-                          assumptions=HaloAssumptions(), larger_tanks=False, hold_speeds=True, factors=None,
-                          verbose=False, max_iter=3000):
+                          assumptions=HaloAssumptions(), larger_tanks=False, hold_speeds=True, start=None,
+                          factors=None, verbose=False, max_iter=3000):
     """Plan 045: fly the sized aircraft `sized` (HaloSizingResult of `requirements`, `assumptions`) off-design.
 
     Give `range_nm` for the maximum payload over that range, or `mass_payload_kg` for the maximum range with that
     payload. Take-off mass at or below the sized MTOW, fuel at or below the tank capacity (the sized fuel mass;
-    `larger_tanks`: no tank limit), payload at or below the sized payload. One coupled solve from the sized point."""
+    `larger_tanks`: no tank limit), payload at or below the sized payload. One coupled solve from the sized point;
+    `start` (an earlier OffDesignPoint) gives the guesses for take-off mass, payload, fuel and range."""
     if (range_nm is None) == (mass_payload_kg is None):
         raise ValueError("Give either range_nm (maximum payload) or mass_payload_kg (maximum range).")
     objective = "payload" if range_nm is not None else "range"
     r = replace(requirements, range_m=range_nm * u.naut_mile) if range_nm is not None else replace(
         requirements, range_m=sized.range_m if sized.range_m is not None else requirements.range_m,
         mass_payload_kg=mass_payload_kg)
-    off_design = OffDesign.of(sized, larger_tanks, hold_speeds)
+    off_design = OffDesign.of(sized, larger_tanks, hold_speeds, start.result if start is not None else None)
     result = solve_halo_sizing_once(r, assumptions_off_design(sized, assumptions), factors, verbose, max_iter,
                                     objective=objective, off_design=off_design)
     return OffDesignPoint(range_nm=result.range_m / u.naut_mile, mass_payload_kg=result.mass_payload_kg,

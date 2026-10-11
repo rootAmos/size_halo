@@ -121,7 +121,8 @@ allocation. **Effort:** H-force, rotor-speed schedule and disc tilt about 2 days
 - **Symbolic layout (Tier 23):** packaging and clearance constraints from the drawn layout inside the sizing.
 - **Machine and architecture enumeration:** other catalogue machines (magniX, Siemens, EMRAX, mixed units) and
   architecture options run as discrete cases around the continuous sizing.
-- **Payload-range and endurance:** sweep payload at fixed design to draw the payload-range curve.
+- **Endurance:** the fixed-design solve exists (plan 045, payload-range diagram); add a loiter-endurance
+  objective and a tank-mass model for the larger-tank case.
 
 ## 10. Engineering hygiene
 
