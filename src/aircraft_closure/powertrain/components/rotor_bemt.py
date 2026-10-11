@@ -68,6 +68,7 @@ class SectionSchedule:
     airfoil_base: str = "naca64a210"
     model_size: str = "medium"
     angle_zero_lift_deg: float = -1.66       # NACA 64A210 camber line, NeuralFoil at Re 5e6
+    fraction_chord_transition: float = 0.05  # forced transition x/c, both surfaces: full-scale blades run turbulent
 
     def airfoils(self, fractions):
         base = asb.Airfoil(self.airfoil_base).to_kulfan_airfoil()
@@ -133,7 +134,7 @@ class BladeElementRotor:
     blade: BladeGeometry = BladeGeometry()
     sections: SectionSchedule = SectionSchedule()
     count_stations: int = 16
-    drag_factor: Any = 1.0
+    drag_factor: Any = 0.964               # JVX fit with turbulent sections (plan 047)
     tip_loss: bool = True
     hub_loss: bool = True
     stall_delay: bool = True
@@ -179,6 +180,8 @@ class BladeElementRotor:
         cl_list, cd_list = [], []
         for i, airfoil in enumerate(self.sections.airfoils(fractions)):
             aero = airfoil.get_aero_from_neuralfoil(alpha=alpha_deg[i], Re=reynolds[i], mach=mach[i],
+                                                    xtr_upper=self.sections.fraction_chord_transition,
+                                                    xtr_lower=self.sections.fraction_chord_transition,
                                                     model_size=self.sections.model_size)
             cl_list.append(aero["CL"])
             cd_list.append(aero["CD"])
