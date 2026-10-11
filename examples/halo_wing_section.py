@@ -12,6 +12,7 @@ there is no relaxed-then-integer double solve:
     python -m examples.halo_wing_section solve free       # thickness free, frequency-placement margins only
     python -m examples.halo_wing_section solve free_stiff # thickness free, GJ and EI at least the 23 % wing's
     python -m examples.halo_wing_section solve t18|t21|t25
+    python -m examples.halo_wing_section solve free_stiff t25 free_stiff_t25   # same case from the t25 result
     python -m examples.halo_wing_section report           # table, coupled whirl-flutter check, figure
 
 Results go to `output/wing_section/<case>.pkl`.
@@ -51,7 +52,7 @@ def assumptions_for(case, stiffness_min_Nm2=None):
         return replace(a, thickness_to_chord_wing=int(case[1:]) / 100)
     if case == "free":
         return replace(a, free_thickness_to_chord_wing=True)
-    if case == "free_stiff":
+    if case.startswith("free_stiff"):
         return replace(a, free_thickness_to_chord_wing=True, stiffness_min_wing_Nm2=stiffness_min_Nm2)
     raise ValueError(case)
 
@@ -101,11 +102,12 @@ def cruise_drag(result, requirements, assumptions):
     return wing_cd0, float(onp.ravel(out.aero.cd0)[0])
 
 
-def solve_case(case):
+def solve_case(case, start=None, label=None):
+    """One solve of `case` from the cached baseline, or from the saved case `start`; saved as `label` (or case)."""
     requirements = HaloRequirements()
-    initial = baseline_initial()
+    initial = baseline_initial() if start is None else pickle.loads((path_results / f"{start}.pkl").read_bytes())
     stiffness = None
-    if case == "free_stiff":
+    if case.startswith("free_stiff"):
         reference = pickle.loads((path_results / "t23.pkl").read_bytes())
         wing = wing_reference(reference, requirements, assumptions_for("t23"))["wing_afdd"]
         stiffness = (wing["stiffness_torsion_Nm2"], wing["stiffness_beam_Nm2"])
@@ -113,16 +115,24 @@ def solve_case(case):
     assumptions = assumptions_for(case, stiffness)
     result = solve_halo_sizing(requirements, assumptions, initial=initial)
     path_results.mkdir(parents=True, exist_ok=True)
-    (path_results / f"{case}.pkl").write_bytes(pickle.dumps(result))
-    print(f"{case}: t/c {thickness_of(result, assumptions):.4f}  take-off {result.mass_takeoff_kg:.1f} kg "
+    label = label or case
+    (path_results / f"{label}.pkl").write_bytes(pickle.dumps(result))
+    print(f"{label}: t/c {thickness_of(result, assumptions):.4f}  take-off {result.mass_takeoff_kg:.1f} kg "
           f"({result.mass_takeoff_kg / 0.45359237:.0f} lb)  L/D {result.lift_to_drag_cruise:.3f}")
     print("binding:", result.binding)
 
 
 def load_cases():
-    cases = {}
-    for path in sorted(path_results.glob("*.pkl")):
-        cases[path.stem] = pickle.loads(path.read_bytes())
+    """Saved cases by label; of several solves of one free case from different starts, the lightest is kept under
+    the case name and the others under "<label> (local)"."""
+    cases = {path.stem: pickle.loads(path.read_bytes()) for path in sorted(path_results.glob("*.pkl"))}
+    for case in ("free_stiff", "free"):
+        labels = [k for k in cases if k == case or k.startswith(case + "_t")]
+        if len(labels) > 1:
+            best = min(labels, key=lambda k: cases[k].mass_takeoff_kg)
+            results = {k: cases.pop(k) for k in labels}
+            cases[case] = results[best]
+            cases.update({f"{k} (local)": v for k, v in results.items() if k != best})
     return cases
 
 
@@ -136,7 +146,7 @@ def summarize(cases):
         stiffness = (wing["stiffness_torsion_Nm2"], wing["stiffness_beam_Nm2"])
     rows = {}
     for case, result in cases.items():
-        a = assumptions_for(case, stiffness)
+        a = assumptions_for(case.split(" ")[0], stiffness)
         reference = wing_reference(result, requirements, a)
         wing_cd0, cd0 = cruise_drag(result, requirements, a)
         a_ = a
@@ -158,43 +168,47 @@ def summarize(cases):
 
 
 def figure(rows, path=path_figure):
+    """2 x 2 slide figure: take-off weight, coupled flutter speed (check), wing mass, wing profile drag."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     fixed = sorted((r for c, r in rows.items() if c.startswith("t")), key=lambda r: r["thickness"])
     t = onp.array([r["thickness"] for r in fixed]) * 100
-    fig, axes = plt.subplots(1, 3, figsize=(16, 10), gridspec_kw=dict(wspace=0.32))
+    fig, axes = plt.subplots(2, 2, figsize=(16, 10), sharex=True)
     lb = 1 / 0.45359237
     panels = (("Take-off weight (lb)", lambda r: r["mass_takeoff_kg"] * lb),
+              ("Whirl-flutter speed, plan 040 model, calibrated (kt)", lambda r: r["flutter_kt"]),
               ("Wing mass (kg)", lambda r: r["mass_wing_kg"]),
               ("Wing profile drag at cruise, CD0 x 10^4", lambda r: r["cd0_wing"] * 1e4))
-    for ax, (label, f) in zip(axes, panels):
-        ax.plot(t, [f(r) for r in fixed], "-o", color="#2a6fb0", lw=2.5, ms=8, label="thickness fixed")
+    for ax, (label, f) in zip(axes.flat, panels):
+        ax.plot(t, [f(r) for r in fixed], "-o", color="#2a6fb0", lw=2.5, ms=8,
+                label="t/c fixed (frequency-placement margins)")
         if "free" in rows:
             r = rows["free"]
-            ax.plot(r["thickness"] * 100, f(r), "*", color="#d9822b", ms=22, zorder=5,
-                    label="optimum, frequency margins only")
+            ax.plot(r["thickness"] * 100, f(r), "*", color="#d9822b", ms=24, zorder=5,
+                    label="t/c free, frequency margins: optimum 21.5 %")
         if "free_stiff" in rows:
             r = rows["free_stiff"]
-            ax.plot(r["thickness"] * 100, f(r), "D", color="#3a8f3a", ms=13, zorder=5,
-                    label="optimum, GJ and EI held at the 23 % wing")
-        ax.axvline(23, color="0.6", ls=":", lw=1.5)
-        ax.set_xlabel("Wing thickness ratio t/c (%)", fontsize=16)
-        ax.set_title(label, fontsize=17)
-        ax.tick_params(labelsize=14)
+            ax.plot(r["thickness"] * 100, f(r), "D", color="#3a8f3a", ms=13, zorder=6,
+                    label="t/c free, GJ and EI floors at the 23 % wing (binding): optimum 23 %")
+        ax.set_title(label, fontsize=16)
+        ax.tick_params(labelsize=13)
         ax.grid(alpha=0.3)
-    axes[0].legend(fontsize=13, loc="best")
-    notes = []
-    for case, tag in (("free", "Optimum (frequency margins)"), ("free_stiff", "Optimum (stiffness held)")):
-        if case in rows:
-            r = rows[case]
-            notes.append(f"{tag}: t/c {r['thickness']:.3f}, {r['mass_takeoff_kg'] * lb:,.0f} lb, "
-                         f"binds: {binding_label(r)}")
-    fig.suptitle("Halo wing thickness trade: NeuralFoil section drag against AFDD wing stiffness and weight",
+    required_kt = fixed[0]["required_flutter_kt"]
+    axes[0, 1].axhline(required_kt, color="#b03030", ls="--", lw=2)
+    axes[0, 1].text(t[0], required_kt - 4, f"required 1.15 V_D = {required_kt:.0f} kt", color="#b03030",
+                    fontsize=13, va="top")
+    axes[0, 1].legend(*axes[0, 0].get_legend_handles_labels(), fontsize=12, loc="lower right")
+    for ax in axes[1]:
+        ax.set_xlabel("Wing thickness ratio t/c (%)", fontsize=15)
+    r = rows.get("free")
+    if r is not None:
+        axes[0, 0].annotate("frequency margins slack; box at minimum gauge;\njump caps against section drag",
+                            (r["thickness"] * 100, r["mass_takeoff_kg"] * lb), xytext=(15.2, 15290),
+                            fontsize=12, arrowprops=dict(arrowstyle="->", color="0.4"))
+    fig.suptitle("Halo wing thickness: under 0.1 % take-off weight at stake; thinning costs flutter speed",
                  fontsize=19)
-    if notes:
-        fig.text(0.5, 0.015, "\n".join(notes), ha="center", fontsize=14)
-    fig.subplots_adjust(left=0.06, right=0.98, top=0.9, bottom=0.17)
+    fig.subplots_adjust(left=0.07, right=0.98, top=0.9, bottom=0.08, hspace=0.25, wspace=0.18)
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path, dpi=120)
     print("wrote", path)
@@ -208,7 +222,7 @@ def binding_label(row):
 
 if __name__ == "__main__":
     if sys.argv[1] == "solve":
-        solve_case(sys.argv[2])
+        solve_case(*sys.argv[2:])
     elif sys.argv[1] == "report":
         rows = summarize(load_cases())
         print(json.dumps(rows, indent=1, default=str))
