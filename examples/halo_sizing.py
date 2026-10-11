@@ -46,6 +46,7 @@ from aircraft_closure.aerodynamics.buildup import BuildupAerodynamics
 from aircraft_closure.aerodynamics.scholz import ScholzAerodynamics
 from aircraft_closure.aerodynamics.simple import SimpleAerodynamics
 from aircraft_closure.aerodynamics.slipstream import BlownWing
+from aircraft_closure.aerodynamics.wing_section import SectionClMaxSurrogate, WingSectionFamily
 from aircraft_closure.controls.stability import DirectionalStability, LongitudinalStability
 from aircraft_closure.core.margins import margin_above, margin_below, margin_report
 from aircraft_closure.mission.cost import CostBreakdown, CostModel
@@ -327,6 +328,19 @@ class HaloAssumptions:
     # Reserve SOC: the mission SOC floor, which is also where the engine-out hover starts (0.30 when fixed).
     free_soc_reserve: bool = False
     bounds_soc_reserve: tuple = (0.20, 0.90)
+    # Plan 046 wing section. "naca2423": the coordinate airfoil (the reference). "family": the CST family around it
+    # (`aerodynamics.wing_section`) at `thickness_to_chord_wing` and `camber_wing`, with NeuralFoil polars that are
+    # differentiable in both and section maximum lift scaling the stall cl_max; the same thickness sizes the AFDD
+    # wing. The free flags make thickness and camber design variables ("family" only).
+    wing_section_model: str = "naca2423"
+    camber_wing: float = 0.02
+    free_thickness_to_chord_wing: bool = False
+    bounds_thickness_to_chord_wing: tuple = (0.15, 0.28)
+    free_camber_wing: bool = False
+    bounds_camber_wing: tuple = (0.0, 0.04)
+    # Plan 046: floor on the realized wing (torsion, beam) stiffness in N m2 (None: none). Holding the 23 % wing's
+    # stiffness keeps the plan 040 whirl-flutter inputs, which the frequency-placement margins do not.
+    stiffness_min_wing_Nm2: Any = None
     # Cost per mission for objective="cost" and for every result's `cost` (src/aircraft_closure/mission/cost.py).
     cost_model: Any = field(default_factory=CostModel)
     # Plan 034: drag AeroBuildup and the Scholz build-up leave out. Excrescence, leakage and protuberance as a factor
@@ -451,6 +465,8 @@ class HaloDesign:
     altitude_cruise_m: Any = None                 # Tier 22 freed trades; None: the fixed values
     aspect_ratio_wing: Any = None
     soc_reserve: Any = None
+    thickness_to_chord_wing: Any = None           # plan 046 ("family" section); None: the assumption values
+    camber_wing: Any = None
     power_rated_heat_exchanger_W: Any = None      # Tier 19 thermal: heat rejected at the reference difference
     power_rated_gearbox_W: Any = None             # Tier 19 thermal: rotor gearbox rating; None: the motor rating
 
@@ -630,6 +646,20 @@ def ratio_reference_gear_stages():
 def stage_mass_ratio(stage_model, ratio):
     """Plan 033: drive mass relative to the AFDD drive at the XV-15 calibration ratio; `ratio` is fast/slow (>= 1)."""
     return stage_model.mass_factor(ratio) / stage_model.mass_factor(ratio_reference_gear_stages())
+
+
+def halo_wing_section(design, assumptions):
+    """Plan 046: (thickness ratio, camber, airfoil) of the wing; design values override the assumptions."""
+    a, d = assumptions, design
+    thickness = d.thickness_to_chord_wing if d.thickness_to_chord_wing is not None else a.thickness_to_chord_wing
+    camber = d.camber_wing if d.camber_wing is not None else a.camber_wing
+    if a.wing_section_model == "naca2423":
+        if d.thickness_to_chord_wing is not None or d.camber_wing is not None:
+            raise ValueError("A thickness or camber design variable needs wing_section_model='family'.")
+        return thickness, camber, asb.Airfoil("naca2423")
+    if a.wing_section_model == "family":
+        return thickness, camber, WingSectionFamily().airfoil(thickness, camber)
+    raise ValueError(f"Unknown wing section model '{a.wing_section_model}'.")
 
 
 def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None,
@@ -814,13 +844,13 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                                       else speed_rotor_design_rad_s),
             width_fuselage_m=a.diameter_fuselage_m, frequency_torsion_per_rev=a.frequency_torsion_wing_per_rev,
             frequency_beam_per_rev=a.frequency_beam_wing_per_rev, frequency_chord_per_rev=a.frequency_chord_wing_per_rev,
-            thickness_to_chord=a.thickness_to_chord_wing, material=materials[a.wing_material](),
+            thickness_to_chord=halo_wing_section(d, a)[0], material=materials[a.wing_material](),
             count_rotors=a.count_rotors, load_factor_jump=a.load_factor_jump, smoothing=a.smoothing_wing_tiltrotor))
     else:
         raise ValueError(f"Unknown wing weight model '{a.wing_weight_model}'.")
     aspect_ratio_wing = d.aspect_ratio_wing if d.aspect_ratio_wing is not None else a.aspect_ratio_wing
     wing = Wing(area_m2=d.area_wing_m2, aspect_ratio=aspect_ratio_wing, taper_ratio=1.0, x_le_root_m=d.x_le_wing_m,
-                z_m=1.2, airfoil=asb.Airfoil("naca2423"), **wing_mass)
+                z_m=1.2, airfoil=halo_wing_section(d, a)[2], **wing_mass)
     x_rotor_m = d.x_le_wing_m + 0.25 * wing.chord_root_m()
     z_rotor_m = wing.z_m + a.length_mast_m
     if a.turbogenerators_on_wing_tips:
@@ -1172,6 +1202,22 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         design = replace(design, soc_reserve=opti.variable(
             init_guess=guess.soc_reserve if guess.soc_reserve is not None else soc_minimum,
             lower_bound=low, upper_bound=high))
+    if a.free_thickness_to_chord_wing:
+        low, high = a.bounds_thickness_to_chord_wing
+        design = replace(design, thickness_to_chord_wing=opti.variable(
+            init_guess=guess.thickness_to_chord_wing if guess.thickness_to_chord_wing is not None
+            else a.thickness_to_chord_wing, scale=0.1, lower_bound=low, upper_bound=high))
+    if a.free_camber_wing:
+        low, high = a.bounds_camber_wing
+        design = replace(design, camber_wing=opti.variable(
+            init_guess=guess.camber_wing if guess.camber_wing is not None else a.camber_wing, scale=0.01,
+            lower_bound=low, upper_bound=high))
+    cl_max = r.cl_max
+    if a.wing_section_model == "family":
+        # Plan 046: aircraft maximum lift scaled with the section's (NeuralFoil surrogate, 1 at the base section).
+        thickness_wing, camber_wing, _ = halo_wing_section(design, a)
+        cl_max = r.cl_max * SectionClMaxSurrogate().ratio(thickness_wing, camber_wing)
+        aerodynamics = replace(aerodynamics, cl_max=cl_max)
     soc_reserve = design.soc_reserve if design.soc_reserve is not None else soc_minimum
     altitude_cruise_m = design.altitude_cruise_m if design.altitude_cruise_m is not None else r.altitude_cruise_m
     mission = halo_mission(replace(r, altitude_cruise_m=altitude_cruise_m), velocity_cruise_m_s=opti.variable(
@@ -1263,7 +1309,7 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
     radius_m = instances["propulsor"].component.radius_m()
     span_m = aircraft.wing.span_m()
     density_sea_level_kg_m3 = asb.Atmosphere(altitude=0).density()
-    lift_stall_N = 0.5 * density_sea_level_kg_m3 * r.velocity_stall_max_m_s**2 * design.area_wing_m2 * r.cl_max
+    lift_stall_N = 0.5 * density_sea_level_kg_m3 * r.velocity_stall_max_m_s**2 * design.area_wing_m2 * cl_max
     weight_N = mass_takeoff_kg * acceleration_gravity_m_s2
 
     design_margins = (
@@ -1291,6 +1337,11 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
                                          a.frequency_torsion_wing_per_rev),
                             margin_above(f"whirl flutter beam per rev ({p.condition.label})", beam_per_rev,
                                          a.frequency_beam_wing_per_rev))
+        if a.stiffness_min_wing_Nm2 is not None:
+            torsion_min_Nm2, beam_min_Nm2 = a.stiffness_min_wing_Nm2
+            all_margins += (margin_above("wing torsion stiffness_Nm2", wing_masses.stiffness_torsion_Nm2,
+                                         torsion_min_Nm2),
+                            margin_above("wing beam stiffness_Nm2", wing_masses.stiffness_beam_Nm2, beam_min_Nm2))
     if hover_hot is not None:
         # An alternative contingency to the engine-out reserve: from the end SOC down to the emergency floor.
         all_margins += hover_hot.margins + (
