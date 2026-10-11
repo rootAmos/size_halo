@@ -9,9 +9,11 @@ from tests.integration.test_halo_thermal import numeric_design
 
 
 class HaloHeatExchangerOptionTests(unittest.TestCase):
-    def test_default_is_mass_per_watt(self):
-        self.assertEqual(HaloAssumptions().heat_exchanger_model, "mass_per_watt")
-        aircraft = build_halo_aircraft(numeric_design(), assumptions=HaloAssumptions())
+    def test_default_is_ntu_and_v3_6_is_mass_per_watt(self):
+        # Plan 048: the epsilon-NTU cooler is the v3.7 default; v3.6 and earlier keep the mass-per-watt cooler.
+        from examples.halo_sizing import assumptions_v3_6
+        self.assertEqual(HaloAssumptions().heat_exchanger_model, "ntu")
+        aircraft = build_halo_aircraft(numeric_design(), assumptions=assumptions_v3_6)
         self.assertIsInstance(aircraft.powertrain.cooling.heat_exchanger, RamAirHeatExchanger)
 
     def test_ntu_option_installs_the_sized_cooler(self):
@@ -29,6 +31,10 @@ class HaloHeatExchangerOptionTests(unittest.TestCase):
         masses = dict((i.instance_name, i.mass_properties.mass) for i in aircraft.powertrain.get_instance_mass_properties())
         self.assertAlmostEqual(masses["heat_exchanger"], cooler.get_mass())
         self.assertAlmostEqual(cooler.mass_breakdown().mass_fans_kg, 12e3 / a.specific_power_fan_heat_exchanger_W_kg)
+        # Plans 051 and 048: "published" is the v3.7 default; "estimate" still reaches the installed cooler.
+        self.assertEqual(cooler.allowances, "published")
+        estimate = build_halo_aircraft(design, assumptions=replace(a, allowances_heat_exchanger="estimate"))
+        self.assertEqual(estimate.powertrain.cooling.heat_exchanger.allowances, "estimate")
 
     def test_unknown_model_rejected(self):
         with self.assertRaises(ValueError):

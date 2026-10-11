@@ -22,19 +22,22 @@ inputs without restructuring the model.
 | Stability | static margin and directional stability (Cn_β) margins |
 | Fixed input | two off-the-shelf 1,120 hp turboshafts; the engines are bought, not designed, so they are not a design variable |
 
-## Baseline design v3.6
+## Baseline design v3.7
 
 | | |
 |---|---|
-| **Take-off weight** | **15,179 lb** (6,885 kg) |
-| Empty weight (OEW) | 11,130 lb (5,049 kg), of which powertrain 6,329 lb (57 %) |
-| Fuel / battery | 2,065 lb, 10 % reserve included / 70 kWh, 1,047 lb, two isolated strings |
-| Mission cruise | 165 kt at 10,000 ft, L/D 9.1 (cruise speed is optimized for weight; 210 kt is a dash capability) |
+| **Take-off weight** | **14,357 lb** (6,512 kg), 822 lb lighter than v3.6 |
+| Empty weight (OEW) | 10,365 lb (4,701 kg), of which powertrain 5,705 lb (55 %) |
+| Fuel / battery | 2,008 lb, 10 % reserve included / 61.5 kWh, 920 lb, two isolated strings |
+| Mission cruise | 165 kt at 10,000 ft, L/D 9.0 (cruise speed is optimized for weight; 210 kt is a dash capability) |
 | Turboshafts | 2 × 1,120 hp in the fuselage |
-| Rotors | 2 × 31.7 ft diameter, disk loading 9.6 lb/ft², tip speed 782 ft/s; rotor radius capped by the span |
-| Wing | 251 ft², 39.2 ft span, wing loading 60.5 lb/ft² |
-| Drive | per rotor, 2 motor lanes of stacked axial-flux units behind one 4.5:1 stage; two cross-strapped DC buses |
+| Rotors | 2 × 30.8 ft diameter, disk loading 9.6 lb/ft², tip speed 782 ft/s; rotor radius capped by the span |
+| Wing | 240 ft², 38.3 ft span, wing loading 59.9 lb/ft² |
+| Drive | per rotor, 2 motor lanes of stacked axial-flux units behind one 4.5:1 stage; generators of 2 units each, all units uprated 10 % in continuous power (plan 048); two cross-strapped DC buses |
+| Cooling | epsilon-NTU offset-strip-fin core in a ram-air duct with a hover fan, 58 kg (plans 042, 051) |
 | Fuselage | 36.1 ft long, unpressurized box section 5.5 × 6.6 ft |
+
+The empty-weight breakdown and figures below are still those of v3.6 (15,179 lb) until they are regenerated.
 
 The empty-weight breakdown and its uncertainty are under [Performance and weights](#performance-and-weights). The
 model works in SI internally; [docs/RESULTS.md](docs/RESULTS.md) gives the SI values alongside.
@@ -83,7 +86,8 @@ reserve loiter, except where the table says otherwise.
 | v3.3.5 | 13,038 lb | as v3.0 | Layout line: AFDD spar caps at the real box depth, 1 mm minimum gauge, nacelle inertia from components |
 | v3.4 | 16,231 lb | as v3.0, **plus bus-out and string-out failure hovers** | Whole units of real machines, 2 lanes/2 buses/2 strings redundancy, gearbox stages, drag corrections |
 | v3.5 | 16,303 lb | as v3.4 | Trim drag from the tail load |
-| **v3.6 (baseline)** | **15,179 lb** | as v3.4 (the requirements table above) | Layout line (v3.3.4, v3.3.5) merged into v3.5, with every model on |
+| v3.6 | 15,179 lb | as v3.4 (the requirements table above) | Layout line (v3.3.4, v3.3.5) merged into v3.5, with every model on |
+| **v3.7 (baseline)** | **14,357 lb** | as v3.4 | Epsilon-NTU cooler (plan 042) and machine units uprated 10 % in continuous power (plan 048) |
 
 ## Modules overview: What it does
 

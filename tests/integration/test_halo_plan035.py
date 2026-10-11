@@ -24,7 +24,8 @@ class Plan035ReferenceTests(unittest.TestCase):
         self.assertGreater(r.min_margin, -1e-6)
         self.assertLess(abs(r.closure_residual_kg), 1e-3)
         self.assertEqual(r.mass_payload_kg, 900.0)
-        self.assertAlmostEqual(r.mass_takeoff_kg / u.lbm, 15179, delta=20)   # with the layout line (plans 037-038)
+        # v3.7 (plan 048): epsilon-NTU cooler and 10 % uprated machine units (v3.6 was 15,179 lb).
+        self.assertAlmostEqual(r.mass_takeoff_kg / u.lbm, 14357, delta=20)
 
     def test_machines_are_whole_units_on_two_lanes(self):
         r = self.result
