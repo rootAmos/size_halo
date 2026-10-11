@@ -1,6 +1,6 @@
 # Bottom-up tiltrotor wing box: sized layout, no calibration factor
 
-Status: IN PROGRESS (2026-10-11). Branch `feat/bottom-up-wing-box`.
+Status: DONE (2026-10-11). Branch `feat/bottom-up-wing-box`.
 
 ## Goal and scope
 
@@ -18,7 +18,7 @@ that:
 
 The default (`"afdd_tiltrotor"`) and every existing reference result stay unchanged.
 
-Not in scope: buckling analysis in CalculiX (a later plan), fatigue, a sized fuselage.
+Not in scope: fatigue, impact damage tolerance, joints and cut-outs (statistical, Torenbeek), a sized fuselage.
 
 ## References
 
@@ -47,12 +47,22 @@ At fixed fractions of each panel (fuselage side to tip), with the closed-form el
   min(compression allowable, F sqrt(N E / L)); stringers 35 % of the bending cover (Howe), skin the rest unless the
   torsion skin is thicker. Stringer pitch from skin local buckling at the cover stress (K = 3.62), height = pitch /
   3.5, Zed area 1.8 h t.
-- **Webs:** shear plus torque shear flow, +20 % (Torenbeek 8.3), at least the torsion skin.
+- **Webs:** shear plus torque shear flow, +20 % (Torenbeek 8.3), at least the torsion skin and the web minimum
+  laminate. Composite webs are sandwich panels (`WingBoxLayout.construction_web="sandwich"`): carbon faces carry
+  the shear, a honeycomb core is deep enough that the depth x rib-pitch panel does not buckle in shear at ultimate
+  (D = E (t/2) h^2 / 2 >= q b^2 / (k_s pi^2), k_s = 5.35 + 4 (b/a)^2); core and adhesive mass included. "plate"
+  (solid web thick enough on its own) and "none" (strength only) remain options.
+- **Hot/wet:** carbon-epoxy modulus x 0.90 in every buckling check (upper cover panels, stringer pitch, webs) and
+  shear allowable x 0.80 (webs, torque skin); the cover strain allowables are EMWET design values and are not
+  knocked down. Aluminium: 1.0.
 - **Spar caps:** beam and chord stiffness still missing.
-- **Root peak:** near the fuselage side the bending allowable is divided by the plan 043 peak factor (1.33), so the
-  CalculiX root strain peak is sized for, not checked after.
+- **Root peak:** near the fuselage side the bending allowable can be divided by a peak factor; 1.0 for the
+  distributed covers (CalculiX / beam theory 0.97; the plan 043 value 1.33 was fitted on discrete AFDD caps).
 - **Ribs:** Torenbeek eq. 47 at its 0.75 m statistical pitch, scaled by 0.75 m / pitch; thickness from that mass
-  over the rib area. **Non-optimum, mountings, fairings, controls:** Torenbeek as referenced.
+  over the rib area. The pitch is an optional design variable (`free_pitch_rib_wing`, 0.25-1.0 m); in OpenVSP the
+  ribs run in equal bays between the fairing-attach and nacelle ribs (`StructureLayout.ribs_between_attach_ribs`).
+- **Torsion frequency:** NDARC's single-mode relation times 0.756 (`correction_torsion_frequency`; XV-15 and
+  CalculiX both need about 0.57 x GJ). **Non-optimum, mountings, fairings, controls:** Torenbeek as referenced.
 - **Realized stiffness** for the frequencies: flexibility-weighted along the span (bending: weight (L - y)^2;
   torsion: uniform), so a station above the floor raises it.
 
@@ -71,6 +81,9 @@ At fixed fractions of each panel (fuselage side to tip), with the closed-form el
 - Graphite epoxy non-optimum allowance 0.5 mm (Torenbeek's integral construction value; co-cured, fewer joints);
   aluminium 1.0 mm.
 - Torenbeek's secondary-structure correlations are for aluminium transports; used unchanged.
+- Composite spar webs: at least 1.5 mm laminate (eight balanced +-45 plies), Nomex core at least 6 mm (48 kg/m3),
+  0.30 kg/m2 adhesive. Hot/wet knockdowns 0.90 (modulus, stability) and 0.80 (shear allowable).
+- Buckling criterion: no buckling of primary structure below ultimate load, hot/wet.
 
 ## Progress log
 
@@ -118,7 +131,21 @@ At fixed fractions of each panel (fuselage side to tip), with the closed-form el
     (`WingBoxLayout.correction_torsion_frequency`); bending frequencies agree with the FE within 8 % and are not
     corrected. The AFDD default keeps the relation: its torsion whirl margins are optimistic by the same 1.32
     (a separate decision).
-  - Open: (1) the bottom-up torsion stiffness (Bredt-Batho on the rectangular box) or the NDARC single-mode torsion
-    relation is optimistic by about a third against the free-free FE; check FE GJ with a static torque case before
-    relying on the torsion margin; (2) the root peak factor should be refitted for distributed covers (the covers
-    are then lighter).
+  - Spar webs: the strength-sized webs sat at the 1 mm minimum, and CalculiX buckled them in shear at 0.99-1.03 x
+    ultimate (1.49 x limit: no buckling below limit, none of the margin needed below ultimate or hot/wet). A solid
+    web sized on its own (bare plate between ribs) needs 3.6 mm: webs 52 kg, take-off 6,904.9 kg (15,223 lb). Real
+    composite webs are sandwich or stiffened, so the webs are now sandwich panels with a 1.5 mm minimum laminate,
+    and hot/wet knockdowns apply to all buckling checks and the shear allowable. No factor: XV-15 +9 %, V-22 FSD
+    -10 %, D266 +0 %.
+  - Final re-solve (free rib pitch, sandwich webs, hot/wet): take-off 6,640.7 kg (14,640 lb, -244 kg against the
+    AFDD default); wing 389.8 kg (covers 101.8, webs 26.9, caps 0, ribs 30.0, non-optimum 27.9, mountings 68.0,
+    fairings 65.1, controls 70.1). Rib pitch 0.691 m (1.82 mm). Root upper cover 3.08 mm skin + 1.66 mm stringers at
+    94 mm pitch, lower 2.52 mm skin; both to the 1 mm minimum outboard. Webs 1.5 mm faces (minimum laminate; strength
+    needs about 1.3 mm hot/wet) on a 6.0 mm core (minimum core; buckling needs less) along the whole span: the jump
+    take-off shear enters at the nacelle, so the shear flow is nearly uniform.
+  - CalculiX on that layout (equal rib bays, sandwich webs as layered shells): root strain FE 0.00347 against sizing
+    0.00341 (margin +26 %); FE GJ 1.18 x the bottom-up; free-free frequencies FE / bottom-up beam 0.92, chord 0.98,
+    torsion 1.07. Buckling under the ultimate jump take-off: no web or cover mode in the first five; first factor
+    1.10 at the clamped centreline (artefact), then the non-structural leading/trailing-edge fairing skins at
+    1.12-1.39 (1.01 hot/wet). Primary structure clears no-buckling-below-ultimate, hot/wet.
+  - Halo numbers in this plan are on the v3.6 baseline (AFDD default 15,179 lb), so the comparison is like-for-like.
