@@ -9,7 +9,12 @@ ultimate jump take-off (tip deflection, largest spar-cap strain against the
 AFDD strain allowable). Run from the repo root:
 `python -m examples.halo_wing_fe`. Needs OpenVSP and CalculiX (`ccx`; set
 `CCX` or install it at the default path below).
+
+Plan 043 options: `--reference` and `--directory` pick the input file and output folder; `--load-carrying-share s`
+maps the load-carrying share of the wing calibration increment into the shells (AFDD wall and cap areas times
+1 + s x (factor_wing - 1); 0, the default, is the raw AFDD gauges as before); `--static-only` skips the modes.
 """
+import argparse
 import json
 import os
 from dataclasses import replace
@@ -29,8 +34,18 @@ radius_gyration_pitch_fuselage_m, radius_gyration_roll_fuselage_m, drop_cg_m = 3
 g_m_s2 = 9.80665
 
 if __name__ == "__main__":
-    reference = json.loads(Path("output/structure/reference.json").read_text())
-    r, afdd, layout = reference, reference["wing_afdd"], StructureLayout()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--reference", default="output/structure/reference.json")
+    parser.add_argument("--directory", default=str(directory))
+    parser.add_argument("--load-carrying-share", type=float, default=0.0)
+    parser.add_argument("--static-only", action="store_true")
+    args = parser.parse_args()
+    directory = Path(args.directory)
+    reference = json.loads(Path(args.reference).read_text())
+    r, afdd, layout = reference, dict(reference["wing_afdd"]), StructureLayout()
+    factor_load_carrying = 1 + args.load_carrying_share * (r["factor_wing"] - 1)
+    for key in ("area_torque_box_m2", "area_spar_m2"):
+        afdd[key] = factor_load_carrying * afdd[key]
     chord_m = r["area_wing_m2"] / r["span_wing_m"]
     wing = SurfaceSnapshot(span_m=r["span_wing_m"], chord_root_m=chord_m, chord_tip_m=chord_m,
                            x_le_root_m=r["x_le_wing_m"], z_m=1.2, thickness_to_chord=r["thickness_to_chord_wing"],
@@ -53,17 +68,20 @@ if __name__ == "__main__":
     deck = dict(nodes=nodes, elsets=elsets, properties=properties, tip=tip, x_le_m=wing.x_le_root_m,
                 chord_m=chord_m, fraction_front_spar=layout.fraction_chord_front_spar,
                 fraction_rear_spar=layout.fraction_chord_rear_spar, width_fuselage_m=r["width_fuselage_m"])
-    mass_wing_kg = afdd["mass_torque_box_kg"] + afdd["mass_spar_stiffness_kg"] + afdd["mass_spar_jump_kg"]         + afdd["mass_fairing_kg"]
+    mass_wing_kg = afdd["mass_torque_box_kg"] + afdd["mass_spar_stiffness_kg"] + afdd["mass_spar_jump_kg"]         + afdd.get("mass_spar_strain_kg", 0.0) + afdd["mass_fairing_kg"]
     x_spindle_m, _, z_spindle_m = tip.xyz_spindle_m
     fuselage = FuselageMass(mass_kg=r["mass_takeoff_kg"] - 2 * r["mass_tip_kg"] - mass_wing_kg,
                             xyz_cg_m=(x_spindle_m, 0.0, z_spindle_m - drop_cg_m),
                             radius_gyration_pitch_m=radius_gyration_pitch_fuselage_m,
                             radius_gyration_roll_m=radius_gyration_roll_fuselage_m)
     path_modal, path_jump = directory / "halo_wing_modes.inp", directory / "halo_wing_jump.inp"
-    references, groups = write_deck(path_modal, fuselage=fuselage, **deck)
-    write_deck(path_jump, force_tip_jump_N=force_jump_N, **deck)
-    modes = read_modes(run_calculix(path_modal, path_ccx), references, radius_gyration_m)
+    references, groups = write_deck(path_jump, force_tip_jump_N=force_jump_N, **deck)
     deflection_m, strain_max = read_static(run_calculix(path_jump, path_ccx), references)
+    if not args.static_only:
+        write_deck(path_modal, fuselage=fuselage, **deck)
+        modes = read_modes(run_calculix(path_modal, path_ccx), references, radius_gyration_m)
+    else:
+        modes = ()
 
     print(f"Gauges: box walls {1e3 * properties.thickness_box_m:.2f} mm, cap pads +{1e3 * properties.thickness_cap_pad_m:.2f}"
           f" mm over {1e3 * properties.width_cap_strip_m:.0f} mm strips, ribs {1e3 * properties.thickness_rib_m:.1f} mm; "
@@ -80,7 +98,8 @@ if __name__ == "__main__":
         symmetric = [m.frequency_rad_s for m in modes if m.kind == kind and m.symmetric]
         fe = symmetric[0] if symmetric else float("nan")
         rows.append((kind, fe, afdd[key]))
-        print(f"  symmetric {kind:<8} FE {fe:7.1f} rad/s   AFDD {afdd[key]:7.1f} rad/s   ratio {fe / afdd[key]:.2f}")
+        if modes:
+            print(f"  symmetric {kind:<8} FE {fe:7.1f} rad/s   AFDD {afdd[key]:7.1f} rad/s   ratio {fe / afdd[key]:.2f}")
     allowable = r["material_wing"]["strain_ultimate"]
     print(f"Jump take-off (ultimate, {force_jump_N / 1e3:.1f} kN up at each spindle): tip deflection "
           f"{deflection_m:.3f} m, spanwise cap strain 0.3-1.0 m outboard of the clamp {strain_max:.5f} vs AFDD "
@@ -90,4 +109,5 @@ if __name__ == "__main__":
         modes=[dict(frequency_rad_s=m.frequency_rad_s, kind=m.kind, symmetric=m.symmetric) for m in modes],
         comparison=[dict(kind=k, fe_rad_s=fe, afdd_rad_s=a) for k, fe, a in rows],
         deflection_tip_jump_m=deflection_m, strain_max_jump=strain_max, strain_allowable=allowable,
+        load_carrying_share=args.load_carrying_share, factor_load_carrying=factor_load_carrying,
         thickness_box_m=properties.thickness_box_m, thickness_cap_pad_m=properties.thickness_cap_pad_m), indent=1))
