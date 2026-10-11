@@ -31,6 +31,10 @@ class HaloHeatExchangerOptionTests(unittest.TestCase):
         masses = dict((i.instance_name, i.mass_properties.mass) for i in aircraft.powertrain.get_instance_mass_properties())
         self.assertAlmostEqual(masses["heat_exchanger"], cooler.get_mass())
         self.assertAlmostEqual(cooler.mass_breakdown().mass_fans_kg, 12e3 / a.specific_power_fan_heat_exchanger_W_kg)
+        # Plan 051: the estimate stays the default; "published" reaches the installed cooler.
+        self.assertEqual(cooler.allowances, "estimate")
+        published = build_halo_aircraft(design, assumptions=replace(a, allowances_heat_exchanger="published"))
+        self.assertEqual(published.powertrain.cooling.heat_exchanger.allowances, "published")
 
     def test_unknown_model_rejected(self):
         with self.assertRaises(ValueError):

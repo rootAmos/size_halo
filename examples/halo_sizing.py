@@ -409,6 +409,9 @@ class HaloAssumptions:
     specific_power_fan_heat_exchanger_W_kg: float = 2000.0  # "ntu": fan, motor and controller (author estimate)
     mass_duct_per_area_heat_exchanger_kg_m2: float = 12.0  # "ntu": inlet, diffuser, nozzle per m2 core face (estimate)
     mass_pump_pipes_heat_exchanger_kg: float = 30.0        # "ntu": pump, lines to the tips, loop coolant (estimate)
+    # Plan 051: "estimate" (the 30 kg above) or "published" (pump and lines from OpenConcept's models; ducts and fans
+    # keep the estimates, which no source replaces).
+    allowances_heat_exchanger: str = "estimate"
     # ---- Tier 18 redundancy (plan 032) ----
     # True: `count_lanes_motor` lane motors per rotor (each 1/N of the torque, on a combining gearbox input),
     # `count_buses` cross-strapped buses joined by normally open ties (contactor + cable), `count_strings_battery`
@@ -952,7 +955,8 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                 mass_flow_coolant_kg_s=a.mass_flow_coolant_heat_exchanger_kg_s,
                 specific_power_fan_W_kg=a.specific_power_fan_heat_exchanger_W_kg,
                 mass_duct_per_area_kg_m2=a.mass_duct_per_area_heat_exchanger_kg_m2,
-                mass_pump_pipes_kg=a.mass_pump_pipes_heat_exchanger_kg),
+                mass_pump_pipes_kg=a.mass_pump_pipes_heat_exchanger_kg,
+                allowances=a.allowances_heat_exchanger),
                 d.count_wide_heat_exchanger, d.count_long_heat_exchanger, d.count_tall_heat_exchanger,
                 d.area_nozzle_heat_exchanger_m2, d.power_rated_fan_heat_exchanger_W)
         else:
