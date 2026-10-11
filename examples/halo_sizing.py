@@ -182,6 +182,10 @@ class HaloAssumptions:
     # Tier 12: momentum + profile rotor calibrated on JVX (rotor speed, solidity and tip speed matter); False
     # restores the Tier 10c actuator disk with the two constant coefficients above.
     rotor_speed_physics: bool = True
+    # Plan 047: lower bound on the solidity design variable. 0.06 is the original bound; the blade-element design
+    # (examples/halo_blade_design.py) finds 0.067 is the least solidity that hovers at the sizing's figure of merit
+    # with a 2 deg section stall margin outboard of 0.4 R.
+    solidity_min: float = 0.06
     # Plan 017 (decided 2026-10-03): off-the-shelf turboshafts, power fixed by the engine deck (1,120 hp SLS, the
     # user-supplied GASP_TS deck); a non-OEM cannot raise power available. None restores a sized (rubber) engine.
     power_rated_turboshaft_fixed_W: Any = 1120 * u.hp
@@ -1146,7 +1150,7 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         speed_sound_sea_level_m_s = asb.Atmosphere(altitude=0).speed_of_sound()
         design = replace(design,
                          solidity=opti.variable(init_guess=guess.solidity if guess.solidity is not None else 0.10,
-                                                lower_bound=0.06, upper_bound=0.14),
+                                                lower_bound=a.solidity_min, upper_bound=0.14),
                          speed_tip_m_s=opti.variable(
                              init_guess=guess.speed_tip_m_s if guess.speed_tip_m_s is not None else 220.0, scale=100.0,
                              lower_bound=150.0, upper_bound=a.mach_tip_hover_max * speed_sound_sea_level_m_s))
