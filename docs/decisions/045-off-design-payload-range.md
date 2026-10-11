@@ -83,6 +83,9 @@ mass_payload_kg=..., ...)` maximizes range at that payload. `payload_range_diagr
   (restoration) from the sized point and solves when chained from the 25 % payload point; the ferry at free speeds
   likewise. `examples/halo_payload_range.py` runs the points (one coupled solve each, about 1-2 min) and draws
   `docs/figures/payload_range.png`. Starting reference: the cached v3.6 solve (6,885 kg, 15,179 lb).
+- 2026-10-11: verification. `tests.integration.test_halo_payload_range` 6 tests OK (270 s);
+  `tests.integration.test_halo_sizing` 15 tests OK (default and payload objectives through the split solve); the
+  default sizing re-solved from the cached reference returns 6,885.064 kg, identical to the reference (108 s).
 
 ### Results (v3.6 reference: MTOW 6,885 kg, empty 5,049 kg, tanks 936 kg)
 
