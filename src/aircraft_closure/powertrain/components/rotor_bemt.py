@@ -115,6 +115,7 @@ class SectionSchedule:
     model_size: str = "medium"
     angle_zero_lift_deg: float = -1.66       # NACA 64A210 camber line, NeuralFoil at Re 5e6
     fraction_chord_transition: float = 0.05  # forced transition x/c, both surfaces: full-scale blades run turbulent
+    n_crit: float = 9.0                      # e^N amplification for free transition (inflow turbulence; Mack: 1 % -> 2.6)
     lift_design: tuple = None                # design lift coefficient at `fraction_radius`; None: base camber
     mean_line_a: float = 0.3
 
@@ -232,6 +233,7 @@ class BladeElementRotor:
             aero = airfoil.get_aero_from_neuralfoil(alpha=alpha_deg[i], Re=reynolds[i], mach=mach[i],
                                                     xtr_upper=self.sections.fraction_chord_transition,
                                                     xtr_lower=self.sections.fraction_chord_transition,
+                                                    n_crit=self.sections.n_crit,
                                                     model_size=self.sections.model_size)
             cl_list.append(aero["CL"])
             cd_list.append(aero["CD"])

@@ -104,6 +104,41 @@ an independent check. The drag factor stays at the JVX fit (0.964), so the XV-15
     numbers are the weaker evidence. A hub/spinner force convention in "propulsive force" and the reading error
     may account for the rest.
 
+## Airplane-mode offset: model settings and laminar flow
+
+The XV-15 airplane-mode curves are consistently low. Checked at three test thrusts, 160 kt and 600 ft/s (J 1.41):
+
+| Setting | Effect on efficiency | Verdict |
+|---|---|---|
+| Stations 16 / 24 / 48 | identical to 3 decimals | converged |
+| Hub loss off | none | ruled out |
+| Stall delay off, tip loss off | +0.01 to +0.02 each | small |
+| Twist (1971 blade, CR-114363 fig. IV-1) | matches the 1985 blade within about 1 deg | ruled out |
+| Tunnel wall (Glauert) | about 0.15 % on speed | ruled out |
+| Zero profile drag | 0.938 at the 0.940 test point | the test point equals a drag-free rotor |
+
+Laminar flow, with free transition from NeuralFoil (pressure gradient per section) and the new
+`SectionSchedule.n_crit` standing in for inflow turbulence:
+
+| Transition | XV-15 hover FM (C_T/sigma 0.06 / 0.10) | XV-15 airplane (3 points) | JVX hover FM | JVX airplane, lambda 0.52 |
+|---|---|---|---|---|
+| Test | 0.665 / 0.775 | 0.731 / 0.874 / 0.940 | 0.675 / 0.794 | 0.629 / 0.864 / 0.866 |
+| Forced 5 % (default) | 0.686 / 0.804 | 0.699 / 0.827 / 0.867 | 0.665 / 0.802 | 0.679 / 0.872 / 0.871 |
+| Free, n_crit 9 | 0.764 / 0.845 | 0.778 / 0.875 / 0.900 | 0.719 / 0.832 | 0.770 / 0.911 / 0.911 |
+| Free, n_crit 1 | 0.708 / 0.812 | 0.725 / 0.844 / 0.881 | 0.680 / 0.809 | 0.709 / 0.885 / 0.884 |
+
+- **Hover is turbulent on both rotors.** Even n_crit 1 is 0.03-0.04 high in FM.
+- **XV-15 airplane mode fits laminar flow.** This is the expected physics: low section lift, clean inflow and
+  lower Reynolds number than hover.
+- **JVX airplane mode does not.** Free transition makes it 0.04-0.09 high, while forced transition matches.
+- **So the effect is blade-specific, not a mode rule.** A plausible cause is 1971 smooth metal blades against JVX
+  blades with leading-edge protection or roughness, but that is unconfirmed.
+- **Even laminar does not fix the shape.** The 1971 points rise more steeply with C_P than any model curve, which
+  points to scatter or a data-definition issue (propulsive force, torque station).
+
+**Decision:** keep forced 5 % transition, the JVX calibration, as the default. Laminar flow in cruise is the
+optimistic bound: about +0.04-0.05 in cruise efficiency for a blade that holds it.
+
 ## Tests
 
 `tests/integration/test_xv15_bemt.py` (4 tests, about 25 s):
