@@ -39,6 +39,7 @@ from typing import Any
 import aerosandbox as asb
 import aerosandbox.numpy as np
 import aerosandbox.tools.units as u
+import casadi as cas
 from aerosandbox.library.power_turboshaft import power_turboshaft, thermal_efficiency_turboshaft
 
 from aircraft_closure.aerodynamics.trim import TailTrim
@@ -1052,11 +1053,14 @@ class HaloSizingResult:
     # current, its smallest margin and its binding margins.
     count_lanes_motor: int = 1
     failure_cases: tuple = ()
+    # Plans 044 and 045: the mission range flown (a variable with objective "range", else the requirement), and the
+    # CG offset from the hover trim point (wing quarter chord); zero at sizing, reported off-design where the trim is
+    # not a constraint.
+    range_m: Any = None
+    offset_cg_trim_m: Any = None
     # Plan 043 ("afdd_tiltrotor" wing): ultimate jump take-off spar-cap strain at the critical station (beam, peak,
     # allowable, margin = 1 - peak / allowable), the load-carrying factor on the AFDD areas and the added cap area.
     wing_strain: Any = None
-    # Plan 044: the mission range (a variable with objective "range", else the requirement).
-    range_m: Any = None
 
 
 def factor_load_carrying_wing(wing, assumptions):
@@ -1167,10 +1171,21 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
 
 
 def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None,
-                           verbose=False, max_iter=3000, initial=None, objective="mass_takeoff"):
-    """One coupled solve from `initial` (None: the generic guess). Raises RuntimeError if IPOPT fails."""
+                           verbose=False, max_iter=3000, initial=None, objective="mass_takeoff", off_design=None):
+    """One coupled solve from `initial` (None: the generic guess). Raises RuntimeError if IPOPT fails.
+
+    `off_design` (plan 045, an `OffDesign`): fly the sized aircraft `off_design.sized` instead of sizing one; its
+    design is frozen and `initial` is ignored. Objective "payload" then maximizes payload at `requirements.range_m`,
+    "range" maximizes the range at `requirements.mass_payload_kg` (see `solve_halo_off_design`). Without
+    `off_design`, objective "range" sizes the aircraft for maximum range at the required payload (plan 044)."""
     if objective not in objectives:
         raise ValueError(f"Unknown objective '{objective}'.")
+    if off_design is not None and objective not in ("payload", "range"):
+        raise ValueError("An off-design solve maximizes payload or range.")
+    if off_design is not None:
+        initial = off_design.sized
+    # Operating guesses (take-off mass, payload, fuel, range): an earlier off-design point if given (plan 045).
+    start = off_design.start if off_design is not None and off_design.start is not None else initial
     factors = factors if factors is not None else calibration_factors()
     lapse_exponent = fit_lapse_exponent()
     a, r = assumptions, requirements
@@ -1184,12 +1199,56 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         torque_peak_motor_Nm=2500.0, torque_peak_generator_Nm=2000.0, power_rated_turboshaft_W=1.0e6,
         mass_turboshaft_bare_kg=230.0, power_max_discharge_battery_W=1.0e6, energy_capacity_battery_J=1.8e8,
         area_disk_m2=40.0, mass_fuel_kg=1000.0)
-    mass_takeoff_kg = opti.variable(init_guess=initial.mass_takeoff_kg if initial else 6000.0, scale=1000.0,
+    mass_takeoff_kg = opti.variable(init_guess=start.mass_takeoff_kg if start else 6000.0, scale=1000.0,
                                     lower_bound=1000.0)
     lanes = count_lanes_motor(assumptions)
     if initial is not None and initial.count_lanes_motor != lanes:
         # Tier 18: a start with a different lane count keeps its total motor torque per rotor.
         guess = replace(guess, torque_peak_motor_Nm=guess.torque_peak_motor_Nm * initial.count_lanes_motor / lanes)
+    if off_design is None:
+        design = halo_design_variables(opti, guess, initial, a, r)
+    else:
+        # Plan 045: the sized aircraft, frozen; only the fuel loaded is free (tank limit as a margin below).
+        design = replace(guess, mass_fuel_kg=opti.variable(init_guess=start.mass_fuel_kg, scale=500.0,
+                                                           lower_bound=0.0))
+    if a.wing_section_model == "family":
+        # Plan 046: aircraft maximum lift scaled with the section's (NeuralFoil surrogate, 1 at the base section).
+        thickness_wing, camber_wing, _ = halo_wing_section(design, a)
+        aerodynamics = replace(aerodynamics,
+                               cl_max=r.cl_max * SectionClMaxSurrogate().ratio(thickness_wing, camber_wing))
+    soc_reserve = design.soc_reserve if design.soc_reserve is not None else soc_minimum
+    altitude_cruise_m = design.altitude_cruise_m if design.altitude_cruise_m is not None else r.altitude_cruise_m
+    if objective == "range":
+        # Plans 044 and 045: the mission range is the free quantity (take-off to landing ground distance; the cruise
+        # distance follows it); the payload stays the required one.
+        range_start_m = getattr(start, "range_m", None) if start is not None else None
+        r = replace(r, range_m=opti.variable(init_guess=range_start_m if range_start_m is not None else r.range_m,
+                                             scale=1e5, lower_bound=0.0 if off_design is not None else 100e3))
+    if off_design is not None and off_design.hold_speeds:
+        velocities = dict(velocity_cruise_m_s=initial.velocity_cruise_m_s,
+                          velocity_loiter_m_s=initial.velocity_loiter_m_s)
+    else:
+        velocities = dict(velocity_cruise_m_s=opti.variable(
+            init_guess=initial.velocity_cruise_m_s if initial else 110.0, scale=50.0, lower_bound=60.0,
+            upper_bound=r.velocity_max_m_s), velocity_loiter_m_s=opti.variable(
+            init_guess=initial.velocity_loiter_m_s if initial else 80.0, scale=50.0, lower_bound=55.0,
+            upper_bound=r.velocity_max_m_s))
+    mission = halo_mission(replace(r, altitude_cruise_m=altitude_cruise_m), **velocities)
+
+    # ---- Aircraft, mission, requirements ----------------------------------------------
+    if objective == "payload":
+        mass_payload_kg = opti.variable(init_guess=start.mass_payload_kg if start else 600.0, scale=100.0,
+                                        lower_bound=0.0)
+        r = replace(r, mass_payload_kg=mass_payload_kg)
+    aircraft = build_halo_aircraft(design, r, a, factors, lapse_exponent)
+    return _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerodynamics, longitudinal,
+                               directional, soc_reserve, altitude_cruise_m, r, a, objective, off_design, verbose,
+                               max_iter)
+
+
+def halo_design_variables(opti, guess, initial, assumptions, requirements):
+    """The sizing's design variables (HaloDesign of Opti variables), started from `guess`."""
+    a, r = assumptions, requirements
     is_ecm = a.battery_model == "ecm"
     is_ntu = a.heat_exchanger_model == "ntu"
     design = HaloDesign(
@@ -1298,31 +1357,17 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         design = replace(design, camber_wing=opti.variable(
             init_guess=guess.camber_wing if guess.camber_wing is not None else a.camber_wing, scale=0.01,
             lower_bound=low, upper_bound=high))
-    cl_max = r.cl_max
-    if a.wing_section_model == "family":
-        # Plan 046: aircraft maximum lift scaled with the section's (NeuralFoil surrogate, 1 at the base section).
-        thickness_wing, camber_wing, _ = halo_wing_section(design, a)
-        cl_max = r.cl_max * SectionClMaxSurrogate().ratio(thickness_wing, camber_wing)
-        aerodynamics = replace(aerodynamics, cl_max=cl_max)
-    soc_reserve = design.soc_reserve if design.soc_reserve is not None else soc_minimum
-    altitude_cruise_m = design.altitude_cruise_m if design.altitude_cruise_m is not None else r.altitude_cruise_m
-    if objective == "range":
-        # Plan 044: the mission range is a variable (the cruise distance follows it); the payload stays required.
-        r = replace(r, range_m=opti.variable(init_guess=initial.range_m if initial is not None
-                                             and getattr(initial, "range_m", None) is not None else r.range_m,
-                                             scale=1e5, lower_bound=100e3))
-    mission = halo_mission(replace(r, altitude_cruise_m=altitude_cruise_m), velocity_cruise_m_s=opti.variable(
-        init_guess=initial.velocity_cruise_m_s if initial else 110.0, scale=50.0, lower_bound=60.0,
-        upper_bound=r.velocity_max_m_s), velocity_loiter_m_s=opti.variable(
-        init_guess=initial.velocity_loiter_m_s if initial else 80.0, scale=50.0, lower_bound=55.0,
-        upper_bound=r.velocity_max_m_s))
+    return design
 
-    # ---- Aircraft, mission, requirements ----------------------------------------------
-    if objective == "payload":
-        mass_payload_kg = opti.variable(init_guess=initial.mass_payload_kg if initial else 600.0, scale=100.0,
-                                        lower_bound=0.0)
-        r = replace(r, mass_payload_kg=mass_payload_kg)
-    aircraft = build_halo_aircraft(design, r, a, factors, lapse_exponent)
+
+def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerodynamics, longitudinal, directional,
+                        soc_reserve, altitude_cruise_m, requirements, assumptions, objective, off_design, verbose,
+                        max_iter):
+    """The coupled mission, requirements, closure and solve of `solve_halo_sizing_once` (split out for plan 045)."""
+    r, a = requirements, assumptions
+    is_ecm = a.battery_model == "ecm"
+    is_afdd_wing = a.wing_weight_model == "afdd_tiltrotor"
+    lanes = count_lanes_motor(a)
     instances = aircraft.powertrain.topology.instances
     battery = instances["battery"].component
     if is_ecm:
@@ -1386,10 +1431,15 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
                                    take_off_end_C if thermal else None) if a.redundancy else ()
 
     # ---- Mass closure ------------------------------------------------------------------
-    condition = StructuralDesignCondition(mass_design_kg=mass_takeoff_kg, load_factor_ultimate=a.load_factor_ultimate,
-                                          velocity_cruise_m_s=cruise.segment.velocity_m_s,
-                                          altitude_cruise_m=altitude_cruise_m,
-                                          lift_to_drag_cruise=cruise.point.aero.lift_to_drag)
+    if off_design is None:
+        condition = StructuralDesignCondition(mass_design_kg=mass_takeoff_kg,
+                                              load_factor_ultimate=a.load_factor_ultimate,
+                                              velocity_cruise_m_s=cruise.segment.velocity_m_s,
+                                              altitude_cruise_m=altitude_cruise_m,
+                                              lift_to_drag_cruise=cruise.point.aero.lift_to_drag)
+    else:
+        # Plan 045: the structure was sized at the design gross weight and the sized cruise, whatever is flown now.
+        condition = off_design.structural_condition(a, altitude_cruise_m)
     breakdown = aircraft.get_mass_breakdown(condition)
     total = breakdown.total()
     x_cg_m = total.x_cg
@@ -1400,7 +1450,8 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
     radius_m = instances["propulsor"].component.radius_m()
     span_m = aircraft.wing.span_m()
     density_sea_level_kg_m3 = asb.Atmosphere(altitude=0).density()
-    lift_stall_N = 0.5 * density_sea_level_kg_m3 * r.velocity_stall_max_m_s**2 * design.area_wing_m2 * cl_max
+    lift_stall_N = (0.5 * density_sea_level_kg_m3 * r.velocity_stall_max_m_s**2 * design.area_wing_m2
+                    * aerodynamics.cl_max)    # plan 046: scaled with the section when it is a design variable
     weight_N = mass_takeoff_kg * acceleration_gravity_m_s2
 
     design_margins = (
@@ -1446,13 +1497,26 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         all_margins += hover_hot.margins + (
             margin_above("soc_after_hot_day_hover", soc_after_hover_hot, soc_emergency_floor),)
 
-    opti.subject_to([
-        mass_takeoff_kg / total.mass == 1,                                           # mass closure
-        x_cg_m == aircraft.wing.x_le_root_m + 0.25 * aircraft.wing.chord_root_m(),   # hover pitch trim
-        design.mass_fuel_kg == fuel_factor * flown.mass_fuel_burnt_kg,               # fuel with reserve
-        power_turboshaft(design.mass_turboshaft_bare_kg) / design.power_rated_turboshaft_W == 1,  # engine regression
-    ])
-    opti.subject_to([m.value >= 0 for m in all_margins])
+    if off_design is None:
+        opti.subject_to([
+            mass_takeoff_kg / total.mass == 1,                                           # mass closure
+            x_cg_m == aircraft.wing.x_le_root_m + 0.25 * aircraft.wing.chord_root_m(),   # hover pitch trim
+            design.mass_fuel_kg == fuel_factor * flown.mass_fuel_burnt_kg,               # fuel with reserve
+            power_turboshaft(design.mass_turboshaft_bare_kg) / design.power_rated_turboshaft_W == 1,  # engine regr.
+        ])
+    else:
+        # Plan 045: the frozen aircraft's limits; the CG trim and the engine regression held at sizing (fixed
+        # numbers now; the CG is reported, payload and fuel sit at the rotor station).
+        opti.subject_to([
+            mass_takeoff_kg / total.mass == 1,                                           # mass closure
+            design.mass_fuel_kg == fuel_factor * flown.mass_fuel_burnt_kg,               # fuel with reserve
+        ])
+        all_margins += off_design.margins(mass_takeoff_kg, design.mass_fuel_kg, r.mass_payload_kg)
+    if off_design is None:
+        opti.subject_to([m.value >= 0 for m in all_margins])
+    else:
+        # Margins of the frozen design alone (e.g. rotor clearance) are numbers: reported, not constrained.
+        opti.subject_to([m.value >= 0 for m in all_margins if depends_on_variables(opti, m.value)])
     # ---- Cost per mission (Tier 22) -----------------------------------------------------------
     motor_component, generator_component = instances["motor"].component, instances["generator"].component
     turboshaft_component = instances["turboshaft"].component
@@ -1542,6 +1606,8 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
             value) if thermal else (),
         heat_exchanger=heat_exchanger_summary(aircraft.powertrain, value) if thermal else None,
         count_lanes_motor=lanes,
+        range_m=value(r.range_m),
+        offset_cg_trim_m=value(x_cg_m - aircraft.wing.x_le_root_m - 0.25 * aircraft.wing.chord_root_m()),
         wing_strain=dict(strain_beam=value(strain_beam_wing), strain_peak=value(strain_peak_wing),
                          strain_allowable=float(strain_allowable_wing),
                          margin=1 - value(strain_peak_wing) / float(strain_allowable_wing),
@@ -1549,7 +1615,6 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
                          area_spar_added_m2=value(design.area_spar_strain_m2)
                          if design.area_spar_strain_m2 is not None else 0.0) if is_afdd_wing else None,
         failure_cases=tuple(failure_summary(label, failure, instances, value) for label, failure in failures),
-        range_m=value(r.range_m),
     )
 
 
@@ -2039,6 +2104,98 @@ assumptions_tier11a = replace(assumptions_tier12, rotor_speed_physics=False)
 # Tier 15 (plan 023): the reference with the electrical layer (756 V nominal pack, 1,200 V inverters).
 assumptions_tier15 = HaloAssumptions(**pre_plan035, **pre_layout, electrical_layer=True, thermal_model=False)
 standard_blocking_voltages_V = (650.0, 1200.0, 1700.0, 3300.0)
+
+
+@dataclass(frozen=True)
+class OffDesign:
+    """Plan 045: the sized aircraft `sized` (a HaloSizingResult), frozen, flown off-design.
+
+    The structure, wing, rotor, drive, machines (unit counts included), battery and engines keep their sized values;
+    the weight correlations are evaluated at the design gross weight `mass_design_kg` and the sized cruise. The
+    operating take-off mass, payload, fuel loaded and range are free within the limits below (margins):
+    take-off mass <= `mass_design_kg`; fuel loaded <= `capacity_fuel_kg` (None: no tank limit, the "larger tanks"
+    case); payload <= `capacity_payload_kg` (None: no cabin limit). `hold_speeds`: cruise and loiter at the sized
+    speeds (False: free, as in the sizing)."""
+    sized: Any
+    mass_design_kg: float
+    capacity_fuel_kg: Any
+    capacity_payload_kg: Any
+    hold_speeds: bool = True
+    start: Any = None                 # an earlier off-design HaloSizingResult: guesses for mass, fuel, range
+
+    @classmethod
+    def of(cls, sized, larger_tanks=False, hold_speeds=True, start=None):
+        """Limits of the sized aircraft: MTOW, tanks holding the design fuel (or unlimited), the design payload."""
+        return cls(sized, sized.mass_takeoff_kg, None if larger_tanks else sized.mass_fuel_kg, sized.mass_payload_kg,
+                   hold_speeds, start)
+
+    def structural_condition(self, assumptions, altitude_cruise_m):
+        return StructuralDesignCondition(mass_design_kg=self.mass_design_kg,
+                                         load_factor_ultimate=assumptions.load_factor_ultimate,
+                                         velocity_cruise_m_s=self.sized.velocity_cruise_m_s,
+                                         altitude_cruise_m=altitude_cruise_m,
+                                         lift_to_drag_cruise=self.sized.lift_to_drag_cruise)
+
+    def margins(self, mass_takeoff_kg, mass_fuel_kg, mass_payload_kg):
+        margins = (margin_below("take-off mass to design gross weight", mass_takeoff_kg, self.mass_design_kg),)
+        if self.capacity_fuel_kg is not None:
+            margins += (margin_below("fuel to tank capacity", mass_fuel_kg, self.capacity_fuel_kg),)
+        if self.capacity_payload_kg is not None:
+            margins += (margin_below("payload to payload capacity", mass_payload_kg, self.capacity_payload_kg),)
+        return margins
+
+
+def depends_on_variables(opti, expression):
+    """True if `expression` depends on a decision variable of `opti` (False for numbers and constants)."""
+    if not isinstance(expression, cas.MX):
+        return False
+    return bool(cas.depends_on(expression, opti.x))
+
+
+def assumptions_off_design(sized, assumptions):
+    """Plan 035 machine units of the sized aircraft fixed (the counts its solve used)."""
+    if assumptions.machine_mass_model != "units" or sized.machine_units is None:
+        return assumptions
+    counts = {name: n for name, (n, _) in sized.machine_units.items()}
+    return replace(assumptions, count_units_motor=counts["motor"], count_units_generator=counts["generator"])
+
+
+@dataclass(frozen=True)
+class OffDesignPoint:
+    """One off-design solve (plan 045): what was asked, what was found, and the full solve."""
+    range_nm: float
+    mass_payload_kg: float
+    mass_takeoff_kg: float
+    mass_fuel_kg: float               # loaded (1.1 x burnt)
+    mass_fuel_burnt_kg: float
+    mass_empty_kg: float
+    objective: str                    # "payload" (max payload at the range) or "range" (max range at the payload)
+    larger_tanks: bool
+    result: Any                       # HaloSizingResult of the off-design solve
+
+
+def solve_halo_off_design(sized, range_nm=None, mass_payload_kg=None, requirements=HaloRequirements(),
+                          assumptions=HaloAssumptions(), larger_tanks=False, hold_speeds=True, start=None,
+                          factors=None, verbose=False, max_iter=3000):
+    """Plan 045: fly the sized aircraft `sized` (HaloSizingResult of `requirements`, `assumptions`) off-design.
+
+    Give `range_nm` for the maximum payload over that range, or `mass_payload_kg` for the maximum range with that
+    payload. Take-off mass at or below the sized MTOW, fuel at or below the tank capacity (the sized fuel mass;
+    `larger_tanks`: no tank limit), payload at or below the sized payload. One coupled solve from the sized point;
+    `start` (an earlier OffDesignPoint) gives the guesses for take-off mass, payload, fuel and range."""
+    if (range_nm is None) == (mass_payload_kg is None):
+        raise ValueError("Give either range_nm (maximum payload) or mass_payload_kg (maximum range).")
+    objective = "payload" if range_nm is not None else "range"
+    r = replace(requirements, range_m=range_nm * u.naut_mile) if range_nm is not None else replace(
+        requirements, range_m=sized.range_m if sized.range_m is not None else requirements.range_m,
+        mass_payload_kg=mass_payload_kg)
+    off_design = OffDesign.of(sized, larger_tanks, hold_speeds, start.result if start is not None else None)
+    result = solve_halo_sizing_once(r, assumptions_off_design(sized, assumptions), factors, verbose, max_iter,
+                                    objective=objective, off_design=off_design)
+    return OffDesignPoint(range_nm=result.range_m / u.naut_mile, mass_payload_kg=result.mass_payload_kg,
+                          mass_takeoff_kg=result.mass_takeoff_kg, mass_fuel_kg=result.mass_fuel_kg,
+                          mass_fuel_burnt_kg=result.mass_fuel_burnt_kg, mass_empty_kg=result.mass_empty_kg,
+                          objective=objective, larger_tanks=larger_tanks, result=result)
 
 
 def solve_halo_max_payload(requirements=HaloRequirements(), assumptions=HaloAssumptions(), initial=None, **kwargs):

@@ -160,7 +160,8 @@ package** that kicks off the specialist team. Approach and effort: [docs/NEXT_ST
   example the engine-out hover battery voltage, the bus-out motor torque, or the hot-day heat rejection.
 
 **Limits**
-- Performance is computed at the design mission only; there is no payload-range diagram or endurance yet.
+- Off-design performance: the sized aircraft can be flown at any payload and range (`solve_halo_off_design`,
+  plan 045, payload-range diagram below); endurance is not computed yet.
 - The baseline carries no weight margin: it is sized to the basic estimate, without growth allowance.
 
 **Work package: weights and performance**
@@ -173,10 +174,12 @@ package** that kicks off the specialist team. Approach and effort: [docs/NEXT_ST
   - Secure the installed turbine power with the engine supplier, and set the maximum take-off weight from what it
     delivers in the critical hover.
   - Size payload, battery and margin within that limit.
-  - Re-solve the fixed aircraft off-design for the payload-range diagram and endurance.
+  - Endurance and long-range-cruise schedules on the off-design solve (plan 045 drew the payload-range diagram).
   - Draw the energy flow per segment from the solved powers and losses.
 
 ![Empty mass breakdown](docs/figures/oew_breakdown.png)
+
+![Payload-range of the sized aircraft](docs/figures/payload_range.png)
 
 **Empty-weight prediction: growth allowance, uncertainty and the chance of meeting the target.** Each item of
 the empty-weight build-up carries two separate quantities:
