@@ -86,3 +86,22 @@ schedule. Inputs without a computed impact stay listed as blind spots, never zer
 
 - Sigmas for most inputs are placeholders until owners set them; they are labelled as such, like the gap priors.
 - Correlated inputs (e.g. cell energy density and cell-to-pack from one supplier) are independent at first.
+
+## Results (2026-10-11, Halo reference, re-sized mode, 18 inputs, one solve)
+
+One-solve table against re-solves (`examples/halo_parametric.py`, manifest `ledger/runs/20261011T124255_*`):
+
+| entry | one solve | re-solve | ratio |
+|---|---|---|---|
+| d take-off mass / d cell-to-pack fraction | -1,808 kg | -1,810 kg (central, +-2 %) | 0.999 |
+| d take-off mass / d aspect ratio | -258 kg | -250 kg (forward, +2 %) | 1.03 |
+| d battery energy / d aspect ratio | -2.78e7 J | -2.70e7 J (forward, +2 %) | 1.03 |
+
+Aspect ratio 2 % lower does not close (IPOPT: infeasible): the reference sits on binding limits (rotor clearance
+to the span, engine-out power with the fixed engines), so its aspect-ratio derivative holds upward only. The
+ledger should mark such one-sided inputs.
+
+Fixed-aircraft mode (plan 045 off-design, maximum range) does not converge at 100 % or 90 % payload, with or
+without lifted inputs (diagnostic with nothing lifted: maximum iterations), so the failure is the off-design
+solve at high payload, not the parameters. Open: continue from the half-payload point (`start`), or answer
+"range per input" with the sizing objective "range".
