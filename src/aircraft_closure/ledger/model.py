@@ -145,3 +145,6 @@ class Ledger:
     # Plan 042: what drives each performance output (range, payload, ...) by impact x uncertainty, from one
     # parametric solve: {output key: {label, unit, value, mode, source, date, risks: [...], levers: [...]}}.
     drivers: dict = field(default_factory=dict)
+    # Every continuous model input with its elasticity on each output, re-sized and fixed aircraft (plan 042 --all):
+    # {source, date, outputs: {mode: [keys]}, inputs: [{key, label, group, value, kind, sigma, elasticity}]}.
+    coverage: dict = field(default_factory=dict)

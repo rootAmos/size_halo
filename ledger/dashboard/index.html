@@ -139,6 +139,23 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
     <div class="drivers" id="drivers"></div>
   </section>
 
+  <section class="panel" aria-labelledby="h-cover">
+    <div style="display:grid;gap:4px">
+      <h2 id="h-cover">Every model input</h2>
+      <p class="lede" id="cover-lede">Each continuous input of the sizing with its elasticity (% output per % input) from one solve per mode: re-sized (the mission held, the aircraft re-closes) and fixed (the sized aircraft flown for range). Sort by any column; spreads marked unquantified have no owner estimate yet.</p>
+    </div>
+    <div class="controls">
+      <label for="cover-q" class="sub">Search</label>
+      <input id="cover-q" type="search" placeholder="torque box, drag, battery…" style="font:13px var(--body);color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:5px 8px;min-width:200px">
+      <label for="cover-group" class="sub">Discipline</label>
+      <select id="cover-group"><option value="">All disciplines</option></select>
+      <label for="cover-sort" class="sub">Sort by</label>
+      <select id="cover-sort"></select>
+      <label class="sub"><input type="checkbox" id="cover-used"> only inputs that move something</label>
+    </div>
+    <div class="tablewrap" style="max-height:640px;overflow-y:auto"><table id="cover"></table></div>
+  </section>
+
   <section class="panel" aria-labelledby="h-plan">
     <div style="display:grid;gap:4px">
       <h2 id="h-plan">Twelve months to first flight</h2>
@@ -155,6 +172,8 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
       </div>
       <div class="controls">
         <div class="controls" id="kinds" role="group" aria-label="Filter by decision type"></div>
+        <label for="phase" class="sub">Phase</label>
+        <select id="phase"><option value="">All phases</option></select>
         <label for="owner" class="sub">Owner</label>
         <select id="owner"><option value="">All owners</option></select>
         <label for="sort" class="sub">Sort</label>
@@ -210,15 +229,15 @@ const TYPES = {
   "Increase maturity": { color: "--t-evid", q: "Firm up an estimate before we commit: select, verify, size, lay out, weigh" },
   "Verification": { color: "--t-verif", q: "How we will prove it" },
 };
-const state = { kinds: new Set(Object.keys(TYPES)), owner: "", sort: "value", open: null };
-try { const s = JSON.parse(localStorage.getItem("ledger-view") || "{}"); if (s.sort) state.sort = s.sort; if (s.owner) state.owner = s.owner; } catch (e) {}
+const state = { kinds: new Set(Object.keys(TYPES)), owner: "", phase: "", sort: "value", open: null };
+try { const s = JSON.parse(localStorage.getItem("ledger-view") || "{}"); if (s.sort) state.sort = s.sort; if (s.owner) state.owner = s.owner; if (s.phase) state.phase = s.phase; } catch (e) {}
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const fmt = (kg, d = 0) => kg == null || !isFinite(kg) ? "—" : (kg * LB).toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d });
 const kindColor = k => `var(${(TYPES[k] || TYPES["Increase maturity"]).color})`;
 let V = null;
 
-function remember() { try { localStorage.setItem("ledger-view", JSON.stringify({ sort: state.sort, owner: state.owner })); } catch (e) {} }
+function remember() { try { localStorage.setItem("ledger-view", JSON.stringify({ sort: state.sort, owner: state.owner, phase: state.phase })); } catch (e) {} }
 
 function summary() {
   const p = V.portfolio, b = V.baseline || {};
@@ -238,7 +257,8 @@ function summary() {
 }
 
 function filtered() {
-  let rows = V.priorities.filter(r => state.kinds.has(r.category) && (!state.owner || r.owner === state.owner));
+  let rows = V.priorities.filter(r => state.kinds.has(r.category) && (!state.owner || r.owner === state.owner)
+    && (!state.phase || r.phase === state.phase));
   if (state.sort === "urgency") {
     const u = r => r.value_kg == null ? -1 : r.value_kg / Math.max((r.days_to_lock ?? 3650) / 7, 1);
     rows = rows.slice().sort((a, b) => u(b) - u(a));
@@ -333,6 +353,13 @@ function controls() {
     const k = b.dataset.kind; state.kinds.has(k) ? state.kinds.delete(k) : state.kinds.add(k);
     b.setAttribute("aria-pressed", state.kinds.has(k)); table();
   }));
+  const phases = Object.entries(V.gates || {}).sort((a, b) => a[1].localeCompare(b[1]));
+  if (state.phase && !phases.some(([p]) => p === state.phase)) state.phase = "";
+  $("phase").innerHTML = `<option value="">All phases</option>` + phases.map(([p, d], i) => {
+    const n = V.priorities.filter(r => r.phase === p).length;
+    return `<option value="${esc(p)}"${p === state.phase ? " selected" : ""}>${i + 1}. ${esc(p)} (${n}, locks ${esc(d)})</option>`;
+  }).join("");
+  $("phase").onchange = e => { state.phase = e.target.value; remember(); table(); };
   const owners = [...new Set(V.priorities.map(r => r.owner))].sort();
   $("owner").innerHTML = `<option value="">All owners</option>` + owners.map(o => `<option${o === state.owner ? " selected" : ""}>${esc(o)}</option>`).join("");
   $("owner").onchange = e => { state.owner = e.target.value; remember(); table(); };
@@ -460,12 +487,47 @@ function drivers() {
   </div>`).join("");
 }
 
+const COVER_COLUMNS = [
+  ["resized", "mass_takeoff_kg", "Take-off (re-sized)"], ["resized", "mass_empty_kg", "Empty (re-sized)"],
+  ["fixed", "range_m", "Range (fixed)"], ["fixed", "lift_to_drag_cruise", "Cruise L/D (fixed)"],
+  ["resized", "power_hover_take_off_W", "Hover power (re-sized)"], ["resized", "cost_per_mission_usd", "Cost per mission (re-sized)"],
+];
+const coverState = { q: "", group: "", sort: "0", used: true };
+function coverage() {
+  const c = V.coverage || {};
+  const rows = c.inputs || [];
+  if (!rows.length) { $("cover").innerHTML = `<tbody><tr><td class="empty">No coverage table yet: run examples.halo_parametric --all, then examples.halo_war_room.</td></tr></tbody>`; return; }
+  $("cover-lede").textContent = `${rows.length} inputs of the sizing (${esc(c.source || "")}, ${esc(c.date || "")}), each with its elasticity (% output per % input) from one solve per mode: re-sized, where the mission is held and the aircraft re-closes, and fixed, where the sized aircraft flies for range. Sort by any column; inputs marked unquantified have no owner spread yet.`;
+  const groups = [...new Set(rows.map(r => r.group))].sort();
+  if (!$("cover-group").dataset.ready) {
+    $("cover-group").innerHTML = `<option value="">All disciplines</option>` + groups.map(g => `<option>${esc(g)}</option>`).join("");
+    $("cover-sort").innerHTML = COVER_COLUMNS.map((c, i) => `<option value="${i}">${esc(c[2])}</option>`).join("");
+    $("cover-group").dataset.ready = "1";
+    $("cover-q").oninput = e => { coverState.q = e.target.value.toLowerCase(); coverage(); };
+    $("cover-group").onchange = e => { coverState.group = e.target.value; coverage(); };
+    $("cover-sort").onchange = e => { coverState.sort = e.target.value; coverage(); };
+    $("cover-used").checked = coverState.used;
+    $("cover-used").onchange = e => { coverState.used = e.target.checked; coverage(); };
+  }
+  const el = (r, [mode, out]) => { const m = (r.elasticity || {})[mode]; return m && m[out] != null ? m[out] : null; };
+  const col = COVER_COLUMNS[+coverState.sort];
+  let list = rows.filter(r => (!coverState.group || r.group === coverState.group)
+    && (!coverState.q || (r.label + " " + r.key).toLowerCase().includes(coverState.q))
+    && (!coverState.used || COVER_COLUMNS.some(c => Math.abs(el(r, c) || 0) > 1e-4)));
+  list = list.slice().sort((a, b) => Math.abs(el(b, col) || 0) - Math.abs(el(a, col) || 0));
+  const max = Math.max(1e-6, ...list.map(r => Math.max(...COVER_COLUMNS.map(c => Math.abs(el(r, c) || 0)))));
+  const cell = v => v == null ? `<td class="sub">—</td>` : `<td class="num" style="text-align:right;background:color-mix(in srgb, ${v > 0 ? "var(--t-req)" : "var(--accent)"} ${Math.round(40 * Math.min(1, Math.abs(v) / max))}%, transparent)">${v >= 0 ? "+" : ""}${v.toFixed(3)}</td>`;
+  const spread = r => r.kind === "calibration" ? `<span class="sub">calibration</span>` : r.sigma == null ? `<span class="pill warn">unquantified</span>` : `<span class="num">±${(+r.sigma).toPrecision(2)}</span>`;
+  $("cover").innerHTML = `<thead><tr><th>Input</th><th>Discipline</th><th class="num">Value</th><th>Spread</th>${COVER_COLUMNS.map((c, i) => `<th class="num" style="text-align:right${i === +coverState.sort ? ";color:var(--ink)" : ""}">${esc(c[2])}</th>`).join("")}</tr></thead><tbody>${list.map(r =>
+    `<tr><td><div class="item">${esc(r.label)}</div><div class="sub">${esc(r.key)}${r.note ? " · " + esc(r.note) : ""}</div></td><td class="sub">${esc(r.group)}</td><td class="num">${typeof r.value === "number" ? (+r.value).toPrecision(4) : esc(r.value)}</td><td>${spread(r)}</td>${COVER_COLUMNS.map(c => cell(el(r, c))).join("")}</tr>`).join("")}</tbody>`;
+}
+
 function log() {
   const runs = (V.runs || []).slice().reverse();
   $("log").innerHTML = runs.length ? runs.map(r => `<div><span class="num src">${esc(r.date)}</span><span><b>${esc(r.source)}</b> <span class="sub">${esc(r.kind)}</span><br>${esc(r.summary)}</span></div>`).join("") : `<p class="empty">No ingests yet.</p>`;
 }
 
 fetch("view.json", { cache: "no-store" }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(v => {
-  V = v; summary(); drivers(); gantt(); matrix(); controls(); table(); riskMap(); burn(); register(); log();
+  V = v; summary(); drivers(); coverage(); gantt(); matrix(); controls(); table(); riskMap(); burn(); register(); log();
 }).catch(() => { $("meta").textContent = "The ledger view (view.json) did not load. Re-run the ledger export and republish."; });
 </script>

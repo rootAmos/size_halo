@@ -5,7 +5,8 @@ import unittest
 from datetime import date
 from types import SimpleNamespace
 
-from aircraft_closure.ledger.ingest import ingest_drivers, ingest_evidence, ingest_sizing, price_trade
+from aircraft_closure.ledger.ingest import (ingest_coverage, ingest_drivers, ingest_evidence, ingest_sizing,
+                                            price_trade)
 from aircraft_closure.ledger.model import Activity, Evidence, Ledger, Quantity, Trade, TradeOption
 from aircraft_closure.ledger.rank import portfolio, priorities, z_99
 from aircraft_closure.ledger.store import load, save, view
@@ -126,6 +127,17 @@ class IngestTest(unittest.TestCase):
             again = load(path)
         self.assertEqual(view(again, today)["drivers"]["range_m"]["risks"][0]["label"], "Misc drag")
         self.assertEqual(again.runs[-1]["kind"], "drivers")
+
+    def test_coverage_reaches_the_view(self):
+        ledger = two_item_ledger()
+        table = dict(outputs=dict(resized=["mass_takeoff_kg"]),
+                     inputs=[dict(key="assumptions.length_fuselage_m", label="length fuselage m", group="Fuselage and tail",
+                                  value=11.0, kind="setting", sigma=None,
+                                  elasticity=dict(resized=dict(mass_takeoff_kg=0.62)))])
+        ingest_coverage(ledger, table, "plan 042 every-input table", today)
+        coverage = view(ledger, today)["coverage"]
+        self.assertEqual(coverage["inputs"][0]["elasticity"]["resized"]["mass_takeoff_kg"], 0.62)
+        self.assertEqual(coverage["source"], "plan 042 every-input table")
 
 
 if __name__ == "__main__":

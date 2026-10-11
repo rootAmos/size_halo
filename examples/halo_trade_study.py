@@ -48,6 +48,11 @@ def options_for(key, base):
         return [("Graphite-epoxy (baseline)", base), ("Aluminium (the XV-15's)", replace(base, wing_material="aluminium"))]
     if key == "trade.hv_voltage":
         return [(f"{v:,.0f} V floating bus", assumptions_for_bus_voltage(base, v)) for v in (756.0, 540.0, 800.0, 1000.0)]
+    if key == "trade.redundancy_level":
+        return [("2 lanes, 2 buses, 2 strings (today)", base),
+                ("3 battery strings", replace(base, count_strings_battery=3)),
+                ("3 lanes per rotor", replace(base, count_lanes_motor=3)),
+                ("No redundancy layer (single lane, bus, string)", replace(base, redundancy=False))]
     if key == "trade.blade_count":
         return [("3 blades (baseline)", base), ("4 blades", replace(base, count_blades=4))]
     raise KeyError(f"No sizing hook for {key}")

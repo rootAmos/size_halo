@@ -98,6 +98,15 @@ def ingest_drivers(ledger, drivers, source, today=None):
                             summary="top driver of " + "; ".join(tops) if tops else "drivers updated"))
 
 
+def ingest_coverage(ledger, coverage, source, today=None):
+    """Plan 042: replace the every-input table (`Ledger.coverage`) and log it."""
+    today = today or date.today()
+    ledger.coverage = dict(coverage, source=source, date=today.isoformat())
+    count = len(coverage.get("inputs", ()))
+    ledger.runs.append(dict(date=today.isoformat(), source=source, kind="coverage",
+                            summary=f"{count} model inputs with their effect on every output"))
+
+
 def price_trade(ledger, key, options, source, today=None, note=None):
     """Set a trade's options ([TradeOption], the first the reference) from a sizing outside the trade-study runner
     (e.g. a plan's results table), log it and re-rank."""

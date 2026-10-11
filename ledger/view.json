@@ -26,6 +26,42 @@
  "z_99": 2.3263,
  "priorities": [
   {
+   "key": "trade.payload_range",
+   "label": "Mission: payload, range, cruise speed and altitude (900 kg, 445 nm, 210 kt, 10,000 ft)",
+   "kind": "decide trade",
+   "owner": "Chief engineer",
+   "value_kg": 312.32349278903416,
+   "value_low_kg": 209.5753101312977,
+   "value_high_kg": 415.07167544677066,
+   "share": null,
+   "exposure_kg": 102.74818265773646,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 65,
+   "schedule": "",
+   "action": "best option: 800 kg payload (the data has decided it)",
+   "detail": "Requirement: P(better than 900 kg over 445 nm (today)) = 100 %",
+   "category": "Requirement",
+   "phase": "Conceptual design"
+  },
+  {
+   "key": "trade.hover_cases",
+   "label": "Hover cases: hot and high (4,000 ft, 95 F) and engine-out duration",
+   "kind": "decide trade",
+   "owner": "Chief engineer",
+   "value_kg": 276.6925279565714,
+   "value_low_kg": 185.66622010941853,
+   "value_high_kg": 367.71883580372423,
+   "share": null,
+   "exposure_kg": 91.02630784715286,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 65,
+   "schedule": "",
+   "action": "best option: Engine-out hover 30 s (the data has decided it)",
+   "detail": "Requirement: P(better than Hot day 4,000 ft, 95 F; engine-out 60 s (today)) = 100 %",
+   "category": "Requirement",
+   "phase": "Conceptual design"
+  },
+  {
    "key": "trade.delta3",
    "label": "Rotor pitch-flap coupling delta-3 (-18 deg today, the XV-15's)",
    "kind": "decide trade",
@@ -42,6 +78,24 @@
    "detail": "Architecture: P(better than -18 deg (the XV-15's)) = 84 %",
    "category": "Architecture",
    "phase": "Preliminary design"
+  },
+  {
+   "key": "trade.load_factors",
+   "label": "Design loads: ultimate and jump take-off load factors (4.5, 2.0)",
+   "kind": "decide trade",
+   "owner": "Structures",
+   "value_kg": 148.36123565343124,
+   "value_low_kg": 99.55335634816544,
+   "value_high_kg": 197.16911495869704,
+   "share": null,
+   "exposure_kg": 48.80787930526581,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 65,
+   "schedule": "",
+   "action": "best option: Ultimate 4.0 (the data has decided it)",
+   "detail": "Margin policy: P(better than Ultimate 4.5, jump 2.0 (today)) = 100 %",
+   "category": "Margin policy",
+   "phase": "Conceptual design"
   },
   {
    "key": "trade.wing_planform",
@@ -77,6 +131,60 @@
    "action": "Fix bus voltage and architecture; write the electrical load list (conceptual design)",
    "detail": "330 ± 1e+02 kg (handbook or parametric model); take-off spread ±254 kg",
    "category": "Increase maturity",
+   "phase": "Conceptual design"
+  },
+  {
+   "key": "trade.battery_reserve",
+   "label": "Battery reserve and end-of-life sizing (30 % reserve, 80 % capacity)",
+   "kind": "decide trade",
+   "owner": "Chief engineer",
+   "value_kg": 65.61799773183793,
+   "value_low_kg": 44.03098883801789,
+   "value_high_kg": 87.20500662565797,
+   "share": null,
+   "exposure_kg": 21.587008893820045,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 65,
+   "schedule": "",
+   "action": "best option: Reserve loiter 15 min (the data has decided it)",
+   "detail": "Margin policy: P(better than Reserve loiter 20 min (today)) = 100 %",
+   "category": "Margin policy",
+   "phase": "Conceptual design"
+  },
+  {
+   "key": "trade.battery_life",
+   "label": "Battery replacement policy: pack life against end-of-life sizing",
+   "kind": "decide trade",
+   "owner": "Electrical",
+   "value_kg": 63.45135054444582,
+   "value_low_kg": 42.577125242334034,
+   "value_high_kg": 84.32557584655761,
+   "share": null,
+   "exposure_kg": 20.87422530211179,
+   "lock_date": "2030-12-31",
+   "days_to_lock": 1542,
+   "schedule": "",
+   "action": "best option: Replace at 90 % capacity (the data has decided it)",
+   "detail": "Margin policy: P(better than Size for 80 % capacity at end of life (today)) = 100 %",
+   "category": "Margin policy",
+   "phase": "After entry into service"
+  },
+  {
+   "key": "trade.rotor_span",
+   "label": "Rotor diameter against wing span",
+   "kind": "decide trade",
+   "owner": "Configuration",
+   "value_kg": 29.725132351270474,
+   "value_low_kg": 19.94615831034951,
+   "value_high_kg": 39.50410639219144,
+   "share": null,
+   "exposure_kg": 9.778974040920962,
+   "lock_date": "2026-12-15",
+   "days_to_lock": 65,
+   "schedule": "",
+   "action": "best option: Clearance 0.1 m less (the data has decided it)",
+   "detail": "Architecture: P(better than Rotor-fuselage clearance today) = 100 %",
+   "category": "Architecture",
    "phase": "Conceptual design"
   },
   {
@@ -890,42 +998,6 @@
    "phase": "Conceptual design"
   },
   {
-   "key": "trade.rotor_span",
-   "label": "Rotor diameter against wing span",
-   "kind": "blind spot",
-   "owner": "Configuration",
-   "value_kg": null,
-   "value_low_kg": null,
-   "value_high_kg": null,
-   "share": null,
-   "exposure_kg": null,
-   "lock_date": "2026-12-15",
-   "days_to_lock": 65,
-   "schedule": "",
-   "action": "price it with the sizing: clearance_rotor_fuselage_m and the span cap",
-   "detail": "Architecture without option data; moves Rotor radius capped by the span (rotor diameter against span), mass.rotors, mass.wing",
-   "category": "Architecture",
-   "phase": "Conceptual design"
-  },
-  {
-   "key": "trade.battery_reserve",
-   "label": "Battery reserve and end-of-life sizing (30 % reserve, 80 % capacity)",
-   "kind": "blind spot",
-   "owner": "Chief engineer",
-   "value_kg": null,
-   "value_low_kg": null,
-   "value_high_kg": null,
-   "share": null,
-   "exposure_kg": null,
-   "lock_date": "2026-12-15",
-   "days_to_lock": 65,
-   "schedule": "",
-   "action": "price it with the sizing: free_soc_reserve with bounds_soc_reserve; factor_capacity_ageing_battery",
-   "detail": "Margin policy without option data; moves mass.battery, input.capacity_end_of_life",
-   "category": "Margin policy",
-   "phase": "Conceptual design"
-  },
-  {
    "key": "trade.cell_selection",
    "label": "Electric powertrain technology: cells, pack and machines (50G, Evolito, Helix today)",
    "kind": "blind spot",
@@ -941,24 +1013,6 @@
    "action": "price it with the sizing: machine database units (count_units_motor, count_units_generator)",
    "detail": "Technology and material without option data; moves mass.battery, mass.motors, mass.generators, input.cell_to_pack, input.capacity_end_of_life",
    "category": "Technology and material",
-   "phase": "Conceptual design"
-  },
-  {
-   "key": "trade.payload_range",
-   "label": "Mission: payload, range, cruise speed and altitude (900 kg, 445 nm, 210 kt, 10,000 ft)",
-   "kind": "blind spot",
-   "owner": "Chief engineer",
-   "value_kg": null,
-   "value_low_kg": null,
-   "value_high_kg": null,
-   "share": null,
-   "exposure_kg": null,
-   "lock_date": "2026-12-15",
-   "days_to_lock": 65,
-   "schedule": "",
-   "action": "price it with the sizing: HaloRequirements mass_payload_kg, range_m, velocity_max_m_s, altitude_cruise_m",
-   "detail": "Requirement without option data; moves mass.battery",
-   "category": "Requirement",
    "phase": "Conceptual design"
   },
   {
@@ -1070,24 +1124,6 @@
    "phase": "Preliminary design"
   },
   {
-   "key": "trade.hover_cases",
-   "label": "Hover cases: hot and high (4,000 ft, 95 F) and engine-out duration",
-   "kind": "blind spot",
-   "owner": "Chief engineer",
-   "value_kg": null,
-   "value_low_kg": null,
-   "value_high_kg": null,
-   "share": null,
-   "exposure_kg": null,
-   "lock_date": "2026-12-15",
-   "days_to_lock": 65,
-   "schedule": "",
-   "action": "price it with the sizing: HaloRequirements altitude_hover_hot_m, temperature_hover_hot_K, duration_engine_out_hover_s",
-   "detail": "Requirement without option data; moves mass.heat_exchanger, mass.battery, mass.generators",
-   "category": "Requirement",
-   "phase": "Conceptual design"
-  },
-  {
    "key": "trade.weight_margin",
    "label": "Weight margin policy: confidence level and management reserve",
    "kind": "blind spot",
@@ -1102,24 +1138,6 @@
    "schedule": "",
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Margin policy without option data",
-   "category": "Margin policy",
-   "phase": "Conceptual design"
-  },
-  {
-   "key": "trade.load_factors",
-   "label": "Design loads: ultimate and jump take-off load factors (4.5, 2.0)",
-   "kind": "blind spot",
-   "owner": "Structures",
-   "value_kg": null,
-   "value_low_kg": null,
-   "value_high_kg": null,
-   "share": null,
-   "exposure_kg": null,
-   "lock_date": "2026-12-15",
-   "days_to_lock": 65,
-   "schedule": "",
-   "action": "price it with the sizing: load_factor_ultimate, load_factor_jump",
-   "detail": "Margin policy without option data; moves mass.wing, gap.wing_strength",
    "category": "Margin policy",
    "phase": "Conceptual design"
   },
@@ -1265,24 +1283,6 @@
    "action": "owner to estimate each option against a ledger quantity",
    "detail": "Architecture without option data; moves gap.tilt_fittings, mass.rotor_gearboxes, mass.battery",
    "category": "Architecture",
-   "phase": "After entry into service"
-  },
-  {
-   "key": "trade.battery_life",
-   "label": "Battery replacement policy: pack life against end-of-life sizing",
-   "kind": "blind spot",
-   "owner": "Electrical",
-   "value_kg": null,
-   "value_low_kg": null,
-   "value_high_kg": null,
-   "share": null,
-   "exposure_kg": null,
-   "lock_date": "2030-12-31",
-   "days_to_lock": 1542,
-   "schedule": "",
-   "action": "price it with the sizing: factor_capacity_ageing_battery",
-   "detail": "Margin policy without option data; moves mass.battery, input.capacity_end_of_life",
-   "category": "Margin policy",
    "phase": "After entry into service"
   },
   {
@@ -2930,24 +2930,6 @@
  "runs": [
   {
    "date": "2026-10-09",
-   "source": "Halo sizing (baseline)",
-   "kind": "sizing",
-   "summary": "take-off 6,885 kg, growth factor 2.54, 14 binding limits"
-  },
-  {
-   "date": "2026-10-09",
-   "source": "Halo sizing (baseline)",
-   "kind": "sizing",
-   "summary": "take-off 6,885 kg, growth factor 2.54, 14 binding limits"
-  },
-  {
-   "date": "2026-10-09",
-   "source": "central difference ±0.02, Halo sizing",
-   "kind": "sensitivity",
-   "summary": "Drag excrescence factor on AeroBuildup: 337 take-off kg per -"
-  },
-  {
-   "date": "2026-10-09",
    "source": "central difference ±0.01, Halo sizing",
    "kind": "sensitivity",
    "summary": "Cell-to-pack mass fraction: -1650 take-off kg per -"
@@ -3083,6 +3065,48 @@
    "source": "plan 042 fixed aircraft, 80 % payload (36f08aa)",
    "kind": "drivers",
    "summary": "top driver of Range: Miscellaneous drag area; Cruise L/D: Miscellaneous drag area"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "coverage",
+   "summary": "129 model inputs with their effect on every output"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Design loads: ultimate and jump take-off load factors (4.5, 2.0): 4 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Hover cases: hot and high (4,000 ft, 95 F) and engine-out duration: 4 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Mission: payload, range, cruise speed and altitude (900 kg, 445 nm, 210 kt, 10,000 ft): 5 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Battery reserve and end-of-life sizing (30 % reserve, 80 % capacity): 3 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Battery replacement policy: pack life against end-of-life sizing: 3 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Rotor diameter against wing span: 2 options priced"
   }
  ],
  "history": [
@@ -4785,6 +4809,414 @@
      "value_kg": 6.29
     }
    ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 21.58
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 14.77
+    },
+    {
+     "key": "gap.whirl_flutter",
+     "value_kg": 14.71
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 9.52
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 9.2
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 7.82
+    },
+    {
+     "key": "mass.battery",
+     "value_kg": 7.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 21.58
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 14.77
+    },
+    {
+     "key": "gap.whirl_flutter",
+     "value_kg": 14.71
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 9.52
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 9.2
+    },
+    {
+     "key": "gap.conversion_actuators",
+     "value_kg": 7.82
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 21.58
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 14.77
+    },
+    {
+     "key": "gap.whirl_flutter",
+     "value_kg": 14.71
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 9.52
+    },
+    {
+     "key": "gap.coolant_loop",
+     "value_kg": 9.2
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 21.58
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 14.77
+    },
+    {
+     "key": "gap.whirl_flutter",
+     "value_kg": 14.71
+    },
+    {
+     "key": "mass.fuselage",
+     "value_kg": 9.52
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 21.58
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 14.77
+    },
+    {
+     "key": "gap.whirl_flutter",
+     "value_kg": 14.71
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 21.58
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 14.77
+    }
+   ]
   }
  ],
  "schedule": [
@@ -5061,6 +5493,3871 @@
    "date": "2026-10-11"
   }
  },
+ "coverage": {
+  "outputs": {
+   "resized": [
+    "mass_takeoff_kg",
+    "range_m",
+    "mass_payload_kg",
+    "mass_fuel_burnt_kg",
+    "mass_empty_kg",
+    "energy_battery_J",
+    "lift_to_drag_cruise",
+    "power_hover_take_off_W",
+    "cost_per_mission_usd",
+    "static_margin",
+    "margin_strain_wing"
+   ],
+   "fixed": [
+    "mass_takeoff_kg",
+    "range_m",
+    "mass_payload_kg",
+    "mass_fuel_burnt_kg",
+    "mass_empty_kg",
+    "energy_battery_J",
+    "lift_to_drag_cruise",
+    "power_hover_take_off_W",
+    "cost_per_mission_usd",
+    "static_margin",
+    "margin_strain_wing"
+   ]
+  },
+  "inputs": [
+   {
+    "key": "requirements.mass_payload_kg",
+    "label": "Payload",
+    "value": 900.0,
+    "kind": "requirement",
+    "sigma": 50.0,
+    "source": "placeholder prior: customer payload not frozen",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.43335502938796383,
+      "range_m": 0.0,
+      "mass_payload_kg": 1.0,
+      "mass_fuel_burnt_kg": 0.2314206723410129,
+      "mass_empty_kg": 0.36351046701133044,
+      "energy_battery_J": 1.04641673081508,
+      "lift_to_drag_cruise": 0.09146597107122824,
+      "power_hover_take_off_W": 0.4303064881677507,
+      "cost_per_mission_usd": 0.12071163562015284,
+      "static_margin": -1.5826536049055871e-13,
+      "margin_strain_wing": 0.10724047570078374
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.10738152145036538,
+      "range_m": -0.125886282391414,
+      "mass_payload_kg": 1.0,
+      "mass_fuel_burnt_kg": -1.7716638450493382e-14,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.021625824772856458,
+      "power_hover_take_off_W": 0.16107228217554642,
+      "cost_per_mission_usd": -0.061444956120341586,
+      "static_margin": 3.903127859596953e-16,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.range_m",
+    "label": "Design range",
+    "value": 824140.0,
+    "kind": "requirement",
+    "sigma": 18520.0,
+    "source": "placeholder prior: +-10 nm",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.35490892108137223,
+      "range_m": 1.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 1.0022919206511631,
+      "mass_empty_kg": 0.29769298711029607,
+      "energy_battery_J": 0.8601294027410101,
+      "lift_to_drag_cruise": 0.12497312670620361,
+      "power_hover_take_off_W": 0.35241222806531647,
+      "cost_per_mission_usd": 0.6717489789180656,
+      "static_margin": -1.4640361788484658e-13,
+      "margin_strain_wing": 0.0878277600247231
+     },
+     "fixed": null
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.altitude_cruise_m",
+    "label": "altitude cruise m",
+    "value": 3047.9999999999995,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.043720208718750285,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.10381598375971778,
+      "mass_empty_kg": -0.04048118637949726,
+      "energy_battery_J": -0.10646095989534834,
+      "lift_to_drag_cruise": -0.047062078103810315,
+      "power_hover_take_off_W": -0.04341264829048332,
+      "cost_per_mission_usd": -0.061684414635717964,
+      "static_margin": 8.350368514208453e-15,
+      "margin_strain_wing": -0.010819249029222629
+     },
+     "fixed": {
+      "mass_takeoff_kg": -0.006908491108262779,
+      "range_m": 0.07016621058715276,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 1.084427838810629e-14,
+      "mass_empty_kg": -0.009175154401245004,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.07375586883169334,
+      "power_hover_take_off_W": -0.010362736662389228,
+      "cost_per_mission_usd": 0.031240049449645747,
+      "static_margin": 0.01002813239494151,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.velocity_max_m_s",
+    "label": "velocity max m s",
+    "value": 108.03333333333335,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -1.45292376522312e-13,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 1.1807477336005114e-12,
+      "mass_empty_kg": -3.7162310969802454e-13,
+      "energy_battery_J": -2.6435860179322197e-12,
+      "lift_to_drag_cruise": -2.410005927743883e-13,
+      "power_hover_take_off_W": -1.0092036369021226e-13,
+      "cost_per_mission_usd": 4.473560480187494e-14,
+      "static_margin": -2.3415600458147925e-14,
+      "margin_strain_wing": -2.605012363824998e-13
+     },
+     "fixed": {
+      "mass_takeoff_kg": -3.497548708901661e-15,
+      "range_m": -2.2197436369874942e-15,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -6.257412515528085e-15,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 4.394140399705881e-16,
+      "power_hover_take_off_W": -5.474373395745638e-15,
+      "cost_per_mission_usd": -6.340719779836208e-15,
+      "static_margin": -3.192871113940292e-30,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.altitude_hover_m",
+    "label": "altitude hover m",
+    "value": 1219.1999999999998,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.023763581438811576,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.00731387467577333,
+      "mass_empty_kg": 0.0315223502540652,
+      "energy_battery_J": -0.09186631948475336,
+      "lift_to_drag_cruise": 0.035303225143938126,
+      "power_hover_take_off_W": -0.03794483603431979,
+      "cost_per_mission_usd": 0.023641963713442994,
+      "static_margin": -5.015843636020872e-14,
+      "margin_strain_wing": 0.13334605181681022
+     },
+     "fixed": {
+      "mass_takeoff_kg": -1.534939235505556e-16,
+      "range_m": -9.15108186930399e-16,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.4169254515887043e-15,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -8.360128094837163e-17,
+      "power_hover_take_off_W": -2.5665500531465647e-16,
+      "cost_per_mission_usd": -6.563240070676987e-16,
+      "static_margin": -7.205089150188926e-31,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.thrust_to_weight_hover",
+    "label": "thrust to weight hover",
+    "value": 1.05,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.2972297274628526,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.1144261757803521,
+      "mass_empty_kg": 0.38982735961318116,
+      "energy_battery_J": -0.5119282292722415,
+      "lift_to_drag_cruise": 0.3122815083326275,
+      "power_hover_take_off_W": -0.21189595016427318,
+      "cost_per_mission_usd": 0.23698640104224641,
+      "static_margin": -4.477383339070998e-13,
+      "margin_strain_wing": 1.2609599922546255
+     },
+     "fixed": {
+      "mass_takeoff_kg": -3.673484552865926e-15,
+      "range_m": -1.9954784825208817e-14,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -3.0888528709392044e-14,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -1.7641491048574702e-15,
+      "power_hover_take_off_W": -6.1670474945792535e-15,
+      "cost_per_mission_usd": -1.4124537650990316e-14,
+      "static_margin": -1.570922143660316e-29,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.altitude_ceiling_m",
+    "label": "altitude ceiling m",
+    "value": 3962.3999999999996,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 9.142674643125993e-05,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 4.822772083165147e-05,
+      "mass_empty_kg": 0.00011738382238537669,
+      "energy_battery_J": 0.00021999034127979028,
+      "lift_to_drag_cruise": 2.029682645760031e-05,
+      "power_hover_take_off_W": 9.078358277139236e-05,
+      "cost_per_mission_usd": 3.780439909104225e-05,
+      "static_margin": 3.703186736328884e-15,
+      "margin_strain_wing": 2.2624977415309553e-05
+     },
+     "fixed": {
+      "mass_takeoff_kg": 3.345406593505609e-05,
+      "range_m": -3.9219112702352406e-05,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -7.674247302255643e-15,
+      "mass_empty_kg": 4.4430283760067994e-05,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -6.737395392978899e-06,
+      "power_hover_take_off_W": 5.018109890268779e-05,
+      "cost_per_mission_usd": -4.855287062449856e-06,
+      "static_margin": 0.00013716679768800526,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.climb_rate_ceiling_m_s",
+    "label": "climb rate ceiling m s",
+    "value": 0.5,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -1.5200694941560174e-17,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 4.469947576184562e-14,
+      "mass_empty_kg": -8.677420021170945e-15,
+      "energy_battery_J": 9.473045653764053e-15,
+      "lift_to_drag_cruise": -1.0132421790682255e-14,
+      "power_hover_take_off_W": -1.766537161293906e-17,
+      "cost_per_mission_usd": 5.4210774556102665e-15,
+      "static_margin": 1.2927203039353172e-18,
+      "margin_strain_wing": -5.072216408370737e-16
+     },
+     "fixed": {
+      "mass_takeoff_kg": -1.4017048104299818e-17,
+      "range_m": -1.4878573187123128e-17,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -2.5405187083352275e-17,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -3.9302499775956447e-19,
+      "power_hover_take_off_W": -2.8164483416024955e-17,
+      "cost_per_mission_usd": -2.2144157966236393e-18,
+      "static_margin": -1.2970801325180356e-32,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.climb_rate_m_s",
+    "label": "climb rate m s",
+    "value": 7.5,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.03842643049435427,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.019038468249398546,
+      "mass_empty_kg": 0.049574817795118804,
+      "energy_battery_J": 0.08412297034454937,
+      "lift_to_drag_cruise": 0.007850396080885242,
+      "power_hover_take_off_W": 0.03815611043492279,
+      "cost_per_mission_usd": 0.013903493913513037,
+      "static_margin": -2.828343218778073e-14,
+      "margin_strain_wing": 0.009509220860800801
+     },
+     "fixed": {
+      "mass_takeoff_kg": -2.396682715473382e-16,
+      "range_m": -6.107480415689981e-16,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.0475465052867165e-15,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -5.385980940183963e-17,
+      "power_hover_take_off_W": -5.647468853379887e-16,
+      "cost_per_mission_usd": -2.5437890828131033e-16,
+      "static_margin": -5.339303246433898e-31,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.velocity_climb_m_s",
+    "label": "velocity climb m s",
+    "value": 80.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.04592872511726379,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.023803719326951255,
+      "mass_empty_kg": 0.059050533260134104,
+      "energy_battery_J": 0.10030001347974724,
+      "lift_to_drag_cruise": 0.009749916136055367,
+      "power_hover_take_off_W": 0.04560562834394593,
+      "cost_per_mission_usd": 0.016494357346876414,
+      "static_margin": -6.237382077083899e-14,
+      "margin_strain_wing": 0.01136578093138731
+     },
+     "fixed": {
+      "mass_takeoff_kg": -5.6103342074756654e-15,
+      "range_m": 1.5117980768112138e-14,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 2.0529549917608626e-14,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 1.858553994086406e-15,
+      "power_hover_take_off_W": -4.65777016948265e-15,
+      "cost_per_mission_usd": 1.3038844256320646e-14,
+      "static_margin": 1.0452495871013615e-29,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.velocity_stall_max_m_s",
+    "label": "velocity stall max m s",
+    "value": 61.733333333333334,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -2.1275897307555897e-24,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -5.944843947962074e-23,
+      "mass_empty_kg": 9.420595735795178e-24,
+      "energy_battery_J": -8.512997989481535e-23,
+      "lift_to_drag_cruise": 1.3745413501815456e-22,
+      "power_hover_take_off_W": -1.5552319815714175e-24,
+      "cost_per_mission_usd": 2.581547841771342e-22,
+      "static_margin": -3.270826512742006e-25,
+      "margin_strain_wing": -2.1489775310078673e-23
+     },
+     "fixed": {
+      "mass_takeoff_kg": 2.2112215634951023e-26,
+      "range_m": 1.012639000568174e-25,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 2.0433350881368667e-25,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 1.1666764831628756e-26,
+      "power_hover_take_off_W": 2.463739746334187e-26,
+      "cost_per_mission_usd": 1.1299024946090827e-25,
+      "static_margin": 1.033947705815066e-40,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.cl_max",
+    "label": "cl max",
+    "value": 1.5,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -4.714813438708749e-24,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -7.920324336217751e-14,
+      "mass_empty_kg": 1.5351203384897665e-14,
+      "energy_battery_J": -1.5441185902214163e-15,
+      "lift_to_drag_cruise": 1.2613933320583922e-13,
+      "power_hover_take_off_W": -4.418137014843049e-24,
+      "cost_per_mission_usd": -1.0774952745233614e-13,
+      "static_margin": -1.550190548326643e-25,
+      "margin_strain_wing": -1.2368541703030945e-23
+     },
+     "fixed": {
+      "mass_takeoff_kg": 1.1599367859238673e-26,
+      "range_m": 5.0697217016966196e-26,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 1.0242620944879398e-25,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 5.285393356963576e-27,
+      "power_hover_take_off_W": 1.3083899622814942e-26,
+      "cost_per_mission_usd": 5.598188833462055e-26,
+      "static_margin": 5.192262452063253e-41,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.duration_loiter_s",
+    "label": "duration loiter s",
+    "value": 1200.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.04046500929252525,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.11813913665245279,
+      "mass_empty_kg": 0.03319286717613337,
+      "energy_battery_J": 0.09821497907538307,
+      "lift_to_drag_cruise": 0.008078892064102568,
+      "power_hover_take_off_W": 0.04018034835532721,
+      "cost_per_mission_usd": 0.08546319996376536,
+      "static_margin": -1.43983416281402e-14,
+      "margin_strain_wing": 0.010013699049075644
+     },
+     "fixed": {
+      "mass_takeoff_kg": -9.9678572157377e-15,
+      "range_m": -0.11062030807096854,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -2.3669989175904632e-15,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -1.4453185389346131e-05,
+      "power_hover_take_off_W": -1.2484825350411085e-14,
+      "cost_per_mission_usd": 0.003929726796389283,
+      "static_margin": -1.1459348118436143e-30,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.duration_hover_s",
+    "label": "Hover time per mission",
+    "value": 60.0,
+    "kind": "requirement",
+    "sigma": 15.0,
+    "source": "placeholder prior",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.014591454936064662,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.02490571904925559,
+      "mass_empty_kg": 0.01539873360322102,
+      "energy_battery_J": 0.03364036432183458,
+      "lift_to_drag_cruise": 0.0028940153602841473,
+      "power_hover_take_off_W": 0.014488807801911585,
+      "cost_per_mission_usd": 0.014662718578839346,
+      "static_margin": -6.942031887583053e-15,
+      "margin_strain_wing": 0.003610883599679272
+     },
+     "fixed": {
+      "mass_takeoff_kg": -1.0652482484406313e-15,
+      "range_m": -0.02913365742086617,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -4.636187962553221e-16,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.00021764141492931237,
+      "power_hover_take_off_W": -2.380383126828426e-15,
+      "cost_per_mission_usd": -0.009444331678251086,
+      "static_margin": -2.5476085241455513e-31,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.duration_engine_out_hover_s",
+    "label": "duration engine out hover s",
+    "value": 60.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.08531474673070125,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.03743748505139166,
+      "mass_empty_kg": 0.11100303143760568,
+      "energy_battery_J": 0.6468679918622573,
+      "lift_to_drag_cruise": 0.019964819952228093,
+      "power_hover_take_off_W": 0.0847145794210699,
+      "cost_per_mission_usd": 0.026521835385697128,
+      "static_margin": -4.048423047662313e-14,
+      "margin_strain_wing": 0.021112467613479003
+     },
+     "fixed": {
+      "mass_takeoff_kg": -7.123898323003142e-16,
+      "range_m": -2.3604211944250778e-15,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -3.957250941282747e-15,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 2.850952749256863e-14,
+      "power_hover_take_off_W": -1.3668420144856242e-15,
+      "cost_per_mission_usd": -2.490696927678562e-13,
+      "static_margin": -2.0051396867998132e-30,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.altitude_hover_hot_m",
+    "label": "altitude hover hot m",
+    "value": 1219.1999999999998,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.010866479417069828,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.013398502657362919,
+      "mass_empty_kg": 0.012465685687885832,
+      "energy_battery_J": 0.02860827408667061,
+      "lift_to_drag_cruise": 0.000257082090215481,
+      "power_hover_take_off_W": 0.010790036528047307,
+      "cost_per_mission_usd": 0.0041348172469196824,
+      "static_margin": -1.3264713767216576e-14,
+      "margin_strain_wing": 0.002689080183069587
+     },
+     "fixed": {
+      "mass_takeoff_kg": -3.105387015382086e-15,
+      "range_m": -0.027727911192793768,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.0139338183610263e-15,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 4.2695078074345127e-07,
+      "power_hover_take_off_W": -6.5223070081163215e-15,
+      "cost_per_mission_usd": -0.018488916847252717,
+      "static_margin": -4.946090894733245e-31,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.temperature_hover_hot_K",
+    "label": "temperature hover hot K",
+    "value": 308.15,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.8133871865199093,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.5965231174815688,
+      "mass_empty_kg": 1.011859671062662,
+      "energy_battery_J": 1.9292723647982137,
+      "lift_to_drag_cruise": 0.12131052247311037,
+      "power_hover_take_off_W": 0.8076652167770547,
+      "cost_per_mission_usd": 0.34336277421770395,
+      "static_margin": -7.290277084928806e-13,
+      "margin_strain_wing": 0.20128537317291317
+     },
+     "fixed": {
+      "mass_takeoff_kg": -2.6268845512483927e-13,
+      "range_m": -1.885625617642425,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.0014554630342198e-13,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -9.095021450708061e-05,
+      "power_hover_take_off_W": -5.631353207573008e-13,
+      "cost_per_mission_usd": -1.237197660905707,
+      "static_margin": -5.08580256904344e-29,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.thrust_to_weight_hover_hot",
+    "label": "thrust to weight hover hot",
+    "value": 1.05,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.10383296839632641,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.10857935920963285,
+      "mass_empty_kg": 0.12288334979039131,
+      "energy_battery_J": 0.24609941986018627,
+      "lift_to_drag_cruise": 0.007476945366831168,
+      "power_hover_take_off_W": 0.10310253015815757,
+      "cost_per_mission_usd": 0.04172829327259291,
+      "static_margin": -9.529912488046056e-14,
+      "margin_strain_wing": 0.02569509101786478
+     },
+     "fixed": {
+      "mass_takeoff_kg": -2.8332183731133502e-14,
+      "range_m": -0.23477862032038307,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -3.009257665213026e-15,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -4.809066888902318e-07,
+      "power_hover_take_off_W": -5.989512653756191e-14,
+      "cost_per_mission_usd": -0.15586198221393716,
+      "static_margin": -1.3290609459742278e-30,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "requirements.duration_hover_hot_s",
+    "label": "duration hover hot s",
+    "value": 60.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.013539569774211162,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.010737606355927494,
+      "mass_empty_kg": 0.016686730326266466,
+      "energy_battery_J": 0.02876086540062064,
+      "lift_to_drag_cruise": 0.0020719013909974784,
+      "power_hover_take_off_W": 0.01344432238174102,
+      "cost_per_mission_usd": 0.0058655532485792855,
+      "static_margin": -7.566977356928836e-15,
+      "margin_strain_wing": 0.0033505781744573335
+     },
+     "fixed": {
+      "mass_takeoff_kg": -2.955548866445136e-15,
+      "range_m": -0.02332327744622359,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -9.298051016671216e-16,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -2.6249676921011945e-07,
+      "power_hover_take_off_W": -6.33732446793179e-15,
+      "cost_per_mission_usd": -0.015427495807857934,
+      "static_margin": -4.960769880584492e-31,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Mission and requirements"
+   },
+   {
+    "key": "assumptions.solidity",
+    "label": "solidity",
+    "value": 0.089,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Rotor"
+   },
+   {
+    "key": "assumptions.speed_tip_m_s",
+    "label": "speed tip m s",
+    "value": 225.55199999999996,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Rotor"
+   },
+   {
+    "key": "assumptions.frequency_coning_per_rev",
+    "label": "frequency coning per rev",
+    "value": 1.55,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.9002953506766417,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.4807661996649147,
+      "mass_empty_kg": 1.1547636194040796,
+      "energy_battery_J": 2.1739314551044604,
+      "lift_to_drag_cruise": 0.19003955681832513,
+      "power_hover_take_off_W": 0.8939620043422392,
+      "cost_per_mission_usd": 0.3745490542953379,
+      "static_margin": -3.196525514162014e-13,
+      "margin_strain_wing": -2.1155635047644163
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.30140851731151347,
+      "range_m": -0.3533494144334037,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -5.148536289417484e-14,
+      "mass_empty_kg": 0.40030010039086367,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.0607013915651972,
+      "power_hover_take_off_W": 0.4521127759672655,
+      "cost_per_mission_usd": -0.04374430528389474,
+      "static_margin": 0.0022528035062064885,
+      "margin_strain_wing": 2.5890630012230074
+     }
+    },
+    "group": "Rotor"
+   },
+   {
+    "key": "assumptions.figure_of_merit",
+    "label": "Rotor figure of merit",
+    "value": 0.67,
+    "kind": "model",
+    "sigma": 0.02,
+    "source": "placeholder prior: XV-15 0.67 +-0.02",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Rotor"
+   },
+   {
+    "key": "assumptions.coefficient_airplane",
+    "label": "coefficient airplane",
+    "value": 0.87,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Rotor"
+   },
+   {
+    "key": "assumptions.solidity_min",
+    "label": "solidity min",
+    "value": 0.06,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Rotor"
+   },
+   {
+    "key": "assumptions.power_rated_turboshaft_fixed_W",
+    "label": "power rated turboshaft fixed W",
+    "value": 835183.6880808958,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.07168478735235229,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.20624642571233598,
+      "mass_empty_kg": 0.05939122593123572,
+      "energy_battery_J": -1.2550040678900223,
+      "lift_to_drag_cruise": 0.06994244498121183,
+      "power_hover_take_off_W": 0.07118050330283796,
+      "cost_per_mission_usd": 0.05694113401742119,
+      "static_margin": 3.650439572046026e-14,
+      "margin_strain_wing": 0.017739521121004607
+     },
+     "fixed": null
+    },
+    "group": "Turbogenerators and drive"
+   },
+   {
+    "key": "assumptions.torque_density_Nm_kg",
+    "label": "torque density Nm kg",
+    "value": 15.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.specific_power_max_machine_W_kg",
+    "label": "specific power max machine W kg",
+    "value": 10000.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.speed_output_turboshaft_rad_s",
+    "label": "speed output turboshaft rad s",
+    "value": 126.71090369478831,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.07111938933247183,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.04182738354935908,
+      "mass_empty_kg": -0.09047526112965588,
+      "energy_battery_J": -0.1866175777194793,
+      "lift_to_drag_cruise": -0.013428936266312915,
+      "power_hover_take_off_W": -0.07061908271266032,
+      "cost_per_mission_usd": -0.030623822352162218,
+      "static_margin": 3.489458056021697e-14,
+      "margin_strain_wing": -0.017599604542165484
+     },
+     "fixed": {
+      "mass_takeoff_kg": -0.01622609479729577,
+      "range_m": 0.020328563000301208,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 2.6382827785789367e-15,
+      "mass_empty_kg": -0.021549846813373626,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.003264637720109646,
+      "power_hover_take_off_W": -0.024339142195943426,
+      "cost_per_mission_usd": 0.002934033348734912,
+      "static_margin": 0.09837225458518395,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Turbogenerators and drive"
+   },
+   {
+    "key": "assumptions.mach_tip_hover_max",
+    "label": "mach tip hover max",
+    "value": 0.7,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Rotor"
+   },
+   {
+    "key": "assumptions.download_fraction_hover",
+    "label": "Hover download",
+    "value": 0.07,
+    "kind": "model",
+    "sigma": 0.02,
+    "source": "placeholder prior: 7 % +-2 %",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Rotor"
+   },
+   {
+    "key": "assumptions.reduction_ratio",
+    "label": "reduction ratio",
+    "value": 7.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Turbogenerators and drive"
+   },
+   {
+    "key": "assumptions.speed_peak_motor_rad_s",
+    "label": "speed peak motor rad s",
+    "value": 400.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.speed_peak_generator_rad_s",
+    "label": "speed peak generator rad s",
+    "value": 400.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.aspect_ratio_wing",
+    "label": "Wing aspect ratio",
+    "value": 6.12,
+    "kind": "design",
+    "sigma": null,
+    "source": "XV-15 class; free trade in plan 029",
+    "note": "One-sided: rotor clearance and engine-out power bind, so the derivative holds for an increase only. Flutter-limited: with whirl flutter in the loop the optimum is AR 7.0-7.2 (plan 055).",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.24328941504033677,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.18817304731273102,
+      "mass_empty_kg": -0.30076425775848936,
+      "energy_battery_J": -0.7644844262828532,
+      "lift_to_drag_cruise": 0.03776038941684518,
+      "power_hover_take_off_W": -0.313637239284407,
+      "cost_per_mission_usd": -0.15295614961295026,
+      "static_margin": 1.5797363574072228e-13,
+      "margin_strain_wing": -3.8815069968420364
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.03518156533076028,
+      "range_m": 0.289914359788532,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.8653561421116302e-14,
+      "mass_empty_kg": 0.04672457254833468,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.4679944717984103,
+      "power_hover_take_off_W": -0.0013225209300317844,
+      "cost_per_mission_usd": 0.13823914103046572,
+      "static_margin": 1.586865173625647,
+      "margin_strain_wing": 3.51022972131442
+     }
+    },
+    "group": "Wing, nacelle and structure"
+   },
+   {
+    "key": "assumptions.length_fuselage_m",
+    "label": "length fuselage m",
+    "value": 11.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.6199743377508871,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.40800852226128553,
+      "mass_empty_kg": 0.7802980982776574,
+      "energy_battery_J": 1.4970834602665772,
+      "lift_to_drag_cruise": 0.0029640607438487596,
+      "power_hover_take_off_W": 0.6156129776744282,
+      "cost_per_mission_usd": 0.3304361730422597,
+      "static_margin": -2.465389028510376e-13,
+      "margin_strain_wing": 0.15342234055930984
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.18402967270790344,
+      "range_m": -0.22227665623202894,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -3.282166771818849e-14,
+      "mass_empty_kg": 0.24440947162662643,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.04330681567497318,
+      "power_hover_take_off_W": 0.2760445090618523,
+      "cost_per_mission_usd": -0.029184003105357258,
+      "static_margin": -1.991317580470203,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Fuselage and tail"
+   },
+   {
+    "key": "assumptions.diameter_fuselage_m",
+    "label": "diameter fuselage m",
+    "value": 1.6763999999999997,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.20392448375529068,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.1297247352055756,
+      "mass_empty_kg": 0.25752696676113995,
+      "energy_battery_J": 0.5191593386777107,
+      "lift_to_drag_cruise": 0.02005998781720425,
+      "power_hover_take_off_W": 0.21285106169812412,
+      "cost_per_mission_usd": 0.14175236510032244,
+      "static_margin": -1.0003831196058324e-13,
+      "margin_strain_wing": 1.3573625784707684
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.03375393941484671,
+      "range_m": -0.05650065031095962,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -6.297755670087065e-15,
+      "mass_empty_kg": 0.04482854518137574,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.02976965188826172,
+      "power_hover_take_off_W": 0.05063090912226988,
+      "cost_per_mission_usd": -0.011841396759373556,
+      "static_margin": -1.8683262842925235,
+      "margin_strain_wing": 0.4767424902555287
+     }
+    },
+    "group": "Fuselage and tail"
+   },
+   {
+    "key": "assumptions.height_fuselage_m",
+    "label": "height fuselage m",
+    "value": 2.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.16603885327778153,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.11565725989527299,
+      "mass_empty_kg": 0.20773830003459817,
+      "energy_battery_J": 0.4014632475219959,
+      "lift_to_drag_cruise": -0.004438106343350748,
+      "power_hover_take_off_W": 0.16487081263202333,
+      "cost_per_mission_usd": 0.11300157110043405,
+      "static_margin": -8.750378980483722e-14,
+      "margin_strain_wing": 0.04108890956109043
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.04992077453834311,
+      "range_m": -0.049806614626281415,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.0849983964009574e-14,
+      "mass_empty_kg": 0.0662996893303962,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.005354649112679637,
+      "power_hover_take_off_W": 0.0748811618075135,
+      "cost_per_mission_usd": -0.0032405899708327834,
+      "static_margin": 0.041267122877647076,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Fuselage and tail"
+   },
+   {
+    "key": "assumptions.shape_fuselage",
+    "label": "shape fuselage",
+    "value": 3.2,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.04474948416605288,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.03251362695226308,
+      "mass_empty_kg": 0.05572776875807544,
+      "energy_battery_J": 0.10813660333218741,
+      "lift_to_drag_cruise": -0.004030044379356608,
+      "power_hover_take_off_W": 0.044434683049621816,
+      "cost_per_mission_usd": 0.029604462177347607,
+      "static_margin": -2.1755167327996502e-14,
+      "margin_strain_wing": 0.011073959326411458
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.013321562106169195,
+      "range_m": -0.016289805019529428,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -2.831974010746223e-15,
+      "mass_empty_kg": 0.017692342260359335,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.0030337900413005777,
+      "power_hover_take_off_W": 0.019982343159253572,
+      "cost_per_mission_usd": -0.0021508520872485946,
+      "static_margin": 0.011012299898016333,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Fuselage and tail"
+   },
+   {
+    "key": "assumptions.clearance_rotor_fuselage_m",
+    "label": "clearance rotor fuselage m",
+    "value": 0.3,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.013748069870990089,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.010758163251489927,
+      "mass_empty_kg": 0.02114206149952908,
+      "energy_battery_J": 0.043077011613603035,
+      "lift_to_drag_cruise": 0.040179804121975575,
+      "power_hover_take_off_W": 0.01735970729406844,
+      "cost_per_mission_usd": 0.01220793110815444,
+      "static_margin": -9.367999081974712e-15,
+      "margin_strain_wing": 0.2845471461571498
+     },
+     "fixed": null
+    },
+    "group": "Fuselage and tail"
+   },
+   {
+    "key": "assumptions.x_horizontal_tail_m",
+    "label": "x horizontal tail m",
+    "value": 9.8,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.11202530594501095,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.1109343953185054,
+      "mass_empty_kg": -0.1337827182162117,
+      "energy_battery_J": -0.27036643687992556,
+      "lift_to_drag_cruise": 0.06874030999096074,
+      "power_hover_take_off_W": -0.11123723671833866,
+      "cost_per_mission_usd": -0.06900885805192745,
+      "static_margin": 8.908152082188634e-14,
+      "margin_strain_wing": -0.027722412998750515
+     },
+     "fixed": {
+      "mass_takeoff_kg": -0.008342368939624594,
+      "range_m": -0.0272005270510928,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 7.796498304558845e-16,
+      "mass_empty_kg": -0.011079484925695417,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.05382208315184323,
+      "power_hover_take_off_W": -0.012513553409435711,
+      "cost_per_mission_usd": -0.01459911460487898,
+      "static_margin": 3.20258985433072,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Fuselage and tail"
+   },
+   {
+    "key": "assumptions.drag_area_misc_m2",
+    "label": "drag area misc m2",
+    "value": 0.8,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Aerodynamics"
+   },
+   {
+    "key": "assumptions.load_factor_ultimate",
+    "label": "Ultimate load factor",
+    "value": 4.5,
+    "kind": "requirement",
+    "sigma": 0.25,
+    "source": "placeholder prior: certification basis open",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.2058541516121412,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.11463142282624879,
+      "mass_empty_kg": 0.2631271707663211,
+      "energy_battery_J": 0.497186211091774,
+      "lift_to_drag_cruise": 0.036471885676932894,
+      "power_hover_take_off_W": 0.20440602057873136,
+      "cost_per_mission_usd": 0.09365329959035902,
+      "static_margin": -7.564261792020473e-14,
+      "margin_strain_wing": 0.050941827477103574
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.0682943583469257,
+      "range_m": -0.08006333645193735,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.1673803917861858e-14,
+      "mass_empty_kg": 0.09070161237065916,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.013753966293613737,
+      "power_hover_take_off_W": 0.1024415375203875,
+      "cost_per_mission_usd": -0.009911761244649889,
+      "static_margin": 0.40785601435645985,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Wing, nacelle and structure"
+   },
+   {
+    "key": "assumptions.mass_equipment_kg",
+    "label": "Equipment mass",
+    "value": 266.25872119,
+    "kind": "model",
+    "sigma": 40.0,
+    "source": "placeholder prior: +-15 %",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.12443012100947047,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.0649323365065129,
+      "mass_empty_kg": 0.15989381033807168,
+      "energy_battery_J": 0.30041408211459086,
+      "lift_to_drag_cruise": 0.02903176564542454,
+      "power_hover_take_off_W": 0.12355478709799116,
+      "cost_per_mission_usd": 0.05110721594903916,
+      "static_margin": -4.431211702695741e-14,
+      "margin_strain_wing": 0.030792178384111118
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.03971009247334835,
+      "range_m": -0.046553223006807275,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -6.891083113839531e-15,
+      "mass_empty_kg": 0.0527389011611207,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.007997311734305252,
+      "power_hover_take_off_W": 0.05956513871002192,
+      "cost_per_mission_usd": -0.005763242603428307,
+      "static_margin": 0.3279330950241356,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Systems and equipment"
+   },
+   {
+    "key": "assumptions.area_wetted_nacelles_m2",
+    "label": "area wetted nacelles m2",
+    "value": 17.651577599999996,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.09238724994697615,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.050119577769289256,
+      "mass_empty_kg": 0.11834854550156376,
+      "energy_battery_J": 0.22308420015757915,
+      "lift_to_drag_cruise": 0.018073075575924392,
+      "power_hover_take_off_W": 0.09173732939550236,
+      "cost_per_mission_usd": 0.03875325704142431,
+      "static_margin": -3.303197910485927e-14,
+      "margin_strain_wing": -0.012670601349815026
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.028002712162908686,
+      "range_m": -0.0328283421900929,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -4.644317086334532e-15,
+      "mass_empty_kg": 0.03719035079039757,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.0056395340485067905,
+      "power_hover_take_off_W": 0.042004068244362584,
+      "cost_per_mission_usd": -0.004064116039445779,
+      "static_margin": -0.17175912470221555,
+      "margin_strain_wing": 0.2539678589784295
+     }
+    },
+    "group": "Battery"
+   },
+   {
+    "key": "assumptions.resistance_energy_product_ohm_J",
+    "label": "resistance energy product ohm J",
+    "value": 1800000.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Battery"
+   },
+   {
+    "key": "assumptions.battery_mass_smoothing_kg",
+    "label": "battery mass smoothing kg",
+    "value": 10.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Battery"
+   },
+   {
+    "key": "assumptions.factor_power_density_battery",
+    "label": "factor power density battery",
+    "value": 5.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.1169089516958979,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.05282510236120344,
+      "mass_empty_kg": -0.15181495769872555,
+      "energy_battery_J": -0.8954350074770884,
+      "lift_to_drag_cruise": -0.027119286353993684,
+      "power_hover_take_off_W": -0.11608652727690653,
+      "cost_per_mission_usd": -0.033710465036559834,
+      "static_margin": 6.23416255362311e-14,
+      "margin_strain_wing": -0.028930947473687338
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.0015986091553976643,
+      "range_m": 0.01919839103044887,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 1.2136248995645648e-14,
+      "mass_empty_kg": 0.0021231098944955347,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.00041450895030721287,
+      "power_hover_take_off_W": 0.00239791373309682,
+      "cost_per_mission_usd": 0.014864594261350885,
+      "static_margin": 0.006554542548958631,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Battery"
+   },
+   {
+    "key": "assumptions.factor_capacity_ageing_battery",
+    "label": "Battery capacity at end of life",
+    "value": 0.8,
+    "kind": "technology",
+    "sigma": 0.04,
+    "source": "placeholder prior: end-of-life capacity",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.07825778225959172,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.04859120720019367,
+      "mass_empty_kg": -0.09905918953605734,
+      "energy_battery_J": 0.43110553850248634,
+      "lift_to_drag_cruise": -0.017687100996872686,
+      "power_hover_take_off_W": -0.07770725888073535,
+      "cost_per_mission_usd": -0.018248538448382503,
+      "static_margin": 3.3837868770779705e-14,
+      "margin_strain_wing": -0.019366111449369828
+     },
+     "fixed": {
+      "mass_takeoff_kg": 4.8332163217169076e-15,
+      "range_m": 0.025123683517467923,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 5.772086616669637e-15,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 1.0,
+      "lift_to_drag_cruise": 1.0038495688644715e-05,
+      "power_hover_take_off_W": 8.483274211067794e-15,
+      "cost_per_mission_usd": 0.020132441203547125,
+      "static_margin": 2.92738063061404e-30,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Battery"
+   },
+   {
+    "key": "assumptions.factor_resistance_ageing_battery",
+    "label": "factor resistance ageing battery",
+    "value": 1.5,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.1295303082992738,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.0639186721590184,
+      "mass_empty_kg": 0.16715991232500685,
+      "energy_battery_J": 0.9287864721550431,
+      "lift_to_drag_cruise": 0.027815649726754127,
+      "power_hover_take_off_W": 0.12861909588140685,
+      "cost_per_mission_usd": 0.040369631590613894,
+      "static_margin": -7.683771061397323e-14,
+      "margin_strain_wing": 0.032054299446364606
+     },
+     "fixed": {
+      "mass_takeoff_kg": -5.170651154300169e-15,
+      "range_m": -0.02555302526585377,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.3560458550977663e-14,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 9.502726228514363e-05,
+      "power_hover_take_off_W": -8.07088854916248e-15,
+      "cost_per_mission_usd": -0.018496776549312054,
+      "static_margin": -6.958985400494168e-30,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Battery"
+   },
+   {
+    "key": "assumptions.temperature_cell_battery_C",
+    "label": "temperature cell battery C",
+    "value": 25.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.05274713352441183,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.02434514541947922,
+      "mass_empty_kg": -0.06839694209880168,
+      "energy_battery_J": -0.3922480236166633,
+      "lift_to_drag_cruise": -0.012125969281107783,
+      "power_hover_take_off_W": -0.05237607100085841,
+      "cost_per_mission_usd": -0.015568285678196288,
+      "static_margin": 2.819949038435491e-14,
+      "margin_strain_wing": -0.013053102668738843
+     },
+     "fixed": {
+      "mass_takeoff_kg": 2.1616542783516968e-15,
+      "range_m": 0.008943056795732714,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 5.2960480042962754e-15,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -3.7507215436450816e-05,
+      "power_hover_take_off_W": 3.4260957199866708e-15,
+      "cost_per_mission_usd": 0.006396110960614193,
+      "static_margin": 2.716252935072619e-30,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Battery"
+   },
+   {
+    "key": "assumptions.fraction_mass_cells_battery",
+    "label": "Battery cell-to-pack fraction",
+    "value": 0.7,
+    "kind": "technology",
+    "sigma": 0.03,
+    "source": "placeholder prior: cylindrical packs 0.65-0.75",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.1951667339554472,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.10141630956133245,
+      "mass_empty_kg": -0.250874147234755,
+      "energy_battery_J": -0.46432946897460414,
+      "lift_to_drag_cruise": -0.044806387350819904,
+      "power_hover_take_off_W": -0.19379378615760498,
+      "cost_per_mission_usd": -0.05195900348498099,
+      "static_margin": 5.289518875410807e-14,
+      "margin_strain_wing": -0.04829705892310473
+     },
+     "fixed": {
+      "mass_takeoff_kg": -0.07085994850141923,
+      "range_m": 0.08080417847234578,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 1.1395450061679759e-14,
+      "mass_empty_kg": -0.09410896796089335,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.014271972617982754,
+      "power_hover_take_off_W": -0.10628992275212779,
+      "cost_per_mission_usd": 0.03882810047351545,
+      "static_margin": -0.29053664925094497,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Battery"
+   },
+   {
+    "key": "assumptions.torque_density_machine_bare_Nm_kg",
+    "label": "Machine torque density",
+    "value": 17.6,
+    "kind": "technology",
+    "sigma": 2.0,
+    "source": "placeholder prior",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.specific_power_max_machine_bare_W_kg",
+    "label": "specific power max machine bare W kg",
+    "value": 20000.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.specific_power_inverter_W_kg",
+    "label": "Inverter specific power",
+    "value": 20000.0,
+    "kind": "technology",
+    "sigma": 4000.0,
+    "source": "placeholder prior",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.06590981756734912,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.034987848971814006,
+      "mass_empty_kg": -0.08457964573455609,
+      "energy_battery_J": -0.1602498799341099,
+      "lift_to_drag_cruise": -0.01325828974314261,
+      "power_hover_take_off_W": -0.06544615894556367,
+      "cost_per_mission_usd": -0.020488959251422745,
+      "static_margin": 2.4362785387035964e-14,
+      "margin_strain_wing": -0.11514836782402936
+     },
+     "fixed": {
+      "mass_takeoff_kg": -0.029386562037405323,
+      "range_m": 0.02614612802488186,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 4.589772847866806e-15,
+      "mass_empty_kg": -0.03902823927685296,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.005916744679428121,
+      "power_hover_take_off_W": -0.044079843056108355,
+      "cost_per_mission_usd": 0.008327754360193744,
+      "static_margin": 0.08476983882514891,
+      "margin_strain_wing": -0.14829422504553819
+     }
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.efficiency_inverter",
+    "label": "Inverter efficiency",
+    "value": 0.985,
+    "kind": "technology",
+    "sigma": 0.005,
+    "source": "placeholder prior",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.voltage_blocking_inverter_V",
+    "label": "voltage blocking inverter V",
+    "value": 1200.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.factor_derating_voltage_inverter",
+    "label": "factor derating voltage inverter",
+    "value": 0.75,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.factor_voltage_min_machine",
+    "label": "factor voltage min machine",
+    "value": 0.9,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.factor_routing_cable",
+    "label": "factor routing cable",
+    "value": 1.25,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.length_cable_battery_m",
+    "label": "length cable battery m",
+    "value": 3.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Battery"
+   },
+   {
+    "key": "assumptions.factor_rating_feeder",
+    "label": "factor rating feeder",
+    "value": 1.25,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.00958856970571339,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.005055992631218148,
+      "mass_empty_kg": 0.012311257530775877,
+      "energy_battery_J": 0.022563102641152258,
+      "lift_to_drag_cruise": 0.0021376086067482754,
+      "power_hover_take_off_W": 0.009521116582964936,
+      "cost_per_mission_usd": 0.003969521090759321,
+      "static_margin": -2.6806898980579375e-15,
+      "margin_strain_wing": 0.002372841450431357
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.0040378805218876275,
+      "range_m": -0.004680520102295204,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -6.693149960970657e-16,
+      "mass_empty_kg": 0.005362701733499369,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.0008133642726977158,
+      "power_hover_take_off_W": 0.006056820782831382,
+      "cost_per_mission_usd": -0.0005486276787450824,
+      "static_margin": 0.01655592900806847,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.voltage_bus_dcdc_V",
+    "label": "voltage bus dcdc V",
+    "value": 800.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.specific_power_dcdc_W_kg",
+    "label": "specific power dcdc W kg",
+    "value": 12000.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.efficiency_dcdc",
+    "label": "efficiency dcdc",
+    "value": 0.98,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.frequency_torsion_wing_per_rev",
+    "label": "frequency torsion wing per rev",
+    "value": 1.0873362445414847,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.023695760805210884,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.012703439711350656,
+      "mass_empty_kg": 0.03038373298070043,
+      "energy_battery_J": 0.05721771255706206,
+      "lift_to_drag_cruise": 0.00491130430219076,
+      "power_hover_take_off_W": 0.02352906721996513,
+      "cost_per_mission_usd": 0.00987824546854021,
+      "static_margin": -2.3955092150610045e-15,
+      "margin_strain_wing": -5.146103720596431
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.00814609981271937,
+      "range_m": -0.009549894689158846,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.4606768344802823e-15,
+      "mass_empty_kg": 0.010818820257343141,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.0016405627779589422,
+      "power_hover_take_off_W": 0.012219149719078925,
+      "cost_per_mission_usd": -0.0011822674430676285,
+      "static_margin": -0.012219149840075438,
+      "margin_strain_wing": -0.30063304832226373
+     }
+    },
+    "group": "Wing, nacelle and structure"
+   },
+   {
+    "key": "assumptions.frequency_beam_wing_per_rev",
+    "label": "frequency beam wing per rev",
+    "value": 0.43231441048034935,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.03672080589820878,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.019686244636764154,
+      "mass_empty_kg": -0.04708501112827423,
+      "energy_battery_J": -0.08866904650217446,
+      "lift_to_drag_cruise": -0.007610941601662617,
+      "power_hover_take_off_W": -0.03646248446929017,
+      "cost_per_mission_usd": -0.015308102478647749,
+      "static_margin": 1.2805327340446822e-14,
+      "margin_strain_wing": -0.0020540581680571937
+     },
+     "fixed": {
+      "mass_takeoff_kg": -0.012621891305645993,
+      "range_m": 0.014796986965310578,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 2.0164617882892215e-15,
+      "mass_empty_kg": -0.01676311075028688,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.002541953270834503,
+      "power_hover_take_off_W": -0.018932836958468792,
+      "cost_per_mission_usd": 0.0018318522364902032,
+      "static_margin": 0.018932837145945586,
+      "margin_strain_wing": -0.04812627721006134
+     }
+    },
+    "group": "Wing, nacelle and structure"
+   },
+   {
+    "key": "assumptions.frequency_chord_wing_per_rev",
+    "label": "frequency chord wing per rev",
+    "value": 0.8253275109170305,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.013025045092701467,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.0069828049192036355,
+      "mass_empty_kg": 0.016701278148504504,
+      "energy_battery_J": 0.03145133394453733,
+      "lift_to_drag_cruise": 0.0026996373089444164,
+      "power_hover_take_off_W": 0.012933417249091403,
+      "cost_per_mission_usd": 0.005429857001802035,
+      "static_margin": -4.551958950478879e-15,
+      "margin_strain_wing": 5.148157778757413
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.0044757914964936585,
+      "range_m": -0.005247092280333611,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -7.459511045996646e-16,
+      "mass_empty_kg": 0.005944290497681124,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.000901390493593934,
+      "power_hover_take_off_W": 0.006713687244740417,
+      "cost_per_mission_usd": -0.0006495847939403885,
+      "static_margin": -0.006713687311220716,
+      "margin_strain_wing": 4.8723566795560815
+     }
+    },
+    "group": "Wing, nacelle and structure"
+   },
+   {
+    "key": "assumptions.thickness_to_chord_wing",
+    "label": "Wing thickness ratio",
+    "value": 0.23,
+    "kind": "design",
+    "sigma": null,
+    "source": "XV-15 23 %",
+    "note": "Flutter-limited: thinner raises L/D but lowers the flutter speed (plan 046: 18 % flutters at 230 kt); with flutter in the loop the optimum is 27-28 % (plan 055).",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.01995908469799447,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.07330416903007239,
+      "mass_empty_kg": 0.013458476230715888,
+      "energy_battery_J": 0.04658600842482561,
+      "lift_to_drag_cruise": -0.11032357371454596,
+      "power_hover_take_off_W": 0.019818677668362154,
+      "cost_per_mission_usd": 0.018290413284617103,
+      "static_margin": 4.229255876377918e-16,
+      "margin_strain_wing": 8.069922710604235
+     },
+     "fixed": {
+      "mass_takeoff_kg": -0.004924906547580266,
+      "range_m": -0.07578407345852965,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 3.651198726369294e-14,
+      "mass_empty_kg": -0.006540759375334329,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.11448287941061208,
+      "power_hover_take_off_W": -0.007387359821366933,
+      "cost_per_mission_usd": -0.033953983495559295,
+      "static_margin": 0.0073873598945173305,
+      "margin_strain_wing": 3.4578151261632946
+     }
+    },
+    "group": "Wing, nacelle and structure"
+   },
+   {
+    "key": "assumptions.length_mast_m",
+    "label": "length mast m",
+    "value": 1.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.016899650519325102,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.009060004161877458,
+      "mass_empty_kg": 0.021669465397946577,
+      "energy_battery_J": 0.04080727154856217,
+      "lift_to_drag_cruise": 0.0035027078044029716,
+      "power_hover_take_off_W": 0.01678076582270706,
+      "cost_per_mission_usd": 0.007045095430348339,
+      "static_margin": -1.6469031163397399e-15,
+      "margin_strain_wing": -3.6701651037577365
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.00580343083461585,
+      "range_m": -0.006803520037879004,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.0303291982602454e-15,
+      "mass_empty_kg": 0.007707525873620757,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.0011687669965526307,
+      "power_hover_take_off_W": 0.008705146251923685,
+      "cost_per_mission_usd": -0.0008422689988585659,
+      "static_margin": -0.008705146338123816,
+      "margin_strain_wing": -0.21417649459853066
+     }
+    },
+    "group": "Wing, nacelle and structure"
+   },
+   {
+    "key": "assumptions.offset_drive_pylon_m",
+    "label": "offset drive pylon m",
+    "value": 0.6,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.004349330706473637,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.002331702318764751,
+      "mass_empty_kg": 0.005576900607521538,
+      "energy_battery_J": 0.010502247900978465,
+      "lift_to_drag_cruise": 0.0009014644765343179,
+      "power_hover_take_off_W": 0.004318734283137056,
+      "cost_per_mission_usd": 0.0018131410379924533,
+      "static_margin": -2.514264862930781e-16,
+      "margin_strain_wing": -0.944561650275071
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.0015639311346573597,
+      "range_m": -0.0018334390666014581,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -2.838845969380591e-16,
+      "mass_empty_kg": 0.0020770540786035872,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.0003149638803595084,
+      "power_hover_take_off_W": 0.0023458967019860154,
+      "cost_per_mission_usd": -0.00022697792885108145,
+      "static_margin": -0.002345896725215562,
+      "margin_strain_wing": -0.057717115575236816
+     }
+    },
+    "group": "Wing, nacelle and structure"
+   },
+   {
+    "key": "assumptions.radius_gyration_cowling_m",
+    "label": "radius gyration cowling m",
+    "value": 0.8,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.0024467795794121815,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.0013117332307089635,
+      "mass_empty_kg": 0.0031373669752323544,
+      "energy_battery_J": 0.005908193107521336,
+      "lift_to_drag_cruise": 0.0005071320212532619,
+      "power_hover_take_off_W": 0.0024295671141213488,
+      "cost_per_mission_usd": 0.0010200090001998825,
+      "static_margin": -2.341876715795812e-16,
+      "margin_strain_wing": -0.5313769665636233
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.0007787378434461618,
+      "range_m": -0.000912935584678395,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.3952496822114944e-16,
+      "mass_empty_kg": 0.0010342403051187953,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.00015683190104680332,
+      "power_hover_take_off_W": 0.0011681067651692306,
+      "cost_per_mission_usd": -0.00011302051535798084,
+      "static_margin": -0.0011681067767360615,
+      "margin_strain_wing": -0.028739438148496266
+     }
+    },
+    "group": "Wing, nacelle and structure"
+   },
+   {
+    "key": "assumptions.length_half_turbogenerator_m",
+    "label": "length half turbogenerator m",
+    "value": 0.5,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.004441652888496071,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.004213300209795956,
+      "mass_empty_kg": 0.005340181120963304,
+      "energy_battery_J": 0.010777839510915807,
+      "lift_to_drag_cruise": -0.0024653033383484953,
+      "power_hover_take_off_W": 0.00441040700233253,
+      "cost_per_mission_usd": 0.0024992995817890245,
+      "static_margin": -1.804112432909366e-15,
+      "margin_strain_wing": 0.0010991564337542452
+     },
+     "fixed": {
+      "mass_takeoff_kg": 2.7167596195131197e-17,
+      "range_m": -0.0002490396723358393,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 2.176630085158543e-16,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.00036746582866796116,
+      "power_hover_take_off_W": 4.929842578776202e-17,
+      "cost_per_mission_usd": -0.00010672025379226801,
+      "static_margin": -0.3984009872868863,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.depth_turbogenerator_below_top_m",
+    "label": "depth turbogenerator below top m",
+    "value": 0.35,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 8.78844238321269e-05,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.00020662541505288493,
+      "mass_empty_kg": 8.177292335794524e-05,
+      "energy_battery_J": 0.0002084522032184874,
+      "lift_to_drag_cruise": -0.0002824072411904324,
+      "power_hover_take_off_W": 8.726617950473581e-05,
+      "cost_per_mission_usd": 6.647843339473538e-05,
+      "static_margin": -5.0729941914730904e-17,
+      "margin_strain_wing": 2.1748374379313045e-05
+     },
+     "fixed": {
+      "mass_takeoff_kg": -4.7027922076394964e-18,
+      "range_m": -0.00020260734262924046,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -4.638454910121936e-19,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.0002952280192313242,
+      "power_hover_take_off_W": -1.8239490904082945e-18,
+      "cost_per_mission_usd": -8.553257064494743e-05,
+      "static_margin": -2.987638308343792e-34,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.load_factor_jump",
+    "label": "load factor jump",
+    "value": 2.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.04950841839320942,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.026541760512625055,
+      "mass_empty_kg": 0.06348184289490615,
+      "energy_battery_J": 0.1195470563725532,
+      "lift_to_drag_cruise": 0.010261367421004171,
+      "power_hover_take_off_W": 0.049160139397964875,
+      "cost_per_mission_usd": 0.02063897901059926,
+      "static_margin": -1.813219731248572e-14,
+      "margin_strain_wing": -1.9542150216084702
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.01644421073562987,
+      "range_m": -0.019277996143184446,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -2.7211847680208215e-15,
+      "mass_empty_kg": 0.021839526192014836,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.0033117394416974574,
+      "power_hover_take_off_W": 0.024666316103444552,
+      "cost_per_mission_usd": -0.0023865967059869893,
+      "static_margin": -0.02466631634769542,
+      "margin_strain_wing": -1.8914052912899273
+     }
+    },
+    "group": "Wing, nacelle and structure"
+   },
+   {
+    "key": "assumptions.smoothing_wing_tiltrotor",
+    "label": "smoothing wing tiltrotor",
+    "value": 0.01,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.00022498653688805,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.00012061663398790236,
+      "mass_empty_kg": 0.0002884875027673186,
+      "energy_battery_J": 0.0005432708028549286,
+      "lift_to_drag_cruise": 4.663185766480023e-05,
+      "power_hover_take_off_W": 0.00022340381444316932,
+      "cost_per_mission_usd": 9.379197645184761e-05,
+      "static_margin": -6.444497777171437e-17,
+      "margin_strain_wing": -0.01631312219001992
+     },
+     "fixed": {
+      "mass_takeoff_kg": 7.461379025527426e-05,
+      "range_m": -8.747177860308847e-05,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.212222958056901e-17,
+      "mass_empty_kg": 9.90944383262398e-05,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -1.502665199659201e-05,
+      "power_hover_take_off_W": 0.00011192068538291024,
+      "cost_per_mission_usd": -1.082891899813755e-05,
+      "static_margin": -0.00011192068649117166,
+      "margin_strain_wing": -0.0005924715690229785
+     }
+    },
+    "group": "Wing, nacelle and structure"
+   },
+   {
+    "key": "assumptions.fraction_load_carrying_calibration_wing",
+    "label": "fraction load carrying calibration wing",
+    "value": 0.5,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.0,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.0,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.0,
+      "power_hover_take_off_W": 0.0,
+      "cost_per_mission_usd": 0.0,
+      "static_margin": 0.0,
+      "margin_strain_wing": 1.7246478469082762
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.0,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.0,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.0,
+      "power_hover_take_off_W": 0.0,
+      "cost_per_mission_usd": 0.0,
+      "static_margin": 0.0,
+      "margin_strain_wing": 1.5861244718420267
+     }
+    },
+    "group": "Wing, nacelle and structure"
+   },
+   {
+    "key": "assumptions.factor_peak_strain_cap_wing",
+    "label": "factor peak strain cap wing",
+    "value": 1.3324,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.0,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.0,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.0,
+      "power_hover_take_off_W": 0.0,
+      "cost_per_mission_usd": 0.0,
+      "static_margin": 0.0,
+      "margin_strain_wing": -12.260244768975351
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.0,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.0,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.0,
+      "power_hover_take_off_W": 0.0,
+      "cost_per_mission_usd": 0.0,
+      "static_margin": 0.0,
+      "margin_strain_wing": -11.275504326118368
+     }
+    },
+    "group": "Wing, nacelle and structure"
+   },
+   {
+    "key": "assumptions.distance_station_strain_wing_m",
+    "label": "distance station strain wing m",
+    "value": 0.3,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.0,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.0,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.0,
+      "power_hover_take_off_W": 0.0,
+      "cost_per_mission_usd": 0.0,
+      "static_margin": 0.0,
+      "margin_strain_wing": 0.7840220962435925
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.0,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.0,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.0,
+      "power_hover_take_off_W": 0.0,
+      "cost_per_mission_usd": 0.0,
+      "static_margin": 0.0,
+      "margin_strain_wing": 0.7000073036393741
+     }
+    },
+    "group": "Wing, nacelle and structure"
+   },
+   {
+    "key": "assumptions.length_nacelle_m",
+    "label": "length nacelle m",
+    "value": 2.7432,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.004883865712793828,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.014464639790956505,
+      "mass_empty_kg": 0.003966236550112042,
+      "energy_battery_J": 0.011592167215921545,
+      "lift_to_drag_cruise": -0.0196864839027121,
+      "power_hover_take_off_W": 0.004849508973101202,
+      "cost_per_mission_usd": 0.008234269973402413,
+      "static_margin": -2.5111402464487963e-15,
+      "margin_strain_wing": 0.001208588909309731
+     },
+     "fixed": {
+      "mass_takeoff_kg": -4.949656737868747e-16,
+      "range_m": -0.011408176920818556,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -8.878389591037682e-16,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.015676771646088838,
+      "power_hover_take_off_W": -4.916292869409567e-16,
+      "cost_per_mission_usd": -0.00475504898886413,
+      "static_margin": -4.555047406286653e-31,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Battery"
+   },
+   {
+    "key": "assumptions.diameter_nacelle_m",
+    "label": "diameter nacelle m",
+    "value": 1.0058399999999998,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.02268639946609106,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.06542388462091756,
+      "mass_empty_kg": 0.018766307957726935,
+      "energy_battery_J": 0.0538457497961605,
+      "lift_to_drag_cruise": -0.08872672407777278,
+      "power_hover_take_off_W": 0.022526806478311137,
+      "cost_per_mission_usd": 0.03548854435433,
+      "static_margin": -1.167440421059722e-14,
+      "margin_strain_wing": 0.0056141041541854795
+     },
+     "fixed": {
+      "mass_takeoff_kg": -2.165691043124163e-15,
+      "range_m": -0.052846278225563016,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -3.461849920251192e-15,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.07287556066072333,
+      "power_hover_take_off_W": -2.0572782091128168e-15,
+      "cost_per_mission_usd": -0.0221035861936549,
+      "static_margin": -1.7563798856994892e-30,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Battery"
+   },
+   {
+    "key": "assumptions.drag_area_misc_buildup_m2",
+    "label": "Miscellaneous drag area",
+    "value": 0.2787091199999999,
+    "kind": "model",
+    "sigma": 0.07,
+    "source": "placeholder prior: XV-15 fittings +-25 %",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.03896518810791684,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.104482125450834,
+      "mass_empty_kg": 0.033760894740014306,
+      "energy_battery_J": 0.09240792962923822,
+      "lift_to_drag_cruise": -0.1420381322319576,
+      "power_hover_take_off_W": 0.038691078027166856,
+      "cost_per_mission_usd": 0.0491652830564367,
+      "static_margin": -2.0996015931146406e-14,
+      "margin_strain_wing": 0.009642544853792597
+     },
+     "fixed": {
+      "mass_takeoff_kg": -3.110897050306167e-15,
+      "range_m": -0.0897263901532095,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -4.067158084270951e-15,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.12615861752813765,
+      "power_hover_take_off_W": -2.5341285317038854e-15,
+      "cost_per_mission_usd": -0.037676396572742736,
+      "static_margin": -2.047565721592587e-30,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Aerodynamics"
+   },
+   {
+    "key": "assumptions.camber_wing",
+    "label": "camber wing",
+    "value": 0.02,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.0025054881033755973,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.004418292170976432,
+      "mass_empty_kg": -0.0026166314338105672,
+      "energy_battery_J": -0.005914849090946096,
+      "lift_to_drag_cruise": 0.005889573660598697,
+      "power_hover_take_off_W": -0.002487862638691174,
+      "cost_per_mission_usd": 0.0003970708807403411,
+      "static_margin": -1.0560779786055873e-14,
+      "margin_strain_wing": -0.0006200221938072752
+     },
+     "fixed": {
+      "mass_takeoff_kg": 4.236009940972256e-16,
+      "range_m": 0.00567692148780385,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -2.7839987898749877e-14,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.00863262400095194,
+      "power_hover_take_off_W": -1.5326022766780492e-16,
+      "cost_per_mission_usd": 0.00243961448008078,
+      "static_margin": -1.4166719514017683e-29,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Aerodynamics"
+   },
+   {
+    "key": "assumptions.factor_excrescence_buildup",
+    "label": "Excrescence drag factor",
+    "value": 1.27,
+    "kind": "calibration",
+    "sigma": 0.08,
+    "source": "placeholder prior",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.09429083499045328,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.24657039637533534,
+      "mass_empty_kg": 0.0829110291398635,
+      "energy_battery_J": 0.22361916327843886,
+      "lift_to_drag_cruise": -0.33383994898697605,
+      "power_hover_take_off_W": 0.09362752320759406,
+      "cost_per_mission_usd": 0.10871947537315593,
+      "static_margin": -4.9587968229916464e-14,
+      "margin_strain_wing": 0.023333740957871253
+     },
+     "fixed": {
+      "mass_takeoff_kg": -7.323536521216792e-15,
+      "range_m": -0.22160309932075797,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -9.433901104961289e-15,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.3121839834695442,
+      "power_hover_take_off_W": -5.6153709395861945e-15,
+      "cost_per_mission_usd": -0.09323909317075767,
+      "static_margin": -4.872977202503233e-30,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Aerodynamics"
+   },
+   {
+    "key": "assumptions.factor_excrescence_scholz",
+    "label": "factor excrescence scholz",
+    "value": 1.17,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Aerodynamics"
+   },
+   {
+    "key": "assumptions.fraction_trim_drag",
+    "label": "fraction trim drag",
+    "value": 0.02,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Aerodynamics"
+   },
+   {
+    "key": "assumptions.efficiency_tail",
+    "label": "efficiency tail",
+    "value": 0.9,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.024743986988640068,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.049420762047191216,
+      "mass_empty_kg": -0.024720167787406586,
+      "energy_battery_J": -0.058583849031622164,
+      "lift_to_drag_cruise": 0.06599943334941853,
+      "power_hover_take_off_W": -0.02456991940162101,
+      "cost_per_mission_usd": -0.00516930116905865,
+      "static_margin": 1.415390036020936e-14,
+      "margin_strain_wing": -0.006123286347906447
+     },
+     "fixed": {
+      "mass_takeoff_kg": 8.698748390613762e-16,
+      "range_m": 0.05754627143068644,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.1029872621417364e-15,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.08519063009030038,
+      "power_hover_take_off_W": -3.019867153645462e-16,
+      "cost_per_mission_usd": 0.024591121825286624,
+      "static_margin": -5.594412769829959e-31,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Aerodynamics"
+   },
+   {
+    "key": "assumptions.angle_dihedral_tail_deg",
+    "label": "angle dihedral tail deg",
+    "value": 0.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.0,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.0,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.0,
+      "power_hover_take_off_W": 0.0,
+      "cost_per_mission_usd": 0.0,
+      "static_margin": 0.0,
+      "margin_strain_wing": 0.0
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.0,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.0,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.0,
+      "power_hover_take_off_W": 0.0,
+      "cost_per_mission_usd": 0.0,
+      "static_margin": 0.0,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Fuselage and tail"
+   },
+   {
+    "key": "assumptions.mass_factor_fuselage",
+    "label": "Fuselage weight factor",
+    "value": 1.7,
+    "kind": "calibration",
+    "sigma": 0.17,
+    "source": "placeholder prior: +-10 %",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.26534771606647534,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.1709284156807726,
+      "mass_empty_kg": 0.3346827699385637,
+      "energy_battery_J": 0.6412349098470671,
+      "lift_to_drag_cruise": 0.010031026235459156,
+      "power_hover_take_off_W": 0.26348106310237235,
+      "cost_per_mission_usd": 0.15021967955228746,
+      "static_margin": -1.0084207874391424e-13,
+      "margin_strain_wing": 0.06566443993325967
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.08354666640711161,
+      "range_m": -0.09794403262434986,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.398836696273661e-14,
+      "mass_empty_kg": 0.11095817480009645,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.016825665567717137,
+      "power_hover_take_off_W": 0.12531999961066614,
+      "cost_per_mission_usd": -0.0121253736071007,
+      "static_margin": 0.06906404358754271,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Fuselage and tail"
+   },
+   {
+    "key": "assumptions.specific_power_heat_exchanger_W_kg",
+    "label": "specific power heat exchanger W kg",
+    "value": 1000.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.05630492618896682,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.034910675834474,
+      "mass_empty_kg": -0.07128076716173765,
+      "energy_battery_J": -0.13276248556985873,
+      "lift_to_drag_cruise": -0.010244414144354985,
+      "power_hover_take_off_W": -0.05590883550868987,
+      "cost_per_mission_usd": -0.024205133518656358,
+      "static_margin": 1.1539796759406549e-14,
+      "margin_strain_wing": -0.013933534075017214
+     },
+     "fixed": {
+      "mass_takeoff_kg": -0.018926631208619468,
+      "range_m": 0.022188205278388808,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 3.144243542147262e-15,
+      "mass_empty_kg": -0.025136424280409093,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 0.0038116801152540385,
+      "power_hover_take_off_W": -0.02838994681292891,
+      "cost_per_mission_usd": 0.002746877695993708,
+      "static_margin": -6.879494773486323e-17,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Thermal"
+   },
+   {
+    "key": "assumptions.delta_temperature_ref_heat_exchanger_C",
+    "label": "delta temperature ref heat exchanger C",
+    "value": 40.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.056304926189010514,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.034910675834352325,
+      "mass_empty_kg": 0.07128076716179667,
+      "energy_battery_J": 0.13276248557000564,
+      "lift_to_drag_cruise": 0.0102444141444268,
+      "power_hover_take_off_W": 0.055908835508736425,
+      "cost_per_mission_usd": 0.024205133518592905,
+      "static_margin": -4.5335348293790744e-14,
+      "margin_strain_wing": 0.013933534075005112
+     },
+     "fixed": {
+      "mass_takeoff_kg": -1.8038823550809378e-14,
+      "range_m": -0.12406576818660081,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -7.32009086745745e-15,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 1.2915985050434011e-06,
+      "power_hover_take_off_W": -3.906863134121693e-14,
+      "cost_per_mission_usd": -0.08098299058753924,
+      "static_margin": -3.8088405066698054e-30,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Thermal"
+   },
+   {
+    "key": "assumptions.temperature_coolant_C",
+    "label": "temperature coolant C",
+    "value": 60.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.12372191827239679,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.07693007625295521,
+      "mass_empty_kg": -0.15658672734814724,
+      "energy_battery_J": -0.29267715659077054,
+      "lift_to_drag_cruise": -0.02179752072664692,
+      "power_hover_take_off_W": -0.12285156638509477,
+      "cost_per_mission_usd": -0.05318371195614379,
+      "static_margin": 1.0789132726541523e-13,
+      "margin_strain_wing": -0.030616922545700757
+     },
+     "fixed": {
+      "mass_takeoff_kg": 4.043186205479431e-14,
+      "range_m": 0.2795819683236382,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 1.5960615015388917e-14,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 3.045317451948442e-06,
+      "power_hover_take_off_W": 8.746789788039435e-14,
+      "cost_per_mission_usd": 0.18278013409723873,
+      "static_margin": 8.284704039470379e-30,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Thermal"
+   },
+   {
+    "key": "assumptions.effectiveness_heat_exchanger",
+    "label": "effectiveness heat exchanger",
+    "value": 0.8,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.0008524051568659038,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.0006461881881472557,
+      "mass_empty_kg": -0.0010563183928404946,
+      "energy_battery_J": -0.003706733499294742,
+      "lift_to_drag_cruise": -0.00017700640794356354,
+      "power_hover_take_off_W": -0.0008464087057319552,
+      "cost_per_mission_usd": -0.00030514433115697004,
+      "static_margin": 6.179993571881635e-16,
+      "margin_strain_wing": -0.00021094097981281344
+     },
+     "fixed": {
+      "mass_takeoff_kg": 2.2922744965425774e-16,
+      "range_m": 0.000858174929359485,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.1600250893645824e-17,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -4.655284364306082e-06,
+      "power_hover_take_off_W": 4.865391863179401e-16,
+      "cost_per_mission_usd": 0.0005315181633554983,
+      "static_margin": -4.301574682635003e-33,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Thermal"
+   },
+   {
+    "key": "assumptions.pressure_drop_ref_heat_exchanger_Pa",
+    "label": "pressure drop ref heat exchanger Pa",
+    "value": 1000.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.000852405156865912,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.0006461881881472456,
+      "mass_empty_kg": 0.001056318392840506,
+      "energy_battery_J": 0.003706733499294738,
+      "lift_to_drag_cruise": 0.00017700640794356874,
+      "power_hover_take_off_W": 0.0008464087057319487,
+      "cost_per_mission_usd": 0.0003051443311569575,
+      "static_margin": -5.173087153084123e-16,
+      "margin_strain_wing": 0.00021094097981282976
+     },
+     "fixed": {
+      "mass_takeoff_kg": -2.3012059998217936e-16,
+      "range_m": -0.0008581749293594886,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 1.1828244687888165e-17,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 4.655284364305419e-06,
+      "power_hover_take_off_W": -4.885359510263588e-16,
+      "cost_per_mission_usd": -0.0005315181633554977,
+      "static_margin": 4.02318398285316e-33,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Thermal"
+   },
+   {
+    "key": "assumptions.efficiency_fan_heat_exchanger",
+    "label": "efficiency fan heat exchanger",
+    "value": 0.6,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.0005698624100920782,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.000368444836967375,
+      "mass_empty_kg": -0.0007185036145211243,
+      "energy_battery_J": -0.0031047631508666416,
+      "lift_to_drag_cruise": -0.00013396786639289043,
+      "power_hover_take_off_W": -0.0005658535745428355,
+      "cost_per_mission_usd": -0.00016111864070146294,
+      "static_margin": 8.603841531797661e-16,
+      "margin_strain_wing": -0.00014102136076493704
+     },
+     "fixed": {
+      "mass_takeoff_kg": 8.735548746086315e-17,
+      "range_m": 0.0006291203424144666,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 6.754749803669313e-17,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 6.878327630002792e-09,
+      "power_hover_take_off_W": 1.7814800752583035e-16,
+      "cost_per_mission_usd": 0.00041649172434255513,
+      "static_margin": 3.4555677165510964e-32,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Thermal"
+   },
+   {
+    "key": "assumptions.specific_heat_machine_J_kg_K",
+    "label": "specific heat machine J kg K",
+    "value": 500.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.016840980760264006,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.010265492430525006,
+      "mass_empty_kg": -0.021354492008432504,
+      "energy_battery_J": -0.03633669009595706,
+      "lift_to_drag_cruise": -0.003999172847466103,
+      "power_hover_take_off_W": -0.016722508790265576,
+      "cost_per_mission_usd": -0.0072158852135730265,
+      "static_margin": 3.555484049288356e-15,
+      "margin_strain_wing": -0.0041675639267448284
+     },
+     "fixed": {
+      "mass_takeoff_kg": 4.005694837619798e-15,
+      "range_m": 0.028841902849288226,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 9.867589754159623e-16,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 4.791806844484336e-06,
+      "power_hover_take_off_W": 8.859556079478074e-15,
+      "cost_per_mission_usd": 0.01851553398998235,
+      "static_margin": 4.73182398639557e-31,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Thermal"
+   },
+   {
+    "key": "assumptions.temperature_max_machine_C",
+    "label": "temperature max machine C",
+    "value": 150.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.028068301267106646,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.01710915405087473,
+      "mass_empty_kg": -0.035590820014054156,
+      "energy_battery_J": -0.060561150159928336,
+      "lift_to_drag_cruise": -0.006665288079110285,
+      "power_hover_take_off_W": -0.027870847983775947,
+      "cost_per_mission_usd": -0.012026475355954764,
+      "static_margin": 6.0912379820445235e-15,
+      "margin_strain_wing": -0.00694593987790767
+     },
+     "fixed": {
+      "mass_takeoff_kg": 6.68245564857399e-15,
+      "range_m": 0.04806983808214717,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 1.793894195162504e-15,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 7.986344740678637e-06,
+      "power_hover_take_off_W": 1.4764701996004698e-14,
+      "cost_per_mission_usd": 0.03085922331663749,
+      "static_margin": 9.544922387695751e-31,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Thermal"
+   },
+   {
+    "key": "assumptions.specific_heat_battery_J_kg_K",
+    "label": "specific heat battery J kg K",
+    "value": 1000.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.004111352830678429,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.004380199866477195,
+      "mass_empty_kg": -0.004849986585323858,
+      "energy_battery_J": -0.011628304492411815,
+      "lift_to_drag_cruise": 0.0001473208273041714,
+      "power_hover_take_off_W": -0.00408243052050331,
+      "cost_per_mission_usd": -0.0024188357017234253,
+      "static_margin": 5.344072859485193e-15,
+      "margin_strain_wing": -0.001017418521393347
+     },
+     "fixed": {
+      "mass_takeoff_kg": -3.604304827865019e-17,
+      "range_m": 0.0022668691977502475,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 5.223849544930851e-16,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -1.3159071477627315e-06,
+      "power_hover_take_off_W": -5.455077408954352e-17,
+      "cost_per_mission_usd": 0.0017187866216903775,
+      "static_margin": 2.658494147135818e-31,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Thermal"
+   },
+   {
+    "key": "assumptions.temperature_max_battery_C",
+    "label": "temperature max battery C",
+    "value": 60.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.007048033424020127,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.007508914056818054,
+      "mass_empty_kg": -0.008314262717698022,
+      "energy_battery_J": -0.019934236272705887,
+      "lift_to_drag_cruise": 0.0002525499896642801,
+      "power_hover_take_off_W": -0.0069984523208628,
+      "cost_per_mission_usd": -0.0041465754886687405,
+      "static_margin": 1.0541154583996018e-14,
+      "margin_strain_wing": -0.0017441460366744157
+     },
+     "fixed": {
+      "mass_takeoff_kg": -5.437490804775266e-17,
+      "range_m": 0.0038860614818575358,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 8.482561203637725e-16,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -2.255840824716106e-06,
+      "power_hover_take_off_W": -8.613300596154169e-17,
+      "cost_per_mission_usd": 0.0029464913514692676,
+      "static_margin": 4.317875483364459e-31,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Thermal"
+   },
+   {
+    "key": "assumptions.mass_flow_coolant_heat_exchanger_kg_s",
+    "label": "mass flow coolant heat exchanger kg s",
+    "value": 2.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Thermal"
+   },
+   {
+    "key": "assumptions.specific_power_fan_heat_exchanger_W_kg",
+    "label": "specific power fan heat exchanger W kg",
+    "value": 2000.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Thermal"
+   },
+   {
+    "key": "assumptions.mass_duct_per_area_heat_exchanger_kg_m2",
+    "label": "mass duct per area heat exchanger kg m2",
+    "value": 12.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Thermal"
+   },
+   {
+    "key": "assumptions.mass_pump_pipes_heat_exchanger_kg",
+    "label": "mass pump pipes heat exchanger kg",
+    "value": 30.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Thermal"
+   },
+   {
+    "key": "assumptions.length_cable_bus_tie_m",
+    "label": "length cable bus tie m",
+    "value": 2.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.0052034340497802995,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.0027418401313480424,
+      "mass_empty_kg": 0.006681324319794665,
+      "energy_battery_J": 0.012475383833325089,
+      "lift_to_drag_cruise": 0.0011555883778058065,
+      "power_hover_take_off_W": 0.0051668292289941565,
+      "cost_per_mission_usd": 0.0021509144839789614,
+      "static_margin": -1.453915127723233e-15,
+      "margin_strain_wing": 0.001287671089317981
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.0022212309046036483,
+      "range_m": -0.0026040094900566355,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -3.8060877997959666e-16,
+      "mass_empty_kg": 0.0029500127004876953,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.00044733907355946326,
+      "power_hover_take_off_W": 0.0033318463569054378,
+      "cost_per_mission_usd": -0.00032237377916092473,
+      "static_margin": 0.009107387147243884,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.torque_density_database_Nm_kg",
+    "label": "torque density database Nm kg",
+    "value": 11.79,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.speed_ref_database_rad_s",
+    "label": "speed ref database rad s",
+    "value": 500.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.exponent_speed_database",
+    "label": "exponent speed database",
+    "value": 0.271,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.mass_unit_motor_kg",
+    "label": "mass unit motor kg",
+    "value": 40.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.11343521908064948,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.05999990714869181,
+      "mass_empty_kg": 0.14560921395490908,
+      "energy_battery_J": 0.27363820738170114,
+      "lift_to_drag_cruise": 0.023983646089779084,
+      "power_hover_take_off_W": 0.11263723147755514,
+      "cost_per_mission_usd": 0.0385537892973631,
+      "static_margin": -4.528746400706701e-14,
+      "margin_strain_wing": 0.3277008194531516
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.04636028080358327,
+      "range_m": -0.04255752164381208,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -7.636587313635265e-15,
+      "mass_empty_kg": 0.061571004115461694,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.009335566500773947,
+      "power_hover_take_off_W": 0.06954042120537529,
+      "cost_per_mission_usd": -0.009236741249953337,
+      "static_margin": 0.0020472597818101896,
+      "margin_strain_wing": 0.4495573132948448
+     }
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.torque_peak_unit_motor_Nm",
+    "label": "torque peak unit motor Nm",
+    "value": 1500.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.16607724137435562,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.0896241793917616,
+      "mass_empty_kg": -0.212837253533529,
+      "energy_battery_J": -0.4011037987220091,
+      "lift_to_drag_cruise": -0.03524573091467724,
+      "power_hover_take_off_W": -0.16490893067820117,
+      "cost_per_mission_usd": -0.06341504175668015,
+      "static_margin": 5.188050383608933e-14,
+      "margin_strain_wing": -0.4395658639505354
+     },
+     "fixed": {
+      "mass_takeoff_kg": 4.839757461900776e-17,
+      "range_m": 5.080574323601213e-16,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 7.764448577518402e-16,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -9.470562583613313e-16,
+      "power_hover_take_off_W": 6.71616694056136e-17,
+      "cost_per_mission_usd": -7.441274292767277e-15,
+      "static_margin": 3.941564777819545e-31,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.power_continuous_unit_motor_W",
+    "label": "power continuous unit motor W",
+    "value": 263893.7829015426,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.0526420279607052,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.02962426821980716,
+      "mass_empty_kg": 0.06722804821373056,
+      "energy_battery_J": 0.12746561239210788,
+      "lift_to_drag_cruise": 0.011262082477642254,
+      "power_hover_take_off_W": 0.05227170482777907,
+      "cost_per_mission_usd": 0.024861256210151207,
+      "static_margin": -3.788862675458606e-15,
+      "margin_strain_wing": 0.1118650458997718
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.015292737347030412,
+      "range_m": -0.03656423189503294,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 4.4069166796083035e-14,
+      "mass_empty_kg": 0.020310256491344544,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.0030814894454087743,
+      "power_hover_take_off_W": 0.022939106020542336,
+      "cost_per_mission_usd": -0.010999867739739889,
+      "static_margin": 0.0006753239105050971,
+      "margin_strain_wing": 0.14829422504553816
+     }
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.speed_max_unit_motor_rad_s",
+    "label": "speed max unit motor rad s",
+    "value": 261.79938779914943,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.14751851804082722,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.07738905224269,
+      "mass_empty_kg": -0.18948346514110345,
+      "energy_battery_J": -0.34728402758425936,
+      "lift_to_drag_cruise": -0.03141018642560054,
+      "power_hover_take_off_W": -0.14648076319677303,
+      "cost_per_mission_usd": -0.05543902661201224,
+      "static_margin": 5.789487899099537e-14,
+      "margin_strain_wing": -0.4137908343502224
+     },
+     "fixed": {
+      "mass_takeoff_kg": -1.932992271645599e-17,
+      "range_m": -2.59909268011921e-16,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -3.9264742289600463e-16,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -2.6943925875946994e-17,
+      "power_hover_take_off_W": -2.8725389803035106e-17,
+      "cost_per_mission_usd": -2.186738135328074e-16,
+      "static_margin": -1.993217470459614e-31,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.mass_unit_generator_kg",
+    "label": "mass unit generator kg",
+    "value": 31.2,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.05643982184637709,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.030102247082122092,
+      "mass_empty_kg": 0.07239972453198676,
+      "energy_battery_J": 0.13863814653602713,
+      "lift_to_drag_cruise": 0.010591896590749869,
+      "power_hover_take_off_W": 0.05604278220984182,
+      "cost_per_mission_usd": 0.015394629957616252,
+      "static_margin": -1.7793058869568625e-14,
+      "margin_strain_wing": 0.013966916114161232
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.027919195577096295,
+      "range_m": -0.023984967914528216,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -4.171185156600218e-15,
+      "mass_empty_kg": 0.03707943256557858,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.005620451655926928,
+      "power_hover_take_off_W": 0.04187879336564492,
+      "cost_per_mission_usd": -0.01046112450938801,
+      "static_margin": -0.16926279856205745,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.torque_peak_unit_generator_Nm",
+    "label": "torque peak unit generator Nm",
+    "value": 470.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.016607744908162313,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.012822279827554649,
+      "mass_empty_kg": -0.020535634214312676,
+      "energy_battery_J": -0.04935524397696405,
+      "lift_to_drag_cruise": -0.003147382335088035,
+      "power_hover_take_off_W": -0.016490913692355808,
+      "cost_per_mission_usd": -0.007553927523040855,
+      "static_margin": -5.755012951268012e-14,
+      "margin_strain_wing": -0.004109846069246836
+     },
+     "fixed": {
+      "mass_takeoff_kg": -8.79756194814113e-18,
+      "range_m": -1.1978076214684387e-16,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.8009508541193425e-16,
+      "mass_empty_kg": 0.0,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": 2.84334862096408e-13,
+      "power_hover_take_off_W": -1.354183892581653e-17,
+      "cost_per_mission_usd": -2.3372467723097697e-12,
+      "static_margin": -9.142364347433495e-32,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.power_continuous_unit_generator_W",
+    "label": "power continuous unit generator W",
+    "value": 315000.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -0.039831696017089135,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -0.017280300410443726,
+      "mass_empty_kg": -0.05186349773081518,
+      "energy_battery_J": -0.089275311506763,
+      "lift_to_drag_cruise": -0.007444884591982299,
+      "power_hover_take_off_W": -0.03955149027604263,
+      "cost_per_mission_usd": -0.007840295276994496,
+      "static_margin": 7.442689984161711e-14,
+      "margin_strain_wing": -0.009856975780026785
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.016533096056853422,
+      "range_m": -0.035217978884569304,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -3.588307169495622e-15,
+      "mass_empty_kg": 0.02195757462451225,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.0033337375910269564,
+      "power_hover_take_off_W": 0.02479964408527821,
+      "cost_per_mission_usd": -0.006365776424520983,
+      "static_margin": -0.07544377627654417,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "assumptions.speed_max_unit_generator_rad_s",
+    "label": "speed max unit generator rad s",
+    "value": 1780.235837034216,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": -2.1886532505860135e-20,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 2.932386328244929e-12,
+      "mass_empty_kg": -5.683562874256059e-13,
+      "energy_battery_J": -2.9410155428148036e-11,
+      "lift_to_drag_cruise": 2.0452654873631897e-12,
+      "power_hover_take_off_W": -2.1791691557655795e-20,
+      "cost_per_mission_usd": -1.07671505781778e-12,
+      "static_margin": 4.4224525583840396e-23,
+      "margin_strain_wing": -5.797924779490597e-21
+     },
+     "fixed": null
+    },
+    "group": "Electrical machines and power"
+   },
+   {
+    "key": "factors.rotor",
+    "label": "rotor",
+    "value": 0.6927001195024893,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.2995160226960367,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.15994437810013284,
+      "mass_empty_kg": 0.38417415593452153,
+      "energy_battery_J": 0.7232374382000928,
+      "lift_to_drag_cruise": 0.0632235767630504,
+      "power_hover_take_off_W": 0.29740900447917,
+      "cost_per_mission_usd": 0.12460737797031639,
+      "static_margin": -1.0261253490111064e-13,
+      "margin_strain_wing": -0.7038192146962242
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.10015350495489558,
+      "range_m": -0.11741268178128396,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.6742195860175934e-14,
+      "mass_empty_kg": 0.1330136866918927,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.020170157018525092,
+      "power_hover_take_off_W": 0.15023025743234183,
+      "cost_per_mission_usd": -0.014535572966144708,
+      "static_margin": 0.0007485726320337101,
+      "margin_strain_wing": 0.8603065913148306
+     }
+    },
+    "group": "Calibration factors"
+   },
+   {
+    "key": "factors.wing",
+    "label": "wing",
+    "value": 1.9295121351548978,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Calibration factors"
+   },
+   {
+    "key": "factors.tail",
+    "label": "tail",
+    "value": 1.1255840102796097,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.04123099725224861,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.02658593817170964,
+      "mass_empty_kg": 0.0519995191605752,
+      "energy_battery_J": 0.09974858490876222,
+      "lift_to_drag_cruise": 0.0011099810655162171,
+      "power_hover_take_off_W": 0.0409409477866827,
+      "cost_per_mission_usd": 0.022016837793350355,
+      "static_margin": -1.5737770831028066e-14,
+      "margin_strain_wing": 0.010203254742630037
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.012359859679010793,
+      "range_m": -0.014489800152341647,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.9140350016037076e-15,
+      "mass_empty_kg": 0.01641510702636009,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.002489182086686411,
+      "power_hover_take_off_W": 0.018539789518516002,
+      "cost_per_mission_usd": -0.0017938228152521378,
+      "static_margin": -0.32734209583349055,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Calibration factors"
+   },
+   {
+    "key": "factors.fuselage",
+    "label": "fuselage",
+    "value": 2.0712286681901584,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": null,
+     "fixed": null
+    },
+    "group": "Calibration factors"
+   },
+   {
+    "key": "factors.alighting_gear",
+    "label": "alighting gear",
+    "value": 0.8690033749774996,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.11905760591821994,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.06357857254749257,
+      "mass_empty_kg": 0.15270907658609426,
+      "energy_battery_J": 0.2874802594393794,
+      "lift_to_drag_cruise": 0.025130956083956515,
+      "power_hover_take_off_W": 0.1182200662691848,
+      "cost_per_mission_usd": 0.049525616829422275,
+      "static_margin": -4.3976976934975963e-14,
+      "margin_strain_wing": 0.029462665547542434
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.03853602766475483,
+      "range_m": -0.04517683485320143,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -6.458165370810254e-15,
+      "mass_empty_kg": 0.051179627836871355,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.007760863977934463,
+      "power_hover_take_off_W": 0.05780404149713164,
+      "cost_per_mission_usd": -0.005592847122012123,
+      "static_margin": -0.0010838275081287384,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Calibration factors"
+   },
+   {
+    "key": "factors.flight_controls",
+    "label": "flight controls",
+    "value": 3.7864623429576034,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.17812450994796217,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.09225128334781091,
+      "mass_empty_kg": 0.22902740877190933,
+      "energy_battery_J": 0.4300506728111443,
+      "lift_to_drag_cruise": 0.0428368316113218,
+      "power_hover_take_off_W": 0.1768714498146276,
+      "cost_per_mission_usd": 0.07287666725711006,
+      "static_margin": -6.489643600189293e-14,
+      "margin_strain_wing": 0.044079694211163735
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.06074088085272195,
+      "range_m": -0.07120818904827525,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.0391437408016069e-14,
+      "mass_empty_kg": 0.08066985273028761,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.01223275316020815,
+      "power_hover_take_off_W": 0.09111132127908199,
+      "cost_per_mission_usd": -0.0088155028229944,
+      "static_margin": 0.6572634585058951,
+      "margin_strain_wing": 0.0
+     }
+    },
+    "group": "Calibration factors"
+   },
+   {
+    "key": "factors.powerplant",
+    "label": "powerplant",
+    "value": 1.1446933101908454,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.3022915924265933,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.16396872808539278,
+      "mass_empty_kg": 0.38724151549642744,
+      "energy_battery_J": 0.7299327966141034,
+      "lift_to_drag_cruise": 0.059176765930302425,
+      "power_hover_take_off_W": 0.30016504879021605,
+      "cost_per_mission_usd": 0.09887433487857764,
+      "static_margin": -1.0770579872516929e-13,
+      "margin_strain_wing": 0.04843896241851334
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.09162953451043981,
+      "range_m": -0.10741979905832064,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.499287251263398e-14,
+      "mass_empty_kg": 0.12169301713988452,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.01845349395852154,
+      "power_hover_take_off_W": 0.1374443017656583,
+      "cost_per_mission_usd": -0.04015994418882234,
+      "static_margin": -0.5569895318853241,
+      "margin_strain_wing": 0.1884593788798081
+     }
+    },
+    "group": "Calibration factors"
+   },
+   {
+    "key": "factors.transmission",
+    "label": "transmission",
+    "value": 0.9987969871458023,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.20683504297374103,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.11029904997471837,
+      "mass_empty_kg": 0.2653265371618543,
+      "energy_battery_J": 0.5074006693677292,
+      "lift_to_drag_cruise": 0.04193840315246188,
+      "power_hover_take_off_W": 0.2053800116218089,
+      "cost_per_mission_usd": 0.08660038583863694,
+      "static_margin": -8.469127693572144e-14,
+      "margin_strain_wing": 0.2268068702325579
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.06409173689276747,
+      "range_m": -0.0751364888526793,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.0516110089021433e-14,
+      "mass_empty_kg": 0.08512011850641762,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.012907590176692334,
+      "power_hover_take_off_W": 0.09613760533915022,
+      "cost_per_mission_usd": -0.009301822423002705,
+      "static_margin": -0.12882380638347699,
+      "margin_strain_wing": 0.4024522737856779
+     }
+    },
+    "group": "Calibration factors"
+   },
+   {
+    "key": "factors.wing_tiltrotor",
+    "label": "Wing weight factor",
+    "value": 1.3273944247612506,
+    "kind": "calibration",
+    "sigma": 0.12,
+    "source": "bottom-up wing weight spread: XV-15 +17 %, V-22 -5 %",
+    "note": "",
+    "elasticity": {
+     "resized": {
+      "mass_takeoff_kg": 0.18724857689177946,
+      "range_m": 0.0,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": 0.10038508692699445,
+      "mass_empty_kg": 0.24009825250652972,
+      "energy_battery_J": 0.45214565328422923,
+      "lift_to_drag_cruise": 0.03881009551737129,
+      "power_hover_take_off_W": 0.1859313312932027,
+      "cost_per_mission_usd": 0.07805984462789257,
+      "static_margin": -6.608640781920981e-14,
+      "margin_strain_wing": 7.03878389512745
+     },
+     "fixed": {
+      "mass_takeoff_kg": 0.06083015612740065,
+      "range_m": -0.07131284888440842,
+      "mass_payload_kg": 0.0,
+      "mass_fuel_burnt_kg": -1.0386755478716054e-14,
+      "mass_empty_kg": 0.08078841905925215,
+      "energy_battery_J": 0.0,
+      "lift_to_drag_cruise": -0.012250732524075186,
+      "power_hover_take_off_W": 0.09124523419110006,
+      "cost_per_mission_usd": -0.00882845960638138,
+      "static_margin": -0.09124523509462892,
+      "margin_strain_wing": 6.430814398980197
+     }
+    },
+    "group": "Calibration factors"
+   },
+   {
+    "key": "assumptions.hybridization_electric_min",
+    "label": "hybridization electric min",
+    "value": -1.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "read in model logic: needs re-solves",
+    "elasticity": {},
+    "group": "Other"
+   },
+   {
+    "key": "assumptions.fraction_chord_front_spar",
+    "label": "fraction chord front spar",
+    "value": 0.15,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "read in model logic: needs re-solves",
+    "elasticity": {},
+    "group": "Other"
+   },
+   {
+    "key": "assumptions.fraction_chord_rear_spar",
+    "label": "fraction chord rear spar",
+    "value": 0.6,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "read in model logic: needs re-solves",
+    "elasticity": {},
+    "group": "Other"
+   },
+   {
+    "key": "assumptions.thickness_min_torque_box_m",
+    "label": "thickness min torque box m",
+    "value": 0.001,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "read in model logic: needs re-solves",
+    "elasticity": {},
+    "group": "Other"
+   },
+   {
+    "key": "assumptions.reduction_ratio_max",
+    "label": "reduction ratio max",
+    "value": 40.0,
+    "kind": "setting",
+    "sigma": null,
+    "source": "",
+    "note": "read in model logic: needs re-solves",
+    "elasticity": {},
+    "group": "Turbogenerators and drive"
+   }
+  ],
+  "source": "plan 042 every-input table",
+  "date": "2026-10-11"
+ },
  "trades": [
   {
    "key": "trade.hv_voltage",
@@ -5218,7 +9515,7 @@
     "mass.rotors",
     "mass.wing"
    ],
-   "options": 0,
+   "options": 2,
    "note": "The span cap is the most expensive binding limit",
    "precedent": "",
    "sources": [],
@@ -5287,7 +9584,7 @@
     "mass.battery",
     "input.capacity_end_of_life"
    ],
-   "options": 0,
+   "options": 3,
    "note": "",
    "precedent": "",
    "sources": [],
@@ -5482,7 +9779,7 @@
    "affects": [
     "mass.battery"
    ],
-   "options": 0,
+   "options": 5,
    "note": "Payload-range diagram not drawn yet",
    "precedent": "",
    "sources": [],
@@ -6346,7 +10643,7 @@
     "mass.battery",
     "mass.generators"
    ],
-   "options": 0,
+   "options": 4,
    "note": "Both bind at the optimum",
    "precedent": "",
    "sources": [],
@@ -6394,7 +10691,7 @@
     "mass.wing",
     "gap.wing_strength"
    ],
-   "options": 0,
+   "options": 4,
    "note": "",
    "precedent": "",
    "sources": [],
@@ -6622,7 +10919,7 @@
     "mass.battery",
     "input.capacity_end_of_life"
    ],
-   "options": 0,
+   "options": 3,
    "note": "",
    "precedent": "",
    "sources": [],

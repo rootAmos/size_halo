@@ -6,6 +6,7 @@ impact x uncertainty, and the blind spots. Writes a run manifest to `ledger/runs
 
     python -m examples.halo_parametric            # one solve
     python -m examples.halo_parametric --check    # plus central-difference re-solves of a few entries
+    python -m examples.halo_parametric --all      # every continuous input the model can lift (the coverage table)
 
 Spreads in `ledger/inputs.json` marked "placeholder prior" are for owners to replace.
 """
@@ -126,19 +127,98 @@ def driver_records(parametric, inputs, outputs=war_room_outputs, top=6):
     return records
 
 
+class _Built(Exception):
+    pass
+
+
+def liftable_keys(requirements, assumptions, factors, sized):
+    """Every float input of the three dataclasses that the sizing accepts as a parameter (integer counts are
+    discrete choices, flags and strings are settings). A field the model reads in Python logic makes the build raise;
+    such fields are found by bisection, building without solving, and returned second."""
+    import aerosandbox as asb
+    candidates = [f"{name}.{f.name}" for name, obj in (("requirements", requirements), ("assumptions", assumptions),
+                                                      ("factors", factors))
+                  for f in fields(obj) if type(getattr(obj, f.name)) is float]
+    solve_original = asb.Opti.solve
+
+    def stop(self, *args, **kwargs):
+        raise _Built
+
+    def builds(keys):
+        try:
+            solve_halo_sizing_once(requirements, assumptions, factors, initial=sized, parameters=keys)
+        except _Built:
+            return True
+        except Exception:
+            return False
+        return True
+
+    rejected = []
+
+    def bisect(keys):
+        if not keys or builds(keys):
+            return
+        if len(keys) == 1:
+            rejected.append(keys[0])
+            return
+        bisect(keys[:len(keys) // 2])
+        bisect(keys[len(keys) // 2:])
+
+    asb.Opti.solve = stop
+    try:
+        bisect(candidates)
+    finally:
+        asb.Opti.solve = solve_original
+    return [k for k in candidates if k not in rejected], rejected
+
+
+def coverage_records(tables, inputs, keys_rejected=()):
+    """One record per input: its value, kind and spread, and its elasticity on every output in each mode (None where
+    the active models never read it). The war room's every-input table."""
+    by_key = {i.key: i for i in inputs}
+    columns = {}
+    for mode, table in tables.items():
+        e = elasticities(np.asarray(table["jacobian"], dtype=float), table["output_values"], table["input_values"])
+        unused = set(table.get("inputs_unused", ()))
+        for k, key in enumerate(table["inputs"]):
+            columns.setdefault(key, {})[mode] = (None if key in unused else
+                                                 {o: float(e[i, k]) for i, o in enumerate(table["outputs"])})
+    records = []
+    for key, modes in columns.items():
+        item = by_key[key]
+        records.append(dict(key=key, label=item.label or key.split(".", 1)[1].replace("_", " "), value=item.value,
+                            kind=item.kind, sigma=item.spread(), source=item.source, note=item.note,
+                            elasticity=modes))
+    records += [dict(key=key, label=by_key[key].label or key.split(".", 1)[1].replace("_", " "),
+                     value=by_key[key].value, kind=by_key[key].kind, sigma=by_key[key].spread(),
+                     source=by_key[key].source, note="read in model logic: needs re-solves", elasticity={})
+                for key in keys_rejected]
+    return records
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true", help="re-solve a few entries by central difference")
+    parser.add_argument("--all", action="store_true", help="lift every continuous input (the coverage table)")
     args = parser.parse_args()
     requirements, assumptions, factors = HaloRequirements(), HaloAssumptions(), calibration_factors()
     overrides = load_overrides(path_inputs)
     inputs = registry(requirements, assumptions, factors, overrides)
-    keys = list(overrides)
+    keys, rejected = list(overrides), []
     sized = sized_reference()
+    if args.all:
+        keys, rejected = liftable_keys(requirements, assumptions, factors, sized)
+        print(f"{len(keys)} inputs lifted; read in model logic (re-solves needed): {', '.join(rejected)}")
     tables = {}
     for mode in ("resized", "fixed"):
         tables[mode] = solve(mode, requirements, assumptions, factors, sized, keys).parametric
-        report(tables[mode], inputs)
+        if not args.all:
+            report(tables[mode], inputs)
+    if args.all:
+        import pickle
+        with open("output/parametric_all.pkl", "wb") as file:
+            pickle.dump(dict(tables=tables, rejected=rejected), file)
+        print("tables saved to output/parametric_all.pkl")
 
     checked = []
     if args.check:
