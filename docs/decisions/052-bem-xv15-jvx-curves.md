@@ -6,7 +6,7 @@ Status: COMPLETED 2026-10-11.
 
 Plan 047 checked the blade-element momentum rotor (`rotor_bemt`) against JVX point by point. This plan draws the
 BEM as continuous performance curves over the test data, in the form the reports plot them, and adds the XV-15 as
-an independent check. The drag factor stays at the JVX fit (0.964), so the XV-15 results are predictions.
+an independent check. The drag factor stays at the JVX fit (0.964), so the XV-15 results are predictions. The XV-15 runs with its own NACA 64-series airfoils; plan 047's single camber line is kept as a comparison (dashed in the figure).
 
 ![BEM curves against JVX and XV-15](../figures/proprotor_bemt_curves.png)
 
@@ -35,10 +35,18 @@ an independent check. The drag factor stays at the JVX fit (0.964), so the XV-15
 | Twist | Digitized from TM-86833 fig. 5: +29.7 deg at 0.10 R, 0 at 0.77 R, -5.1 deg at 0.95 R; tip extrapolated to -6.3 deg (about 36 deg over the blade, nonlinear) | fig. 5 |
 | t/c | 0.32 at 0.09 R, 0.28 at 0.17 R, 0.185 at 0.51 R, 0.125 at 0.80 R, 0.082 at the tip | fig. 6 |
 | Root cutout | 0.09 R | first airfoil station, fig. 8 |
-| Sections | plan 047 family: one NACA 64A210 camber line with the thickness scaled | assumption |
+| Sections (default) | The blade's own NACA 64-935, 64-528, 64-118, 64-(1.5)12 and 64-208 at 0.09, 0.17, 0.51, 0.80 and 1.0 R: 64-series thickness at the local t/c on an a = 0.3 mean line at the local design lift coefficient (0.9, 0.5, 0.1, 0.15, 0.2), interpolated in radius | TM-86833 fig. 8, CR-114363 Table III-1 |
+| Sections (comparison) | plan 047 family: one NACA 64A210 camber line with the thickness scaled (`airfoils="plan-047"`) | plan 047 |
 
-**The section assumption is the main gap.** The real blade runs from a NACA 64-935 root (design lift coefficient
-0.9) to a 64-208 tip, so its inboard sections carry far more camber than the model's.
+**Section model** (`SectionSchedule.lift_design`, new):
+
+- The a-series mean line is Abbott and von Doenhoff's closed form.
+- The stall-delay model's zero-lift angle comes per station from thin-airfoil theory for that mean line, -5.28 deg
+  per unit design lift. NeuralFoil's own zero-lift angle is not used: on the thick (t/c > 0.25), cambered root
+  sections its lift slope is 0.03-0.06 per degree instead of about 0.11, which is outside its training range.
+  Inboard of about 0.15 R the stall-delay blend replaces most of that 2-D lift anyway.
+- Check: the built 64-208 has NeuralFoil's zero-lift angle -1.11 deg against -1.06 deg from theory.
+- The default schedule (no `lift_design`) is unchanged, so JVX and the Halo blade design are unaffected.
 
 ## Method
 
@@ -62,30 +70,39 @@ an independent check. The drag factor stays at the JVX fit (0.964), so the XV-15
 | JVX hover, all | 71 | 0.036 | -0.004 |
 | JVX hover, C_T/sigma <= 0.13 | 61 | 0.023 | -0.003 |
 | JVX airplane mode, 5 advance ratios | 42 | 0.022 | +0.015 |
-| **XV-15 hover, C_T/sigma <= 0.13** | 79 | **0.030** | +0.012 |
-| XV-15 hover, all | 104 | 0.080 | -0.014 |
-| **XV-15 airplane mode** | 45 | **0.086** | **-0.067** |
+| XV-15 hover, 64-series airfoils, C_T/sigma <= 0.13 | 79 | 0.060 | -0.007 |
+| XV-15 hover, plan 047 camber line, C_T/sigma <= 0.13 | 79 | 0.030 | +0.012 |
+| **XV-15 airplane mode, 64-series airfoils** | 46 | **0.072** | **-0.041** |
+| XV-15 airplane mode, plan 047 camber line | 45 | 0.086 | -0.067 |
 
 - **JVX.** The curves reproduce plan 047's point-by-point numbers (hover 0.018-0.040, airplane mode 0.025), as
   they should.
-- **XV-15 hover is predicted well up to C_T/sigma 0.13.** The curve follows the data from FM 0.2 to 0.8, about
-  0.01-0.03 optimistic near the FM peak.
-- **Above C_T/sigma 0.13 to 0.14, every BEM hover curve drops onto a stalled branch.** XV-15 at Mtip 0.69 and
-  0.73, and JVX at both tip Machs, while the data stay near FM 0.72-0.80 up to C_T/sigma 0.18.
-  - This is the same failure plan 047 found at the two highest-thrust JVX points, now seen on a second rotor.
-  - The inboard sections stall in the model and not in the test. Likely causes: the 2-D NeuralFoil stall on one
-    lightly cambered section family, and a stall-delay model that is too weak.
-  - **This bears directly on plan 047's finding that the 0.060-solidity Halo blade has no attached hover solution
-    at C_T/sigma 0.14.** That result sits in the band where the BEM is now shown to be conservative against two
-    full-scale rotors.
-- **XV-15 airplane mode: the BEM is about 0.07 low against the 1971 data,** largest at J 1.21-1.41 (up to 0.19).
-  - The curve shapes and the tip-speed ordering are right.
-  - Bell's own calculated curves in the same figures are also below the data. The BEM lands close to them and
-    slightly lower.
+- **XV-15 hover is predicted well up to C_T/sigma 0.12 with either airfoil set.** The curve follows the data from
+  FM 0.2 to 0.8. The 64-series RMS below 0.13 is higher only because its drop starts a little earlier, between the
+  0.12 and 0.136 grid points.
+- **The real airfoils improve airplane mode.** The bias goes from -0.067 to -0.041 and every condition moves
+  toward the data.
+- **Above C_T/sigma about 0.12 to 0.14 the BEM hover curves drop sharply, and the cause is outboard shock-buffet,
+  not inboard stall.**
+  - The drop moves with tip Mach. At Mtip 0.60 the XV-15 curve stays attached to C_T/sigma 0.165 and follows the
+    data; at 0.69 it drops near 0.13, at 0.73 near 0.12. JVX at Mtip 0.68 and 0.73 behaves the same way.
+  - Spanwise check (64-series, Mtip 0.69, C_T/sigma 0.125): the inboard sections are attached with stall delay.
+    The 0.76 R station sits at 6 deg.
+  - NeuralFoil (AeroSandbox's Mach model) at that station, M 0.52: lift falls from 0.84 at 6 deg to 0.60 at 8 deg.
+    At M 0.46 (Mtip 0.60) it rises to 1.09 at 9 deg. At 0.90 R and M 0.62 it falls above 4 deg.
+  - So the cliff is AeroSandbox's shock-buffet onset on the outboard 12 % and 8 % sections. A real
+    64-(1.5)12 or 64-208 at Mach 0.5 should not lose lift that abruptly at 7 deg.
+  - Camber does not fix it. Branch selection does not either: at each hover point every start is tried and the
+    highest-FM solution kept.
+  - **This bears directly on plan 047's Halo hover finding.** Its outboard stall margin was defined from the same
+    buffet onset (about 6 deg at 0.76 R, 2.5 deg at the tip), so the 0.060-solidity blade's "no attached hover
+    solution" result is a product of this section model and not yet a physical finding.
+- **XV-15 airplane mode is still about 0.04 low** against the 1971 data.
+  - Bell's own calculated curves in the same figures are also below the data.
   - The data scatter by about +/-0.04, and several points read 0.93-0.95, close to the momentum limit.
-  - The JVX airplane-mode data (2016, better instrumented) agree with the BEM within 0.022. The 1971 XV-15
-    numbers are therefore the weaker evidence. The likely contributors are the inboard camber gap, an unmodelled
-    hub/spinner force convention in "propulsive force", and the reading error.
+  - The JVX airplane-mode data (2016, better instrumented) agree with the BEM within 0.022, so the 1971 XV-15
+    numbers are the weaker evidence. A hub/spinner force convention in "propulsive force" and the reading error
+    may account for the rest.
 
 ## Tests
 
@@ -100,12 +117,13 @@ an independent check. The drag factor stays at the JVX fit (0.964), so the XV-15
 
 ## Next
 
-1. **High-thrust hover.**
-   - Calibrate or replace the stall-delay model so the hover curves stay attached to C_T/sigma 0.18 on both rotors,
-     e.g. Du-Selig or Corrigan-Schillings in place of the saturated Snel factor.
-   - Then re-run plan 047's Halo blade solidity finding before the reference solidity floor is changed.
-2. **XV-15 sections.** A per-station camber schedule (64-935 to 64-208) would test whether the airplane-mode deficit
-   and the high-thrust stall come from the camber gap.
+1. **High-Mach section polars.**
+   - Replace AeroSandbox's shock-buffet onset on the outboard sections with transonic data or a calibrated model,
+     e.g. NACA 64-series high-speed data (NACA TN 1945 family), MSES or XFOIL with a compressibility correction.
+   - Check that the hover curves then stay attached to C_T/sigma 0.18 at Mtip 0.69-0.73 on both rotors.
+   - Then re-run plan 047's Halo blade design before the reference solidity floor is changed.
+2. **JVX sections.** Apply the same per-station camber treatment to the JVX XN-series blade if its design lift
+   coefficients can be found.
 3. **Better XV-15 airplane-mode data.** If a tabulated source turns up, replace the digitized figures:
    - the 1978 complete-aircraft 40x80 test;
    - the TTR / NFAC entries.

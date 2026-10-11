@@ -15,8 +15,8 @@ The drag factor stays at the JVX fit (0.964): the XV-15 is a prediction, not a f
 XV-15 blade (TM-86833 Table I and figures 5-8; CR-114363 Table III-1): radius 150 in, 3 blades, solidity 0.0891;
 chord 14 in, with the root cuff tapering from 16.6 in at 0.091 R to 14 in at 0.25 R; twist digitized from figure 5
 (about 36 deg from 0.10 R to the tip, nonlinear); t/c from figure 6 (0.32 at the root to 0.08 at the tip). Sections are
-the plan 047 family (one NACA 64A210 camber line, thickness scaled); the real blade's NACA 64-935 to 64-208 sections
-carry much more camber inboard, which this does not model. Root cutout 0.09 R.
+the blade's own NACA 64-935 to 64-208 sections (a = 0.3 mean line at each design lift coefficient, `airfoils="64-series"`,
+the default) or plan 047's single 64A210 camber line (`airfoils="plan-047"`). Root cutout 0.09 R.
 
 Model error is read off the curve: each measured point is compared with the curve interpolated at its own C_T/sigma
 (hover, JVX airplane mode) or C_P (XV-15 airplane mode).
@@ -57,9 +57,23 @@ def xv15_blade():
                          fraction_control_chord=(0.09, 0.25, 1.0), interpolation_chord="linear")
 
 
-def xv15_rotor(drag_factor=None, **kwargs):
-    sections = SectionSchedule(fraction_radius=(0.09, 0.17, 0.30, 0.51, 0.80, 1.00),
-                               thickness_to_chord=(0.32, 0.28, 0.235, 0.185, 0.125, 0.082))
+# XV-15 airfoils (TM-86833 fig. 8; CR-114363 Table III-1, a = 0.3 mean line): NACA 64-935, 64-528, 64-118,
+# 64-(1.5)12 and 64-208 at 0.09, 0.17, 0.51, 0.80 and 1.0 R; design lift coefficient = first digit after the dash / 10.
+airfoil_xv15_fraction = (0.09, 0.17, 0.51, 0.80, 1.00)
+lift_design_xv15 = (0.9, 0.5, 0.1, 0.15, 0.2)
+
+
+def xv15_rotor(drag_factor=None, airfoils="64-series", **kwargs):
+    """`airfoils` "64-series": the blade's own NACA 64-series sections (a = 0.3 mean line at each station's design
+    lift coefficient, t/c from fig. 6); "plan-047": the single NACA 64A210 camber line of plan 047."""
+    fractions = (0.09, 0.17, 0.30, 0.51, 0.80, 1.00)
+    thickness = (0.32, 0.28, 0.235, 0.185, 0.125, 0.082)
+    if airfoils == "64-series":
+        sections = SectionSchedule(fraction_radius=fractions, thickness_to_chord=thickness,
+                                   lift_design=tuple(onp.interp(fractions, airfoil_xv15_fraction, lift_design_xv15)),
+                                   mean_line_a=0.3)
+    else:
+        sections = SectionSchedule(fraction_radius=fractions, thickness_to_chord=thickness)
     extra = {} if drag_factor is None else {"drag_factor": drag_factor}
     return BladeElementRotor(radius_m=radius_xv15_m, count_blades=3, fraction_root=0.09, blade=xv15_blade(),
                              sections=sections, **extra, **kwargs)
@@ -177,14 +191,22 @@ def sweep(rotor, condition, start_fraction=0.6):
                                float(grid[index]), air=air)
         attempts = ([lambda: solve_point(rotor, point, guess=guess)] if guess is not None else []) + \
                    [lambda: solve_point_stepped(rotor, point), lambda: solve_point(rotor, point)]
+        # Near hover stall there are two solutions, attached and stalled, and continuation can drift onto the
+        # stalled one. In hover every start is tried and the lowest-power (highest-FM) solution kept; in airplane
+        # mode the first valid one is kept.
+        best = None
         for attempt in attempts:
             try:
                 result, collective = attempt()
             except RuntimeError:
                 continue
-            if valid(result, grid[index]):
+            if not valid(result, grid[index]):
+                continue
+            if condition.axial_velocity_m_s != 0:
                 return result, collective
-        return None
+            if best is None or result.figure_of_merit > best[0].figure_of_merit:
+                best = (result, collective)
+        return best
 
     start = int(round(start_fraction * (len(grid) - 1)))
     for order in (range(start, len(grid)), range(start - 1, -1, -1)):
@@ -229,16 +251,19 @@ def _curve(rotor, condition, solidity, kind):
     return Curve(condition, x, y, error)
 
 
-groups = ("jvx_hover", "jvx_airplane", "xv15_hover", "xv15_airplane")
+groups = ("jvx_hover", "jvx_airplane", "xv15_hover", "xv15_airplane", "xv15_hover_plan047", "xv15_airplane_plan047")
 cache_dir = root / "output"
 
 
 def study_group(key):
     """Sweep one group of curves and cache it (the four groups are independent and can run in parallel)."""
-    rotor = jvx_rotor(BladeElementRotor().drag_factor) if key.startswith("jvx") else xv15_rotor()
+    if key.startswith("jvx"):
+        rotor = jvx_rotor(BladeElementRotor().drag_factor)
+    else:
+        rotor = xv15_rotor(airfoils="plan-047" if key.endswith("plan047") else "64-series")
     solidity = solidity_jvx if key.startswith("jvx") else solidity_xv15
-    conditions = dict(zip(groups, jvx_conditions() + xv15_conditions()))[key]
-    kind = "power_propeller" if key == "xv15_airplane" else "blade_loading"
+    conditions = dict(zip(groups, jvx_conditions() + xv15_conditions() + xv15_conditions()))[key]
+    kind = "power_propeller" if key.startswith("xv15_airplane") else "blade_loading"
     curves = [_curve(rotor, condition, solidity, kind) for condition in conditions]
     cache_dir.mkdir(exist_ok=True)
     with open(cache_dir / f"proprotor_bemt_curves_{key}.pkl", "wb") as handle:
@@ -258,7 +283,7 @@ def rms(curves, mask=None):
     return float(onp.sqrt(onp.mean(error**2))), float(onp.mean(error)), len(error)
 
 
-blade_loading_attached = 0.13      # above this the BEM hover curves fall onto an inboard-stalled branch
+blade_loading_attached = 0.13      # above about this the BEM hover curves drop (outboard shock-buffet onset, plan 052)
 
 
 def attached(curve):
@@ -280,9 +305,13 @@ def make_figure(curves, path=root / "docs" / "figures" / "proprotor_bemt_curves.
                "$C_T/\\sigma$", "Figure of merit"),
               (figure.add_subplot(grid[0, 3:6]), curves["jvx_airplane"], "JVX airplane mode",
                "$C_T/\\sigma$", "Propulsive efficiency"),
-              (figure.add_subplot(grid[1, 0:3]), curves["xv15_hover"], "XV-15 hover (TM-86833)",
+              (figure.add_subplot(grid[1, 0:3]), curves["xv15_hover"], "XV-15 hover (TM-86833), 64-series airfoils",
                "$C_T/\\sigma$ ($\\sigma$ 0.0891)", "Figure of merit")]
     for ax, group, title, xlabel, ylabel in panels:
+        if group is curves["xv15_hover"] and "xv15_hover_plan047" in curves:
+            for k, curve in enumerate(curves["xv15_hover_plan047"]):
+                ax.plot(curve.x, curve.y, "--", color=palette[k], lw=1, alpha=0.7)
+            ax.plot([], [], "--", color=ink_muted, lw=1, label="plan 047 single camber line")
         for k, curve in enumerate(group):
             c = curve.condition
             ax.plot(c.measured_x, c.measured_y, markers[k], color=palette[k], ms=7, mfc="none", mew=1.4)
@@ -293,7 +322,7 @@ def make_figure(curves, path=root / "docs" / "figures" / "proprotor_bemt_curves.
         if group[0].condition.axial_velocity_m_s == 0:
             r_attached, _, n_attached = rms(group, attached)
             title += (f"\nRMS {r_attached:.3f} for $C_T/\\sigma \\leq$ {blade_loading_attached:.2f} ({n_attached} pts); "
-                      "drop above: stalled BEM branch")
+                      "drop above: outboard shock-buffet in the section model")
         ax.set(xlabel=xlabel, ylabel=ylabel, title=title)
         ax.legend(frameon=False, fontsize=10, loc="lower right", title="Line BEM, markers test", title_fontsize=10)
     airplane = curves["xv15_airplane"]
@@ -301,6 +330,9 @@ def make_figure(curves, path=root / "docs" / "figures" / "proprotor_bemt_curves.
     tips = sorted({int(c.condition.label.split(", ")[1].split(" ")[0]) for c in airplane}, reverse=True)
     for j, v_kt in enumerate(speeds):
         ax = figure.add_subplot(grid[1, 3 + j])
+        for curve in [c for c in curves.get("xv15_airplane_plan047", []) if c.condition.label.startswith(f"{v_kt} kt")]:
+            tip = int(curve.condition.label.split(", ")[1].split(" ")[0])
+            ax.plot(curve.x, curve.y, "--", color=palette[tips.index(tip)], lw=1, alpha=0.7)
         for curve in [c for c in airplane if c.condition.label.startswith(f"{v_kt} kt")]:
             tip = int(curve.condition.label.split(", ")[1].split(" ")[0])
             k = tips.index(tip)
@@ -312,7 +344,7 @@ def make_figure(curves, path=root / "docs" / "figures" / "proprotor_bemt_curves.
             ax.set_ylabel("Propulsive efficiency")
         ax.legend(frameon=False, fontsize=9, loc="lower right")
     r, bias, n = rms(airplane)
-    figure.text(0.74, 0.475, f"XV-15 airplane mode (CR-114363, digitized): RMS {r:.3f}, bias {bias:+.3f} ({n} points)",
+    figure.text(0.74, 0.475, f"XV-15 airplane mode (CR-114363, digitized), 64-series airfoils (dashed: plan 047 camber): RMS {r:.3f}, bias {bias:+.3f} ({n} points)",
                 ha="center", fontsize=12, color=ink)
     figure.suptitle("Blade-element momentum rotor (plan 047, one drag factor fitted on JVX) against full-scale data",
                     fontsize=15, color=ink)

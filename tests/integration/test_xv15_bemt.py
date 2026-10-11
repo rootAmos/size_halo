@@ -1,6 +1,6 @@
 """Blade-element momentum rotor on the full-scale XV-15 rotor (plan 052), a few points of the curves in
 examples/proprotor_bemt_curves.py (full set: hover FM RMS 0.030 for C_T/sigma <= 0.13; airplane-mode efficiency
-0.07 below the 1971 data on average).
+0.04 below the 1971 data on average).
 """
 import unittest
 
