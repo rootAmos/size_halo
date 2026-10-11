@@ -33,7 +33,10 @@ joins the bus demand in hover, and in airplane mode the cooling drag is a
 per-point variable added to the thrust and tied to the exchanger's drag by
 an equality (drag depends on heat, heat on thrust). Components with a thermal
 model get an end-of-interval temperature from `temperature_start_C` (None:
-steady state) over `duration_s`, with margins against their limits.
+steady state) over `duration_s`, with margins against their limits. With the
+ε-NTU exchanger (plan 042) the point also owns the air mass flow through the
+duct (its residual constrained to zero) and, in hover, the fan pressure rise;
+the cooling drag may then be negative (Meredith thrust).
 
 Redundancy (Tier 18, `topologies.RedundancyLayer`): with lane motors (motor count = rotors x lanes) the
 rotor gearbox input torque is shared by the active lanes of each rotor; `FlightCondition.active_lane_count`
@@ -56,6 +59,7 @@ from aircraft_closure.aerodynamics.slipstream import RotorState
 from aircraft_closure.core.ports import ElectricalPortValue, MechanicalPortValue
 from aircraft_closure.powertrain.compatibility import operating_margins
 from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery
+from aircraft_closure.powertrain.components.ntu_heat_exchanger import NtuRamAirHeatExchanger
 from aircraft_closure.powertrain.redundancy import battery_with_strings, degraded_state
 from aircraft_closure.thermal.heat import HeatLoad, evaluate_point_thermal
 
@@ -176,6 +180,8 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
     temperature_offset_K = condition.temperature_offset_K
     atmosphere = asb.Atmosphere(altitude=condition.altitude_m, temperature_deviation=temperature_offset_K)
     has_cooling = getattr(aircraft.powertrain, "cooling", None) is not None
+    # Plan 042: the ε-NTU exchanger's operating point has its own unknowns (air flow; fan pressure rise in hover).
+    is_ntu_cooling = has_cooling and isinstance(aircraft.powertrain.cooling.heat_exchanger, NtuRamAirHeatExchanger)
     drag_cooling_N = 0.0
 
     if condition.mode == "hover":
@@ -205,7 +211,9 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
                                                                    aero=aero)])
         if has_cooling:
             # Tier 19: cooling drag as a variable, tied to the heat exchanger's drag below.
-            drag_cooling_N = opti.variable(init_guess=100.0, scale=100.0, lower_bound=0.0)
+            # Plan 042: the duct's net force may be a thrust (Meredith), so no lower bound under the ε-NTU model.
+            drag_cooling_N = opti.variable(init_guess=100.0, scale=100.0,
+                                           lower_bound=None if is_ntu_cooling else 0.0)
         thrust_total_N = aero.drag_N + drag_cooling_N + weight_N * sin_gamma
         if rotor_state is not None:
             opti.subject_to((active_rotor_count * rotor_state.thrust_per_rotor_N - thrust_total_N) / weight_N == 0)
@@ -372,8 +380,16 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
             count_buses_failed=state.count_buses_failed, torque_gearbox_input_Nm=torque_gearbox_input_Nm,
             current_string_A=current_string_A if has_strings else 0.0, power_loss_strings_W=power_loss_strings_W,
             current_tie_A=current_tie_A, power_loss_tie_W=power_loss_tie_W)
+    cooling_unknowns = None
+    if is_ntu_cooling:
+        cooling_unknowns = dict(mass_flow_air_kg_s=opti.variable(init_guess=3.0, scale=3.0, lower_bound=0.05))
+        if condition.mode == "hover":
+            cooling_unknowns["pressure_rise_fan_Pa"] = opti.variable(init_guess=500.0, scale=500.0, lower_bound=0.0)
     thermal = evaluate_point_thermal(aircraft.powertrain, heat_loads, atmosphere, velocity_m_s, condition.mode,
-                                     duration_s, temperature_start_C, condition.label, components=components_override)
+                                     duration_s, temperature_start_C, condition.label, components=components_override,
+                                     cooling_unknowns=cooling_unknowns)
+    if is_ntu_cooling:
+        opti.subject_to(thermal.cooling.residual_mass_flow_kg_s / cooling_unknowns["mass_flow_air_kg_s"] == 0)
     power_electric_demand_W = power_electric_motors_W
     if state.count_buses_failed:
         power_electric_demand_W = power_electric_motors_W + power_loss_tie_W

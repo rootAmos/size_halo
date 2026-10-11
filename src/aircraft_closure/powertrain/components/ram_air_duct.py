@@ -47,15 +47,21 @@ class RamAirDuct:
     specific_heat_J_kg_K: Any = 1005.0
     gas_constant_J_kg_K: Any = 287.05
 
+    def inlet_state(self, atmosphere, velocity_m_s=0.0):
+        """Air at the core face before the diffuser loss: (total temperature K, total pressure Pa, density kg/m3)."""
+        g, cp, r = self.ratio_specific_heats, self.specific_heat_J_kg_K, self.gas_constant_J_kg_K
+        temperature_K, pressure_Pa = atmosphere.temperature(), atmosphere.pressure()
+        temperature_total_K = temperature_K + velocity_m_s**2 / (2 * cp)
+        pressure_total_Pa = pressure_Pa * (temperature_total_K / temperature_K)**(g / (g - 1))
+        pressure_inlet_Pa = pressure_Pa + self.recovery_inlet * (pressure_total_Pa - pressure_Pa)
+        return temperature_total_K, pressure_inlet_Pa, pressure_inlet_Pa / (r * temperature_total_K)
+
     def evaluate(self, mass_flow_kg_s, power_heat_W, pressure_drop_core_Pa, area_face_m2, atmosphere,
                  velocity_m_s=0.0, pressure_rise_fan_Pa=0.0):
         g, cp, r = self.ratio_specific_heats, self.specific_heat_J_kg_K, self.gas_constant_J_kg_K
         exponent = (g - 1) / g
-        temperature_K, pressure_Pa = atmosphere.temperature(), atmosphere.pressure()
-        temperature_total_K = temperature_K + velocity_m_s**2 / (2 * cp)
-        pressure_total_Pa = pressure_Pa * (temperature_total_K / temperature_K)**(1 / exponent)
-        pressure_inlet_Pa = pressure_Pa + self.recovery_inlet * (pressure_total_Pa - pressure_Pa)
-        density_face_kg_m3 = pressure_inlet_Pa / (r * temperature_total_K)
+        pressure_Pa = atmosphere.pressure()
+        temperature_total_K, pressure_inlet_Pa, density_face_kg_m3 = self.inlet_state(atmosphere, velocity_m_s)
         pressure_dynamic_face_Pa = (mass_flow_kg_s / area_face_m2)**2 / (2 * density_face_kg_m3)
         pressure_exit_total_Pa = (pressure_inlet_Pa - self.loss_diffuser * pressure_dynamic_face_Pa
                                   - pressure_drop_core_Pa + pressure_rise_fan_Pa)

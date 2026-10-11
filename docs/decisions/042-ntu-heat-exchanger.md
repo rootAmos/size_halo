@@ -70,6 +70,39 @@ velocity_m_s, fan)` returning `HeatExchangerResult` (drag, fan power, air mass f
 heat-rejection margin: the heat the core rejects at the point's flows and inlet temperatures must cover the heat
 load.
 
+## Sizing option (`HaloAssumptions.heat_exchanger_model = "ntu"`)
+
+The mass-per-watt exchanger stays the default (`"mass_per_watt"`), so the reference is unchanged. With `"ntu"`
+the installed cooler is `NtuRamAirHeatExchanger` (`powertrain/components/ntu_heat_exchanger.py`): the core and
+duct above, a fan rating, and labelled mass allowances.
+
+- **Design variables** (replace `power_rated_heat_exchanger_W`): the core counts `count_wide`, `count_long`,
+  `count_tall`; the nozzle area (a fixed-geometry duct, one area for every point); the fan rating.
+- **Per thermal point** (created by `build_flight_point`, which already owns the point's variables): an air mass
+  flow with the duct residual (nozzle flow = assumed flow) constrained to zero; in hover a fan total-pressure rise
+  (>= 0). Airplane-mode points have no fan: ram pressure alone drives the flow.
+- **Heat rejection.** The coolant leaves the exchanger at the loop temperature (60 C, the temperature the lumped
+  machine models reject to) and enters it at T_c + Q/(m_c c_c). The core must reject the end-of-interval heat Q
+  (the peak within the interval, as for the old rating margin): eps C_min (T_c + Q/C_c - T_air) >= Q, written as
+  (eps C_min (T_c - T_air) - Q (1 - eps C_min / C_c)) / 100 kW >= 0, with T_air the freestream total temperature.
+  This is a capacity inequality: the loop's valve or bypass passes the actual heat. The coolant mass flow is a
+  fixed assumption, 2.0 kg/s of 50 % water-glycol (a 16 K coolant rise at the 121 kW climb peak); the coolant-side
+  pressure drop is reported, the pump's power is not charged (its mass is in the allowance).
+- **Cooling drag** in airplane mode is the duct's net force (negative = thrust, the Meredith effect), so the
+  point's cooling-drag variable loses its lower bound of zero under this option. Heat in the duct is the
+  interval-mean heat, as the old drag law used.
+- **Fan power** in hover: m dp_fan / (rho_face eta), eta = 0.6 fan and motor (the old model's value), added to
+  the bus demand like the old fan power; it must stay below the fan rating.
+- **Mass** = core (material + coolant in it) + allowances, each a separate item in the exchanger's mass breakdown:
+  - ducts (inlet, diffuser, nozzle): 12 kg per m2 of core face. Basis: about 1.2 m of duct whose wetted area is
+    about 6.7 x the face area for a 0.9 x 0.6 m face, at 1.8 kg/m2 (1.5 mm composite with stiffeners);
+  - fans: rating / 2.0 kW/kg (electric fan, motor and controller; small ducted electric fans are 2-4 kW/kg);
+  - pump, pipes and loop coolant outside the core: 30 kg fixed (a 6 kg pump; about 26 m of 25 mm line to the
+    tips and back at 0.9 kg/m, tube plus glycol).
+  These are the author's estimates, not from Kellermann 2021 (whose mass equations are not published) or
+  OpenConcept (which carries no duct or fan mass); they are kept explicit so they can be replaced.
+- **Trajectory** (plan 036): only the mass-per-watt model is supported there for now (it raises otherwise).
+
 ## Verification (tests/thermal)
 
 - ε-NTU: ε → 1 - exp(-NTU) as C_r → 0; ε → 0 as NTU → 0; ε increases with NTU; bounded by the counterflow value.
