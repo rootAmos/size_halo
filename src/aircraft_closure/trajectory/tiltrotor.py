@@ -316,6 +316,8 @@ def _thermal_states(opti, model, forces, supply, altitude_m, velocity_m_s, time_
     if cooling is None or not temperatures:
         return TrajectoryThermal(temperatures, zero, zero, zero, tuple(constraints))
     exchanger = cooling.heat_exchanger
+    if not hasattr(exchanger, "power_rated_W"):
+        raise NotImplementedError("The trajectory supports the mass-per-watt heat exchanger only (plan 042).")
     atmosphere = asb.Atmosphere(altitude=altitude_m)
     result = exchanger.evaluate(heat_W, atmosphere, velocity_m_s, fan=True)
     pressure_dynamic_Pa = 0.5 * atmosphere.density() * velocity_m_s**2

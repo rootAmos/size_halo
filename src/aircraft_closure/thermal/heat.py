@@ -94,11 +94,15 @@ class PointThermal:
 
 
 def evaluate_point_thermal(powertrain, heat_loads, atmosphere, velocity_m_s, mode, duration_s=0.0,
-                           temperature_start_C=None, label="point", components=None):
+                           temperature_start_C=None, label="point", components=None, cooling_unknowns=None):
     """`temperature_start_C`: None (steady state, no history) or a dict of start temperatures by instance name.
 
     `components` (Tier 18, optional): instance name -> the component at this point in place of the topology's
-    (a pack with an isolated string has its own capacitance and resistance)."""
+    (a pack with an isolated string has its own capacitance and resistance).
+
+    `cooling_unknowns` (plan 042, optional): the caller's per-point unknowns passed to the exchanger's `evaluate`
+    (the ε-NTU exchanger's air mass flow and fan pressure rise); the exchanger's own `margins` then replace the
+    rating margin."""
     margins, temperatures_end_C, temperatures_mean_C, mean_W, end_W = [], {}, {}, {}, {}
     instances = powertrain.topology.instances
     components = components or {}
@@ -126,10 +130,17 @@ def evaluate_point_thermal(powertrain, heat_loads, atmosphere, velocity_m_s, mod
         rejected = [load for load in heat_loads if load.source not in cooling.sources_excluded]
         power_heat_W = sum((load.count * mean_W[load.source] for load in rejected), 0.0)
         power_heat_end_W = sum((load.count * end_W[load.source] for load in rejected), 0.0)
-        cooling_result = exchanger.evaluate(power_heat_W, atmosphere, velocity_m_s, fan=(mode == "hover"))
-        power_heat_equivalent_W = power_heat_end_W * exchanger.delta_temperature_ref_C / cooling_result.delta_temperature_C
-        margins.append(margin_below(f"{label}: heat_exchanger power_heat_W", power_heat_equivalent_W,
-                                    exchanger.power_rated_W))
+        if cooling_unknowns is None:
+            cooling_result = exchanger.evaluate(power_heat_W, atmosphere, velocity_m_s, fan=(mode == "hover"))
+            power_heat_equivalent_W = (power_heat_end_W * exchanger.delta_temperature_ref_C
+                                       / cooling_result.delta_temperature_C)
+            margins.append(margin_below(f"{label}: heat_exchanger power_heat_W", power_heat_equivalent_W,
+                                        exchanger.power_rated_W))
+        else:
+            cooling_result = exchanger.evaluate(power_heat_W, atmosphere, velocity_m_s, fan=(mode == "hover"),
+                                                **cooling_unknowns)
+            power_heat_equivalent_W, margins_cooling = exchanger.margins(power_heat_end_W, cooling_result, label)
+            margins.extend(margins_cooling)
     return PointThermal(heat_loads=tuple(heat_loads), power_heat_W=power_heat_W, power_heat_end_W=power_heat_end_W,
                         power_heat_equivalent_W=power_heat_equivalent_W, cooling=cooling_result,
                         temperatures_end_C=temperatures_end_C, temperatures_mean_C=temperatures_mean_C,

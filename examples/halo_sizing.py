@@ -61,6 +61,8 @@ from aircraft_closure.powertrain.components.converters import ConverterLossModel
 from aircraft_closure.powertrain.components.gearbox import Gearbox, GearStageModel
 from aircraft_closure.powertrain.components.generator import Generator
 from aircraft_closure.powertrain.components.heat_exchanger import RamAirHeatExchanger
+from aircraft_closure.powertrain.components.ntu_heat_exchanger import NtuRamAirHeatExchanger, with_core_counts
+from aircraft_closure.powertrain.components.ram_air_duct import RamAirDuct
 from aircraft_closure.powertrain.components.motor import (DatabaseMassModel, Motor, TorqueDensityMassModel,
                                                           UnitMachineMassModel,
                                                           rubber_machine)
@@ -386,6 +388,14 @@ class HaloAssumptions:
     # Heat loads cooled elsewhere: the gearboxes' own oil coolers, assumed inside the XV-15-calibrated AFDD drive
     # system weights (they include the lubrication systems). Their heat is still reported.
     sources_excluded_heat_exchanger: tuple = ("gearbox", "generator_gearbox")
+    # Plan 042: "mass_per_watt" (the default above: mass = rating / specific power, quadratic loss law) or "ntu" (an
+    # offset-strip-fin core by ε-NTU in a ram-air duct with a hover fan: core counts, nozzle area and fan rating are
+    # design variables; per point an air-flow unknown with the duct residual, and a fan pressure rise in hover).
+    heat_exchanger_model: str = "mass_per_watt"
+    mass_flow_coolant_heat_exchanger_kg_s: float = 2.0     # "ntu": fixed water-glycol flow (16 K rise at 121 kW)
+    specific_power_fan_heat_exchanger_W_kg: float = 2000.0  # "ntu": fan, motor and controller (author estimate)
+    mass_duct_per_area_heat_exchanger_kg_m2: float = 12.0  # "ntu": inlet, diffuser, nozzle per m2 core face (estimate)
+    mass_pump_pipes_heat_exchanger_kg: float = 30.0        # "ntu": pump, lines to the tips, loop coolant (estimate)
     # ---- Tier 18 redundancy (plan 032) ----
     # True: `count_lanes_motor` lane motors per rotor (each 1/N of the torque, on a combining gearbox input),
     # `count_buses` cross-strapped buses joined by normally open ties (contactor + cable), `count_strings_battery`
@@ -475,6 +485,13 @@ class HaloDesign:
     camber_wing: Any = None
     power_rated_heat_exchanger_W: Any = None      # Tier 19 thermal: heat rejected at the reference difference
     power_rated_gearbox_W: Any = None             # Tier 19 thermal: rotor gearbox rating; None: the motor rating
+    # Plan 042 "ntu" heat exchanger: core counts (air channels across, fin lengths along the air, layers), duct
+    # nozzle area and hover fan rating; None with the mass-per-watt model.
+    count_wide_heat_exchanger: Any = None
+    count_long_heat_exchanger: Any = None
+    count_tall_heat_exchanger: Any = None
+    area_nozzle_heat_exchanger_m2: Any = None
+    power_rated_fan_heat_exchanger_W: Any = None
 
 
 def battery_thermal(assumptions):
@@ -901,15 +918,30 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
             locations = locations + (InstalledInstance("protection_bus_tie", x_m=x_bus_m, z_m=z_bus_m),
                                      InstalledInstance("cable_bus_tie", x_m=x_bus_m, z_m=z_bus_m))
     cooling = None
+    if a.heat_exchanger_model not in ("mass_per_watt", "ntu"):
+        raise ValueError(f"Unknown heat exchanger model '{a.heat_exchanger_model}'.")
     if a.thermal_model:
         # One ram-air cooler for every heat load, in the fuselage at the wing (the loop runs to the tips).
-        cooling = InstalledCooling(RamAirHeatExchanger(
-            power_rated_W=d.power_rated_heat_exchanger_W, specific_power_W_kg=a.specific_power_heat_exchanger_W_kg,
-            temperature_coolant_C=a.temperature_coolant_C,
-            delta_temperature_ref_C=a.delta_temperature_ref_heat_exchanger_C,
-            effectiveness=a.effectiveness_heat_exchanger, pressure_drop_ref_Pa=a.pressure_drop_ref_heat_exchanger_Pa,
-            efficiency_fan=a.efficiency_fan_heat_exchanger), x_m=x_rotor_m, z_m=0.0,
-            sources_excluded=a.sources_excluded_heat_exchanger)
+        if a.heat_exchanger_model == "ntu":
+            exchanger = with_core_counts(NtuRamAirHeatExchanger(
+                duct=RamAirDuct(efficiency_fan=a.efficiency_fan_heat_exchanger),
+                temperature_coolant_C=a.temperature_coolant_C,
+                mass_flow_coolant_kg_s=a.mass_flow_coolant_heat_exchanger_kg_s,
+                specific_power_fan_W_kg=a.specific_power_fan_heat_exchanger_W_kg,
+                mass_duct_per_area_kg_m2=a.mass_duct_per_area_heat_exchanger_kg_m2,
+                mass_pump_pipes_kg=a.mass_pump_pipes_heat_exchanger_kg),
+                d.count_wide_heat_exchanger, d.count_long_heat_exchanger, d.count_tall_heat_exchanger,
+                d.area_nozzle_heat_exchanger_m2, d.power_rated_fan_heat_exchanger_W)
+        else:
+            exchanger = RamAirHeatExchanger(
+                power_rated_W=d.power_rated_heat_exchanger_W, specific_power_W_kg=a.specific_power_heat_exchanger_W_kg,
+                temperature_coolant_C=a.temperature_coolant_C,
+                delta_temperature_ref_C=a.delta_temperature_ref_heat_exchanger_C,
+                effectiveness=a.effectiveness_heat_exchanger,
+                pressure_drop_ref_Pa=a.pressure_drop_ref_heat_exchanger_Pa,
+                efficiency_fan=a.efficiency_fan_heat_exchanger)
+        cooling = InstalledCooling(exchanger, x_m=x_rotor_m, z_m=0.0,
+                                   sources_excluded=a.sources_excluded_heat_exchanger)
     return Aircraft(
         wing=wing,
         horizontal_tail=HorizontalTail(area_m2=d.area_horizontal_tail_m2, aspect_ratio=3.27, taper_ratio=1.0,
@@ -1137,6 +1169,7 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         # Tier 18: a start with a different lane count keeps its total motor torque per rotor.
         guess = replace(guess, torque_peak_motor_Nm=guess.torque_peak_motor_Nm * initial.count_lanes_motor / lanes)
     is_ecm = a.battery_model == "ecm"
+    is_ntu = a.heat_exchanger_model == "ntu"
     design = HaloDesign(
         x_le_wing_m=opti.variable(init_guess=guess.x_le_wing_m, lower_bound=3.0, upper_bound=8.5),
         area_wing_m2=opti.variable(init_guess=guess.area_wing_m2, scale=10.0, lower_bound=5.0, upper_bound=60.0),
@@ -1148,7 +1181,7 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         # Tier 19: the cooler's rating and the drive's own rating (the motor's becomes continuous).
         power_rated_heat_exchanger_W=opti.variable(
             init_guess=guess.power_rated_heat_exchanger_W if guess.power_rated_heat_exchanger_W is not None
-            else 3e5, scale=1e5, lower_bound=1e3) if a.thermal_model else None,
+            else 3e5, scale=1e5, lower_bound=1e3) if a.thermal_model and not is_ntu else None,
         power_rated_gearbox_W=opti.variable(
             init_guess=guess.power_rated_gearbox_W if guess.power_rated_gearbox_W is not None
             else (initial.power_rated_motor_W if initial is not None else 7e5), scale=1e6,
@@ -1168,6 +1201,21 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         area_disk_m2=opti.variable(init_guess=guess.area_disk_m2, scale=10.0, lower_bound=5.0, upper_bound=120.0),
         mass_fuel_kg=opti.variable(init_guess=guess.mass_fuel_kg, scale=500.0, lower_bound=0.0),
     )
+    if a.thermal_model and is_ntu:
+        # Plan 042: the ε-NTU cooler's size (core counts), nozzle area and fan rating; the default guess is a core of
+        # about 0.9 x 0.6 x 0.09 m that rejects about 110 kW on the hot day.
+        # Log-transformed (positive at every iterate: the core's fractional powers need it).
+        def ntu_variable(name, default, scale, lower_bound):
+            value = getattr(guess, name)
+            value = value if value is not None else default
+            return opti.variable(init_guess=value, scale=value, lower_bound=lower_bound, log_transform=True)
+        design = replace(design,
+                         count_wide_heat_exchanger=ntu_variable("count_wide_heat_exchanger", 600.0, 100.0, 10.0),
+                         count_long_heat_exchanger=ntu_variable("count_long_heat_exchanger", 15.0, 10.0, 1.0),
+                         count_tall_heat_exchanger=ntu_variable("count_tall_heat_exchanger", 40.0, 10.0, 2.0),
+                         area_nozzle_heat_exchanger_m2=ntu_variable("area_nozzle_heat_exchanger_m2", 0.15, 0.1, 0.005),
+                         power_rated_fan_heat_exchanger_W=ntu_variable("power_rated_fan_heat_exchanger_W", 10e3, 1e4,
+                                                                       100.0))
     if a.machine_mass_by_torque:
         # Tier 13: motor speed, rotor gear ratio and (with a step-up gearbox) generator speed are trades.
         design = replace(design, speed_peak_motor_rad_s=opti.variable(
@@ -1632,6 +1680,11 @@ def thermal_trace(segment_points, other_points, value):
             mass_flow_air_kg_s=value(t.cooling.mass_flow_air_kg_s),
             delta_temperature_C=value(t.cooling.delta_temperature_C),
             power_heat_end_W=value(t.power_heat_end_W),
+            **(dict(pressure_drop_air_Pa=value(t.cooling.pressure_drop_Pa),
+                    pressure_drop_coolant_Pa=value(t.cooling.pressure_drop_coolant_Pa),
+                    effectiveness=value(t.cooling.effectiveness),
+                    velocity_exit_m_s=value(t.cooling.velocity_exit_m_s))
+               if hasattr(t.cooling, "residual_mass_flow_kg_s") else {}),
             power_to_coolant_W={name: value(power_W) for name, power_W in t.power_to_coolant_W.items()},
             temperatures_end_C={name: value(temperature) for name, temperature in t.temperatures_end_C.items()},
             power_shaft_motor_W=value(p.speed_motor_rad_s * p.torque_motor_Nm)))
@@ -1653,9 +1706,21 @@ def heat_exchanger_summary(powertrain, value):
         machines[name] = dict(power_rated_W=value(rating_W), mass_kg=value(component.get_mass()),
                               power_loss_continuous_W=value(parameters.power_loss_continuous_W),
                               time_constant_s=value(parameters.capacity_J_K * parameters.resistance_K_W))
-    return dict(power_rated_W=value(exchanger.power_rated_W), mass_kg=value(exchanger.get_mass()),
-                power_rated_gearbox_W=value(powertrain.topology.instances["gearbox"].component.power_rated_W),
-                machines=machines)
+    summary = dict(mass_kg=value(exchanger.get_mass()),
+                   power_rated_gearbox_W=value(powertrain.topology.instances["gearbox"].component.power_rated_W),
+                   machines=machines)
+    if isinstance(exchanger, NtuRamAirHeatExchanger):
+        # Plan 042: core size and the mass items (core, ducts, fans, pump and pipes).
+        core = exchanger.core
+        breakdown = exchanger.mass_breakdown()
+        summary.update(model="ntu", power_rated_fan_W=value(exchanger.power_rated_fan_W),
+                       area_nozzle_m2=value(exchanger.duct.area_nozzle_m2),
+                       counts=(value(core.count_wide), value(core.count_long), value(core.count_tall)),
+                       width_m=value(core.width_m()), height_m=value(core.height_m()), length_m=value(core.length_m()),
+                       masses_kg={f.name: value(getattr(breakdown, f.name)) for f in fields(breakdown)})
+    else:
+        summary.update(model="mass_per_watt", power_rated_W=value(exchanger.power_rated_W))
+    return summary
 
 
 def battery_trace(points, value):
