@@ -126,10 +126,28 @@ continuous_trades = {
         ("Size for 80 % capacity at end of life (today)", same),
         ("Replace at 90 % capacity", {"assumptions.factor_capacity_ageing_battery": lambda x: 0.9}),
         ("Run to 70 % capacity", {"assumptions.factor_capacity_ageing_battery": lambda x: 0.7})],
+    # Fuselage factor 1.70 is calibrated on the aluminium XV-15; composite construction from Raymer's advanced-
+    # composite fuselage factor (0.85-0.95, 0.90 taken; Aircraft Design: A Conceptual Approach, weights chapter).
+    "trade.fuselage_material": [
+        ("Metallic semi-monocoque (the XV-15 calibration)", same),
+        ("Composite monocoque (Raymer factor 0.90)", {"assumptions.mass_factor_fuselage": lambda x: 0.90 * x})],
     "trade.rotor_span": [
         ("Rotor-fuselage clearance today", same),
         ("Clearance 0.1 m less", {"assumptions.clearance_rotor_fuselage_m": lambda x: x - 0.1})],
 }
+
+
+def feed_estimates(ledger, today):
+    """Trades priced on a ledger quantity from a handbook ratio (no sizing hook): the change is in the quantity's
+    units, the ledger applies its sensitivity."""
+    fittings = ledger.quantities["gap.tilt_fittings"].belief()[0]
+    # Specific ultimate strength: Ti-6Al-4V about 1,100 MPa / 4,430 kg/m3, 4340 steel about 1,800 MPa / 7,850 kg/m3:
+    # a strength-sized steel fitting is about 8 % heavier (MMPDS typical values).
+    steel = (7850 / 1800) / (4430 / 1100) - 1
+    price_trade(ledger, "trade.fitting_material", [
+        TradeOption("Titanium (baseline)", "gap.tilt_fittings", 0.0, 0.0, "handbook ratio"),
+        TradeOption("Steel (4340)", "gap.tilt_fittings", steel * fittings, 0.5 * steel * fittings,
+                    "specific strength, MMPDS typical values; sigma 50 %")], "handbook estimate", today)
 
 
 def feed_coverage(ledger, path, today):
@@ -169,6 +187,7 @@ def main(argv=None):
     feed_flutter(ledger, today)
     feed_drivers(ledger, args.parametric, today)
     feed_coverage(ledger, args.all, today)
+    feed_estimates(ledger, today)
     classify(ledger)
     apply_paths(ledger)
     apply_schedule(ledger)

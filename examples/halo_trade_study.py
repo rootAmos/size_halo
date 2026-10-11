@@ -51,7 +51,7 @@ def options_for(key, base):
     if key == "trade.redundancy_level":
         return [("2 lanes, 2 buses, 2 strings (today)", base),
                 ("3 battery strings", replace(base, count_strings_battery=3)),
-                ("3 lanes per rotor", replace(base, count_lanes_motor=3)),
+                ("4 lanes per rotor", replace(base, count_lanes_motor=4)),
                 ("No redundancy layer (single lane, bus, string)", replace(base, redundancy=False))]
     if key == "trade.blade_count":
         return [("3 blades (baseline)", base), ("4 blades", replace(base, count_blades=4))]

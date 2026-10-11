@@ -16,5 +16,8 @@
  "assumptions.efficiency_inverter": {"kind": "technology", "sigma": 0.005, "unit": "-", "source": "placeholder prior", "label": "Inverter efficiency"},
  "assumptions.fraction_mass_cells_battery": {"kind": "technology", "sigma": 0.03, "unit": "-", "source": "placeholder prior: cylindrical packs 0.65-0.75", "label": "Battery cell-to-pack fraction"},
  "assumptions.factor_capacity_ageing_battery": {"kind": "technology", "sigma": 0.04, "unit": "-", "source": "placeholder prior: end-of-life capacity", "label": "Battery capacity at end of life"},
- "factors.wing_tiltrotor": {"kind": "calibration", "sigma": 0.12, "unit": "-", "source": "bottom-up wing weight spread: XV-15 +17 %, V-22 -5 %", "label": "Wing weight factor"}
+ "factors.wing_tiltrotor": {"kind": "calibration", "sigma": 0.12, "unit": "-", "source": "bottom-up wing weight spread: XV-15 +17 %, V-22 -5 %", "label": "Wing weight factor"},
+ "assumptions.frequency_coning_per_rev": {"label": "Rotor coning frequency", "unit": "per rev", "note": "AFDD-82 rotor weight goes as the flap frequency to the power 2.17, and the rotor factor (0.69) was fitted at the XV-15's 1.55/rev: a hub-stiffness lever only once the Halo hub is defined, tied to the calibration until then"},
+ "requirements.temperature_hover_hot_K": {"label": "Hot-day hover temperature", "unit": "K", "note": "Elasticity per % of absolute temperature: 1 % is 3 K. 95 F (308 K) today"},
+ "assumptions.length_fuselage_m": {"label": "Fuselage length", "unit": "m", "note": "Layout-anchored (plan 037)"}
 }
