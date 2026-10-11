@@ -382,7 +382,10 @@ def build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg, hybridi
             current_tie_A=current_tie_A, power_loss_tie_W=power_loss_tie_W)
     cooling_unknowns = None
     if is_ntu_cooling:
-        cooling_unknowns = dict(mass_flow_air_kg_s=opti.variable(init_guess=3.0, scale=3.0, lower_bound=0.05))
+        # Log-transformed: the core's Reynolds-number powers need a positive flow at every iterate (an Opti lower
+        # bound is a constraint, which iterates may violate).
+        cooling_unknowns = dict(mass_flow_air_kg_s=opti.variable(init_guess=3.0, scale=3.0, lower_bound=0.05,
+                                                                 log_transform=True))
         if condition.mode == "hover":
             cooling_unknowns["pressure_rise_fan_Pa"] = opti.variable(init_guess=500.0, scale=500.0, lower_bound=0.0)
     thermal = evaluate_point_thermal(aircraft.powertrain, heat_loads, atmosphere, velocity_m_s, condition.mode,

@@ -1163,10 +1163,11 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
     if a.thermal_model and is_ntu:
         # Plan 042: the ε-NTU cooler's size (core counts), nozzle area and fan rating; the default guess is a core of
         # about 0.9 x 0.6 x 0.09 m that rejects about 110 kW on the hot day.
+        # Log-transformed (positive at every iterate: the core's fractional powers need it).
         def ntu_variable(name, default, scale, lower_bound):
             value = getattr(guess, name)
-            return opti.variable(init_guess=value if value is not None else default, scale=scale,
-                                 lower_bound=lower_bound)
+            value = value if value is not None else default
+            return opti.variable(init_guess=value, scale=value, lower_bound=lower_bound, log_transform=True)
         design = replace(design,
                          count_wide_heat_exchanger=ntu_variable("count_wide_heat_exchanger", 600.0, 100.0, 10.0),
                          count_long_heat_exchanger=ntu_variable("count_long_heat_exchanger", 15.0, 10.0, 1.0),
