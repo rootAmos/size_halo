@@ -42,6 +42,7 @@ import aerosandbox.tools.units as u
 
 from aircraft_closure.performance.flight_point import acceleration_gravity_m_s2
 from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery
+from aircraft_closure.powertrain.components.ntu_heat_exchanger import NtuRamAirHeatExchanger
 from aircraft_closure.powertrain.components.rotor import MomentumProfileRotor
 from aircraft_closure.thermal.heat import thermal_parameters
 
@@ -277,17 +278,22 @@ class TrajectoryThermal:
     """Temperature states and cooling along a trajectory (zeros and no states without thermal models)."""
     temperatures_C: dict                 # instance name -> node temperatures
     power_heat_W: Any                    # heat into the exchanger at each node
-    drag_cooling_N: Any
+    drag_cooling_N: Any                  # along the flight path
     power_fan_W: Any
     constraints: tuple
+    force_z_cooling_N: Any = 0.0         # wind z (down); plan 049: the duct force acts along the fuselage axis
+    mass_flow_air_kg_s: Any = None       # plan 049 (ε-NTU cooler): per-node unknowns
+    pressure_rise_fan_Pa: Any = None
 
 
-def _thermal_states(opti, model, forces, supply, altitude_m, velocity_m_s, time_s, count_nodes, temperature_start_C):
+def _thermal_states(opti, model, forces, supply, altitude_m, velocity_m_s, time_s, count_nodes, temperature_start_C,
+                    alpha_deg=0.0):
     """Tier 19 along a trajectory (plan 036): a lumped temperature state per thermal-modelled machine and the pack,
     dT/dt = (loss - (T - T_coolant) / R) / C by collocation, the same R and C as sizing (`thermal_parameters`); the
     temperature limit at every node. Heat to the coolant goes to the ram-air exchanger: its pumping power is paid as
     cooling drag in proportion w = q / (q + dp) and by the fans for the rest, with q the dynamic pressure and dp the
     exchanger pressure drop (a smooth blend of the sizing's airplane-mode drag and hover fan cases).
+    With the ε-NTU cooler (plan 049) see `_ntu_cooling`.
     `temperature_start_C`: dict by instance name; None starts at the coolant temperature (a cold start)."""
     instances = model.aircraft.powertrain.topology.instances
     losses = {
@@ -316,9 +322,12 @@ def _thermal_states(opti, model, forces, supply, altitude_m, velocity_m_s, time_
     if cooling is None or not temperatures:
         return TrajectoryThermal(temperatures, zero, zero, zero, tuple(constraints))
     exchanger = cooling.heat_exchanger
-    if not hasattr(exchanger, "power_rated_W"):
-        raise NotImplementedError("The trajectory supports the mass-per-watt heat exchanger only (plan 042).")
     atmosphere = asb.Atmosphere(altitude=altitude_m)
+    if isinstance(exchanger, NtuRamAirHeatExchanger):
+        return _ntu_cooling(opti, exchanger, temperatures, heat_W, atmosphere, velocity_m_s, alpha_deg, count_nodes,
+                            constraints)
+    if not hasattr(exchanger, "power_rated_W"):
+        raise NotImplementedError(f"No trajectory model for the heat exchanger {type(exchanger).__name__}.")
     result = exchanger.evaluate(heat_W, atmosphere, velocity_m_s, fan=True)
     pressure_dynamic_Pa = 0.5 * atmosphere.density() * velocity_m_s**2
     ram = pressure_dynamic_Pa / (pressure_dynamic_Pa + result.pressure_drop_Pa + 1.0)
@@ -326,6 +335,39 @@ def _thermal_states(opti, model, forces, supply, altitude_m, velocity_m_s, time_
     power_fan_W = (1 - ram) * result.power_pumping_W / exchanger.efficiency_fan
     constraints.append(result.power_heat_equivalent_W / exchanger.power_rated_W <= 1)
     return TrajectoryThermal(temperatures, heat_W, drag_N, power_fan_W, tuple(constraints))
+
+
+def _ntu_cooling(opti, exchanger, temperatures, heat_W, atmosphere, velocity_m_s, alpha_deg, count_nodes,
+                 constraints):
+    """The sized ε-NTU cooler at every node (plan 049), as plan 042 puts it in the sizing's flight points.
+
+    Per node: the air mass flow (log-transformed, so positive at every iterate) with the duct residual constrained
+    to zero, and the fan total-pressure rise (>= 0). The fan's electrical power joins the bus demand; the core's
+    heat rejection, the fan rating and the core-exit pressure (>= ambient) are constrained at every node. The fan is
+    needed where the ram rise cannot drive the flow, and the optimizer drops it where it can.
+
+    The duct's net force F acts along the fuselage axis. It is counted in the ram share of the duct's driving
+    pressure, w = q / (q + dp_fan + 1 Pa) (the mass-per-watt path's `ram` factor with the fan rise in place of the
+    core loss): w = 1 wing-borne with the fan off (the full momentum-balance drag, as the sizing's airplane points),
+    w -> 0 in hover (the sizing's hover points ignore the duct force). Without it the fan works as a low-speed
+    thruster (found in the first solve, plan 049 log). Drag D = -w F is D cos(alpha) along the path and
+    D sin(alpha) along wind z (down)."""
+    mass_flow_air_kg_s = opti.variable(init_guess=3.0 * np.ones(count_nodes), scale=3.0, lower_bound=0.05,
+                                       log_transform=True)
+    pressure_rise_fan_Pa = opti.variable(init_guess=300.0 * np.ones(count_nodes), scale=500.0, lower_bound=0.0)
+    result = exchanger.evaluate(heat_W, atmosphere, velocity_m_s, fan=True, mass_flow_air_kg_s=mass_flow_air_kg_s,
+                                pressure_rise_fan_Pa=pressure_rise_fan_Pa)
+    _, margins = exchanger.margins(heat_W, result, "trajectory")
+    heat_rejection, fan_rating, pressure_exit = margins[:3]       # the fourth (nozzle vs face) is a fixed number
+    constraints = list(constraints) + [
+        result.residual_mass_flow_kg_s / mass_flow_air_kg_s == 0,
+        heat_rejection.value >= 0, fan_rating.value >= 0, pressure_exit.value >= 0]
+    pressure_dynamic_Pa = 0.5 * atmosphere.density() * velocity_m_s**2
+    drag_N = pressure_dynamic_Pa / (pressure_dynamic_Pa + pressure_rise_fan_Pa + 1.0) * result.drag_N
+    return TrajectoryThermal(temperatures, heat_W, drag_cooling_N=drag_N * np.cosd(alpha_deg),
+                             power_fan_W=result.power_fan_W, constraints=tuple(constraints),
+                             force_z_cooling_N=drag_N * np.sind(alpha_deg),
+                             mass_flow_air_kg_s=mass_flow_air_kg_s, pressure_rise_fan_Pa=pressure_rise_fan_Pa)
 
 
 def _node_guess(value, count_nodes):
@@ -384,11 +426,13 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
     forces = model.evaluate(velocity_m_s, altitude_m, alpha_deg, tilt_deg, thrust_per_rotor_N=thrust_per_rotor_N,
                             speed_rotor_rad_s=speed_rotor_rad_s, voltage_bus_V=supply.battery.voltage_V)
 
-    thermal = _thermal_states(opti, model, forces, supply, altitude_m, velocity_m_s, time_s, n, temperature_start_C)
+    thermal = _thermal_states(opti, model, forces, supply, altitude_m, velocity_m_s, time_s, n, temperature_start_C,
+                              alpha_deg)
 
     dynamics = asb.DynamicsPointMass2DSpeedGamma(mass_props=asb.MassProperties(mass=mass_kg), x_e=x_m, z_e=-altitude_m,
                                                  speed=velocity_m_s, gamma=gamma_rad, alpha=alpha_deg)
-    dynamics.add_force(Fx=forces.force_x_wind_N - thermal.drag_cooling_N, Fz=forces.force_z_wind_N, axes="wind")
+    dynamics.add_force(Fx=forces.force_x_wind_N - thermal.drag_cooling_N,
+                       Fz=forces.force_z_wind_N + thermal.force_z_cooling_N, axes="wind")
     dynamics.add_gravity_force(g=acceleration_gravity_m_s2)
     dynamics.constrain_derivatives(opti, time_s)
     derivatives = dynamics.state_derivatives()
