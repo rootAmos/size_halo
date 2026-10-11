@@ -315,6 +315,18 @@ class HaloAssumptions:
     depth_turbogenerator_below_top_m: float = 0.35
     load_factor_jump: float = 2.0
     smoothing_wing_tiltrotor: float = 0.01               # rounds the AFDD max(0, .) steps for IPOPT
+    # Plan 043: ultimate spar-cap strain in the jump take-off as a sized constraint ("afdd_tiltrotor" wing). True adds
+    # the margin "peak cap strain <= the material allowable" at `distance_station_strain_wing_m` outboard of the
+    # fuselage side, and a design variable for spar-cap area added on top of the AFDD caps (with its mass). The strain
+    # is beam theory on the AFDD section (`afdd.strain_cap_jump_ultimate`) times `factor_peak_strain_cap_wing`,
+    # calibrated so it reproduces the CalculiX peak front-cap strain of the v3.3.5 wing (0.00518, 1.10 x allowable,
+    # `examples/halo_wing_strain_calibration.py`). `fraction_load_carrying_calibration_wing` is the share of the
+    # XV-15 wing factor's increment that is load-carrying cap and cover material (assumed 0.5: the areas count
+    # 1 + 0.5 x (1.327 - 1) = 1.164 times). The strain is reported in `HaloSizingResult.wing_strain` either way.
+    wing_strain_margin: bool = False
+    fraction_load_carrying_calibration_wing: float = 0.5
+    factor_peak_strain_cap_wing: float = 1.3324
+    distance_station_strain_wing_m: float = 0.3
     # ---- Tier 21 aerodynamics (plan 025) ----
     # "simple": SimpleAerodynamics with `drag_area_misc_m2` and the constant download (the reference until plan 027);
     # "buildup": AeroSandbox AeroBuildup plus Scholz interference, the misc. drag area below, blown wing and the
@@ -485,6 +497,7 @@ class HaloDesign:
     camber_wing: Any = None
     power_rated_heat_exchanger_W: Any = None      # Tier 19 thermal: heat rejected at the reference difference
     power_rated_gearbox_W: Any = None             # Tier 19 thermal: rotor gearbox rating; None: the motor rating
+    area_spar_strain_m2: Any = None               # plan 043: spar caps added for the cap-strain margin; None: 0
     # Plan 042 "ntu" heat exchanger: core counts (air channels across, fin lengths along the air, layers), duct
     # nozzle area and hover fan rating; None with the mass-per-watt model.
     count_wide_heat_exchanger: Any = None
@@ -868,7 +881,8 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
             width_fuselage_m=a.diameter_fuselage_m, frequency_torsion_per_rev=a.frequency_torsion_wing_per_rev,
             frequency_beam_per_rev=a.frequency_beam_wing_per_rev, frequency_chord_per_rev=a.frequency_chord_wing_per_rev,
             thickness_to_chord=halo_wing_section(d, a)[0], material=materials[a.wing_material](),
-            count_rotors=a.count_rotors, load_factor_jump=a.load_factor_jump, smoothing=a.smoothing_wing_tiltrotor))
+            count_rotors=a.count_rotors, load_factor_jump=a.load_factor_jump, smoothing=a.smoothing_wing_tiltrotor,
+            area_spar_added_m2=d.area_spar_strain_m2 if d.area_spar_strain_m2 is not None else 0.0))
     else:
         raise ValueError(f"Unknown wing weight model '{a.wing_weight_model}'.")
     aspect_ratio_wing = d.aspect_ratio_wing if d.aspect_ratio_wing is not None else a.aspect_ratio_wing
@@ -1038,8 +1052,16 @@ class HaloSizingResult:
     # current, its smallest margin and its binding margins.
     count_lanes_motor: int = 1
     failure_cases: tuple = ()
+    # Plan 043 ("afdd_tiltrotor" wing): ultimate jump take-off spar-cap strain at the critical station (beam, peak,
+    # allowable, margin = 1 - peak / allowable), the load-carrying factor on the AFDD areas and the added cap area.
+    wing_strain: Any = None
     # Plan 044: the mission range (a variable with objective "range", else the requirement).
     range_m: Any = None
+
+
+def factor_load_carrying_wing(wing, assumptions):
+    """Plan 043: multiplier on the AFDD wall and cap areas for the load-carrying share of the wing weight factor."""
+    return 1 + assumptions.fraction_load_carrying_calibration_wing * (wing.mass_factor - 1)
 
 
 def count_parallel_guess(guess, assumptions):
@@ -1245,6 +1267,11 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
         design = replace(design, speed_rotor_wing_design_rad_s=opti.variable(
             init_guess=guess.speed_rotor_wing_design_rad_s if guess.speed_rotor_wing_design_rad_s is not None
             else 40.0, scale=10.0, lower_bound=5.0, upper_bound=200.0))
+        if a.wing_strain_margin:
+            # Plan 043: spar-cap area the optimizer may add for the ultimate cap-strain margin.
+            design = replace(design, area_spar_strain_m2=opti.variable(
+                init_guess=guess.area_spar_strain_m2 if guess.area_spar_strain_m2 is not None else 1e-5,
+                scale=1e-3, lower_bound=0.0))
     # Tier 22 freed trades (plan 029).
     if a.free_altitude_cruise:
         low, high = a.bounds_altitude_cruise_m
@@ -1401,6 +1428,14 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
                                          a.frequency_torsion_wing_per_rev),
                             margin_above(f"whirl flutter beam per rev ({p.condition.label})", beam_per_rev,
                                          a.frequency_beam_wing_per_rev))
+        # Plan 043: peak spar-cap strain of the ultimate jump take-off (reported always, a margin when switched on).
+        strain_beam_wing, strain_peak_wing = aircraft.wing.mass_model.strain_cap_jump_ultimate(
+            wing_masses, aircraft.wing, condition, factor_load_carrying=factor_load_carrying_wing(aircraft.wing, a),
+            factor_peak=a.factor_peak_strain_cap_wing, distance_station_m=a.distance_station_strain_wing_m)
+        strain_allowable_wing = aircraft.wing.mass_model.material.strain_ultimate
+        if a.wing_strain_margin:
+            all_margins += (margin_below("wing spar-cap strain, ultimate jump take-off", strain_peak_wing,
+                                         strain_allowable_wing),)
         if a.stiffness_min_wing_Nm2 is not None:
             torsion_min_Nm2, beam_min_Nm2 = a.stiffness_min_wing_Nm2
             all_margins += (margin_above("wing torsion stiffness_Nm2", wing_masses.stiffness_torsion_Nm2,
@@ -1507,6 +1542,12 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
             value) if thermal else (),
         heat_exchanger=heat_exchanger_summary(aircraft.powertrain, value) if thermal else None,
         count_lanes_motor=lanes,
+        wing_strain=dict(strain_beam=value(strain_beam_wing), strain_peak=value(strain_peak_wing),
+                         strain_allowable=float(strain_allowable_wing),
+                         margin=1 - value(strain_peak_wing) / float(strain_allowable_wing),
+                         factor_load_carrying=float(factor_load_carrying_wing(aircraft.wing, a)),
+                         area_spar_added_m2=value(design.area_spar_strain_m2)
+                         if design.area_spar_strain_m2 is not None else 0.0) if is_afdd_wing else None,
         failure_cases=tuple(failure_summary(label, failure, instances, value) for label, failure in failures),
         range_m=value(r.range_m),
     )

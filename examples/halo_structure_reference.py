@@ -15,9 +15,9 @@ from examples.halo_sizing import HaloAssumptions, HaloRequirements, build_halo_a
 
 path_output = Path("output/structure/reference.json")
 
-if __name__ == "__main__":
-    requirements, assumptions = HaloRequirements(), HaloAssumptions()
-    result = solve_halo_sizing(requirements, assumptions)
+
+def structure_reference(result, requirements, assumptions):
+    """The structural back-check inputs of a solved Halo (`result` from `solve_halo_sizing` with these inputs)."""
     aircraft = build_halo_aircraft(result.design, requirements, assumptions)
     condition = StructuralDesignCondition(mass_design_kg=result.mass_takeoff_kg,
                                           load_factor_ultimate=assumptions.load_factor_ultimate,
@@ -58,6 +58,13 @@ if __name__ == "__main__":
         whirl_points=[dict(label=w["label"], speed_rotor_rad_s=float(w["speed_rotor_rad_s"]))
                       for w in result.whirl_flutter],
     )
+    return reference
+
+
+if __name__ == "__main__":
+    requirements, assumptions = HaloRequirements(), HaloAssumptions()
+    result = solve_halo_sizing(requirements, assumptions)
+    reference = structure_reference(result, requirements, assumptions)
     path_output.parent.mkdir(parents=True, exist_ok=True)
     path_output.write_text(json.dumps(reference, indent=1))
     print(json.dumps(reference, indent=1))
