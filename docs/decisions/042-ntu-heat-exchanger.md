@@ -156,7 +156,7 @@ duct above, a fan rating, and labelled mass allowances.
   re-solve of the reference.
 - 2026-10-10/11: sizing option `heat_exchanger_model="ntu"` built (above); 14 new tests pass, with the existing
   thermal, flight-point thermal, hot-day, duct and core modules (83 tests in the touched modules, including the
-  trajectory thermal tests). Full solves from the cached reference (15,179 lb), one slot each:
+  trajectory thermal tests; full suite 700 tests OK, 8 skipped). Full solves from the cached reference (15,179 lb), one slot each:
   1. NTU: stopped on NaN (`Invalid_Number_Detected`, 283 s): iterates with a negative core-exit pressure.
   2. NTU with the pressure floor: converged to 14,292 lb, but on a loophole (a 1 MPa air-side loss, exit velocity
      0.8 m/s through a huge nozzle). Rejected; the duct margins were added.
