@@ -52,17 +52,18 @@ rating, a thermal derating map.
 | Factor 1.10, inverter growing with the rating (first version) | 14,777 lb | 2 / 2 |
 | Factor 1.10 with the plan 042 cooler, same | 14,392 lb | 2 / 2 |
 | Factor 1.10, inverter at catalogue mass, mass-per-watt cooler | 14,689 lb (-490) | 2 / 2 |
-| **v3.7: factor 1.10, inverter at catalogue mass, plan 042 epsilon-NTU cooler** | **14,306 lb (-873)** | 2 / 2 |
-
-v3.7 against v3.6: empty weight 10,317 lb (-813), fuel 2,005 lb, battery 61.0 kWh (912 lb, -9 kWh), wing 239 ft²
-(span 38.3 ft, 59.8 lb/ft²), rotors 30.8 ft (disk loading 9.6 lb/ft²), cruise 165 kt at L/D 8.96, cooler 48 kg
-(was 127 kg), cost per mission USD 3,237 (was 3,308). Binding: the span-capped rotor radius, the engine-out battery
-end voltage and turbogenerator power, the 4,000 ft hover drive, static margin and the hot-day cooler heat
-rejection.
-
-The 873 lb splits into the cooler (about -450 lb at fixed units, plan 042) and the generator dropping from 3 to 2
-uprated units (about -420 lb); with whole units the two are not additive.
+| Same with the plan 042 cooler, estimated pump and pipe allowance (30 kg) | 14,306 lb (-873) | 2 / 2 |
+| **v3.7: same, pump and lines from published models (plan 051, 39.8 kg)** | **14,357 lb (-822)** | 2 / 2 |
 | Factor 1.05 | did not converge (NaN from the 3-generator start, iteration limit from the 2-generator start) | - |
+
+v3.7 against v3.6: empty weight 10,365 lb (-765), fuel 2,008 lb, battery 61.5 kWh (920 lb, -8.5 kWh), wing 240 ft²
+(span 38.3 ft, 59.9 lb/ft²), rotors 30.8 ft (disk loading 9.6 lb/ft²), cruise 165 kt at L/D 8.97, cooler 58 kg
+(was 127 kg; 2.5 kW/kg sits inside the published 1.75-6.7 kW/kg, plan 051), cost per mission USD 3,242 (was 3,308).
+Binding: the span-capped rotor radius, the engine-out battery end voltage and turbogenerator power, the 4,000 ft
+hover drive, static margin and the hot-day cooler heat rejection.
+
+The 822 lb splits into the cooler (about -400 lb at fixed units, plan 042 with the plan 051 allowances) and the
+generator dropping from 3 to 2 uprated units (about -420 lb); with whole units the two are not additive.
 
 ## Progress log
 
@@ -75,10 +76,15 @@ uprated units (about -420 lb); with whole units the two are not additive.
   pin the mass-per-watt cooler and the catalogue rating so earlier versions stay reproducible. v3.7 solved from the
   cached start at 14,306 lb; the from-scratch default solve is checked by `tests/integration/test_halo_plan035.py`.
   The trajectory model accepts only the mass-per-watt cooler until plan 049 (separate branch) ports the NTU cooler.
+- 2026-10-11: from-scratch default solve passed (`test_halo_plan035`, 14,306 lb within 20 lb). Plans 049 (trajectory
+  NTU), 050 (OpenConcept code-to-code: identical to round-off but for the documented coolant hydraulic diameter) and
+  051 (Kellermann design point; published pump and line models) merged in. The author adopted plan 051's published
+  pump and line allowances as the v3.7 default: re-solved from the estimated-allowance result at 14,357 lb (+51 lb).
 
 ## Slide summary
 
-- Headline: v3.7 is 14,306 lb, 873 lb lighter than v3.6: a physics-sized cooler and machine units uprated 10 %.
+- Headline: v3.7 is 14,357 lb, 822 lb lighter than v3.6: a physics-sized cooler and machine units uprated 10 %.
 - The generator needs 2.004 catalogue units, which rounded up to 3; uprated 10 % in continuous power, 2 carry it.
-- Caveats: the 10 % is an assumed supplier margin, to be confirmed; the cooler's ducts, fans and pump are estimated
-  allowances, and redundancy can raise cooling mass.
+- The cooler is checked code-to-code against OpenConcept and sits inside published NASA/Bauhaus specific powers.
+- Caveats: the 10 % is an assumed supplier margin, to be confirmed; duct and fan masses are still estimates, and
+  redundancy can raise cooling mass.

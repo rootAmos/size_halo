@@ -410,8 +410,8 @@ class HaloAssumptions:
     mass_duct_per_area_heat_exchanger_kg_m2: float = 12.0  # "ntu": inlet, diffuser, nozzle per m2 core face (estimate)
     mass_pump_pipes_heat_exchanger_kg: float = 30.0        # "ntu": pump, lines to the tips, loop coolant (estimate)
     # Plan 051: "estimate" (the 30 kg above) or "published" (pump and lines from OpenConcept's models; ducts and fans
-    # keep the estimates, which no source replaces).
-    allowances_heat_exchanger: str = "estimate"
+    # keep the estimates, which no source replaces). "published" is the v3.7 default (plan 048, author 2026-10-11).
+    allowances_heat_exchanger: str = "published"
     # ---- Tier 18 redundancy (plan 032) ----
     # True: `count_lanes_motor` lane motors per rotor (each 1/N of the torque, on a combining gearbox input),
     # `count_buses` cross-strapped buses joined by normally open ties (contactor + cable), `count_strings_battery`
