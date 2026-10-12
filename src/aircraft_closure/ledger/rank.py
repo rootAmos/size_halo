@@ -20,7 +20,9 @@ Anything without a sensitivity, or a trade without option data, is a **blind spo
 Cost axis: every valued priority also carries `value_usd`, the lifecycle operating cost per aircraft it can save
 (cost per mission x missions in the airframe life). A trade option with its own cost per mission uses it; anything
 else converts its take-off kg at the ledger's cost per take-off kg. `nonrecurring_usd` is the development cost the
-best option adds (negative: saves), where estimated.
+best option adds (negative: saves), where estimated. Payload and range axes: the take-off saving divided by the
+growth factor is the empty mass it frees, which is payload at the same take-off mass, or range on the as-built
+aircraft at the ledger's nm per empty kg.
 Schedule: a priority past its lock date, whose next step is overdue, or that has no plan, is flagged. Steps after the
 lock date are expected (installed weight, weighing): maturity keeps rising after a commitment.
 """
@@ -54,6 +56,8 @@ class Priority:
     phase: str = ""                   # programme phase in which it locks
     value_usd: Optional[float] = None         # lifecycle operating cost per aircraft it can save (cost axis)
     nonrecurring_usd: Optional[float] = None  # development cost of the best option against the baseline
+    value_payload_kg: Optional[float] = None  # payload it frees at the same take-off mass (take-off kg / growth)
+    value_range_nm: Optional[float] = None    # range the as-built aircraft gains from that empty mass
 
 
 def _days(iso, today):
@@ -138,6 +142,11 @@ def priorities(ledger, today=None):
     usd_per_kg = _lifecycle_usd_per_kg(ledger)
     out = [p if p.value_usd is not None or p.value_kg is None or usd_per_kg is None
            else replace(p, value_usd=p.value_kg * usd_per_kg) for p in out]
+    if ledger.growth_factor:
+        nm_per_kg = ledger.range_per_empty_kg_nm
+        out = [p if p.value_kg is None else replace(
+            p, value_payload_kg=p.value_kg / ledger.growth_factor,
+            value_range_nm=None if nm_per_kg is None else p.value_kg / ledger.growth_factor * nm_per_kg) for p in out]
     return sorted(out, key=lambda p: (p.value_kg is None, -(p.value_kg or 0.0)))
 
 

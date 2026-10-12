@@ -157,3 +157,5 @@ class Ledger:
     # x missions.
     cost_per_takeoff_kg_usd: Optional[float] = None
     missions_life: float = 7000.0
+    # Range axis: nm of range the as-built aircraft gains per kg of empty mass saved (from the fixed-aircraft table).
+    range_per_empty_kg_nm: Optional[float] = None

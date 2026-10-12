@@ -97,6 +97,37 @@ def group_of(key):
     return next((g for word, g in groups if word in key), "Other")
 
 
+# Units by key suffix (SI as the model holds them), longest first.
+units = (("_Nm_kg", "N m/kg"), ("_W_kg", "W/kg"), ("_W_W", "W/W"), ("_kg_m2", "kg/m2"), ("_kg_s", "kg/s"),
+         ("_J_kg_K", "J/(kg K)"), ("_ohm_J", "ohm J"), ("_per_rev", "per rev"), ("_rad_s", "rad/s"), ("_m_s", "m/s"),
+         ("_usd_kg", "USD/kg"), ("_Nm", "N m"), ("_m2", "m2"), ("_kg", "kg"), ("_W", "W"), ("_m", "m"), ("_s", "s"),
+         ("_K", "K"), ("_C", "deg C"), ("_V", "V"), ("_J", "J"), ("_Pa", "Pa"), ("_deg", "deg"))
+
+
+def describe(key, label):
+    """(label, unit): the registry label when an owner set one, else the field name in words, with its unit."""
+    name = key.split(".", 1)[1]
+    unit = next((u for suffix, u in units if name.endswith(suffix)), "")
+    if label and label.replace(" ", "_") != name:
+        return label, unit
+    words = name[: -len(next(s for s, u in units if u == unit))] if unit else name
+    words = words.replace("_", " ")
+    return words[:1].upper() + words[1:], unit
+
+
+def field_comments(path="examples/halo_sizing.py"):
+    """{field: trailing comment} of the requirement and assumption dataclasses: what each input means."""
+    import re
+    comments, inside = {}, False
+    for line in open(path, encoding="utf-8"):
+        if line.startswith("class "):
+            inside = line.startswith(("class HaloRequirements", "class HaloAssumptions"))
+        match = re.match(r"\s{4}(\w+): [^=]+=[^#]*#\s*(.+)$", line) if inside else None
+        if match:
+            comments.setdefault(match.group(1), match.group(2).strip())
+    return comments
+
+
 key_cost_per_kg = "assumptions.mass_equipment_kg"
 # First-order trade pricing uncertainty: the KKT derivative is exact at the reference; moves of 10-20 % carry the
 # curvature and any limit that starts or stops binding (assumed 20 % of the change).
@@ -157,9 +188,15 @@ def feed_coverage(ledger, path, today):
         saved = pickle.load(file)
     tables = saved["tables"]
     inputs = registry(HaloRequirements(), HaloAssumptions(), calibration_factors(), load_overrides(path_inputs))
-    records = coverage_records(tables, inputs, saved.get("rejected", ()))
+    # Calibration factors are left out: they scale whole groups of weight, so their size says nothing about design.
+    records = [r for r in coverage_records(tables, inputs, saved.get("rejected", ()))
+               if r["kind"] != "calibration" and not r["key"].startswith("factors.")]
+    comments = field_comments()
     for r in records:
         r["group"] = group_of(r["key"])
+        r["label"], r["unit"] = describe(r["key"], r["label"])
+        if not r.get("note") and comments.get(r["key"].split(".", 1)[1]):
+            r["note"] = comments[r["key"].split(".", 1)[1]]
     ingest_coverage(ledger, dict(outputs={m: t["outputs"] for m, t in tables.items()}, inputs=records),
                     "plan 042 every-input table", today)
     resized = tables["resized"]
@@ -169,6 +206,9 @@ def feed_coverage(ledger, path, today):
     value = dict(zip(resized["inputs"], resized["input_values"]))
     # Cost per mission per take-off kg: a pure empty-mass change (fixed equipment) moves both through the closure.
     ledger.cost_per_takeoff_kg_usd = float(derivative_cost[key_cost_per_kg] / derivative[key_cost_per_kg])
+    fixed = tables["fixed"]
+    row_range = dict(zip(fixed["inputs"], fixed["jacobian"][fixed["outputs"].index("range_m")]))
+    ledger.range_per_empty_kg_nm = float(-row_range[key_cost_per_kg] / 1852.0)
     for key, options in continuous_trades.items():
         priced = []
         for label, moves in options:

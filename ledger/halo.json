@@ -4206,6 +4206,162 @@
    "source": "handbook estimate",
    "kind": "trade",
    "summary": "Tilt spindle and fittings: titanium, steel or composite: 2 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "kind": "evidence",
+   "summary": "Wing stiffness to clear whirl flutter at 1.15 V_D: 70.3 ± 35 kg → belief 70.3 ± 35"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "kind": "trade",
+   "summary": "Rotor pitch-flap coupling delta-3 (-18 deg today, the XV-15's): 2 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "kind": "trade",
+   "summary": "Wing aspect ratio and thickness against whirl flutter (AR 6.12, 23 % today): 2 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 fixed aircraft, 80 % payload (36f08aa)",
+   "kind": "drivers",
+   "summary": "top driver of Range: Miscellaneous drag area; Cruise L/D: Miscellaneous drag area"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "coverage",
+   "summary": "118 model inputs with their effect on every output"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Design loads: ultimate and jump take-off load factors (4.5, 2.0): 4 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Hover cases: hot and high (4,000 ft, 95 F) and engine-out duration: 4 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Mission: payload, range, cruise speed and altitude (900 kg, 445 nm, 210 kt, 10,000 ft): 5 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Battery reserve and end-of-life sizing (30 % reserve, 80 % capacity): 3 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Battery replacement policy: pack life against end-of-life sizing: 3 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Fuselage structure: material and construction: 2 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Rotor diameter against wing span: 2 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "handbook estimate",
+   "kind": "trade",
+   "summary": "Tilt spindle and fittings: titanium, steel or composite: 2 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "kind": "evidence",
+   "summary": "Wing stiffness to clear whirl flutter at 1.15 V_D: 70.3 ± 35 kg → belief 70.3 ± 35"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "kind": "trade",
+   "summary": "Rotor pitch-flap coupling delta-3 (-18 deg today, the XV-15's): 2 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "kind": "trade",
+   "summary": "Wing aspect ratio and thickness against whirl flutter (AR 6.12, 23 % today): 2 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 fixed aircraft, 80 % payload (36f08aa)",
+   "kind": "drivers",
+   "summary": "top driver of Range: Miscellaneous drag area; Cruise L/D: Miscellaneous drag area"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "coverage",
+   "summary": "118 model inputs with their effect on every output"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Design loads: ultimate and jump take-off load factors (4.5, 2.0): 4 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Hover cases: hot and high (4,000 ft, 95 F) and engine-out duration: 4 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Mission: payload, range, cruise speed and altitude (900 kg, 445 nm, 210 kt, 10,000 ft): 5 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Battery reserve and end-of-life sizing (30 % reserve, 80 % capacity): 3 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Battery replacement policy: pack life against end-of-life sizing: 3 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Fuselage structure: material and construction: 2 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "kind": "trade",
+   "summary": "Rotor diameter against wing span: 2 options priced"
+  },
+  {
+   "date": "2026-10-11",
+   "source": "handbook estimate",
+   "kind": "trade",
+   "summary": "Tilt spindle and fittings: titanium, steel or composite: 2 options priced"
   }
  ],
  "history": [
@@ -9376,6 +9532,1502 @@
      "value_kg": 23.29
     }
    ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "handbook estimate",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "handbook estimate",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
   }
  ],
  "schedule": [
@@ -9718,7 +11370,8 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": "kg"
    },
    {
     "key": "requirements.range_m",
@@ -9744,11 +11397,12 @@
      },
      "fixed": null
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": "m"
    },
    {
     "key": "requirements.altitude_cruise_m",
-    "label": "altitude cruise m",
+    "label": "Altitude cruise",
     "value": 3047.9999999999995,
     "kind": "setting",
     "sigma": null,
@@ -9782,11 +11436,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": "m"
    },
    {
     "key": "requirements.velocity_max_m_s",
-    "label": "velocity max m s",
+    "label": "Velocity max",
     "value": 108.03333333333335,
     "kind": "setting",
     "sigma": null,
@@ -9820,11 +11475,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": "m/s"
    },
    {
     "key": "requirements.altitude_hover_m",
-    "label": "altitude hover m",
+    "label": "Altitude hover",
     "value": 1219.1999999999998,
     "kind": "setting",
     "sigma": null,
@@ -9858,11 +11514,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": "m"
    },
    {
     "key": "requirements.thrust_to_weight_hover",
-    "label": "thrust to weight hover",
+    "label": "Thrust to weight hover",
     "value": 1.05,
     "kind": "setting",
     "sigma": null,
@@ -9896,11 +11553,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": ""
    },
    {
     "key": "requirements.altitude_ceiling_m",
-    "label": "altitude ceiling m",
+    "label": "Altitude ceiling",
     "value": 3962.3999999999996,
     "kind": "setting",
     "sigma": null,
@@ -9934,11 +11592,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": "m"
    },
    {
     "key": "requirements.climb_rate_ceiling_m_s",
-    "label": "climb rate ceiling m s",
+    "label": "Climb rate ceiling",
     "value": 0.5,
     "kind": "setting",
     "sigma": null,
@@ -9972,11 +11631,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": "m/s"
    },
    {
     "key": "requirements.climb_rate_m_s",
-    "label": "climb rate m s",
+    "label": "Climb rate",
     "value": 7.5,
     "kind": "setting",
     "sigma": null,
@@ -10010,11 +11670,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": "m/s"
    },
    {
     "key": "requirements.velocity_climb_m_s",
-    "label": "velocity climb m s",
+    "label": "Velocity climb",
     "value": 80.0,
     "kind": "setting",
     "sigma": null,
@@ -10048,11 +11709,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": "m/s"
    },
    {
     "key": "requirements.velocity_stall_max_m_s",
-    "label": "velocity stall max m s",
+    "label": "Velocity stall max",
     "value": 61.733333333333334,
     "kind": "setting",
     "sigma": null,
@@ -10086,11 +11748,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": "m/s"
    },
    {
     "key": "requirements.cl_max",
-    "label": "cl max",
+    "label": "Cl max",
     "value": 1.5,
     "kind": "setting",
     "sigma": null,
@@ -10124,11 +11787,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": ""
    },
    {
     "key": "requirements.duration_loiter_s",
-    "label": "duration loiter s",
+    "label": "Duration loiter",
     "value": 1200.0,
     "kind": "setting",
     "sigma": null,
@@ -10162,7 +11826,8 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": "s"
    },
    {
     "key": "requirements.duration_hover_s",
@@ -10200,11 +11865,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": "s"
    },
    {
     "key": "requirements.duration_engine_out_hover_s",
-    "label": "duration engine out hover s",
+    "label": "Duration engine out hover",
     "value": 60.0,
     "kind": "setting",
     "sigma": null,
@@ -10238,11 +11904,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": "s"
    },
    {
     "key": "requirements.altitude_hover_hot_m",
-    "label": "altitude hover hot m",
+    "label": "Altitude hover hot",
     "value": 1219.1999999999998,
     "kind": "setting",
     "sigma": null,
@@ -10276,7 +11943,8 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": "m"
    },
    {
     "key": "requirements.temperature_hover_hot_K",
@@ -10314,11 +11982,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": "K"
    },
    {
     "key": "requirements.thrust_to_weight_hover_hot",
-    "label": "thrust to weight hover hot",
+    "label": "Thrust to weight hover hot",
     "value": 1.05,
     "kind": "setting",
     "sigma": null,
@@ -10352,11 +12021,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": ""
    },
    {
     "key": "requirements.duration_hover_hot_s",
-    "label": "duration hover hot s",
+    "label": "Duration hover hot",
     "value": 60.0,
     "kind": "setting",
     "sigma": null,
@@ -10390,35 +12060,38 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Mission and requirements"
+    "group": "Mission and requirements",
+    "unit": "s"
    },
    {
     "key": "assumptions.solidity",
-    "label": "solidity",
+    "label": "Solidity",
     "value": 0.089,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "XV-15",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Rotor"
+    "group": "Rotor",
+    "unit": ""
    },
    {
     "key": "assumptions.speed_tip_m_s",
-    "label": "speed tip m s",
+    "label": "Speed tip",
     "value": 225.55199999999996,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "XV-15 hover tip speed, also the bound",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Rotor"
+    "group": "Rotor",
+    "unit": "m/s"
    },
    {
     "key": "assumptions.frequency_coning_per_rev",
@@ -10456,7 +12129,8 @@
       "margin_strain_wing": 2.5890630012230074
      }
     },
-    "group": "Rotor"
+    "group": "Rotor",
+    "unit": "per rev"
    },
    {
     "key": "assumptions.figure_of_merit",
@@ -10465,30 +12139,32 @@
     "kind": "model",
     "sigma": 0.02,
     "source": "placeholder prior: XV-15 0.67 +-0.02",
-    "note": "",
+    "note": "XV-15 calibrated (Tier 10b); actuator-disk rotor only",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Rotor"
+    "group": "Rotor",
+    "unit": ""
    },
    {
     "key": "assumptions.coefficient_airplane",
-    "label": "coefficient airplane",
+    "label": "Coefficient airplane",
     "value": 0.87,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "assumed; actuator-disk rotor only",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Rotor"
+    "group": "Rotor",
+    "unit": ""
    },
    {
     "key": "assumptions.solidity_min",
-    "label": "solidity min",
+    "label": "Solidity min",
     "value": 0.06,
     "kind": "setting",
     "sigma": null,
@@ -10498,11 +12174,12 @@
      "resized": null,
      "fixed": null
     },
-    "group": "Rotor"
+    "group": "Rotor",
+    "unit": ""
    },
    {
     "key": "assumptions.power_rated_turboshaft_fixed_W",
-    "label": "power rated turboshaft fixed W",
+    "label": "Power rated turboshaft fixed",
     "value": 835183.6880808958,
     "kind": "setting",
     "sigma": null,
@@ -10524,44 +12201,47 @@
      },
      "fixed": null
     },
-    "group": "Turbogenerators and drive"
+    "group": "Turbogenerators and drive",
+    "unit": "W"
    },
    {
     "key": "assumptions.torque_density_Nm_kg",
-    "label": "torque density Nm kg",
+    "label": "Torque density",
     "value": 15.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "magniX class, including inverters and cables",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "N m/kg"
    },
    {
     "key": "assumptions.specific_power_max_machine_W_kg",
-    "label": "specific power max machine W kg",
+    "label": "Specific power max machine",
     "value": 10000.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "high-speed cap",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "W/kg"
    },
    {
     "key": "assumptions.speed_output_turboshaft_rad_s",
-    "label": "speed output turboshaft rad s",
+    "label": "Speed output turboshaft",
     "value": 126.71090369478831,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "deck propeller_rpm: the engine as delivered (non-OEM)",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": -0.07111938933247183,
@@ -10590,21 +12270,23 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Turbogenerators and drive"
+    "group": "Turbogenerators and drive",
+    "unit": "rad/s"
    },
    {
     "key": "assumptions.mach_tip_hover_max",
-    "label": "mach tip hover max",
+    "label": "Mach tip hover max",
     "value": 0.7,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "hover tip Mach bound on the design tip speed (JVX tested 0.68-0.73)",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Rotor"
+    "group": "Rotor",
+    "unit": ""
    },
    {
     "key": "assumptions.download_fraction_hover",
@@ -10613,30 +12295,32 @@
     "kind": "model",
     "sigma": 0.02,
     "source": "placeholder prior: 7 % +-2 %",
-    "note": "",
+    "note": "XV-15 TM X-62407 sec. 5.1",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Rotor"
+    "group": "Rotor",
+    "unit": ""
    },
    {
     "key": "assumptions.reduction_ratio",
-    "label": "reduction ratio",
+    "label": "Reduction ratio",
     "value": 7.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "motor near peak-efficiency speed in hover",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Turbogenerators and drive"
+    "group": "Turbogenerators and drive",
+    "unit": ""
    },
    {
     "key": "assumptions.speed_peak_motor_rad_s",
-    "label": "speed peak motor rad s",
+    "label": "Speed peak motor",
     "value": 400.0,
     "kind": "setting",
     "sigma": null,
@@ -10646,11 +12330,12 @@
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "rad/s"
    },
    {
     "key": "assumptions.speed_peak_generator_rad_s",
-    "label": "speed peak generator rad s",
+    "label": "Speed peak generator",
     "value": 400.0,
     "kind": "setting",
     "sigma": null,
@@ -10660,7 +12345,8 @@
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "rad/s"
    },
    {
     "key": "assumptions.aspect_ratio_wing",
@@ -10698,7 +12384,8 @@
       "margin_strain_wing": 3.51022972131442
      }
     },
-    "group": "Wing, nacelle and structure"
+    "group": "Wing, nacelle and structure",
+    "unit": ""
    },
    {
     "key": "assumptions.length_fuselage_m",
@@ -10736,16 +12423,17 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Fuselage and tail"
+    "group": "Fuselage and tail",
+    "unit": "m"
    },
    {
     "key": "assumptions.diameter_fuselage_m",
-    "label": "diameter fuselage m",
+    "label": "Diameter fuselage",
     "value": 1.6763999999999997,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "XV-15 (Tier 10a assumption); the width of a boxy section",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": 0.20392448375529068,
@@ -10774,11 +12462,12 @@
       "margin_strain_wing": 0.4767424902555287
      }
     },
-    "group": "Fuselage and tail"
+    "group": "Fuselage and tail",
+    "unit": "m"
    },
    {
     "key": "assumptions.height_fuselage_m",
-    "label": "height fuselage m",
+    "label": "Height fuselage",
     "value": 2.0,
     "kind": "setting",
     "sigma": null,
@@ -10812,11 +12501,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Fuselage and tail"
+    "group": "Fuselage and tail",
+    "unit": "m"
    },
    {
     "key": "assumptions.shape_fuselage",
-    "label": "shape fuselage",
+    "label": "Shape fuselage",
     "value": 3.2,
     "kind": "setting",
     "sigma": null,
@@ -10850,16 +12540,17 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Fuselage and tail"
+    "group": "Fuselage and tail",
+    "unit": ""
    },
    {
     "key": "assumptions.clearance_rotor_fuselage_m",
-    "label": "clearance rotor fuselage m",
+    "label": "Clearance rotor fuselage",
     "value": 0.3,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "XV-15 ~1 ft",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": 0.013748069870990089,
@@ -10876,16 +12567,17 @@
      },
      "fixed": null
     },
-    "group": "Fuselage and tail"
+    "group": "Fuselage and tail",
+    "unit": "m"
    },
    {
     "key": "assumptions.x_horizontal_tail_m",
-    "label": "x horizontal tail m",
+    "label": "X horizontal tail",
     "value": 9.8,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "tail root leading edge; ends inside the 11 m fuselage (11.4 before plan 037)",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": -0.11202530594501095,
@@ -10914,21 +12606,23 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Fuselage and tail"
+    "group": "Fuselage and tail",
+    "unit": "m"
    },
    {
     "key": "assumptions.drag_area_misc_m2",
-    "label": "drag area misc m2",
+    "label": "Drag area misc",
     "value": 0.8,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "assumed: tip nacelles, spinners, gear fairings",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Aerodynamics"
+    "group": "Aerodynamics",
+    "unit": "m2"
    },
    {
     "key": "assumptions.load_factor_ultimate",
@@ -10937,7 +12631,7 @@
     "kind": "requirement",
     "sigma": 0.25,
     "source": "placeholder prior: certification basis open",
-    "note": "",
+    "note": "XV-15",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": 0.2058541516121412,
@@ -10966,7 +12660,8 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Wing, nacelle and structure"
+    "group": "Wing, nacelle and structure",
+    "unit": ""
    },
    {
     "key": "assumptions.mass_equipment_kg",
@@ -10975,7 +12670,7 @@
     "kind": "model",
     "sigma": 40.0,
     "source": "placeholder prior: +-15 %",
-    "note": "",
+    "note": "587 lb; itemised above",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": 0.12443012100947047,
@@ -11004,11 +12699,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Systems and equipment"
+    "group": "Systems and equipment",
+    "unit": "kg"
    },
    {
     "key": "assumptions.area_wetted_nacelles_m2",
-    "label": "area wetted nacelles m2",
+    "label": "Area wetted nacelles",
     "value": 17.651577599999996,
     "kind": "setting",
     "sigma": null,
@@ -11042,11 +12738,12 @@
       "margin_strain_wing": 0.2539678589784295
      }
     },
-    "group": "Battery"
+    "group": "Battery",
+    "unit": "m2"
    },
    {
     "key": "assumptions.resistance_energy_product_ohm_J",
-    "label": "resistance energy product ohm J",
+    "label": "Resistance energy product",
     "value": 1800000.0,
     "kind": "setting",
     "sigma": null,
@@ -11056,11 +12753,12 @@
      "resized": null,
      "fixed": null
     },
-    "group": "Battery"
+    "group": "Battery",
+    "unit": "ohm J"
    },
    {
     "key": "assumptions.battery_mass_smoothing_kg",
-    "label": "battery mass smoothing kg",
+    "label": "Battery mass smoothing",
     "value": 10.0,
     "kind": "setting",
     "sigma": null,
@@ -11070,11 +12768,12 @@
      "resized": null,
      "fixed": null
     },
-    "group": "Battery"
+    "group": "Battery",
+    "unit": "kg"
    },
    {
     "key": "assumptions.factor_power_density_battery",
-    "label": "factor power density battery",
+    "label": "Factor power density battery",
     "value": 5.0,
     "kind": "setting",
     "sigma": null,
@@ -11108,7 +12807,8 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Battery"
+    "group": "Battery",
+    "unit": ""
    },
    {
     "key": "assumptions.factor_capacity_ageing_battery",
@@ -11117,7 +12817,7 @@
     "kind": "technology",
     "sigma": 0.04,
     "source": "placeholder prior: end-of-life capacity",
-    "note": "",
+    "note": "end of life: 80 % of rated capacity (assumed)",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": -0.07825778225959172,
@@ -11146,16 +12846,17 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Battery"
+    "group": "Battery",
+    "unit": ""
    },
    {
     "key": "assumptions.factor_resistance_ageing_battery",
-    "label": "factor resistance ageing battery",
+    "label": "Factor resistance ageing battery",
     "value": 1.5,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "end of life: +50 % resistance (assumed)",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": 0.1295303082992738,
@@ -11184,16 +12885,17 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Battery"
+    "group": "Battery",
+    "unit": ""
    },
    {
     "key": "assumptions.temperature_cell_battery_C",
-    "label": "temperature cell battery C",
+    "label": "Temperature cell battery",
     "value": 25.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "thermally managed pack (assumed)",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": -0.05274713352441183,
@@ -11222,7 +12924,8 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Battery"
+    "group": "Battery",
+    "unit": "deg C"
    },
    {
     "key": "assumptions.fraction_mass_cells_battery",
@@ -11231,7 +12934,7 @@
     "kind": "technology",
     "sigma": 0.03,
     "source": "placeholder prior: cylindrical packs 0.65-0.75",
-    "note": "",
+    "note": "cell / pack mass (assumed; cylindrical-cell packs ~0.65-0.75)",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": -0.1951667339554472,
@@ -11260,7 +12963,8 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Battery"
+    "group": "Battery",
+    "unit": ""
    },
    {
     "key": "assumptions.torque_density_machine_bare_Nm_kg",
@@ -11274,11 +12978,12 @@
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "N m/kg"
    },
    {
     "key": "assumptions.specific_power_max_machine_bare_W_kg",
-    "label": "specific power max machine bare W kg",
+    "label": "Specific power max machine bare",
     "value": 20000.0,
     "kind": "setting",
     "sigma": null,
@@ -11288,7 +12993,8 @@
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "W/kg"
    },
    {
     "key": "assumptions.specific_power_inverter_W_kg",
@@ -11297,7 +13003,7 @@
     "kind": "technology",
     "sigma": 4000.0,
     "source": "placeholder prior",
-    "note": "",
+    "note": "NASA EAP goal ~19 kW/kg (Jansen et al. 2017); assumed",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": -0.06590981756734912,
@@ -11326,7 +13032,8 @@
       "margin_strain_wing": -0.14829422504553819
      }
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "W/kg"
    },
    {
     "key": "assumptions.efficiency_inverter",
@@ -11335,72 +13042,77 @@
     "kind": "technology",
     "sigma": 0.005,
     "source": "placeholder prior",
-    "note": "",
+    "note": "at rated power and nominal bus voltage (SiC; assumed)",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": ""
    },
    {
     "key": "assumptions.voltage_blocking_inverter_V",
-    "label": "voltage blocking inverter V",
+    "label": "Voltage blocking inverter",
     "value": 1200.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "semiconductor class; DC link <= blocking x derating",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "V"
    },
    {
     "key": "assumptions.factor_derating_voltage_inverter",
-    "label": "factor derating voltage inverter",
+    "label": "Factor derating voltage inverter",
     "value": 0.75,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "cosmic-ray single-event-burnout margin (assumed)",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": ""
    },
    {
     "key": "assumptions.factor_voltage_min_machine",
-    "label": "factor voltage min machine",
+    "label": "Factor voltage min machine",
     "value": 0.9,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "machines and inverters work down to 0.9 x pack minimum",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": ""
    },
    {
     "key": "assumptions.factor_routing_cable",
-    "label": "factor routing cable",
+    "label": "Factor routing cable",
     "value": 1.25,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "feeder length = factor x half span (bus in the fuselage)",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": ""
    },
    {
     "key": "assumptions.length_cable_battery_m",
-    "label": "length cable battery m",
+    "label": "Length cable battery",
     "value": 3.0,
     "kind": "setting",
     "sigma": null,
@@ -11410,16 +13122,17 @@
      "resized": null,
      "fixed": null
     },
-    "group": "Battery"
+    "group": "Battery",
+    "unit": "m"
    },
    {
     "key": "assumptions.factor_rating_feeder",
-    "label": "factor rating feeder",
+    "label": "Factor rating feeder",
     "value": 1.25,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "feeder current rating / source rating (NEC-style 125 %)",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": 0.00958856970571339,
@@ -11448,11 +13161,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": ""
    },
    {
     "key": "assumptions.voltage_bus_dcdc_V",
-    "label": "voltage bus dcdc V",
+    "label": "Voltage bus dcdc",
     "value": 800.0,
     "kind": "setting",
     "sigma": null,
@@ -11462,39 +13176,42 @@
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "V"
    },
    {
     "key": "assumptions.specific_power_dcdc_W_kg",
-    "label": "specific power dcdc W kg",
+    "label": "Specific power dcdc",
     "value": 12000.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "assumed",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "W/kg"
    },
    {
     "key": "assumptions.efficiency_dcdc",
-    "label": "efficiency dcdc",
+    "label": "Efficiency dcdc",
     "value": 0.98,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "assumed",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": ""
    },
    {
     "key": "assumptions.frequency_torsion_wing_per_rev",
-    "label": "frequency torsion wing per rev",
+    "label": "Frequency torsion wing",
     "value": 1.0873362445414847,
     "kind": "setting",
     "sigma": null,
@@ -11528,11 +13245,12 @@
       "margin_strain_wing": -0.30063304832226373
      }
     },
-    "group": "Wing, nacelle and structure"
+    "group": "Wing, nacelle and structure",
+    "unit": "per rev"
    },
    {
     "key": "assumptions.frequency_beam_wing_per_rev",
-    "label": "frequency beam wing per rev",
+    "label": "Frequency beam wing",
     "value": 0.43231441048034935,
     "kind": "setting",
     "sigma": null,
@@ -11566,11 +13284,12 @@
       "margin_strain_wing": -0.04812627721006134
      }
     },
-    "group": "Wing, nacelle and structure"
+    "group": "Wing, nacelle and structure",
+    "unit": "per rev"
    },
    {
     "key": "assumptions.frequency_chord_wing_per_rev",
-    "label": "frequency chord wing per rev",
+    "label": "Frequency chord wing",
     "value": 0.8253275109170305,
     "kind": "setting",
     "sigma": null,
@@ -11604,7 +13323,8 @@
       "margin_strain_wing": 4.8723566795560815
      }
     },
-    "group": "Wing, nacelle and structure"
+    "group": "Wing, nacelle and structure",
+    "unit": "per rev"
    },
    {
     "key": "assumptions.thickness_to_chord_wing",
@@ -11642,16 +13362,17 @@
       "margin_strain_wing": 3.4578151261632946
      }
     },
-    "group": "Wing, nacelle and structure"
+    "group": "Wing, nacelle and structure",
+    "unit": ""
    },
    {
     "key": "assumptions.length_mast_m",
-    "label": "length mast m",
+    "label": "Length mast",
     "value": 1.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "spindle to rotor hub (the plan 031 layout)",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": 0.016899650519325102,
@@ -11680,16 +13401,17 @@
       "margin_strain_wing": -0.21417649459853066
      }
     },
-    "group": "Wing, nacelle and structure"
+    "group": "Wing, nacelle and structure",
+    "unit": "m"
    },
    {
     "key": "assumptions.offset_drive_pylon_m",
-    "label": "offset drive pylon m",
+    "label": "Offset drive pylon",
     "value": 0.6,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "spindle to the motor and rotor gearbox (assumed)",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": 0.004349330706473637,
@@ -11718,16 +13440,17 @@
       "margin_strain_wing": -0.057717115575236816
      }
     },
-    "group": "Wing, nacelle and structure"
+    "group": "Wing, nacelle and structure",
+    "unit": "m"
    },
    {
     "key": "assumptions.radius_gyration_cowling_m",
-    "label": "radius gyration cowling m",
+    "label": "Radius gyration cowling",
     "value": 0.8,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "cowling about the spindle (3.4 m nacelle, assumed)",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": 0.0024467795794121815,
@@ -11756,11 +13479,12 @@
       "margin_strain_wing": -0.028739438148496266
      }
     },
-    "group": "Wing, nacelle and structure"
+    "group": "Wing, nacelle and structure",
+    "unit": "m"
    },
    {
     "key": "assumptions.length_half_turbogenerator_m",
-    "label": "length half turbogenerator m",
+    "label": "Length half turbogenerator",
     "value": 0.5,
     "kind": "setting",
     "sigma": null,
@@ -11794,11 +13518,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "m"
    },
    {
     "key": "assumptions.depth_turbogenerator_below_top_m",
-    "label": "depth turbogenerator below top m",
+    "label": "Depth turbogenerator below top",
     "value": 0.35,
     "kind": "setting",
     "sigma": null,
@@ -11832,11 +13557,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "m"
    },
    {
     "key": "assumptions.load_factor_jump",
-    "label": "load factor jump",
+    "label": "Load factor jump",
     "value": 2.0,
     "kind": "setting",
     "sigma": null,
@@ -11870,16 +13596,17 @@
       "margin_strain_wing": -1.8914052912899273
      }
     },
-    "group": "Wing, nacelle and structure"
+    "group": "Wing, nacelle and structure",
+    "unit": ""
    },
    {
     "key": "assumptions.smoothing_wing_tiltrotor",
-    "label": "smoothing wing tiltrotor",
+    "label": "Smoothing wing tiltrotor",
     "value": 0.01,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "rounds the AFDD max(0, .) steps for IPOPT",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": 0.00022498653688805,
@@ -11908,11 +13635,12 @@
       "margin_strain_wing": -0.0005924715690229785
      }
     },
-    "group": "Wing, nacelle and structure"
+    "group": "Wing, nacelle and structure",
+    "unit": ""
    },
    {
     "key": "assumptions.fraction_load_carrying_calibration_wing",
-    "label": "fraction load carrying calibration wing",
+    "label": "Fraction load carrying calibration wing",
     "value": 0.5,
     "kind": "setting",
     "sigma": null,
@@ -11946,11 +13674,12 @@
       "margin_strain_wing": 1.5861244718420267
      }
     },
-    "group": "Wing, nacelle and structure"
+    "group": "Wing, nacelle and structure",
+    "unit": ""
    },
    {
     "key": "assumptions.factor_peak_strain_cap_wing",
-    "label": "factor peak strain cap wing",
+    "label": "Factor peak strain cap wing",
     "value": 1.3324,
     "kind": "setting",
     "sigma": null,
@@ -11984,11 +13713,12 @@
       "margin_strain_wing": -11.275504326118368
      }
     },
-    "group": "Wing, nacelle and structure"
+    "group": "Wing, nacelle and structure",
+    "unit": ""
    },
    {
     "key": "assumptions.distance_station_strain_wing_m",
-    "label": "distance station strain wing m",
+    "label": "Distance station strain wing",
     "value": 0.3,
     "kind": "setting",
     "sigma": null,
@@ -12022,16 +13752,17 @@
       "margin_strain_wing": 0.7000073036393741
      }
     },
-    "group": "Wing, nacelle and structure"
+    "group": "Wing, nacelle and structure",
+    "unit": "m"
    },
    {
     "key": "assumptions.length_nacelle_m",
-    "label": "length nacelle m",
+    "label": "Length nacelle",
     "value": 2.7432,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "assumed; with the diameter, ~95 ft2 wetted (cowling mass)",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": 0.004883865712793828,
@@ -12060,11 +13791,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Battery"
+    "group": "Battery",
+    "unit": "m"
    },
    {
     "key": "assumptions.diameter_nacelle_m",
-    "label": "diameter nacelle m",
+    "label": "Diameter nacelle",
     "value": 1.0058399999999998,
     "kind": "setting",
     "sigma": null,
@@ -12098,7 +13830,8 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Battery"
+    "group": "Battery",
+    "unit": "m"
    },
    {
     "key": "assumptions.drag_area_misc_buildup_m2",
@@ -12107,7 +13840,7 @@
     "kind": "model",
     "sigma": 0.07,
     "source": "placeholder prior: XV-15 fittings +-25 %",
-    "note": "",
+    "note": "XV-15 \"fuselage fittings & fixtures\" (NDARC, Johnson 2010)",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": 0.03896518810791684,
@@ -12136,11 +13869,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Aerodynamics"
+    "group": "Aerodynamics",
+    "unit": "m2"
    },
    {
     "key": "assumptions.camber_wing",
-    "label": "camber wing",
+    "label": "Camber wing",
     "value": 0.02,
     "kind": "setting",
     "sigma": null,
@@ -12174,49 +13908,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Aerodynamics"
-   },
-   {
-    "key": "assumptions.factor_excrescence_buildup",
-    "label": "Excrescence drag factor",
-    "value": 1.27,
-    "kind": "calibration",
-    "sigma": 0.08,
-    "source": "placeholder prior",
-    "note": "",
-    "elasticity": {
-     "resized": {
-      "mass_takeoff_kg": 0.09429083499045328,
-      "range_m": 0.0,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": 0.24657039637533534,
-      "mass_empty_kg": 0.0829110291398635,
-      "energy_battery_J": 0.22361916327843886,
-      "lift_to_drag_cruise": -0.33383994898697605,
-      "power_hover_take_off_W": 0.09362752320759406,
-      "cost_per_mission_usd": 0.10871947537315593,
-      "static_margin": -4.9587968229916464e-14,
-      "margin_strain_wing": 0.023333740957871253
-     },
-     "fixed": {
-      "mass_takeoff_kg": -7.323536521216792e-15,
-      "range_m": -0.22160309932075797,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": -9.433901104961289e-15,
-      "mass_empty_kg": 0.0,
-      "energy_battery_J": 0.0,
-      "lift_to_drag_cruise": -0.3121839834695442,
-      "power_hover_take_off_W": -5.6153709395861945e-15,
-      "cost_per_mission_usd": -0.09323909317075767,
-      "static_margin": -4.872977202503233e-30,
-      "margin_strain_wing": 0.0
-     }
-    },
-    "group": "Aerodynamics"
+    "group": "Aerodynamics",
+    "unit": ""
    },
    {
     "key": "assumptions.factor_excrescence_scholz",
-    "label": "factor excrescence scholz",
+    "label": "Factor excrescence scholz",
     "value": 1.17,
     "kind": "setting",
     "sigma": null,
@@ -12226,30 +13923,32 @@
      "resized": null,
      "fixed": null
     },
-    "group": "Aerodynamics"
+    "group": "Aerodynamics",
+    "unit": ""
    },
    {
     "key": "assumptions.fraction_trim_drag",
-    "label": "fraction trim drag",
+    "label": "Fraction trim drag",
     "value": 0.02,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "Scholz aero only; AeroBuildup trims from the tail load",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Aerodynamics"
+    "group": "Aerodynamics",
+    "unit": ""
    },
    {
     "key": "assumptions.efficiency_tail",
-    "label": "efficiency tail",
+    "label": "Efficiency tail",
     "value": 0.9,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "tail dynamic-pressure ratio eta_H (Scholz ch. 11)",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": -0.024743986988640068,
@@ -12278,16 +13977,17 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Aerodynamics"
+    "group": "Aerodynamics",
+    "unit": ""
    },
    {
     "key": "assumptions.angle_dihedral_tail_deg",
-    "label": "angle dihedral tail deg",
+    "label": "Angle dihedral tail",
     "value": 0.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "0: conventional horizontal tail",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": 0.0,
@@ -12316,54 +14016,17 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Fuselage and tail"
-   },
-   {
-    "key": "assumptions.mass_factor_fuselage",
-    "label": "Fuselage weight factor",
-    "value": 1.7,
-    "kind": "calibration",
-    "sigma": 0.17,
-    "source": "placeholder prior: +-10 %",
-    "note": "",
-    "elasticity": {
-     "resized": {
-      "mass_takeoff_kg": 0.26534771606647534,
-      "range_m": 0.0,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": 0.1709284156807726,
-      "mass_empty_kg": 0.3346827699385637,
-      "energy_battery_J": 0.6412349098470671,
-      "lift_to_drag_cruise": 0.010031026235459156,
-      "power_hover_take_off_W": 0.26348106310237235,
-      "cost_per_mission_usd": 0.15021967955228746,
-      "static_margin": -1.0084207874391424e-13,
-      "margin_strain_wing": 0.06566443993325967
-     },
-     "fixed": {
-      "mass_takeoff_kg": 0.08354666640711161,
-      "range_m": -0.09794403262434986,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": -1.398836696273661e-14,
-      "mass_empty_kg": 0.11095817480009645,
-      "energy_battery_J": 0.0,
-      "lift_to_drag_cruise": -0.016825665567717137,
-      "power_hover_take_off_W": 0.12531999961066614,
-      "cost_per_mission_usd": -0.0121253736071007,
-      "static_margin": 0.06906404358754271,
-      "margin_strain_wing": 0.0
-     }
-    },
-    "group": "Fuselage and tail"
+    "group": "Fuselage and tail",
+    "unit": "deg"
    },
    {
     "key": "assumptions.specific_power_heat_exchanger_W_kg",
-    "label": "specific power heat exchanger W kg",
+    "label": "Specific power heat exchanger",
     "value": 1000.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "at the 40 K reference (Kellermann 2021, Potamiti 2024)",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": -0.05630492618896682,
@@ -12392,11 +14055,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Thermal"
+    "group": "Thermal",
+    "unit": "W/kg"
    },
    {
     "key": "assumptions.delta_temperature_ref_heat_exchanger_C",
-    "label": "delta temperature ref heat exchanger C",
+    "label": "Delta temperature ref heat exchanger",
     "value": 40.0,
     "kind": "setting",
     "sigma": null,
@@ -12430,16 +14094,17 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Thermal"
+    "group": "Thermal",
+    "unit": "deg C"
    },
    {
     "key": "assumptions.temperature_coolant_C",
-    "label": "temperature coolant C",
+    "label": "Temperature coolant",
     "value": 60.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "water-glycol loop into the heat exchanger and machines",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": -0.12372191827239679,
@@ -12468,11 +14133,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Thermal"
+    "group": "Thermal",
+    "unit": "deg C"
    },
    {
     "key": "assumptions.effectiveness_heat_exchanger",
-    "label": "effectiveness heat exchanger",
+    "label": "Effectiveness heat exchanger",
     "value": 0.8,
     "kind": "setting",
     "sigma": null,
@@ -12506,16 +14172,17 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Thermal"
+    "group": "Thermal",
+    "unit": ""
    },
    {
     "key": "assumptions.pressure_drop_ref_heat_exchanger_Pa",
-    "label": "pressure drop ref heat exchanger Pa",
+    "label": "Pressure drop ref heat exchanger",
     "value": 1000.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "air side, at the rated flow and sea-level density",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": 0.000852405156865912,
@@ -12544,11 +14211,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Thermal"
+    "group": "Thermal",
+    "unit": "Pa"
    },
    {
     "key": "assumptions.efficiency_fan_heat_exchanger",
-    "label": "efficiency fan heat exchanger",
+    "label": "Efficiency fan heat exchanger",
     "value": 0.6,
     "kind": "setting",
     "sigma": null,
@@ -12582,16 +14250,17 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Thermal"
+    "group": "Thermal",
+    "unit": ""
    },
    {
     "key": "assumptions.specific_heat_machine_J_kg_K",
-    "label": "specific heat machine J kg K",
+    "label": "Specific heat machine",
     "value": 500.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "effective, whole machine mass",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": -0.016840980760264006,
@@ -12620,16 +14289,17 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Thermal"
+    "group": "Thermal",
+    "unit": "J/(kg K)"
    },
    {
     "key": "assumptions.temperature_max_machine_C",
-    "label": "temperature max machine C",
+    "label": "Temperature max machine",
     "value": 150.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "mean winding (class H: 180 C hot spot)",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": -0.028068301267106646,
@@ -12658,16 +14328,17 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Thermal"
+    "group": "Thermal",
+    "unit": "deg C"
    },
    {
     "key": "assumptions.specific_heat_battery_J_kg_K",
-    "label": "specific heat battery J kg K",
+    "label": "Specific heat battery",
     "value": 1000.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "Li-ion cells ~1,000-1,100 J/(kg K), pack structure less",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": -0.004111352830678429,
@@ -12696,11 +14367,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Thermal"
+    "group": "Thermal",
+    "unit": "J/(kg K)"
    },
    {
     "key": "assumptions.temperature_max_battery_C",
-    "label": "temperature max battery C",
+    "label": "Temperature max battery",
     "value": 60.0,
     "kind": "setting",
     "sigma": null,
@@ -12734,72 +14406,77 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Thermal"
+    "group": "Thermal",
+    "unit": "deg C"
    },
    {
     "key": "assumptions.mass_flow_coolant_heat_exchanger_kg_s",
-    "label": "mass flow coolant heat exchanger kg s",
+    "label": "Mass flow coolant heat exchanger",
     "value": 2.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "\"ntu\": fixed water-glycol flow (16 K rise at 121 kW)",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Thermal"
+    "group": "Thermal",
+    "unit": "kg/s"
    },
    {
     "key": "assumptions.specific_power_fan_heat_exchanger_W_kg",
-    "label": "specific power fan heat exchanger W kg",
+    "label": "Specific power fan heat exchanger",
     "value": 2000.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "\"ntu\": fan, motor and controller (author estimate)",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Thermal"
+    "group": "Thermal",
+    "unit": "W/kg"
    },
    {
     "key": "assumptions.mass_duct_per_area_heat_exchanger_kg_m2",
-    "label": "mass duct per area heat exchanger kg m2",
+    "label": "Mass duct per area heat exchanger",
     "value": 12.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "\"ntu\": inlet, diffuser, nozzle per m2 core face (estimate)",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Thermal"
+    "group": "Thermal",
+    "unit": "kg/m2"
    },
    {
     "key": "assumptions.mass_pump_pipes_heat_exchanger_kg",
-    "label": "mass pump pipes heat exchanger kg",
+    "label": "Mass pump pipes heat exchanger",
     "value": 30.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "\"ntu\": pump, lines to the tips, loop coolant (estimate)",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Thermal"
+    "group": "Thermal",
+    "unit": "kg"
    },
    {
     "key": "assumptions.length_cable_bus_tie_m",
-    "label": "length cable bus tie m",
+    "label": "Length cable bus tie",
     "value": 2.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "bus to bus in the fuselage (assumed)",
     "elasticity": {
      "resized": {
       "mass_takeoff_kg": 0.0052034340497802995,
@@ -12828,25 +14505,27 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "m"
    },
    {
     "key": "assumptions.torque_density_database_Nm_kg",
-    "label": "torque density database Nm kg",
+    "label": "Torque density database",
     "value": 11.79,
     "kind": "setting",
     "sigma": null,
     "source": "",
-    "note": "",
+    "note": "at speed_ref_database_rad_s (fit, plan 033)",
     "elasticity": {
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "N m/kg"
    },
    {
     "key": "assumptions.speed_ref_database_rad_s",
-    "label": "speed ref database rad s",
+    "label": "Speed ref database",
     "value": 500.0,
     "kind": "setting",
     "sigma": null,
@@ -12856,11 +14535,12 @@
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "rad/s"
    },
    {
     "key": "assumptions.exponent_speed_database",
-    "label": "exponent speed database",
+    "label": "Exponent speed database",
     "value": 0.271,
     "kind": "setting",
     "sigma": null,
@@ -12870,11 +14550,12 @@
      "resized": null,
      "fixed": null
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": ""
    },
    {
     "key": "assumptions.mass_unit_motor_kg",
-    "label": "mass unit motor kg",
+    "label": "Mass unit motor",
     "value": 40.0,
     "kind": "setting",
     "sigma": null,
@@ -12908,11 +14589,12 @@
       "margin_strain_wing": 0.4495573132948448
      }
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "kg"
    },
    {
     "key": "assumptions.torque_peak_unit_motor_Nm",
-    "label": "torque peak unit motor Nm",
+    "label": "Torque peak unit motor",
     "value": 1500.0,
     "kind": "setting",
     "sigma": null,
@@ -12946,11 +14628,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "N m"
    },
    {
     "key": "assumptions.power_continuous_unit_motor_W",
-    "label": "power continuous unit motor W",
+    "label": "Power continuous unit motor",
     "value": 263893.7829015426,
     "kind": "setting",
     "sigma": null,
@@ -12984,11 +14667,12 @@
       "margin_strain_wing": 0.14829422504553816
      }
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "W"
    },
    {
     "key": "assumptions.speed_max_unit_motor_rad_s",
-    "label": "speed max unit motor rad s",
+    "label": "Speed max unit motor",
     "value": 261.79938779914943,
     "kind": "setting",
     "sigma": null,
@@ -13022,11 +14706,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "rad/s"
    },
    {
     "key": "assumptions.mass_unit_generator_kg",
-    "label": "mass unit generator kg",
+    "label": "Mass unit generator",
     "value": 31.2,
     "kind": "setting",
     "sigma": null,
@@ -13060,11 +14745,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "kg"
    },
    {
     "key": "assumptions.torque_peak_unit_generator_Nm",
-    "label": "torque peak unit generator Nm",
+    "label": "Torque peak unit generator",
     "value": 470.0,
     "kind": "setting",
     "sigma": null,
@@ -13098,11 +14784,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "N m"
    },
    {
     "key": "assumptions.power_continuous_unit_generator_W",
-    "label": "power continuous unit generator W",
+    "label": "Power continuous unit generator",
     "value": 315000.0,
     "kind": "setting",
     "sigma": null,
@@ -13136,11 +14823,12 @@
       "margin_strain_wing": 0.0
      }
     },
-    "group": "Electrical machines and power"
+    "group": "Electrical machines and power",
+    "unit": "W"
    },
    {
     "key": "assumptions.speed_max_unit_generator_rad_s",
-    "label": "speed max unit generator rad s",
+    "label": "Speed max unit generator",
     "value": 1780.235837034216,
     "kind": "setting",
     "sigma": null,
@@ -13162,361 +14850,74 @@
      },
      "fixed": null
     },
-    "group": "Electrical machines and power"
-   },
-   {
-    "key": "factors.rotor",
-    "label": "rotor",
-    "value": 0.6927001195024893,
-    "kind": "setting",
-    "sigma": null,
-    "source": "",
-    "note": "",
-    "elasticity": {
-     "resized": {
-      "mass_takeoff_kg": 0.2995160226960367,
-      "range_m": 0.0,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": 0.15994437810013284,
-      "mass_empty_kg": 0.38417415593452153,
-      "energy_battery_J": 0.7232374382000928,
-      "lift_to_drag_cruise": 0.0632235767630504,
-      "power_hover_take_off_W": 0.29740900447917,
-      "cost_per_mission_usd": 0.12460737797031639,
-      "static_margin": -1.0261253490111064e-13,
-      "margin_strain_wing": -0.7038192146962242
-     },
-     "fixed": {
-      "mass_takeoff_kg": 0.10015350495489558,
-      "range_m": -0.11741268178128396,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": -1.6742195860175934e-14,
-      "mass_empty_kg": 0.1330136866918927,
-      "energy_battery_J": 0.0,
-      "lift_to_drag_cruise": -0.020170157018525092,
-      "power_hover_take_off_W": 0.15023025743234183,
-      "cost_per_mission_usd": -0.014535572966144708,
-      "static_margin": 0.0007485726320337101,
-      "margin_strain_wing": 0.8603065913148306
-     }
-    },
-    "group": "Calibration factors"
-   },
-   {
-    "key": "factors.wing",
-    "label": "wing",
-    "value": 1.9295121351548978,
-    "kind": "setting",
-    "sigma": null,
-    "source": "",
-    "note": "",
-    "elasticity": {
-     "resized": null,
-     "fixed": null
-    },
-    "group": "Calibration factors"
-   },
-   {
-    "key": "factors.tail",
-    "label": "tail",
-    "value": 1.1255840102796097,
-    "kind": "setting",
-    "sigma": null,
-    "source": "",
-    "note": "",
-    "elasticity": {
-     "resized": {
-      "mass_takeoff_kg": 0.04123099725224861,
-      "range_m": 0.0,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": 0.02658593817170964,
-      "mass_empty_kg": 0.0519995191605752,
-      "energy_battery_J": 0.09974858490876222,
-      "lift_to_drag_cruise": 0.0011099810655162171,
-      "power_hover_take_off_W": 0.0409409477866827,
-      "cost_per_mission_usd": 0.022016837793350355,
-      "static_margin": -1.5737770831028066e-14,
-      "margin_strain_wing": 0.010203254742630037
-     },
-     "fixed": {
-      "mass_takeoff_kg": 0.012359859679010793,
-      "range_m": -0.014489800152341647,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": -1.9140350016037076e-15,
-      "mass_empty_kg": 0.01641510702636009,
-      "energy_battery_J": 0.0,
-      "lift_to_drag_cruise": -0.002489182086686411,
-      "power_hover_take_off_W": 0.018539789518516002,
-      "cost_per_mission_usd": -0.0017938228152521378,
-      "static_margin": -0.32734209583349055,
-      "margin_strain_wing": 0.0
-     }
-    },
-    "group": "Calibration factors"
-   },
-   {
-    "key": "factors.fuselage",
-    "label": "fuselage",
-    "value": 2.0712286681901584,
-    "kind": "setting",
-    "sigma": null,
-    "source": "",
-    "note": "",
-    "elasticity": {
-     "resized": null,
-     "fixed": null
-    },
-    "group": "Calibration factors"
-   },
-   {
-    "key": "factors.alighting_gear",
-    "label": "alighting gear",
-    "value": 0.8690033749774996,
-    "kind": "setting",
-    "sigma": null,
-    "source": "",
-    "note": "",
-    "elasticity": {
-     "resized": {
-      "mass_takeoff_kg": 0.11905760591821994,
-      "range_m": 0.0,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": 0.06357857254749257,
-      "mass_empty_kg": 0.15270907658609426,
-      "energy_battery_J": 0.2874802594393794,
-      "lift_to_drag_cruise": 0.025130956083956515,
-      "power_hover_take_off_W": 0.1182200662691848,
-      "cost_per_mission_usd": 0.049525616829422275,
-      "static_margin": -4.3976976934975963e-14,
-      "margin_strain_wing": 0.029462665547542434
-     },
-     "fixed": {
-      "mass_takeoff_kg": 0.03853602766475483,
-      "range_m": -0.04517683485320143,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": -6.458165370810254e-15,
-      "mass_empty_kg": 0.051179627836871355,
-      "energy_battery_J": 0.0,
-      "lift_to_drag_cruise": -0.007760863977934463,
-      "power_hover_take_off_W": 0.05780404149713164,
-      "cost_per_mission_usd": -0.005592847122012123,
-      "static_margin": -0.0010838275081287384,
-      "margin_strain_wing": 0.0
-     }
-    },
-    "group": "Calibration factors"
-   },
-   {
-    "key": "factors.flight_controls",
-    "label": "flight controls",
-    "value": 3.7864623429576034,
-    "kind": "setting",
-    "sigma": null,
-    "source": "",
-    "note": "",
-    "elasticity": {
-     "resized": {
-      "mass_takeoff_kg": 0.17812450994796217,
-      "range_m": 0.0,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": 0.09225128334781091,
-      "mass_empty_kg": 0.22902740877190933,
-      "energy_battery_J": 0.4300506728111443,
-      "lift_to_drag_cruise": 0.0428368316113218,
-      "power_hover_take_off_W": 0.1768714498146276,
-      "cost_per_mission_usd": 0.07287666725711006,
-      "static_margin": -6.489643600189293e-14,
-      "margin_strain_wing": 0.044079694211163735
-     },
-     "fixed": {
-      "mass_takeoff_kg": 0.06074088085272195,
-      "range_m": -0.07120818904827525,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": -1.0391437408016069e-14,
-      "mass_empty_kg": 0.08066985273028761,
-      "energy_battery_J": 0.0,
-      "lift_to_drag_cruise": -0.01223275316020815,
-      "power_hover_take_off_W": 0.09111132127908199,
-      "cost_per_mission_usd": -0.0088155028229944,
-      "static_margin": 0.6572634585058951,
-      "margin_strain_wing": 0.0
-     }
-    },
-    "group": "Calibration factors"
-   },
-   {
-    "key": "factors.powerplant",
-    "label": "powerplant",
-    "value": 1.1446933101908454,
-    "kind": "setting",
-    "sigma": null,
-    "source": "",
-    "note": "",
-    "elasticity": {
-     "resized": {
-      "mass_takeoff_kg": 0.3022915924265933,
-      "range_m": 0.0,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": 0.16396872808539278,
-      "mass_empty_kg": 0.38724151549642744,
-      "energy_battery_J": 0.7299327966141034,
-      "lift_to_drag_cruise": 0.059176765930302425,
-      "power_hover_take_off_W": 0.30016504879021605,
-      "cost_per_mission_usd": 0.09887433487857764,
-      "static_margin": -1.0770579872516929e-13,
-      "margin_strain_wing": 0.04843896241851334
-     },
-     "fixed": {
-      "mass_takeoff_kg": 0.09162953451043981,
-      "range_m": -0.10741979905832064,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": -1.499287251263398e-14,
-      "mass_empty_kg": 0.12169301713988452,
-      "energy_battery_J": 0.0,
-      "lift_to_drag_cruise": -0.01845349395852154,
-      "power_hover_take_off_W": 0.1374443017656583,
-      "cost_per_mission_usd": -0.04015994418882234,
-      "static_margin": -0.5569895318853241,
-      "margin_strain_wing": 0.1884593788798081
-     }
-    },
-    "group": "Calibration factors"
-   },
-   {
-    "key": "factors.transmission",
-    "label": "transmission",
-    "value": 0.9987969871458023,
-    "kind": "setting",
-    "sigma": null,
-    "source": "",
-    "note": "",
-    "elasticity": {
-     "resized": {
-      "mass_takeoff_kg": 0.20683504297374103,
-      "range_m": 0.0,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": 0.11029904997471837,
-      "mass_empty_kg": 0.2653265371618543,
-      "energy_battery_J": 0.5074006693677292,
-      "lift_to_drag_cruise": 0.04193840315246188,
-      "power_hover_take_off_W": 0.2053800116218089,
-      "cost_per_mission_usd": 0.08660038583863694,
-      "static_margin": -8.469127693572144e-14,
-      "margin_strain_wing": 0.2268068702325579
-     },
-     "fixed": {
-      "mass_takeoff_kg": 0.06409173689276747,
-      "range_m": -0.0751364888526793,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": -1.0516110089021433e-14,
-      "mass_empty_kg": 0.08512011850641762,
-      "energy_battery_J": 0.0,
-      "lift_to_drag_cruise": -0.012907590176692334,
-      "power_hover_take_off_W": 0.09613760533915022,
-      "cost_per_mission_usd": -0.009301822423002705,
-      "static_margin": -0.12882380638347699,
-      "margin_strain_wing": 0.4024522737856779
-     }
-    },
-    "group": "Calibration factors"
-   },
-   {
-    "key": "factors.wing_tiltrotor",
-    "label": "Wing weight factor",
-    "value": 1.3273944247612506,
-    "kind": "calibration",
-    "sigma": 0.12,
-    "source": "bottom-up wing weight spread: XV-15 +17 %, V-22 -5 %",
-    "note": "",
-    "elasticity": {
-     "resized": {
-      "mass_takeoff_kg": 0.18724857689177946,
-      "range_m": 0.0,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": 0.10038508692699445,
-      "mass_empty_kg": 0.24009825250652972,
-      "energy_battery_J": 0.45214565328422923,
-      "lift_to_drag_cruise": 0.03881009551737129,
-      "power_hover_take_off_W": 0.1859313312932027,
-      "cost_per_mission_usd": 0.07805984462789257,
-      "static_margin": -6.608640781920981e-14,
-      "margin_strain_wing": 7.03878389512745
-     },
-     "fixed": {
-      "mass_takeoff_kg": 0.06083015612740065,
-      "range_m": -0.07131284888440842,
-      "mass_payload_kg": 0.0,
-      "mass_fuel_burnt_kg": -1.0386755478716054e-14,
-      "mass_empty_kg": 0.08078841905925215,
-      "energy_battery_J": 0.0,
-      "lift_to_drag_cruise": -0.012250732524075186,
-      "power_hover_take_off_W": 0.09124523419110006,
-      "cost_per_mission_usd": -0.00882845960638138,
-      "static_margin": -0.09124523509462892,
-      "margin_strain_wing": 6.430814398980197
-     }
-    },
-    "group": "Calibration factors"
+    "group": "Electrical machines and power",
+    "unit": "rad/s"
    },
    {
     "key": "assumptions.hybridization_electric_min",
-    "label": "hybridization electric min",
+    "label": "Hybridization electric min",
     "value": -1.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
     "note": "read in model logic: needs re-solves",
     "elasticity": {},
-    "group": "Other"
+    "group": "Other",
+    "unit": ""
    },
    {
     "key": "assumptions.fraction_chord_front_spar",
-    "label": "fraction chord front spar",
+    "label": "Fraction chord front spar",
     "value": 0.15,
     "kind": "setting",
     "sigma": null,
     "source": "",
     "note": "read in model logic: needs re-solves",
     "elasticity": {},
-    "group": "Other"
+    "group": "Other",
+    "unit": ""
    },
    {
     "key": "assumptions.fraction_chord_rear_spar",
-    "label": "fraction chord rear spar",
+    "label": "Fraction chord rear spar",
     "value": 0.6,
     "kind": "setting",
     "sigma": null,
     "source": "",
     "note": "read in model logic: needs re-solves",
     "elasticity": {},
-    "group": "Other"
+    "group": "Other",
+    "unit": ""
    },
    {
     "key": "assumptions.thickness_min_torque_box_m",
-    "label": "thickness min torque box m",
+    "label": "Thickness min torque box",
     "value": 0.001,
     "kind": "setting",
     "sigma": null,
     "source": "",
     "note": "read in model logic: needs re-solves",
     "elasticity": {},
-    "group": "Other"
+    "group": "Other",
+    "unit": "m"
    },
    {
     "key": "assumptions.reduction_ratio_max",
-    "label": "reduction ratio max",
+    "label": "Reduction ratio max",
     "value": 40.0,
     "kind": "setting",
     "sigma": null,
     "source": "",
     "note": "read in model logic: needs re-solves",
     "elasticity": {},
-    "group": "Turbogenerators and drive"
+    "group": "Turbogenerators and drive",
+    "unit": ""
    }
   ],
   "source": "plan 042 every-input table",
   "date": "2026-10-11"
  },
  "cost_per_takeoff_kg_usd": 0.20497371249089189,
- "missions_life": 7000.0
+ "missions_life": 7000.0,
+ "range_per_empty_kg_nm": 0.08017909322881225
 }
