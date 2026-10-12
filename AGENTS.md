@@ -140,7 +140,7 @@ Read these documents when relevant:
 
 ## Skills
 
-Discipline guidance lives in `.agents/skills/<name>/SKILL.md`. Read the relevant one before working in that area:
+Discipline guidance lives in `.claude/skills/<name>/SKILL.md`. Read the relevant one before working in that area:
 
 - `framework-development`: architecture, interfaces, symbolic data flow, tests
 - `aircraft-aero`: aerodynamic models and AeroSandbox aero integration
