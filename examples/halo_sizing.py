@@ -1351,7 +1351,11 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
     `off_design` (plan 045, an `OffDesign`): fly the sized aircraft `off_design.sized` instead of sizing one; its
     design is frozen and `initial` is ignored. Objective "payload" then maximizes payload at `requirements.range_m`,
     "range" maximizes the range at `requirements.mass_payload_kg` (see `solve_halo_off_design`). Without
-    `off_design`, objective "range" sizes the aircraft for maximum range at the required payload (plan 044)."""
+    `off_design`, objective "range" sizes the aircraft for maximum range at the required payload (plan 044).
+
+    With `whirl_flutter_model="eigenpair"` (plan 055) this iterates outside the optimization: if the post-solve
+    whirl-flutter scan fails, it re-solves from that result with the eigenpairs re-seeded from its least-damped modes,
+    at most `rounds_whirl_reseed` times (`whirl_round` counts them; the result reports `whirl_rounds`)."""
     if objective not in objectives:
         raise ValueError(f"Unknown objective '{objective}'.")
     if off_design is not None and objective not in ("payload", "range"):

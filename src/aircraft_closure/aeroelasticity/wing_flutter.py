@@ -22,7 +22,7 @@ from dataclasses import dataclass
 
 import numpy as onp
 
-JONES = ((0.165, 0.0455), (0.335, 0.3))
+jones_lag_terms = ((0.165, 0.0455), (0.335, 0.3))
 _gauss_x, _gauss_w = onp.polynomial.legendre.leggauss(4)
 _gauss_x, _gauss_w = 0.5 * (_gauss_x + 1), 0.5 * _gauss_w
 
@@ -147,7 +147,7 @@ def aerodynamic_matrices(wing, count_elements, velocity_m_s, density_kg_m3, fact
     b, a, rho, V = wing.semichord_m, wing.a, density_kg_m3, velocity_m_s
     le = wing.length_m / count_elements
     points = [(e, xi, w) for e in range(count_elements) for xi, w in zip(_gauss_x, _gauss_w)]
-    lags = len(JONES) * len(points)
+    lags = len(jones_lag_terms) * len(points)
     M_a, C_a, K_a = onp.zeros((size, size)), onp.zeros((size, size)), onp.zeros((size, size))
     D_a, E_q, E_qdot, F = onp.zeros((size, lags)), onp.zeros((lags, size)), onp.zeros((lags, size)), onp.zeros(lags)
     f = 2 * onp.pi * rho * V * b * factor_lift_slope
@@ -162,8 +162,8 @@ def aerodynamic_matrices(wing, count_elements, velocity_m_s, density_kg_m3, fact
         downwash_rate = rw + b * (0.5 - a) * rt                       # 3/4-chord downwash: rate part
         C_a += -f * wl * 0.5 * onp.outer(g, downwash_rate)
         K_a += -f * wl * 0.5 * V * onp.outer(g, rt)
-        for i, (A, beta) in enumerate(JONES):
-            k = len(JONES) * p + i
+        for i, (A, beta) in enumerate(jones_lag_terms):
+            k = len(jones_lag_terms) * p + i
             D_a[:, k] = -f * wl * A * beta * V / b * g
             E_q[k], E_qdot[k], F[k] = V * rt, downwash_rate, -beta * V / b
     return M_a, C_a, K_a, D_a, E_q, E_qdot, onp.diag(F)
