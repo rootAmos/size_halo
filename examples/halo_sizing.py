@@ -259,8 +259,9 @@ class HaloAssumptions:
     # resistance follow SOC through long segments; and points in the 60 s engine-out hover (SOC 0.30 -> 0.10).
     subsegments_mission: tuple = (1, 1, 4, 1, 1, 1)
     subsegments_engine_out: int = 3
-    # Plan 060: "continuous" holds each point's end voltage at its end SOC (the instantaneous minimum);
-    # "quasi_steady" (the reference) at the mid-interval SOC.
+    # Plan 060: "quasi_steady" (the reference) holds each point's end voltage at the mid-interval SOC; "piecewise" at
+    # its end SOC (the instantaneous minimum under constant current); "continuous" collocates the mission on nodes
+    # (subsegments + 1 per segment): current, voltage, SOC, RC voltages and temperatures continuous in time.
     battery_dynamics: str = "quasi_steady"
     # ---- Tier 15 electrical layer (plan 023) ----
     # True inserts inverters (motors) and active rectifiers (generators), DC feeder cables and protection
