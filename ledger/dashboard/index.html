@@ -118,14 +118,17 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
   <section class="panel" aria-labelledby="h-matrix">
     <div style="display:grid;gap:4px">
       <h2 id="h-matrix">Opportunity/design phase</h2>
-      <p class="lede">Programme phase against decision type: the weight opportunity (take-off lb each cell's decisions can save), shaded by size.</p>
+      <p class="lede">Programme phase against decision type: what each cell's decisions are worth, shaded by size. Cells sum first-order values, each priced with the others held.</p>
     </div>
+    <div class="controls"><label for="matrix-y" class="sub">Value</label>
+      <select id="matrix-y"><option value="weight">Weight opportunity, lb</option><option value="cost">Lifecycle cost per aircraft, $k</option><option value="payload">Payload freed, lb</option><option value="range">Range gained as built, nm</option></select></div>
     <div class="tablewrap" id="matrix"></div>
   </section>
 
   <section class="panel" aria-labelledby="h-cover">
     <div style="display:grid;gap:4px">
       <h2 id="h-cover">Design Variable Impact Matrix</h2>
+      <p class="sub" style="margin:0">Cells are elasticities: % change in the output per % change in the input. Units name the output.</p>
     </div>
     <div class="controls">
       <label for="cover-q" class="sub">Search</label>
@@ -329,18 +332,24 @@ function table() {
   });
 }
 
+// Matrix value: the same axes as the risk map; each cell sums its decisions' first-order values.
+const MATRIX_UNIT = { weight: "lb", cost: "$k", payload: "lb", range: "nm" };
+let matrixY = "weight";
 function matrix() {
+  if (!$("matrix-y").onchange) $("matrix-y").onchange = e => { matrixY = e.target.value; matrix(); };
+  const get = MAP_Y[matrixY].get, unit = MATRIX_UNIT[matrixY];
   const phases = Object.entries(V.gates || {}).sort((a, b) => a[1].localeCompare(b[1]));
   const types = Object.keys(TYPES);
   const cell = (p, t) => V.priorities.filter(r => r.phase === p && r.category === t);
-  const total = c => c.reduce((a, r) => a + (r.value_kg || 0), 0);
-  const maxStake = Math.max(1, ...phases.flatMap(([p]) => types.map(t => total(cell(p, t)))));
+  const total = c => c.reduce((a, r) => a + (get(r) || 0), 0);
+  const show = v => matrixY === "range" ? v.toFixed(1) : Math.round(v).toLocaleString("en-US");
+  const maxStake = Math.max(1e-9, ...phases.flatMap(([p]) => types.map(t => total(cell(p, t)))));
   $("matrix").innerHTML = `<table class="matrix"><thead><tr><th>Phase</th>${types.map(t => `<th title="${esc(TYPES[t].q)}"><span class="dot" style="background:var(${TYPES[t].color})"></span> ${esc(t)}</th>`).join("")}</tr></thead><tbody>${phases.map(([p, d], i) =>
     `<tr><th scope="row">${i + 1}. ${esc(p)}<div class="sub num">locks ${esc(d)}</div></th>${types.map(t => {
       const c = cell(p, t);
       if (!c.length) return `<td class="mcell empty-cell">·</td>`;
-      const stake = total(c), unknown = c.filter(r => r.value_kg == null).length;
-      return `<td class="mcell" style="background:color-mix(in srgb, var(${TYPES[t].color}) ${Math.round(6 + 34 * stake / maxStake)}%, transparent)"><b class="num">${stake ? fmt(stake) + " lb" : "—"}</b><div class="sub">${c.length} decision${c.length > 1 ? "s" : ""}${unknown ? `, ${unknown} unvalued` : ""}</div></td>`;
+      const stake = total(c), unknown = c.filter(r => get(r) == null).length;
+      return `<td class="mcell" style="background:color-mix(in srgb, var(${TYPES[t].color}) ${Math.round(6 + 34 * Math.max(stake, 0) / maxStake)}%, transparent)"><b class="num">${stake ? show(stake) + " " + unit : "—"}</b><div class="sub">${c.length} decision${c.length > 1 ? "s" : ""}${unknown ? `, ${unknown} unvalued` : ""}</div></td>`;
     }).join("")}</tr>`).join("")}</tbody></table>`;
 }
 
@@ -442,10 +451,10 @@ function register() {
 // "cost_per_payload_kg_nm" is derived: the CASM of a cargo aircraft, cost per mission / (payload kg x range nm);
 // its elasticity is the cost elasticity less those of payload and range.
 const COVER_COLUMNS = [
-  ["resized", "mass_empty_kg", "OEW"],
-  ["fixed", "range_m", "Range"], ["fixed", "lift_to_drag_cruise", "Cruise L/D"],
-  ["resized", "power_hover_take_off_W", "Hover power"],
-  ["resized", "cost_per_payload_kg_nm", "USD per payload kg-nm"],
+  ["resized", "mass_empty_kg", "OEW (kg)"],
+  ["fixed", "range_m", "Range (nm)"], ["fixed", "lift_to_drag_cruise", "Cruise L/D (–)"],
+  ["resized", "power_hover_take_off_W", "Hover power (kW)"],
+  ["resized", "cost_per_payload_kg_nm", "Unit cost (USD per payload kg-nm)"],
 ];
 const coverState = { q: "", group: "", sort: "0", used: true };
 function coverage() {
