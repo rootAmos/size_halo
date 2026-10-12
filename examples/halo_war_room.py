@@ -229,6 +229,12 @@ def feed_coverage(ledger, path, today):
     maintenance_per_kg = maintenance_per_takeoff_kg_usd(resized)
     ledger.cost_per_takeoff_kg_usd = float(derivative_cost[key_cost_per_kg] / derivative[key_cost_per_kg]
                                            + maintenance_per_kg)
+    reference = dict(zip(resized["outputs"], resized["output_values"]))
+    range_nm = reference["range_m"] / 1852.0
+    ledger.unit_cost = dict(usd_per_kg_nm=float(reference["cost_per_mission_usd"]
+                                                / (reference["mass_payload_kg"] * range_nm)),
+                            cost_per_mission_usd=float(reference["cost_per_mission_usd"]),
+                            mass_payload_kg=float(reference["mass_payload_kg"]), range_nm=float(range_nm))
     fixed = tables["fixed"]
     row_range = dict(zip(fixed["inputs"], fixed["jacobian"][fixed["outputs"].index("range_m")]))
     ledger.range_per_empty_kg_nm = float(-row_range[key_cost_per_kg] / 1852.0)

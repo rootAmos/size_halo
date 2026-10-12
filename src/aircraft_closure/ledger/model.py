@@ -159,3 +159,6 @@ class Ledger:
     missions_life: float = 7000.0
     # Range axis: nm of range the as-built aircraft gains per kg of empty mass saved (from the fixed-aircraft table).
     range_per_empty_kg_nm: Optional[float] = None
+    # Unit cost of the re-sized reference: cost per mission / (payload kg x range nm), the cargo equivalent of CASM,
+    # with the three numbers it comes from: {usd_per_kg_nm, cost_per_mission_usd, mass_payload_kg, range_nm}.
+    unit_cost: dict = field(default_factory=dict)

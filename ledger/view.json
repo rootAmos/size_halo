@@ -17079,5 +17079,11 @@
    "block": "",
    "block0_choice": ""
   }
- ]
+ ],
+ "unit_cost": {
+  "usd_per_kg_nm": 0.008082435876157859,
+  "cost_per_mission_usd": 3237.0155684012225,
+  "mass_payload_kg": 900.0,
+  "range_nm": 445.0
+ }
 }

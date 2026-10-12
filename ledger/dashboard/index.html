@@ -117,7 +117,7 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
 
   <section class="panel" aria-labelledby="h-matrix">
     <div style="display:grid;gap:4px">
-      <h2 id="h-matrix">Where the weight opportunity is</h2>
+      <h2 id="h-matrix">Opportunity/design phase</h2>
       <p class="lede">Programme phase against decision type: the weight opportunity (take-off lb each cell's decisions can save), shaded by size.</p>
     </div>
     <div class="tablewrap" id="matrix"></div>
@@ -223,6 +223,14 @@ let V = null;
 
 function remember() { try { localStorage.setItem("ledger-view", JSON.stringify({ sort: state.sort, owner: state.owner, phase: state.phase })); } catch (e) {} }
 
+// Unit cost of the re-sized reference, the cargo equivalent of CASM: cost per mission / (payload kg x range nm).
+function unitCost() {
+  const u = V.unit_cost || {};
+  if (u.usd_per_kg_nm == null) return ["—", "USD per payload kg-nm", ""];
+  return [`$${u.usd_per_kg_nm.toFixed(4)}`, `USD per payload kg-nm: $${Math.round(u.cost_per_mission_usd).toLocaleString("en-US")} per mission for ${fmtKg(u.mass_payload_kg)} kg over ${Math.round(u.range_nm)} nm`, ""];
+}
+const fmtKg = kg => Math.round(kg).toLocaleString("en-US");
+
 function summary() {
   const p = V.portfolio, b = V.baseline || {};
   const blind = V.priorities.filter(r => r.value_kg == null).length;
@@ -233,7 +241,7 @@ function summary() {
     [fmt(p.takeoff_99_kg), "lb at 99 % confidence", "crit"],
     [`±${fmt(p.sigma_takeoff_kg)}`, "lb take-off spread (1σ)", ""],
     [fmt(p.allowance_empty_kg + p.gaps_empty_kg), `lb empty growth (allowance ${fmt(p.allowance_empty_kg)}, gaps ${fmt(p.gaps_empty_kg)}) against ${fmt(b.mass_payload_kg)} lb payload`, p.allowance_empty_kg + p.gaps_empty_kg > b.mass_payload_kg ? "crit" : ""],
-    [V.cost_per_takeoff_kg_usd == null ? "—" : `$${Math.round(V.cost_per_takeoff_kg_usd * V.missions_life / LB).toLocaleString("en-US")}`, `lifecycle cost per aircraft per lb take-off (${(V.missions_life || 0).toLocaleString("en-US")} missions)`, ""],
+    unitCost(),
     [String(blind), "unvalued: no sensitivity or option data yet", blind ? "crit" : ""],
     [String(flagged), "schedule flags", flagged ? "crit" : ""],
   ];
