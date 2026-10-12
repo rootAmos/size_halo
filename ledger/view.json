@@ -42,7 +42,7 @@
    "detail": "Margin policy: P(better than 2 lanes, 2 buses, 2 strings (today)) = 100 %",
    "category": "Margin policy",
    "phase": "Conceptual design",
-   "value_usd": 795658.7366388114,
+   "value_usd": 2049681.2249373477,
    "nonrecurring_usd": null,
    "value_payload_kg": 218.5901178278081,
    "value_range_nm": 17.52635743621288
@@ -64,7 +64,7 @@
    "detail": "Requirement: P(better than 900 kg over 445 nm (today)) = 100 %",
    "category": "Requirement",
    "phase": "Conceptual design",
-   "value_usd": 1539225.8413187682,
+   "value_usd": 2065664.090277683,
    "nonrecurring_usd": null,
    "value_payload_kg": 123.11317973638151,
    "value_range_nm": 9.871103115778853
@@ -86,7 +86,7 @@
    "detail": "Requirement: P(better than Hot day 4,000 ft, 95 F; engine-out 60 s (today)) = 100 %",
    "category": "Requirement",
    "phase": "Conceptual design",
-   "value_usd": 300480.57916126616,
+   "value_usd": 926189.1836669917,
    "nonrecurring_usd": null,
    "value_payload_kg": 109.06799428322466,
    "value_range_nm": 8.744972881914233
@@ -108,7 +108,7 @@
    "detail": "Architecture: P(better than -18 deg (the XV-15's)) = 84 %",
    "category": "Architecture",
    "phase": "Preliminary design",
-   "value_usd": 255773.18679066852,
+   "value_usd": 658892.4053318236,
    "nonrecurring_usd": null,
    "value_payload_kg": 70.26817963936499,
    "value_range_nm": 5.634038926323572
@@ -130,7 +130,7 @@
    "detail": "Technology and material: P(better than Metallic semi-monocoque (the XV-15 calibration)) = 100 %",
    "category": "Technology and material",
    "phase": "Preliminary design",
-   "value_usd": 340384.4089736979,
+   "value_usd": 729602.8160864,
    "nonrecurring_usd": null,
    "value_payload_kg": 67.84511303856546,
    "value_range_nm": 5.439759643438446
@@ -152,7 +152,7 @@
    "detail": "Margin policy: P(better than Ultimate 4.5, jump 2.0 (today)) = 100 %",
    "category": "Margin policy",
    "phase": "Conceptual design",
-   "value_usd": 235788.92462699467,
+   "value_usd": 571290.94345283,
    "nonrecurring_usd": null,
    "value_payload_kg": 58.48174694706742,
    "value_range_nm": 4.689013440652725
@@ -174,7 +174,7 @@
    "detail": "Architecture: P(better than AR 6.12, 23 % (today)) = 100 %",
    "category": "Architecture",
    "phase": "Conceptual design",
-   "value_usd": 197849.99690677665,
+   "value_usd": 509677.5858037516,
    "nonrecurring_usd": null,
    "value_payload_kg": 54.355029542918466,
    "value_range_nm": 4.358136981176504
@@ -196,7 +196,7 @@
    "detail": "330 ± 1e+02 kg (handbook or parametric model); take-off spread ±254 kg",
    "category": "Maturity increase",
    "phase": "Conceptual design",
-   "value_usd": 111902.5563698367,
+   "value_usd": 288270.0311727581,
    "nonrecurring_usd": null,
    "value_payload_kg": 30.74281957293394,
    "value_range_nm": 2.4649313966548245
@@ -218,7 +218,7 @@
    "detail": "Margin policy: P(better than Reserve loiter 20 min (today)) = 100 %",
    "category": "Margin policy",
    "phase": "Conceptual design",
-   "value_usd": 484129.9904141667,
+   "value_usd": 632517.6107610827,
    "nonrecurring_usd": null,
    "value_payload_kg": 25.865618614088692,
    "value_range_nm": 2.0738818462799187
@@ -240,7 +240,7 @@
    "detail": "Margin policy: P(better than Size for 80 % capacity at end of life (today)) = 100 %",
    "category": "Margin policy",
    "phase": "After entry into service",
-   "value_usd": 51686.95267573463,
+   "value_usd": 195174.94744153577,
    "nonrecurring_usd": null,
    "value_payload_kg": 25.011559182872908,
    "value_range_nm": 2.005404135521522
@@ -262,7 +262,7 @@
    "detail": "Architecture: P(better than Rotor-fuselage clearance today) = 100 %",
    "category": "Architecture",
    "phase": "Conceptual design",
-   "value_usd": 92206.94712848621,
+   "value_usd": 159426.94479022545,
    "nonrecurring_usd": null,
    "value_payload_kg": 11.717195940561599,
    "value_range_nm": 0.9394741456985489
@@ -284,7 +284,7 @@
    "detail": "13.2 kg take-off per 1 % of the limit",
    "category": "Architecture",
    "phase": "Conceptual design",
-   "value_usd": 37893.521832083934,
+   "value_usd": 97616.7754709567,
    "nonrecurring_usd": null,
    "value_payload_kg": 10.410429774424728,
    "value_range_nm": 0.8346988194356032
@@ -306,7 +306,7 @@
    "detail": "70 ± 50 kg (placeholder prior); take-off spread ±127 kg",
    "category": "Maturity increase",
    "phase": "Preliminary design",
-   "value_usd": 34790.81162113042,
+   "value_usd": 89623.94315106259,
    "nonrecurring_usd": null,
    "value_payload_kg": 9.558026904492126,
    "value_range_nm": 0.76635393025877
@@ -328,7 +328,7 @@
    "detail": "11.7 kg take-off per 1 % of the limit",
    "category": "Technology and material",
    "phase": "Conceptual design",
-   "value_usd": 33525.17117144377,
+   "value_usd": 86363.5510409944,
    "nonrecurring_usd": null,
    "value_payload_kg": 9.210319423526911,
    "value_range_nm": 0.7384750597261046
@@ -350,7 +350,7 @@
    "detail": "40 ± 45 kg (placeholder prior); take-off spread ±114 kg",
    "category": "Maturity increase",
    "phase": "Conceptual design",
-   "value_usd": 33420.43680084171,
+   "value_usd": 86093.74683582028,
    "nonrecurring_usd": null,
    "value_payload_kg": 9.181545908756949,
    "value_range_nm": 0.7361680254028431
@@ -372,7 +372,7 @@
    "detail": "407.3 ± 61 kg (handbook or parametric model); take-off spread ±155 kg",
    "category": "Maturity increase",
    "phase": "Preliminary design",
-   "value_usd": 30963.763784794457,
+   "value_usd": 79765.15855427406,
    "nonrecurring_usd": null,
    "value_payload_kg": 8.506627857444283,
    "value_range_nm": 0.6820537080448366
@@ -394,7 +394,7 @@
    "detail": "674.9 ± 51 kg (handbook or parametric model); take-off spread ±128 kg",
    "category": "Maturity increase",
    "phase": "Conceptual design",
-   "value_usd": 21189.41137025146,
+   "value_usd": 54585.63659660295,
    "nonrecurring_usd": null,
    "value_payload_kg": 5.821334844749857,
    "value_range_nm": 0.4667493492333321
@@ -416,7 +416,7 @@
    "detail": "70.3 ± 35 kg (handbook or parametric model); take-off spread ±89 kg",
    "category": "Maturity increase",
    "phase": "Conceptual design",
-   "value_usd": 14202.815258240078,
+   "value_usd": 36587.600230528726,
    "nonrecurring_usd": null,
    "value_payload_kg": 3.901917892462755,
    "value_range_nm": 0.31285223847094185
@@ -438,7 +438,7 @@
    "detail": "560.2 ± 56 kg (handbook or parametric model); take-off spread ±142 kg",
    "category": "Maturity increase",
    "phase": "Preliminary design",
-   "value_usd": 13665.021784499495,
+   "value_usd": 35202.20076809525,
    "nonrecurring_usd": null,
    "value_payload_kg": 3.7541707071699917,
    "value_range_nm": 0.3010060031270588
@@ -460,7 +460,7 @@
    "detail": "40 ± 30 kg (placeholder prior); take-off spread ±76 kg",
    "category": "Maturity increase",
    "phase": "Conceptual design",
-   "value_usd": 13199.2855270357,
+   "value_usd": 34002.4265197425,
    "nonrecurring_usd": null,
    "value_payload_kg": 3.6262196916055034,
    "value_range_nm": 0.2907470067213925
@@ -482,7 +482,7 @@
    "detail": "45 ± 30 kg (placeholder prior); take-off spread ±76 kg",
    "category": "Maturity increase",
    "phase": "Preliminary design",
-   "value_usd": 11220.029244303892,
+   "value_usd": 28903.70233656763,
    "nonrecurring_usd": null,
    "value_payload_kg": 3.082461615270606,
    "value_range_nm": 0.2471489772250171
@@ -504,7 +504,7 @@
    "detail": "475.1 ± 36 kg (handbook or parametric model); take-off spread ±90 kg",
    "category": "Maturity increase",
    "phase": "Conceptual design",
-   "value_usd": 10466.013917127599,
+   "value_usd": 26961.29790077016,
    "nonrecurring_usd": null,
    "value_payload_kg": 2.875312128157943,
    "value_range_nm": 0.23053991918551028
@@ -526,7 +526,7 @@
    "detail": "3.1 kg take-off per 1 % of the limit",
    "category": "Requirement",
    "phase": "Conceptual design",
-   "value_usd": 9031.592721251938,
+   "value_usd": 23266.11294464345,
    "nonrecurring_usd": null,
    "value_payload_kg": 2.481235768806029,
    "value_range_nm": 0.19894323402976224
@@ -548,7 +548,7 @@
    "detail": "3.0 kg take-off per 1 % of the limit",
    "category": "Requirement",
    "phase": "Conceptual design",
-   "value_usd": 8625.843276766444,
+   "value_usd": 22220.869575728862,
    "nonrecurring_usd": null,
    "value_payload_kg": 2.3697648393805233,
    "value_range_nm": 0.19000559598705227
@@ -570,7 +570,7 @@
    "detail": "2.8 kg take-off per 1 % of the limit",
    "category": "Requirement",
    "phase": "Conceptual design",
-   "value_usd": 8120.970217296959,
+   "value_usd": 20920.27576167383,
    "nonrecurring_usd": null,
    "value_payload_kg": 2.2310618295653764,
    "value_range_nm": 0.17888451443196673
@@ -592,7 +592,7 @@
    "detail": "407.9 ± 41 kg (handbook or parametric model); take-off spread ±103 kg",
    "category": "Maturity increase",
    "phase": "Preliminary design",
-   "value_usd": 7229.320034560999,
+   "value_usd": 18623.312811846397,
    "nonrecurring_usd": null,
    "value_payload_kg": 1.986100127355202,
    "value_range_nm": 0.15924370727296863
@@ -614,7 +614,7 @@
    "detail": "292.4 ± 29 kg (handbook or parametric model); take-off spread ±74 kg",
    "category": "Maturity increase",
    "phase": "Conceptual design",
-   "value_usd": 7040.053235391761,
+   "value_usd": 18135.74623726195,
    "nonrecurring_usd": null,
    "value_payload_kg": 1.9341031467073584,
    "value_range_nm": 0.15507463651398842
@@ -636,7 +636,7 @@
    "detail": "2.4 kg take-off per 1 % of the limit",
    "category": "Requirement",
    "phase": "Conceptual design",
-   "value_usd": 6944.058722272222,
+   "value_usd": 17888.456611474256,
    "nonrecurring_usd": null,
    "value_payload_kg": 1.9077307197265831,
    "value_range_nm": 0.1529601192324268
@@ -658,7 +658,7 @@
    "detail": "126.9 ± 19 kg (handbook or parametric model); take-off spread ±48 kg",
    "category": "Maturity increase",
    "phase": "Conceptual design",
-   "value_usd": 6481.293364992162,
+   "value_usd": 16696.33564215605,
    "nonrecurring_usd": null,
    "value_payload_kg": 1.7805958950631853,
    "value_range_nm": 0.14276656427311155
@@ -680,7 +680,7 @@
    "detail": "2.2 kg take-off per 1 % of the limit",
    "category": "Requirement",
    "phase": "Conceptual design",
-   "value_usd": 6212.909379430899,
+   "value_usd": 16004.956799761088,
    "nonrecurring_usd": null,
    "value_payload_kg": 1.70686316980617,
    "value_range_nm": 0.13685474122071492
@@ -702,7 +702,7 @@
    "detail": "266.3 ± 27 kg (handbook or parametric model); take-off spread ±68 kg",
    "category": "Maturity increase",
    "phase": "Preliminary design",
-   "value_usd": 5834.68106434639,
+   "value_usd": 15030.610084932856,
    "nonrecurring_usd": null,
    "value_payload_kg": 1.6029530785157786,
    "value_range_nm": 0.12852332432372823
@@ -724,7 +724,7 @@
    "detail": "425.6 ± 21 kg (handbook or parametric model); take-off spread ±54 kg",
    "category": "Maturity increase",
    "phase": "Conceptual design",
-   "value_usd": 5277.843961260501,
+   "value_usd": 13596.152693859478,
    "nonrecurring_usd": null,
    "value_payload_kg": 1.4499740658191658,
    "value_range_nm": 0.11625760580267484
@@ -746,7 +746,7 @@
    "detail": "1.7 kg take-off per 1 % of the limit",
    "category": "Requirement",
    "phase": "Conceptual design",
-   "value_usd": 4922.751120034465,
+   "value_usd": 12681.404829913054,
    "nonrecurring_usd": null,
    "value_payload_kg": 1.3524199481690433,
    "value_range_nm": 0.10843580510875116
@@ -768,7 +768,7 @@
    "detail": "20 ± 15 kg (placeholder prior); take-off spread ±38 kg",
    "category": "Maturity increase",
    "phase": "Preliminary design",
-   "value_usd": 3289.4032585619916,
+   "value_usd": 8473.76870240146,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.9036927677181343,
    "value_range_nm": 0.07245726667307567
@@ -790,7 +790,7 @@
    "detail": "1.0 kg take-off per 1 % of the limit",
    "category": "Margin policy",
    "phase": "Conceptual design",
-   "value_usd": 2931.6195841768804,
+   "value_usd": 7552.089034716041,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.8053994015557893,
    "value_range_nm": 0.06457619370377123
@@ -812,7 +812,7 @@
    "detail": "281.7 ± 14 kg (handbook or parametric model); take-off spread ±36 kg",
    "category": "Maturity increase",
    "phase": "Conceptual design",
-   "value_usd": 2310.484617907211,
+   "value_usd": 5951.99515037908,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.6347559344364265,
    "value_range_nm": 0.05089415524472008
@@ -834,7 +834,7 @@
    "detail": "0.7 ± 0.025 - (handbook or parametric model); take-off spread ±41 kg",
    "category": "Maturity increase",
    "phase": "Conceptual design",
-   "value_usd": 2174.68972279918,
+   "value_usd": 5602.176523211013,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.5974492088828628,
    "value_range_nm": 0.04790293581849918
@@ -856,7 +856,7 @@
    "detail": "1.27 ± 0.1 - (handbook or parametric model); take-off spread ±34 kg",
    "category": "Maturity increase",
    "phase": "Conceptual design",
-   "value_usd": 2054.76568948128,
+   "value_usd": 5293.242518980951,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.5645026611153046,
    "value_range_nm": 0.04526131149347661
@@ -878,7 +878,7 @@
    "detail": "144.2 ± 14 kg (handbook or parametric model); take-off spread ±37 kg",
    "category": "Maturity increase",
    "phase": "Conceptual design",
-   "value_usd": 1708.3753799727601,
+   "value_usd": 4400.9130802329555,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.4693393768035656,
    "value_range_nm": 0.03763120564868573
@@ -900,7 +900,7 @@
    "detail": "194.8 ± 19 kg (handbook or parametric model); take-off spread ±49 kg",
    "category": "Maturity increase",
    "phase": "Preliminary design",
-   "value_usd": 1646.6387358251943,
+   "value_usd": 4241.874494250148,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.45237856220166933,
    "value_range_nm": 0.03627130291348369
@@ -922,7 +922,7 @@
    "detail": "421.7 ± 11 kg (handbook or parametric model); take-off spread ±27 kg",
    "category": "Maturity increase",
    "phase": "Conceptual design",
-   "value_usd": 1624.1802769827543,
+   "value_usd": 4184.019688778095,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.4462085838698302,
    "value_range_nm": 0.03577659964559541
@@ -944,7 +944,7 @@
    "detail": "258.4 ± 19 kg (handbook or parametric model); take-off spread ±49 kg",
    "category": "Maturity increase",
    "phase": "Preliminary design",
-   "value_usd": 1104.91855443877,
+   "value_usd": 2846.3595154943087,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.3035525984735612,
    "value_range_nm": 0.024338572092859875
@@ -966,7 +966,7 @@
    "detail": "0.4 kg take-off per 1 % of the limit",
    "category": "Technology and material",
    "phase": "Conceptual design",
-   "value_usd": 1083.9350559796094,
+   "value_usd": 2792.304327202237,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.29778783377053786,
    "value_range_nm": 0.023876358486294002
@@ -988,7 +988,7 @@
    "detail": "0.4 kg take-off per 1 % of the limit",
    "category": "Margin policy",
    "phase": "Conceptual design",
-   "value_usd": 1067.5563931704148,
+   "value_usd": 2750.1115677895727,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.2932881485808194,
    "value_range_nm": 0.023515577807967262
@@ -1010,7 +1010,7 @@
    "detail": "0.8 ± 0.05 - (handbook or parametric model); take-off spread ±24 kg",
    "category": "Maturity increase",
    "phase": "Preliminary design",
-   "value_usd": 1047.8713180496027,
+   "value_usd": 2699.4012229788605,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.28788009775203693,
    "value_range_nm": 0.023081965196380155
@@ -1032,7 +1032,7 @@
    "detail": "28.47 ± 5.7 kg (handbook or parametric model); take-off spread ±14 kg",
    "category": "Maturity increase",
    "phase": "Conceptual design",
-   "value_usd": 649.5314091455142,
+   "value_usd": 1673.2454166930315,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.17844477879771262,
    "value_range_nm": 0.01430754055541658
@@ -1054,7 +1054,7 @@
    "detail": "82.87 ± 8.3 kg (handbook or parametric model); take-off spread ±21 kg",
    "category": "Maturity increase",
    "phase": "Preliminary design",
-   "value_usd": 297.8019036036291,
+   "value_usd": 767.1617773538637,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.08181466525844654,
    "value_range_nm": 0.0065598256732410515
@@ -1076,7 +1076,7 @@
    "detail": "0.1 kg take-off per 1 % of the limit",
    "category": "Technology and material",
    "phase": "Conceptual design",
-   "value_usd": 215.65432468660987,
+   "value_usd": 555.5429734284974,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.0592463855075113,
    "value_range_nm": 0.0047503214670769
@@ -1098,7 +1098,7 @@
    "detail": "0.1 kg take-off per 1 % of the limit",
    "category": "Technology and material",
    "phase": "Conceptual design",
-   "value_usd": 214.27948958955412,
+   "value_usd": 552.0012870797439,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.05886867914670546,
    "value_range_nm": 0.004720037313560733
@@ -1120,7 +1120,7 @@
    "detail": "0.1 kg take-off per 1 % of the limit",
    "category": "Technology and material",
    "phase": "Conceptual design",
-   "value_usd": 211.89545239060774,
+   "value_usd": 545.8598145347742,
    "nonrecurring_usd": null,
    "value_payload_kg": 0.05821371622324783,
    "value_range_nm": 0.004667522980259408
@@ -10057,6 +10057,754 @@
      "value_kg": 23.29
     }
    ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 055 sizing (bf74c0f)",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "plan 042 every-input table",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-11",
+   "source": "handbook estimate",
+   "sigma_takeoff_kg": 470.69,
+   "margin_99_kg": 1094.96,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 77.99
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.25
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.29
+    }
+   ]
   }
  ],
  "schedule": [
@@ -13946,7 +14694,7 @@
   "source": "plan 042 every-input table",
   "date": "2026-10-11"
  },
- "cost_per_takeoff_kg_usd": 0.20497371249089189,
+ "cost_per_takeoff_kg_usd": 0.528028853014411,
  "missions_life": 7000.0,
  "range_per_empty_kg_nm": 0.08017909322881225,
  "trades": [

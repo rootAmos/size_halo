@@ -129,6 +129,26 @@ def field_comments(path="examples/halo_sizing.py"):
 
 
 key_cost_per_kg = "assumptions.mass_equipment_kg"
+
+
+def maintenance_per_takeoff_kg_usd(resized, duration_h=3.2):
+    """Maintenance cost per mission per take-off kg, first order, for tables solved before the cost model priced
+    maintenance by airframe mass and rated power (2026-10-11): the airframe follows the empty mass and the electric
+    machines the hover power, per take-off kg of a pure empty-mass change; the fixed turboshafts add nothing. A
+    table solved with the new cost model already holds it: then this returns 0."""
+    from aircraft_closure.mission.cost import CostModel
+    model = CostModel()
+    if resized.get("cost_model_maintenance"):
+        return 0.0
+    row = lambda name: dict(zip(resized["inputs"], resized["jacobian"][resized["outputs"].index(name)]))
+    takeoff = row("mass_takeoff_kg")[key_cost_per_kg]
+    empty = row("mass_empty_kg")[key_cost_per_kg] / takeoff
+    hover_W = row("power_hover_take_off_W")[key_cost_per_kg] / takeoff
+    # Rated machine power per hover shaft power at the reference (motors and generators, plan 048 units): 2.2.
+    ratio_machines = 2.2
+    seconds = duration_h * 3600.0
+    return float(model.cost_maintenance_airframe_usd_kg_s * empty * seconds
+                 + model.cost_maintenance_machine_usd_W_s * ratio_machines * hover_W * seconds)
 # First-order trade pricing uncertainty: the KKT derivative is exact at the reference; moves of 10-20 % carry the
 # curvature and any limit that starts or stops binding (assumed 20 % of the change).
 fraction_sigma_first_order = 0.20
@@ -205,7 +225,9 @@ def feed_coverage(ledger, path, today):
     derivative, derivative_cost = dict(zip(resized["inputs"], row)), dict(zip(resized["inputs"], row_cost))
     value = dict(zip(resized["inputs"], resized["input_values"]))
     # Cost per mission per take-off kg: a pure empty-mass change (fixed equipment) moves both through the closure.
-    ledger.cost_per_takeoff_kg_usd = float(derivative_cost[key_cost_per_kg] / derivative[key_cost_per_kg])
+    maintenance_per_kg = maintenance_per_takeoff_kg_usd(resized)
+    ledger.cost_per_takeoff_kg_usd = float(derivative_cost[key_cost_per_kg] / derivative[key_cost_per_kg]
+                                           + maintenance_per_kg)
     fixed = tables["fixed"]
     row_range = dict(zip(fixed["inputs"], fixed["jacobian"][fixed["outputs"].index("range_m")]))
     ledger.range_per_empty_kg_nm = float(-row_range[key_cost_per_kg] / 1852.0)
@@ -213,7 +235,8 @@ def feed_coverage(ledger, path, today):
         priced = []
         for label, moves in options:
             delta = float(sum(derivative[k] * (to(value[k]) - value[k]) for k, to in moves.items()))
-            delta_cost = float(sum(derivative_cost[k] * (to(value[k]) - value[k]) for k, to in moves.items()))
+            delta_cost = float(sum(derivative_cost[k] * (to(value[k]) - value[k]) for k, to in moves.items())
+                               + maintenance_per_kg * delta)
             priced.append(TradeOption(label, "", delta, fraction_sigma_first_order * abs(delta),
                                       "plan 042 every-input table, first order (KKT); re-solve to confirm",
                                       delta_cost_usd=delta_cost))

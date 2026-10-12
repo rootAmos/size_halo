@@ -4,7 +4,8 @@ The simplest useful direct-operating-cost form for an uncrewed hybrid-electric
 aircraft, written so every term is an AeroSandbox/CasADi expression of the
 sized design and the flown mission:
 
-    cost per mission = capital + fuel + ground electricity + battery + time
+    cost per mission = capital + fuel + ground electricity + battery + operations
+                       + airframe maintenance + powerplant maintenance
 
 * capital: (airframe x price per kg + electric machines x price per W +
   turboshafts x price per W) / missions in the airframe life (straight-line
@@ -15,8 +16,13 @@ sized design and the flown mission:
 * battery: pack price x (discharge throughput / cycle life + capacity /
   missions in the calendar life). Cycle ageing and calendar ageing add (a
   first-order approximation of the battery-replacement rate);
-* time: mission duration x cost per flight hour (maintenance, remote crew and
-  ground operations, lumped).
+* operations: mission duration x cost per flight hour (remote crew and ground
+  operations);
+* airframe maintenance: mission duration x airframe mass x rate per kg-hour;
+* powerplant maintenance: mission duration x (turboshaft rated power x its rate,
+  including the overhaul reserve, + electric machine rated power x its rate).
+  Maintenance scales with what is maintained, so a heavier or more powerful
+  design pays for it on every flight (user request, 2026-10-11).
 
 The battery's pack price is not in `capital`: the battery term replaces the
 pack at the rate it is consumed. Prices are US dollars (a currency, not a
@@ -38,11 +44,14 @@ class CostBreakdown:
     fuel_usd: Any
     electricity_usd: Any
     battery_usd: Any
-    time_usd: Any
+    time_usd: Any                   # operations: remote crew and ground handling
+    maintenance_airframe_usd: Any = 0.0
+    maintenance_powerplant_usd: Any = 0.0
 
     @property
     def per_mission_usd(self):
-        return self.capital_usd + self.fuel_usd + self.electricity_usd + self.battery_usd + self.time_usd
+        return (self.capital_usd + self.fuel_usd + self.electricity_usd + self.battery_usd + self.time_usd
+                + self.maintenance_airframe_usd + self.maintenance_powerplant_usd)
 
 
 @dataclass(frozen=True)
@@ -69,8 +78,18 @@ class CostModel:
     # Missions in the airframe life: assumed (15 years at about 470 missions per year, about 1,500 flight hours
     # per year at the Halo's ~3.2 h mission).
     count_missions_life: float = 7000.0
-    # Maintenance, remote crew and ground operations, per second of mission: assumed USD 500 per flight hour.
-    cost_time_usd_s: float = 500.0 / 3600.0
+    # Remote crew and ground operations, per second of mission: assumed USD 200 per flight hour.
+    cost_time_usd_s: float = 200.0 / 3600.0
+    # Airframe maintenance (labour and parts; structure, rotors, gearboxes, systems), per kg of airframe per second:
+    # assumed USD 0.10 per kg per flight hour, about USD 470 per flight hour for the Halo. Conklin & de Decker put
+    # medium twin helicopters (4-6 t empty) at roughly USD 600-1,300 per flight hour with engines included.
+    cost_maintenance_airframe_usd_kg_s: float = 0.10 / 3600.0
+    # Turboshaft maintenance with the overhaul reserve, per W rated per second: assumed USD 0.12 per kW per flight
+    # hour (about USD 100 per flight hour per 1,120 hp engine, PT6C class).
+    cost_maintenance_turboshaft_usd_W_s: float = 0.12 / 1000.0 / 3600.0
+    # Electric machines and inverters (no hot section; bearings, inspections), per W rated per second: assumed USD
+    # 0.02 per kW per flight hour.
+    cost_maintenance_machine_usd_W_s: float = 0.02 / 1000.0 / 3600.0
 
     def evaluate(self, mass_airframe_kg, power_rated_machines_W, power_rated_turboshafts_W,
                  energy_capacity_battery_J, mass_fuel_burnt_kg, energy_discharge_battery_J,
@@ -89,4 +108,8 @@ class CostModel:
             battery_usd=(self.price_battery_usd_J * energy_discharge_battery_J / self.count_cycles_life_battery
                          + price_battery_usd / self.count_missions_calendar_battery),
             time_usd=self.cost_time_usd_s * duration_mission_s,
+            maintenance_airframe_usd=self.cost_maintenance_airframe_usd_kg_s * mass_airframe_kg * duration_mission_s,
+            maintenance_powerplant_usd=(self.cost_maintenance_turboshaft_usd_W_s * power_rated_turboshafts_W
+                                        + self.cost_maintenance_machine_usd_W_s * power_rated_machines_W)
+            * duration_mission_s,
         )
