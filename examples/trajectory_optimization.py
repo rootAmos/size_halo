@@ -100,6 +100,7 @@ class TrajectoryResult:
     power_fan_W: Any = None
     mass_flow_air_kg_s: Any = None        # plan 049: ε-NTU cooler air flow and fan pressure rise at each node
     pressure_rise_fan_Pa: Any = None
+    voltage_rc_V: tuple = ()              # plan 060: RC branch voltages at each node (continuous battery dynamics)
 
 
 def power_available_bus_W(model, altitude_m):
@@ -145,7 +146,8 @@ def _result(label, solution, model, trajectory):
         temperatures_C={name: v(temperature) for name, temperature in t.thermal.temperatures_C.items()},
         drag_cooling_N=v(t.thermal.drag_cooling_N), power_fan_W=v(t.thermal.power_fan_W),
         mass_flow_air_kg_s=None if t.thermal.mass_flow_air_kg_s is None else v(t.thermal.mass_flow_air_kg_s),
-        pressure_rise_fan_Pa=None if t.thermal.pressure_rise_fan_Pa is None else v(t.thermal.pressure_rise_fan_Pa))
+        pressure_rise_fan_Pa=None if t.thermal.pressure_rise_fan_Pa is None else v(t.thermal.pressure_rise_fan_Pa),
+        voltage_rc_V=tuple(v(state) for state in t.voltage_rc_V))
 
 
 def _trimmed(opti, trajectory, index):
@@ -173,12 +175,12 @@ def transition_guess(case, duration_s=30.0, count_nodes=41):
                            torque_generator_Nm=1500.0)
 
 
-def _transition_problem(case, count_nodes, guess, limits, trimmed_ends=True):
+def _transition_problem(case, count_nodes, guess, limits, trimmed_ends=True, battery_dynamics="quasi_steady"):
     opti = asb.Opti()
     velocity_end_m_s = ratio_transition_end_stall * case.corridor.velocity_stall_m_s
     t = build_tiltrotor_trajectory(opti, case.model, mass_initial_kg=case.mass_kg, soc_initial=soc_take_off,
                                    count_nodes=count_nodes, duration_bounds_s=(5.0, 120.0), guess=guess, limits=limits,
-                                   corridor=case.corridor)
+                                   corridor=case.corridor, battery_dynamics=battery_dynamics)
     opti.subject_to([
         t.altitude_m >= altitude_transition_m - altitude_band_transition_m,
         t.altitude_m <= altitude_transition_m + altitude_band_transition_m,
@@ -192,9 +194,12 @@ def _transition_problem(case, count_nodes, guess, limits, trimmed_ends=True):
     return opti, t
 
 
-def solve_min_energy_transition(case, count_nodes=41, verbose=False, limits=TrajectoryLimits()):
-    """Hover to wing-borne flight at 1.3 V_stall with minimum bus (motor electrical) energy."""
-    opti, t = _transition_problem(case, count_nodes, transition_guess(case, count_nodes=count_nodes), limits)
+def solve_min_energy_transition(case, count_nodes=41, verbose=False, limits=TrajectoryLimits(),
+                                battery_dynamics="quasi_steady"):
+    """Hover to wing-borne flight at 1.3 V_stall with minimum bus (motor electrical) energy.
+    `battery_dynamics` "continuous": RC battery states (plan 060)."""
+    opti, t = _transition_problem(case, count_nodes, transition_guess(case, count_nodes=count_nodes), limits,
+                                  battery_dynamics=battery_dynamics)
     opti.minimize(t.energy_bus_J[-1] / 1e7 + 1e-3 * _regularization(t, case.model))
     solution = opti.solve(verbose=verbose, max_iter=3000)
     return _result("minimum-energy transition", solution, case.model, t)
@@ -225,8 +230,9 @@ def solve_prescribed_transition(case, duration_s=60.0, fraction_hold=0.25, count
 
 
 def solve_min_time_climb(case, altitude_final_m=10000 * u.foot, velocity_final_m_s=None, count_nodes=61,
-                         verbose=False, limits=TrajectoryLimits()):
-    """Hover at sea level to steady level flight at `altitude_final_m` and the sizing cruise speed, in minimum time."""
+                         verbose=False, limits=TrajectoryLimits(), battery_dynamics="quasi_steady"):
+    """Hover at sea level to steady level flight at `altitude_final_m` and the sizing cruise speed, in minimum time.
+    `battery_dynamics` "continuous": RC battery states (plan 060)."""
     velocity_final_m_s = velocity_final_m_s if velocity_final_m_s is not None else case.sizing.velocity_cruise_m_s
     fraction = np.linspace(0, 1, count_nodes)
     ramp = np.fmin(fraction / 0.2, 1.0)
@@ -238,7 +244,7 @@ def solve_min_time_climb(case, altitude_final_m=10000 * u.foot, velocity_final_m
     opti = asb.Opti()
     t = build_tiltrotor_trajectory(opti, case.model, mass_initial_kg=case.mass_kg, soc_initial=soc_take_off,
                                    count_nodes=count_nodes, duration_bounds_s=(30.0, 1500.0), guess=guess,
-                                   limits=limits, corridor=case.corridor)
+                                   limits=limits, corridor=case.corridor, battery_dynamics=battery_dynamics)
     opti.subject_to([
         t.altitude_m >= 0,
         t.altitude_m[0] == 0, t.velocity_m_s[0] == velocity_hover_m_s, t.gamma_rad[0] == 0, t.tilt_deg[0] == 90,
