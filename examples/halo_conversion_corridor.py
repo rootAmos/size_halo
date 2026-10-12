@@ -118,11 +118,11 @@ def plot_power_map(power_map, corridor, sizing, model, path, ax=None):
     step_kW = 50.0
     levels = onp.arange(onp.floor(onp.nanmin(power_kW) / step_kW) * step_kW,
                         onp.nanmax(power_kW) + step_kW, step_kW)
-    filled = ax.contourf(velocity_kt, tilt, onp.ma.masked_invalid(power_kW), levels=levels, cmap="Blues", alpha=0.75)
+    filled = ax.contourf(velocity_kt, tilt, onp.ma.masked_invalid(power_kW), levels=levels, cmap="Blues")
     lines = ax.contour(velocity_kt, tilt, onp.ma.masked_invalid(power_kW),
-                       levels=[level for level in levels if level % (2 * step_kW) == 0], colors="#6A7384",
-                       linewidths=0.7)
-    ax.clabel(lines, fmt="%.0f", fontsize=7)
+                       levels=[level for level in levels if level % (2 * step_kW) == 0], colors="#14213D",
+                       linewidths=1.1)
+    ax.clabel(lines, fmt="%.0f", fontsize=9, colors="#14213D")
     ax.figure.colorbar(filled, ax=ax, label=f"Rotor shaft power, both rotors (kW); drive rating {rating_kW:.0f} kW")
     pairs = [(lo, hi) for lo, hi in corridor if lo.trim is not None and hi.trim is not None]
     # Each stretch of a bound is coloured by the limit that sets it (disc tilt binds alongside the others and is
