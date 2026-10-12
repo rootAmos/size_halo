@@ -221,7 +221,12 @@ class TiltrotorPointMass:
 @dataclass(frozen=True)
 class TrajectoryLimits:
     """Operating bounds of the trajectory; hardware limits come from the components themselves."""
-    tilt_rate_max_deg_s: float = 8.0       # XV-15-like nacelle conversion rate
+    # Plan 065: XV-15 nacelle conversion at 7.5 deg/s (NASA NTRS 19780002103; 12 s from 90 deg to level); the
+    # nacelle acceleration and fuselage pitch rate are assumed (full rate in about 1 s; a moderate attitude
+    # change for a 6 t aircraft). None disables a bound.
+    tilt_rate_max_deg_s: float = 7.5
+    tilt_acceleration_max_deg_s2: Any = 7.5
+    pitch_rate_max_deg_s: Any = 5.0
     tilt_min_deg: float = 0.0
     tilt_max_deg: float = 95.0             # XV-15 conversion range (TM X-62407 sec. 8.1.4)
     alpha_min_deg: float = -10.0
@@ -278,6 +283,8 @@ class TiltrotorTrajectory:
     rate_gamma_rad_s: Any
     thermal: Any = None
     voltage_rc_V: tuple = ()             # plan 060: RC branch voltage states (continuous battery dynamics)
+    tilt_acceleration_deg_s2: Any = None  # plan 065: between adjacent intervals (n - 2 values)
+    pitch_rate_deg_s: Any = None          # plan 065: per interval (n - 1 values)
 
 
 @dataclass(frozen=True)
@@ -446,6 +453,9 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
     # trapezoidal `derivative_of` variable only bounds the mean of adjacent node rates, which lets them
     # alternate.)
     tilt_rate_deg_s = np.diff(tilt_deg) / np.diff(time_s)
+    # Plan 065: nacelle acceleration between adjacent intervals (their mid-points are (dt_i + dt_i+1) / 2 apart).
+    interval_s = np.diff(time_s)
+    tilt_acceleration_deg_s2 = np.diff(tilt_rate_deg_s) / (0.5 * (interval_s[:-1] + interval_s[1:]))
 
     is_ecm = isinstance(battery_model, EquivalentCircuitBattery)
     if battery_dynamics == "continuous" and not is_ecm:
@@ -494,6 +504,14 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
     opti.constrain_derivative(power_demand_bus_W, energy_bus_J, time_s)
 
     pitch_deg = np.degrees(gamma_rad) + alpha_deg
+    pitch_rate_deg_s = np.diff(pitch_deg) / np.diff(time_s)      # plan 065: per interval
+    rate_constraints = []
+    if limits.tilt_acceleration_max_deg_s2 is not None:
+        rate_constraints += [tilt_acceleration_deg_s2 <= limits.tilt_acceleration_max_deg_s2,
+                             tilt_acceleration_deg_s2 >= -limits.tilt_acceleration_max_deg_s2]
+    if limits.pitch_rate_max_deg_s is not None:
+        rate_constraints += [pitch_rate_deg_s <= limits.pitch_rate_max_deg_s,
+                             pitch_rate_deg_s >= -limits.pitch_rate_max_deg_s]
     corridor_constraints = [] if corridor is None else [
         velocity_m_s >= corridor.velocity_min_m_s(tilt_deg), velocity_m_s <= corridor.velocity_max_m_s(tilt_deg)]
     opti.subject_to([
@@ -515,7 +533,7 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
         pitch_deg <= limits.pitch_max_deg,
         tilt_rate_deg_s <= limits.tilt_rate_max_deg_s,
         tilt_rate_deg_s >= -limits.tilt_rate_max_deg_s,
-    ] + corridor_constraints)
+    ] + corridor_constraints + rate_constraints)
     # Continuous power ratings, unless the machine has a thermal model (then its temperature limit applies, as in
     # sizing: short-time ratings from thermal mass).
     if motor.thermal_model is None:
@@ -536,4 +554,5 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
         thrust_per_rotor_N=thrust_per_rotor_N, speed_rotor_rad_s=speed_rotor_rad_s,
         current_battery_A=current_battery_A, torque_generator_Nm=torque_generator_Nm, forces=forces, supply=supply,
         corridor=corridor, acceleration_m_s2=derivatives["speed"], rate_gamma_rad_s=derivatives["gamma"],
-        thermal=thermal, voltage_rc_V=voltage_rc_V)
+        thermal=thermal, voltage_rc_V=voltage_rc_V, tilt_acceleration_deg_s2=tilt_acceleration_deg_s2,
+        pitch_rate_deg_s=pitch_rate_deg_s)

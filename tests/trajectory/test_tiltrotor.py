@@ -186,6 +186,9 @@ class HaloTrajectoryProblemTests(unittest.TestCase):
     def assert_operating_limits(self, r):
         tolerance = 1e-6
         self.assertTrue(np.all(np.abs(r.tilt_rate_deg_s) <= self.limits.tilt_rate_max_deg_s + tolerance))
+        # Plan 065: nacelle acceleration and fuselage pitch rate.
+        self.assertTrue(np.all(np.abs(r.tilt_acceleration_deg_s2) <= self.limits.tilt_acceleration_max_deg_s2 + tolerance))
+        self.assertTrue(np.all(np.abs(r.pitch_rate_deg_s) <= self.limits.pitch_rate_max_deg_s + tolerance))
         self.assertTrue(np.all(r.velocity_m_s >= r.velocity_corridor_min_m_s - tolerance))
         self.assertTrue(np.all(r.velocity_m_s <= r.velocity_corridor_max_m_s + tolerance))
         self.assertTrue(np.all(r.alpha_deg <= r.alpha_stall_deg + tolerance))
@@ -205,8 +208,10 @@ class HaloTrajectoryProblemTests(unittest.TestCase):
                                1.0, places=6)
         self.assertTrue(np.all(np.abs(r.altitude_m - altitude_transition_m) <= altitude_band_transition_m + 1e-4))
         self.assertAlmostEqual(r.acceleration_m_s2[-1], 0.0, places=6)
-        # The nacelle rate bound sets a floor on the conversion time.
-        self.assertGreaterEqual(r.duration_s, 90.0 / self.limits.tilt_rate_max_deg_s - 1e-6)
+        # The nacelle rate and acceleration bounds set a floor on the conversion time: 90 deg at the full rate plus
+        # the ramps up to and down from it, 90 / r + r / a (plan 065), less one interval for the grid.
+        rate, acceleration = self.limits.tilt_rate_max_deg_s, self.limits.tilt_acceleration_max_deg_s2
+        self.assertGreaterEqual(r.duration_s, 90.0 / rate + rate / acceleration - r.duration_s / (len(r.time_s) - 1))
 
     def test_optimized_transition_beats_the_prescribed_profile(self):
         self.assert_operating_limits(self.prescribed)
