@@ -37,8 +37,8 @@ inputs without restructuring the model.
 | Cooling | epsilon-NTU offset-strip-fin core in a ram-air duct with a hover fan, 58 kg (plans 042, 051) |
 | Fuselage | 36.1 ft long, unpressurized box section 5.5 × 6.6 ft |
 
-The empty-weight breakdown, its uncertainty and the mission-profile figures below are still those of v3.6
-(15,179 lb) until they are regenerated. The model works in SI internally; [docs/RESULTS.md](docs/RESULTS.md) gives
+The empty-weight breakdown, its uncertainty and the mission profiles below are v3.10. The payload-range diagram,
+the battery-size trade and the constraint diagram are still drawn on earlier versions (labelled on each). The model works in SI internally; [docs/RESULTS.md](docs/RESULTS.md) gives
 the SI values alongside.
 
 ![Halo-class 3-view and nacelle conversion](docs/figures/halo_views.png)
@@ -64,6 +64,7 @@ the SI values alongside.
 | Whirl flutter | Frequency placement (the reference fluttered at 262 kt against 302 kt) | Calibrated rotor-pylon-wing eigenvalue model (plan 040) inside the optimizer as an eigenpair constraint, delta-3 a design variable (plan 055) |
 | Proprotor | Momentum plus profile, fitted to JVX | Same in the loop; a NeuralFoil blade-element-momentum model, validated on full-scale JVX and XV-15 data, designs the blade outside it (plans 047, 052) |
 | Wing | AFDD stiffness sizing x 1.33 | Same in the loop; spar-cap strain at ultimate available as a constraint (plan 043); NeuralFoil section-thickness trade (plan 046) |
+| Battery voltage | Each segment's end voltage at its mid-segment state of charge (optimistic in the engine-out hover: about 507 V stepped, against the 525 V cutoff) | Option `battery_dynamics="piecewise"`: the mission collocated on nodes, current solved from the power required through the equivalent circuit at every node; the converged pack is 64.0 kWh against 61.5 (plan 060, not yet the default) |
 | Operations | Design point only | Off-design solve and payload-range (plan 045); battery size by objective (plan 044); trajectories fly the epsilon-NTU cooler (plan 049); minimum-energy and minimum-time transitions |
 
 ## Aircraft versions
@@ -220,10 +221,10 @@ the empty-weight build-up carries two separate quantities:
   wide. The items are independent, so the OEW spread is the root sum of squares.
 
 The target is a not-to-exceed weight, and the design should carry enough margin that its 99 % value comes in at or
-below it. With the target at today's basic OEW (11,130 lb):
-- the growth allowance moves the prediction to 12,092 lb;
+below it. With the target at today's basic OEW (10,365 lb):
+- the growth allowance moves the prediction to 11,256 lb;
 - the chance of meeting the target is effectively zero;
-- the 99 % value is 1,613 lb over.
+- the 99 % value is 1,505 lb over.
 
 This is the size of the margin the weights team has to manage. The spread is at a fixed take-off weight:
 weight growth through re-sizing, and correlated errors between items, would widen it.
@@ -232,29 +233,29 @@ weight growth through re-sizing, and correlated errors between items, would wide
 
 | Item | Basic weight (lb) | Maturity | Growth allowance (%) | Growth allowance (lb) | Uncertainty, 1σ (%) | Uncertainty, 1σ (lb) | Predicted weight (lb) | Basis |
 |---|---|---|---|---|---|---|---|---|
-| Rotors | 1,488 | Calibrated parametric | 10 | 149 | 7.5 | 112 | 1,637 | AFDD blades and hubs, XV-15 calibrated |
-| Battery | 1,047 | Calculated / layout | 8 | 84 | 7.5 | 79 | 1,131 | 50G cell data; 70 % cell-to-pack mass assumed |
+| Rotors | 1,385 | Calibrated parametric | 10 | 139 | 7.5 | 104 | 1,524 | AFDD blades and hubs, XV-15 calibrated |
 | Motors (with inverters) | 938 | Vendor data | 5 | 47 | 5.0 | 47 | 985 | Whole catalogue units plus inverter allowance |
 | Turboshafts | 930 | Vendor hardware | 2 | 19 | 2.5 | 23 | 948 | Fixed off-the-shelf engines plus installation |
-| Rotor gearboxes | 645 | Calibrated parametric | 10 | 64 | 10.0 | 64 | 709 | AFDD drive system |
-| Generators (with inverters) | 621 | Vendor data | 5 | 31 | 5.0 | 31 | 652 | Whole catalogue units plus inverter allowance |
-| Generator gearboxes | 318 | Calibrated parametric | 10 | 32 | 10.0 | 32 | 350 | AFDD drive system |
-| Heat exchanger | 280 | Estimated | 15 | 42 | 15.0 | 42 | 322 | Thermal model, mass per watt assumed |
-| Protection and bus tie | 63 | Estimated | 15 | 9 | 20.0 | 13 | 72 | Simple ratings-based estimate |
-| Fuselage | 1,235 | Calculated / layout | 8 | 99 | 10.0 | 123 | 1,334 | Raymer x 1.70, anchored to the drawn layout |
-| Wing | 899 | Calibrated parametric | 10 | 90 | 10.0 | 90 | 989 | AFDD tiltrotor wing x 1.33 (XV-15); strength at ultimate not demonstrated |
-| Systems | 898 | Calibrated parametric | 10 | 90 | 15.0 | 135 | 988 | Raymer; flight controls carry an XV-15 factor of about 4 |
+| Battery | 919 | Calculated / layout | 8 | 74 | 7.5 | 69 | 993 | 50G cell data; 70 % cell-to-pack mass assumed |
+| Rotor gearboxes | 604 | Calibrated parametric | 10 | 60 | 10.0 | 60 | 664 | AFDD drive system |
+| Generators (with inverters) | 414 | Vendor data | 5 | 21 | 5.0 | 21 | 435 | Whole catalogue units plus inverter allowance |
+| Generator gearboxes | 335 | Calibrated parametric | 10 | 34 | 10.0 | 34 | 369 | AFDD drive system |
+| Heat exchanger | 130 | Estimated | 15 | 19 | 15.0 | 19 | 149 | Thermal model, mass per watt assumed |
+| Protection and bus tie | 50 | Estimated | 15 | 8 | 20.0 | 10 | 58 | Simple ratings-based estimate |
+| Fuselage | 1,222 | Calculated / layout | 8 | 98 | 10.0 | 122 | 1,320 | Raymer x 1.70, anchored to the drawn layout |
+| Systems | 851 | Calibrated parametric | 10 | 85 | 15.0 | 128 | 936 | Raymer; flight controls carry an XV-15 factor of about 4 |
+| Wing | 851 | Calibrated parametric | 10 | 85 | 10.0 | 85 | 936 | AFDD tiltrotor wing x 1.33 (XV-15); strength at ultimate not demonstrated |
 | Fixed equipment | 587 | Estimated | 15 | 88 | 10.0 | 59 | 675 | Assumed allowance |
-| Landing gear | 570 | Calibrated parametric | 10 | 57 | 7.5 | 43 | 627 | Raymer x XV-15 factor |
+| Landing gear | 546 | Calibrated parametric | 10 | 55 | 7.5 | 41 | 601 | Raymer x XV-15 factor |
 | Nacelles | 430 | Calibrated parametric | 10 | 43 | 10.0 | 43 | 472 | AFDD-class estimate |
-| Tails | 183 | Calibrated parametric | 10 | 18 | 10.0 | 18 | 201 | Raymer x XV-15 factor |
-| **OEW** | **11,130** | | **8.6** | **962** | **2.5** | **280** | **12,092** | Growth summed; uncertainty root sum of squares, items independent |
+| Tails | 173 | Calibrated parametric | 10 | 17 | 10.0 | 17 | 190 | Raymer x XV-15 factor |
+| **OEW** | **10,365** | | **8.6** | **890** | **2.5** | **264** | **11,256** | Growth summed; uncertainty root sum of squares, items independent |
 
 **Mission profiles.** Airspeed, turbine shaft power against battery power, and altitude, for the design mission
 (first 15 min on the left, the whole mission on the right):
 
 - **Design mission, as sized.** Each segment is one solved operating point, so the profile is a series of steps.
-  In the take-off hover the turbines give 1,833 hp and the battery 134 hp. In cruise the turbines carry everything
+  In the take-off hover the turbines give 1,741 hp and the battery 121 hp. In cruise the turbines carry everything
   and recharge the pack.
 
 ![Design mission profile](docs/figures/mission_profile.png)
@@ -262,9 +263,10 @@ weight growth through re-sizing, and correlated errors between items, would wide
 - **Same mission with an optimized take-off and climb.** The minimum-time climb from hover to 10,000 ft at cruise
   speed, flown by direct collocation inside the computed conversion corridor, replaces the take-off hover and the
   prescribed climb.
-  - The turbines run at their full 2,240 hp while the battery tops up to about 520 hp.
-  - It reaches cruise in 3.8 min instead of 9.5 min, on about half the fuel (65 lb against 135 lb).
-  - The aircraft is the same v3.6 design, not re-sized.
+  - The turbines run near their full 2,240 hp (about 2,180 hp at the shaft) while the battery tops up to about 410 hp.
+  - It reaches cruise in 3.8 min instead of 9.5 min, on half the fuel (65 lb against 130 lb) and 7.8 kWh of
+    battery against 13.1.
+  - The aircraft is the same v3.10 design, not re-sized.
 
 ![Mission profile with optimized take-off](docs/figures/mission_profile_optimized_takeoff.png)
 
