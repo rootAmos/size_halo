@@ -143,3 +143,13 @@ integrals; the segment's fuel is the mass difference. The trajectory option keep
   counts. The doubled constant_current run was stopped by the machine (low memory) and not repeated.
   "piecewise" binds the battery's maximum voltage at the first cruise node (in-flight recharge at the
   instantaneous voltage); the reference holds that limit on the interval-mean voltage.
+- 2026-10-12: on v3.10 (plan 055 eigenpair flutter in the loop) "piecewise" first failed: the flutter warm start
+  matched rotor speeds by point label, the nodes ("cruise 0/4") had none and started at the generic 100 rad/s
+  (supersonic tip), giving NaN matrices. `warm_start_rotor_speeds` now falls back to the segment's first earlier
+  point. Sized: 14,345.0 lb (reference 14,350.4), empty 10,396.6 lb, battery 64.10 kWh (61.44), min margin -1e-8;
+  engine-out ends on 525 V at its last node.
+  Open: with 4 cruise intervals the node currents zigzag (-515, +352, -206, +122, -22 A; SOC 0.30, 0.90, 0.36,
+  0.67, 0.30), and the take-off hover runs at 0 A with the climb carrying the battery. The trapezoidal rule with
+  current free at every node leaves this alternating pattern almost unpenalized, so the energy schedule within the
+  mission is not physical although the sizing totals converge. Candidate fixes: a current-rate penalty or bound, or
+  midpoint (Hermite-Simpson) collocation. Not yet done.
