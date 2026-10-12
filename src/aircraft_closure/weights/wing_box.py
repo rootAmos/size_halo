@@ -184,10 +184,12 @@ def size_wing_box(span_m, chord_m, thickness_to_chord, mass_design_kg, mass_tip_
                   offset_cg_tip_m, speed_rotor_design_rad_s, frequency_torsion_per_rev, frequency_beam_per_rev,
                   frequency_chord_per_rev, width_attachment_m, material, layout=WingBoxLayout(),
                   load_factor_ultimate=4.5, load_factor_jump=2.0, count_rotors=2, smoothing=0.0,
-                  stiffness_required_Nm2=None):
+                  stiffness_required_Nm2=None, thickness_shape=None):
     """Size the wing box at `layout.count_stations` midpoint stations per panel (constant chord, span between rotor
     centrelines). `stiffness_required_Nm2` = (GJ, EI beam, EI chord) overrides the frequency placement (e.g. a
-    published wing's stiffness). Returns `WingBoxSizing`."""
+    published wing's stiffness). `thickness_shape` (plan 062): the section's local thickness over its maximum at a
+    chord fraction (numbers), so the depths are `thickness_to_chord` x the shape; None: the NACA 4-digit formula.
+    Returns `WingBoxSizing`."""
     m, lay = material, layout
     semispan_m = span_m / 2
     y_side_m = width_attachment_m / 2
@@ -196,12 +198,17 @@ def size_wing_box(span_m, chord_m, thickness_to_chord, mass_design_kg, mass_tip_
     tip_weight_N = mass_tip_kg * g_m_s2
     # Spar depths (webs, caps) and the airfoil's mean depth across the box (covers, enclosed area): the section is
     # deepest between the spars, so the spar average understates the torsion area (CalculiX GJ 1.41 x, plan 054).
-    depth_m = 0.5 * (naca_thickness_fraction(lay.fraction_chord_front_spar, thickness_to_chord)
-                     + naca_thickness_fraction(lay.fraction_chord_rear_spar, thickness_to_chord)) * chord_m
+    def thickness_fraction(fraction_chord):
+        if thickness_shape is None:
+            return naca_thickness_fraction(fraction_chord, thickness_to_chord)
+        return thickness_to_chord * thickness_shape(fraction_chord)
+
+    depth_m = 0.5 * (thickness_fraction(lay.fraction_chord_front_spar)
+                     + thickness_fraction(lay.fraction_chord_rear_spar)) * chord_m
     fractions_box = [lay.fraction_chord_front_spar + (lay.fraction_chord_rear_spar - lay.fraction_chord_front_spar)
                      * k / 8 for k in range(9)]
     weights_simpson = [1, 4, 2, 4, 2, 4, 2, 4, 1]
-    depth_box_m = sum(w * naca_thickness_fraction(x, thickness_to_chord) for w, x in zip(weights_simpson, fractions_box)) \
+    depth_box_m = sum(w * thickness_fraction(x) for w, x in zip(weights_simpson, fractions_box)) \
         / 24 * chord_m
     width_m = (lay.fraction_chord_rear_spar - lay.fraction_chord_front_spar) * chord_m
     area_enclosed_m2 = width_m * depth_box_m
