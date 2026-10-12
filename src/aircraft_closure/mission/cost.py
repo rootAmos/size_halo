@@ -57,11 +57,10 @@ class CostModel:
     # Battery pack, per J of capacity: assumed USD 500 per kWh for an aviation-grade pack, about four times the
     # BloombergNEF 2024 automotive pack average (USD 115 per kWh).
     price_battery_usd_J: float = 500.0 / joule_per_kWh
-    # Jet-A, per kg: assumed USD 0.90 per kg (about USD 2.7 per US gallon delivered; EIA US Gulf Coast jet
-    # fuel spot prices were about USD 2.0-2.5 per gallon in 2024, before distribution and into-plane fees).
-    price_fuel_usd_kg: float = 0.90
-    # Grid electricity, per J: assumed USD 0.15 per kWh (EIA US commercial average about USD 0.13 per kWh, 2024).
-    price_electricity_usd_J: float = 0.15 / joule_per_kWh
+    # Jet-A, per kg: USD 3.20 per US gallon delivered (set by the user, 2026-10-11) at 0.804 kg/L: USD 1.05 per kg.
+    price_fuel_usd_kg: float = 3.20 / (3.785411784 * 0.804)
+    # Grid electricity, per J: USD 0.20 per kWh (set by the user, 2026-10-11).
+    price_electricity_usd_J: float = 0.20 / joule_per_kWh
     efficiency_charger: float = 0.90                 # assumed ground charger and pack round-trip share
     # Equivalent full discharge cycles to end of life within the sizing SOC window: assumed.
     count_cycles_life_battery: float = 1000.0

@@ -16,11 +16,16 @@ is the same kg divided by the growth factor):
   decided it.
 
 Anything without a sensitivity, or a trade without option data, is a **blind spot**: listed, never valued at zero.
+
+Cost axis: every valued priority also carries `value_usd`, the lifecycle operating cost per aircraft it can save
+(cost per mission x missions in the airframe life). A trade option with its own cost per mission uses it; anything
+else converts its take-off kg at the ledger's cost per take-off kg. `nonrecurring_usd` is the development cost the
+best option adds (negative: saves), where estimated.
 Schedule: a priority past its lock date, whose next step is overdue, or that has no plan, is flagged. Steps after the
 lock date are expected (installed weight, weighing): maturity keeps rising after a commitment.
 """
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from typing import Optional
 
@@ -47,6 +52,8 @@ class Priority:
     detail: str
     category: str = ""                # decision type
     phase: str = ""                   # programme phase in which it locks
+    value_usd: Optional[float] = None         # lifecycle operating cost per aircraft it can save (cost axis)
+    nonrecurring_usd: Optional[float] = None  # development cost of the best option against the baseline
 
 
 def _days(iso, today):
@@ -128,7 +135,17 @@ def priorities(ledger, today=None):
         if trade.status != "open":
             continue
         out.append(_trade_priority(ledger, trade, today))
+    usd_per_kg = _lifecycle_usd_per_kg(ledger)
+    out = [p if p.value_usd is not None or p.value_kg is None or usd_per_kg is None
+           else replace(p, value_usd=p.value_kg * usd_per_kg) for p in out]
     return sorted(out, key=lambda p: (p.value_kg is None, -(p.value_kg or 0.0)))
+
+
+def _lifecycle_usd_per_kg(ledger):
+    """Lifecycle operating cost per aircraft per take-off kg, or None without a cost per take-off kg."""
+    if ledger.cost_per_takeoff_kg_usd is None:
+        return None
+    return ledger.cost_per_takeoff_kg_usd * ledger.missions_life
 
 
 def _trade_priority(ledger, trade, today):
@@ -154,6 +171,17 @@ def _trade_priority(ledger, trade, today):
                         trade.category, trade.lock_gate)
     (base_mean, base_sigma), best = impacts[0], min(range(1, len(impacts)), key=lambda i: impacts[i][0])
     gain = base_mean - impacts[best][0]
+    usd_per_kg = _lifecycle_usd_per_kg(ledger)
+
+    def lifecycle_usd(i):
+        option = trade.options[i]
+        if option.delta_cost_usd is not None:
+            return option.delta_cost_usd * ledger.missions_life
+        return None if usd_per_kg is None else impacts[i][0] * usd_per_kg
+
+    costs = [lifecycle_usd(i) for i in range(len(impacts))]
+    value_usd = (max(costs[0] - c for c in costs[1:]) if None not in costs else None)
+    nonrecurring = trade.options[best].delta_nonrecurring_usd
     sigma = math.hypot(base_sigma, impacts[best][1])
     probability = 0.5 * (1 + math.erf(gain / (sigma * math.sqrt(2)))) if sigma > 0 else float(gain > 0)
     ready = "the data has decided it" if probability > 0.99 or probability < 0.01 else "still open"
@@ -162,4 +190,5 @@ def _trade_priority(ledger, trade, today):
         gain + z_90 * sigma, None, z_90 * sigma, trade.lock_date, days, schedule,
         f"best option: {trade.options[best].label} ({ready})",
         f"{trade.category + ': ' if trade.category else ''}P(better than {trade.options[0].label}) = "
-        f"{100 * probability:.0f} %", trade.category, trade.lock_gate)
+        f"{100 * probability:.0f} %", trade.category, trade.lock_gate,
+        None if value_usd is None else max(value_usd, 0.0), nonrecurring)

@@ -105,6 +105,10 @@ class TradeOption:
     delta_mean: float                 # change in that quantity's units against the baseline option
     delta_sigma: float
     source: str = ""
+    # Cost axis: change in operating cost per mission (USD; None: from the take-off change at the ledger's cost per
+    # take-off kg) and in non-recurring (development and qualification) cost, USD, when estimated.
+    delta_cost_usd: Optional[float] = None
+    delta_nonrecurring_usd: Optional[float] = None
 
 
 @dataclass
@@ -148,3 +152,8 @@ class Ledger:
     # Every continuous model input with its elasticity on each output, re-sized and fixed aircraft (plan 042 --all):
     # {source, date, outputs: {mode: [keys]}, inputs: [{key, label, group, value, kind, sigma, elasticity}]}.
     coverage: dict = field(default_factory=dict)
+    # Cost axis: operating cost per mission per take-off kg (USD/kg, from the sizing's cost model) and the missions
+    # in one airframe's life (the cost model's `count_missions_life`): lifecycle cost per aircraft = cost per mission
+    # x missions.
+    cost_per_takeoff_kg_usd: Optional[float] = None
+    missions_life: float = 7000.0

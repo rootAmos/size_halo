@@ -97,6 +97,7 @@ def group_of(key):
     return next((g for word, g in groups if word in key), "Other")
 
 
+key_cost_per_kg = "assumptions.mass_equipment_kg"
 # First-order trade pricing uncertainty: the KKT derivative is exact at the reference; moves of 10-20 % carry the
 # curvature and any limit that starts or stops binding (assumed 20 % of the change).
 fraction_sigma_first_order = 0.20
@@ -163,14 +164,19 @@ def feed_coverage(ledger, path, today):
                     "plan 042 every-input table", today)
     resized = tables["resized"]
     row = resized["jacobian"][resized["outputs"].index("mass_takeoff_kg")]
-    derivative = dict(zip(resized["inputs"], row))
+    row_cost = resized["jacobian"][resized["outputs"].index("cost_per_mission_usd")]
+    derivative, derivative_cost = dict(zip(resized["inputs"], row)), dict(zip(resized["inputs"], row_cost))
     value = dict(zip(resized["inputs"], resized["input_values"]))
+    # Cost per mission per take-off kg: a pure empty-mass change (fixed equipment) moves both through the closure.
+    ledger.cost_per_takeoff_kg_usd = float(derivative_cost[key_cost_per_kg] / derivative[key_cost_per_kg])
     for key, options in continuous_trades.items():
         priced = []
         for label, moves in options:
             delta = float(sum(derivative[k] * (to(value[k]) - value[k]) for k, to in moves.items()))
+            delta_cost = float(sum(derivative_cost[k] * (to(value[k]) - value[k]) for k, to in moves.items()))
             priced.append(TradeOption(label, "", delta, fraction_sigma_first_order * abs(delta),
-                                      "plan 042 every-input table, first order (KKT); re-solve to confirm"))
+                                      "plan 042 every-input table, first order (KKT); re-solve to confirm",
+                                      delta_cost_usd=delta_cost))
         price_trade(ledger, key, priced, "plan 042 every-input table", today)
 
 

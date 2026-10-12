@@ -139,6 +139,20 @@ class IngestTest(unittest.TestCase):
         self.assertEqual(coverage["inputs"][0]["elasticity"]["resized"]["mass_takeoff_kg"], 0.62)
         self.assertEqual(coverage["source"], "plan 042 every-input table")
 
+    def test_cost_axis_from_option_cost_or_take_off_kg(self):
+        ledger = two_item_ledger()
+        ledger.cost_per_takeoff_kg_usd, ledger.missions_life = 0.2, 7000.0
+        ledger.trades["t"] = Trade("t", "reserve", "Chief", options=[
+            TradeOption("20 min", "", 0.0, 0.0, delta_cost_usd=0.0), TradeOption("15 min", "", -66.0, 13.0,
+                                                                                  delta_cost_usd=-50.0)])
+        ledger.trades["w"] = Trade("w", "material", "Structures", options=[
+            TradeOption("metal", "", 0.0, 0.0), TradeOption("composite", "", -100.0, 20.0, delta_nonrecurring_usd=2e6)])
+        rows = {r.key: r for r in priorities(ledger, today)}
+        self.assertAlmostEqual(rows["t"].value_usd, 50.0 * 7000.0)          # its own cost per mission
+        self.assertAlmostEqual(rows["w"].value_usd, 100.0 * 0.2 * 7000.0)   # from take-off kg
+        self.assertEqual(rows["w"].nonrecurring_usd, 2e6)
+        self.assertAlmostEqual(rows["a"].value_usd, rows["a"].value_kg * 0.2 * 7000.0)
+
 
 if __name__ == "__main__":
     unittest.main()

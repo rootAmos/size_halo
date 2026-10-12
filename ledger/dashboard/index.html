@@ -180,12 +180,13 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
         <select id="sort">
           <option value="value">Weight opportunity</option>
           <option value="urgency">Weight opportunity per week to lock</option>
+          <option value="cost">Lifecycle cost per aircraft</option>
         </select>
       </div>
       <div class="tablewrap">
         <table>
-          <thead><tr><th>#</th><th>Decision</th><th>Type</th><th>Weight opportunity, lb</th><th class="num">Expected</th><th>Lock</th><th>Owner</th></tr></thead>
-          <tbody id="rows"><tr><td colspan="7" class="empty">The ranking appears once the ledger loads.</td></tr></tbody>
+          <thead><tr><th>#</th><th>Decision</th><th>Type</th><th>Weight opportunity, lb</th><th class="num">Expected</th><th class="num" title="Lifecycle operating cost per aircraft it can save: cost per mission x missions in the airframe life">Lifecycle $k</th><th>Lock</th><th>Owner</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="8" class="empty">The ranking appears once the ledger loads.</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -234,6 +235,7 @@ try { const s = JSON.parse(localStorage.getItem("ledger-view") || "{}"); if (s.s
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const fmt = (kg, d = 0) => kg == null || !isFinite(kg) ? "—" : (kg * LB).toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d });
+const usd = v => v == null || !isFinite(v) ? "—" : (v / 1e3).toLocaleString("en-US", { maximumFractionDigits: 0 });
 const kindColor = k => `var(${(TYPES[k] || TYPES["Increase maturity"]).color})`;
 let V = null;
 
@@ -249,6 +251,7 @@ function summary() {
     [fmt(p.takeoff_99_kg), "lb at 99 % confidence", "crit"],
     [`±${fmt(p.sigma_takeoff_kg)}`, "lb take-off spread (1σ)", ""],
     [fmt(p.allowance_empty_kg + p.gaps_empty_kg), `lb empty growth (allowance ${fmt(p.allowance_empty_kg)}, gaps ${fmt(p.gaps_empty_kg)}) against ${fmt(b.mass_payload_kg)} lb payload`, p.allowance_empty_kg + p.gaps_empty_kg > b.mass_payload_kg ? "crit" : ""],
+    [V.cost_per_takeoff_kg_usd == null ? "—" : `$${Math.round(V.cost_per_takeoff_kg_usd * V.missions_life / LB).toLocaleString("en-US")}`, `lifecycle cost per aircraft per lb take-off (${(V.missions_life || 0).toLocaleString("en-US")} missions)`, ""],
     [String(blind), "unvalued: no sensitivity or option data yet", blind ? "crit" : ""],
     [String(flagged), "schedule flags", flagged ? "crit" : ""],
   ];
@@ -259,6 +262,7 @@ function summary() {
 function filtered() {
   let rows = V.priorities.filter(r => state.kinds.has(r.category) && (!state.owner || r.owner === state.owner)
     && (!state.phase || r.phase === state.phase));
+  if (state.sort === "cost") rows = rows.slice().sort((a, b) => (b.value_usd ?? -1) - (a.value_usd ?? -1));
   if (state.sort === "urgency") {
     const u = r => r.value_kg == null ? -1 : r.value_kg / Math.max((r.days_to_lock ?? 3650) / 7, 1);
     rows = rows.slice().sort((a, b) => u(b) - u(a));
@@ -297,20 +301,20 @@ function detail(r) {
     parts.push(`<div><h3>Estimate history</h3><ul>${q.evidence.map(e => `<li><span class="num">${esc(e.date)}</span> ${esc(e.source)}: <span class="num">${(+e.value).toPrecision(4)} ± ${(+e.sigma).toPrecision(2)}</span> ${esc(q.unit)} <span class="sub">(tier ${e.fidelity})</span></li>`).join("")}</ul></div>`);
     if (q.note) parts.push(`<div><h3>Basis</h3><div>${esc(q.note)}</div></div>`);
   }
-  return `<tr class="detail"><td></td><td colspan="6"><div class="cols">${parts.join("")}</div></td></tr>`;
+  return `<tr class="detail"><td></td><td colspan="7"><div class="cols">${parts.join("")}</div></td></tr>`;
 }
 
 function table() {
   const rows = filtered();
   const max = Math.max(1, ...rows.filter(r => r.value_high_kg != null).map(r => Math.max(r.value_high_kg, r.value_low_kg)));
-  if (!rows.length) { $("rows").innerHTML = `<tr><td colspan="7" class="empty">No items match these filters.</td></tr>`; return; }
+  if (!rows.length) { $("rows").innerHTML = `<tr><td colspan="8" class="empty">No items match these filters.</td></tr>`; return; }
   const phases = Object.entries(V.gates || {}).sort((a, b) => a[1].localeCompare(b[1]));
   let html = "";
   phases.forEach(([phase, date], pi) => {
     const group = rows.filter(r => r.phase === phase);
     if (!group.length) return;
     const stake = group.reduce((t, r) => t + (r.value_kg || 0), 0);
-    html += `<tr class="phase"><td colspan="7"><span class="eyebrow">Phase ${pi + 1}</span><b>${esc(phase)}</b><span class="sub">locks ${esc(date)} · ${group.length} decisions · ${fmt(stake)} lb weight opportunity</span></td></tr>`;
+    html += `<tr class="phase"><td colspan="8"><span class="eyebrow">Phase ${pi + 1}</span><b>${esc(phase)}</b><span class="sub">locks ${esc(date)} · ${group.length} decisions · ${fmt(stake)} lb weight opportunity</span></td></tr>`;
     html += group.map(r => {
       const rank = V.priorities.indexOf(r) + 1;
       const head = `<tr class="row" tabindex="0" data-key="${esc(r.key)}" aria-expanded="${state.open === r.key}">
@@ -319,6 +323,7 @@ function table() {
         <td><span class="kind"><span class="dot" style="background:${kindColor(r.category)}"></span>${esc(r.category)}</span></td>
         <td style="min-width:140px">${rangeBar(r, max)}</td>
         <td class="num" style="text-align:right">${r.value_kg == null ? "—" : fmt(r.value_kg)}</td>
+        <td class="num" style="text-align:right">${usd(r.value_usd)}${r.nonrecurring_usd != null ? `<div class="sub">dev ${usd(r.nonrecurring_usd)}</div>` : ""}</td>
         <td>${schedulePill(r)}</td>
         <td>${esc(r.owner)}</td></tr>`;
       return head + (state.open === r.key ? detail(r) : "");
