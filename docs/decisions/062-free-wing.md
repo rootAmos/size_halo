@@ -93,3 +93,9 @@ Every change is behind options; the default sizing (v3.10, 14,350 lb) is unchang
   stall at 120 kt bind. New `HaloAssumptions.factor_stiffness_beam_wing_box` (WingBoxLayout
   `factor_stiffness_beam`): effective beam stiffness over the box value from the CalculiX beam frequency ratio,
   so the flutter constraint sees the FE-consistent wing.
+- 2026-10-12: CalculiX on E failed ("nonpositive jacobian" in the expanded shells; the 4 %-camber four-series
+  wing at 1.41 m chord), open. E re-sized with the beam ratio measured on D (0.94, factor 0.886; D's wing is
+  within 2 % in chord and span and 1.6 points in t/c): F = 13,820.1 lb (+11 lb on E, -530 on v3.10), empty
+  9,892.1, wing 707 lb, fuel burnt 1,767 lb, 179 ft2, span 37.7 ft, AR 7.92, t/c 0.237, camber 0.0400, L/D 9.05,
+  169 kt; flutter at maximum speed and stall bind as before (scan 301.9 kt against 302, the tracked mode on its
+  limit). The calibration is bought with depth (t/c +1.4 points) rather than cap area.
