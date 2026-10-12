@@ -157,7 +157,7 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
           <option value="value">Weight opportunity</option>
           <option value="cost">Lifecycle cost per aircraft</option>
           <option value="payload">Payload freed</option>
-          <option value="range">Range gained (as built)</option>
+          <option value="range">Range gained</option>
           <option value="urgency">Weight opportunity per week to lock</option>
         </select>
         <label class="sub"><input type="checkbox" id="group-phase" checked> group by phase</label>
@@ -442,10 +442,10 @@ function register() {
 // "cost_per_payload_kg_nm" is derived: the CASM of a cargo aircraft, cost per mission / (payload kg x range nm);
 // its elasticity is the cost elasticity less those of payload and range.
 const COVER_COLUMNS = [
-  ["resized", "mass_empty_kg", "OEW (re-sized)"],
-  ["fixed", "range_m", "Range (as built)"], ["fixed", "lift_to_drag_cruise", "Cruise L/D (as built)"],
-  ["resized", "power_hover_take_off_W", "Hover power (re-sized)"],
-  ["resized", "cost_per_payload_kg_nm", "USD per payload kg-nm (re-sized)"],
+  ["resized", "mass_empty_kg", "OEW"],
+  ["fixed", "range_m", "Range"], ["fixed", "lift_to_drag_cruise", "Cruise L/D"],
+  ["resized", "power_hover_take_off_W", "Hover power"],
+  ["resized", "cost_per_payload_kg_nm", "USD per payload kg-nm"],
 ];
 const coverState = { q: "", group: "", sort: "0", used: true };
 function coverage() {
