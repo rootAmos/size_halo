@@ -13,8 +13,9 @@ dist/
 data/engines/
 data/propellers/
 
-# Claude Code agent worktrees
-.claude/
+# Claude Code: local worktrees and settings (the skills in .claude/skills are tracked)
+.claude/worktrees/
+.claude/settings.local.json
 
 # Generated exports (OpenVSP models, CAD, meshes)
 output/
