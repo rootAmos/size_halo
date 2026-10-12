@@ -265,6 +265,10 @@ class HaloAssumptions:
     # mission on nodes (subsegments + 1 per segment), each node's current solved from its power required: current
     # piecewise linear within a segment, stepping at segment boundaries; SOC, RC voltages and temperatures carried.
     battery_dynamics: str = "quasi_steady"
+    # Plan 060 part 3 ("piecewise"): battery sub-steps between the flight-point nodes, at most this long, and at
+    # least this many battery nodes per segment.
+    step_battery_max_s: float = 30.0
+    count_nodes_battery_min: int = 9
     # ---- Tier 15 electrical layer (plan 023) ----
     # True inserts inverters (motors) and active rectifiers (generators), DC feeder cables and protection
     # between the machines, the battery and the bus, and sizes the machines as bare machines. False keeps the
@@ -1656,8 +1660,8 @@ def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerody
                           hybridization_electric_min=a.hybridization_electric_min,
                           # The engine-out reserve is assessed from the SOC floor, so hold it at every segment.
                           soc_floor=soc_reserve if a.soc_floor_every_segment else None,
-                          **(dict(subsegments=a.subsegments_mission, battery_dynamics=a.battery_dynamics)
-                             if is_ecm else {}),
+                          **(dict(subsegments=a.subsegments_mission, battery_dynamics=a.battery_dynamics,
+                                  **battery_steps(a)) if is_ecm else {}),
                           # Tier 19: machines start at the coolant temperature and carry their history.
                           **(dict(thermal_start="coolant") if thermal else {}))
     # Tier 19: the hover requirement is a 60 s hover from a cold start; airplane-mode requirements are steady.
@@ -1679,7 +1683,8 @@ def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerody
             r.duration_engine_out_hover_s, 0.0, None, "engine-out hover",
             active_generator_count=a.count_turbogenerators - 1),)), mass_takeoff_kg, soc_reserve,
             soc_floor=soc_emergency_floor, subsegments=a.subsegments_engine_out, polarization_start="steady",
-            battery_dynamics=a.battery_dynamics, **(dict(thermal_start=take_off_end_C) if thermal else {}))
+            battery_dynamics=a.battery_dynamics, **battery_steps(a),
+            **(dict(thermal_start=take_off_end_C) if thermal else {}))
         engine_out_points = reserve.segments[0].subsegments or reserve.segments
         engine_out = engine_out_points[0].point
         engine_out_margins = reserve.margins
@@ -2023,7 +2028,8 @@ def halo_failure_hovers(opti, aircraft, aerodynamics, mass_takeoff_kg, requireme
         failure = build_mission(opti, aircraft, aerodynamics, Mission((HoverSegment(
             r.duration_engine_out_hover_s, 0.0, None, label, **counts),)), mass_takeoff_kg, soc_minimum,
             soc_floor=soc_emergency_floor, polarization_start="steady",
-            **(dict(subsegments=a.subsegments_engine_out, battery_dynamics=a.battery_dynamics) if is_ecm else {}),
+            **(dict(subsegments=a.subsegments_engine_out, battery_dynamics=a.battery_dynamics, **battery_steps(a))
+               if is_ecm else {}),
             **(dict(thermal_start=temperature_start_C) if temperature_start_C is not None else {}))
         failures.append((label, failure))
     return tuple(failures)
@@ -2157,6 +2163,11 @@ def heat_exchanger_summary(powertrain, value):
     else:
         summary.update(model="mass_per_watt", power_rated_W=value(exchanger.power_rated_W))
     return summary
+
+
+def battery_steps(a):
+    """`build_mission` keywords of the plan 060 part 3 battery sub-steps (used by "piecewise" only)."""
+    return dict(step_battery_max_s=a.step_battery_max_s, count_nodes_battery_min=a.count_nodes_battery_min)
 
 
 def battery_trace(points, value):

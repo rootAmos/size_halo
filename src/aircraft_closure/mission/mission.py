@@ -40,10 +40,11 @@ segment boundaries, where the states carry over. Each node is reported as a
 subsegment whose `duration_s` is its trapezoidal weight (dt/2 at the ends, dt
 inside), so the sums of fuel, energy and duration are the trapezoidal integrals.
 """
+import math
 from dataclasses import dataclass, replace
 from typing import Any
 
-from aircraft_closure.core.margins import margin_above
+from aircraft_closure.core.margins import margin_above, margin_below
 from aircraft_closure.performance.flight_point import build_flight_point
 from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery
 from aircraft_closure.powertrain.redundancy import battery_for_condition
@@ -83,7 +84,7 @@ class MissionResult:
 
 def build_mission(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_start, hybridization_electric_min=0.0,
                   soc_floor=None, subsegments=1, polarization_start="rest", thermal_start="steady",
-                  battery_dynamics="quasi_steady"):
+                  battery_dynamics="quasi_steady", step_battery_max_s=30.0, count_nodes_battery_min=9):
     """`hybridization_electric_min` < 0 allows in-flight recharging from the generators on free-split segments.
 
     SOC stays inside the battery's own window (min_soc..max_soc) at every segment end, so a mission cannot dip
@@ -91,6 +92,9 @@ def build_mission(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_star
     emergency reserve throughout the flight); None uses the battery's min_soc.
 
     `subsegments`: points per segment, an int for every segment or a tuple with one count per segment.
+
+    "piecewise" (plan 060 part 3) integrates the battery between the flight-point nodes in sub-steps of at most
+    `step_battery_max_s`, with at least `count_nodes_battery_min` battery nodes per segment.
     """
     battery = aircraft.powertrain.topology.instances["battery"].component
     is_ecm = isinstance(battery, EquivalentCircuitBattery)
@@ -105,7 +109,8 @@ def build_mission(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_star
         if not is_ecm:
             raise ValueError("battery_dynamics 'piecewise' needs the equivalent-circuit battery.")
         return _build_mission_nodes(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_start,
-                                    hybridization_electric_min, soc_floor, counts, polarization_start, thermal_start)
+                                    hybridization_electric_min, soc_floor, counts, polarization_start, thermal_start,
+                                    step_battery_max_s, count_nodes_battery_min)
     if isinstance(thermal_start, dict):
         temperatures_C = dict(thermal_start)
     elif thermal_start == "coolant":
@@ -202,8 +207,11 @@ def _rates_temperature_C_s(aircraft, point, battery):
 
 
 def _build_mission_nodes(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_start, hybridization_electric_min,
-                         soc_floor, counts, polarization_start, thermal_start):
-    """`build_mission` with `battery_dynamics="piecewise"` (plan 060 part 2): trapezoidal collocation on nodes."""
+                         soc_floor, counts, polarization_start, thermal_start, step_battery_max_s=30.0,
+                         count_nodes_battery_min=9):
+    """`build_mission` with `battery_dynamics="piecewise"` (plan 060): flight points on nodes; mass and temperatures
+    by the trapezoidal rule between them; SOC and RC voltages sub-stepped through the equivalent circuit at a
+    terminal power linear between the nodes (part 3), with the voltage limits at every sub-step."""
     topology = aircraft.powertrain.topology
     battery_design = topology.instances["battery"].component
     soc_lower = battery_design.min_soc if soc_floor is None else soc_floor
@@ -221,6 +229,8 @@ def _build_mission_nodes(opti, aircraft, aerodynamics, mission, mass_start_kg, s
     results, margins = [], []
     for segment, count in zip(mission.segments, counts):
         dt_s = segment.duration_s() / count
+        count_steps = max(math.ceil(float(_guess(opti, dt_s, 60.0)) / step_battery_max_s),
+                          math.ceil((count_nodes_battery_min - 1) / count))
         nodes = []
         for index in range(count + 1):
             steady_start = False
@@ -255,19 +265,26 @@ def _build_mission_nodes(opti, aircraft, aerodynamics, mission, mass_start_kg, s
                                         battery.get_limits().min_voltage_V))
             margins.extend(point.margins)
             node = dict(point=point, mass_kg=mass_kg, soc=soc, voltage_rc_V=voltage_rc_V,
-                        temperatures_C=temperatures_C, rate_soc_s=-current_A / battery.capacity_As,
-                        rates_rc_V_s=battery.derivative_voltage_rc_V_s(current_A, soc, voltage_rc_V),
+                        temperatures_C=temperatures_C, battery=battery, power_battery_W=point.battery.power_electric_W,
                         rates_temperature_C_s=(_rates_temperature_C_s(aircraft, point, battery)
                                                if temperatures_C is not None else {}))
             if nodes:
                 a, b = nodes[-1], node
                 scale_mass_kg = _guess(opti, a["mass_kg"], 1000.0)
+                # Part 3: the battery between the nodes, sub-stepped at a terminal power linear from a's to b's.
+                soc_end, voltage_rc_end_V, voltages_V, _ = a["battery"].integrate_power(
+                    a["power_battery_W"], b["power_battery_W"], a["soc"], a["voltage_rc_V"], dt_s, count_steps)
+                limits = a["battery"].get_limits()
+                label = condition.label.rsplit(" ", 1)[0]
+                for step, voltage_V in enumerate(voltages_V[:-1], start=1):
+                    where = f"{label} {index - 1}/{count} step {step}/{count_steps}: battery"
+                    margins.append(margin_above(f"{where} voltage_V", voltage_V, limits.min_voltage_V))
+                    margins.append(margin_below(f"{where} max_voltage_V", voltage_V, limits.max_voltage_V))
                 opti.subject_to(
-                    [b["soc"] == a["soc"] + dt_s / 2 * (a["rate_soc_s"] + b["rate_soc_s"]),
+                    [(b["soc"] - soc_end) / 0.1 == 0,
                      (b["mass_kg"] - a["mass_kg"] + dt_s / 2 * (a["point"].fuel_flow_kg_s + b["point"].fuel_flow_kg_s))
                      / scale_mass_kg == 0]
-                    + [(vb - va - dt_s / 2 * (ra + rb)) / 10.0 == 0 for va, vb, ra, rb in
-                       zip(a["voltage_rc_V"], b["voltage_rc_V"], a["rates_rc_V_s"], b["rates_rc_V_s"])]
+                    + [(vb - ve) / 10.0 == 0 for vb, ve in zip(b["voltage_rc_V"], voltage_rc_end_V)]
                     + [(b["temperatures_C"][name] - a["temperatures_C"][name]
                         - dt_s / 2 * (a["rates_temperature_C_s"][name] + b["rates_temperature_C_s"][name])) / 50.0 == 0
                        for name in a["rates_temperature_C_s"]])
