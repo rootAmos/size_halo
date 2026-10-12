@@ -160,5 +160,25 @@ class TestSectionShape(unittest.TestCase):
         self.assertGreater(float(solution(thickness)), 0.15)
 
 
+class TestBeamStiffnessFactor(unittest.TestCase):
+    def test_factor_scales_reported_stiffness_and_adds_caps(self):
+        """Plan 062: a beam factor below 1 reports factor x the box stiffness and sizes caps so the effective
+        stiffness still meets the requirement (the frequency-placement case, no imposed stiffness)."""
+        free = dict(stiffness_required_Nm2=None)
+        base = xv15(**free)
+        factored = xv15(layout=replace(wb.WingBoxLayout(), factor_stiffness_beam=0.886), **free)
+        # Strength-sized here (the beam requirement does not set the caps): the effective frequency falls by
+        # sqrt(0.886) and no caps are added.
+        self.assertAlmostEqual(float(factored.frequency_beam_rad_s) / float(base.frequency_beam_rad_s), 0.886**0.5,
+                               places=6)
+        self.assertGreaterEqual(float(factored.mass_caps_kg), float(base.mass_caps_kg))
+        # Stiffness-sized (an imposed beam requirement above the box): caps grow so the effective stiffness meets it.
+        required = (1e7, 3.0 * float(base.stiffness_beam_Nm2), 1e7)
+        stiff = xv15(stiffness_required_Nm2=required)
+        stiff_factored = xv15(stiffness_required_Nm2=required, layout=replace(wb.WingBoxLayout(), factor_stiffness_beam=0.886))
+        self.assertGreater(float(stiff_factored.mass_caps_kg), float(stiff.mass_caps_kg))
+        self.assertGreaterEqual(float(stiff_factored.stiffness_beam_Nm2), 0.99 * required[1])
+
+
 if __name__ == "__main__":
     unittest.main()

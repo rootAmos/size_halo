@@ -113,6 +113,10 @@ class WingBoxLayout:
     # and CalculiX on the Halo wing box gives (58.5 / 77.6)^2 = 0.568 clamped (plan 054). Torsion frequency =
     # this factor x the NDARC value, sqrt(0.572); 1.0 is NDARC.
     correction_torsion_frequency: float = 0.756
+    # Plan 062: effective beam (flapwise) bending stiffness over the box value, the square of the CalculiX
+    # free-free over bottom-up beam frequency (0.94^2 on the free wing D); 1.0 is the box value. The caps are sized
+    # so the effective stiffness meets the requirement, and the effective stiffness is what flutter sees.
+    factor_stiffness_beam: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -287,7 +291,8 @@ def size_wing_box(span_m, chord_m, thickness_to_chord, mass_design_kg, mass_tip_
         beam_box_Nm2 = m.modulus_Pa * width_m * covers_m * (depth_effective_m / 2) ** 2 \
             + m.modulus_Pa * 2 * web_m * depth_m**3 / 12
         chord_box_Nm2 = m.modulus_Pa * covers_m * width_m**3 / 12 + m.modulus_Pa * 2 * depth_m * web_m * (width_m / 2) ** 2
-        area_caps_m2 = _max(_positive_part(beam_req_Nm2 - beam_box_Nm2, smoothing * beam_req_Nm2)
+        area_caps_m2 = _max(_positive_part(beam_req_Nm2 / lay.factor_stiffness_beam - beam_box_Nm2,
+                                           smoothing * beam_req_Nm2)
                             / (m.modulus_cap_Pa * (depth_m / 2) ** 2),
                             _positive_part(chord_req_Nm2 - chord_box_Nm2, smoothing * chord_req_Nm2)
                             / (m.modulus_cap_Pa * (width_m / 2) ** 2), beam_req_Nm2 / (m.modulus_cap_Pa * depth_m**2),
@@ -316,7 +321,8 @@ def size_wing_box(span_m, chord_m, thickness_to_chord, mass_design_kg, mass_tip_
 
     # Realized effective stiffness: flexibility-weighted for bending (weight (L - y)^2), uniform for torsion.
     weight_bending = [r["arm"] ** 2 for r in rows]
-    stiffness_beam_Nm2 = sum(weight_bending) / sum(w / r["beam"] for w, r in zip(weight_bending, rows))
+    stiffness_beam_Nm2 = lay.factor_stiffness_beam * sum(weight_bending) / sum(
+        w / r["beam"] for w, r in zip(weight_bending, rows))
     stiffness_chord_Nm2 = sum(weight_bending) / sum(w / r["chord"] for w, r in zip(weight_bending, rows))
     stiffness_torsion_Nm2 = len(rows) / sum(1 / r["torsion"] for r in rows)
 

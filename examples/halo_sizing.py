@@ -306,6 +306,9 @@ class HaloAssumptions:
     # Plan 054: root bending peak over beam theory for the distributed covers; CalculiX on the sized layout gives 0.97
     # (the plan 043 factor 1.33 was fitted on the AFDD wing with discrete cap pads).
     factor_peak_strain_wing_box: float = 1.0
+    # Plan 062: effective beam stiffness of the bottom-up box over its beam-theory value (CalculiX free-free over
+    # bottom-up beam frequency, squared: 0.94^2 = 0.886 on the free wing); 1.0: beam theory.
+    factor_stiffness_beam_wing_box: float = 1.0
     # XV-15 symmetric wing modes in per rev of its airplane-mode rotor speed (torsion 1.09, beam 0.43, chord 0.83).
     frequency_torsion_wing_per_rev: float = Xv15Reference().frequency_torsion_wing_per_rev
     frequency_beam_wing_per_rev: float = Xv15Reference().frequency_beam_wing_per_rev
@@ -1050,7 +1053,7 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                 fraction_chord_front_spar=a.fraction_chord_front_spar,
                 fraction_chord_rear_spar=a.fraction_chord_rear_spar,
                 pitch_rib_m=d.pitch_rib_wing_m if d.pitch_rib_wing_m is not None else a.pitch_rib_wing_m,
-                factor_peak_root=a.factor_peak_strain_wing_box)
+                factor_peak_root=a.factor_peak_strain_wing_box, factor_stiffness_beam=a.factor_stiffness_beam_wing_box)
             wing_mass = dict(mass_factor=1.0, mass_model=BottomUpWingMassModel(
                 mass_tip_kg=mass_tip_kg, radius_gyration_pylon_m=radius_gyration_pylon_m,
                 speed_rotor_design_rad_s=speed_wing_design_rad_s, width_fuselage_m=a.diameter_fuselage_m,
