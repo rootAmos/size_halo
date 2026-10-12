@@ -2,15 +2,33 @@
 
 Status: COMPLETED 2026-10-11.
 
-## Goal
+## Goal and scope
 
 Plan 047 checked the blade-element momentum rotor (`rotor_bemt`) against JVX point by point. This plan draws the
 BEM as continuous performance curves over the test data, in the form the reports plot them, and adds the XV-15 as
 an independent check. The drag factor stays at the JVX fit (0.964), so the XV-15 results are predictions. The XV-15 runs with its own NACA 64-series airfoils; plan 047's single camber line is kept as a comparison (dashed in the figure).
 
+Scope: an example script, two data files, an integration test and one new section option
+(`SectionSchedule.lift_design`, with `mean_line_a` and `n_crit`). There is no change to the sizing, the JVX
+calibration or plan 047's Halo blade design.
+
 ![BEM curves against JVX and XV-15](../figures/proprotor_bemt_curves.png)
 
-## Data added (`data/rotors/`)
+## References
+
+- Felker, Betzina and Signor, NASA/TM-86833, 1985: full-scale XV-15 rotor hover data (Appendix A) and blade
+  geometry (Table I, figs. 5-8).
+- Bell Helicopter, NASA CR-114363, 1971: airplane-mode efficiency of the 25-ft Model 300 proprotor in the Ames
+  40x80 (figs. IV-33 to IV-35) and its blade geometry (Table III-1, fig. IV-1).
+- Abbott and von Doenhoff, *Theory of Wing Sections*, 1959: NACA 64-series thickness, the a-series mean line
+  (eq. 4.26) and its thin-airfoil zero-lift angle.
+- Ning, Wind Energy 17, 2014: the single-residual BEM used by `rotor_bemt` (plan 047).
+- NeuralFoil (Sharma, through AeroSandbox): section polars, including free transition by e^N with `n_crit`.
+- JVX test data and the 0.964 drag-factor fit: plan 047.
+
+## Model
+
+### Data added (`data/rotors/`)
 
 - `xv15_hover.csv`: NASA/TM-86833 (Felker, Betzina, Signor, 1985). The full-scale XV-15 metal-blade rotor
   hovering at the Ames OARF.
@@ -25,7 +43,7 @@ an independent check. The drag factor stays at the JVX fit (0.964), so the XV-15
   - Reading accuracy is about +/-0.001 in C_P and +/-0.5 points in efficiency. These are the only public XV-15
     airplane-mode performance data found.
 
-## XV-15 blade (`examples/proprotor_bemt_curves.py`, `xv15_rotor`)
+### XV-15 blade (`examples/proprotor_bemt_curves.py`, `xv15_rotor`)
 
 | Parameter | Value | Source |
 |---|---|---|
@@ -48,7 +66,7 @@ an independent check. The drag factor stays at the JVX fit (0.964), so the XV-15
 - Check: the built 64-208 has NeuralFoil's zero-lift angle -1.11 deg against -1.06 deg from theory.
 - The default schedule (no `lift_design`) is unchanged, so JVX and the Halo blade design are unaffected.
 
-## Method
+### Method
 
 - **Sweep.** Each test condition (fixed tip speed, inflow and air) is swept over the thrust range of its data, on
   9-11 thrust points.
@@ -143,7 +161,7 @@ points, against 0.072 and -0.041 turbulent. The laminar curves land on the high-
 **Decision:** keep forced 5 % transition, the JVX calibration, as the default. Laminar flow in cruise is the
 optimistic bound: about +0.04-0.05 in cruise efficiency for a blade that holds it.
 
-## Tests
+## Verification
 
 `tests/integration/test_xv15_bemt.py` (4 tests, about 25 s):
 
@@ -153,6 +171,39 @@ optimistic bound: about +0.04-0.05 in cruise efficiency for a blade that holds i
 - an airplane-mode point at 160 kt and 600 ft/s trims above 0.75 efficiency and below the momentum limit.
 
 `tests/integration/test_jvx_bemt.py` still passes.
+
+## Assumptions
+
+Collected from the sections above:
+
+- Calibration: one profile-drag factor, 0.964, fitted on JVX in plan 047; every XV-15 result is a prediction.
+- Sections:
+  - 64-series thickness on an a = 0.3 mean line at the local design lift, interpolated in radius.
+  - The stall-delay zero-lift angle comes from thin-airfoil theory, not NeuralFoil, because the thick root
+    sections are outside NeuralFoil's training range.
+  - Compressibility is AeroSandbox's Mach model, including its shock-buffet onset (the cause of the hover cliff).
+- Transition: forced at 5 % chord by default. The laminar bound is free transition from NeuralFoil at
+  `n_crit` 9, not a forced x_tr = 1.
+- Aerodynamics: steady, axisymmetric inflow; Prandtl tip and hub loss; Snel stall delay. No wake contraction model
+  beyond momentum theory, no tunnel-wall correction (it is about 0.15 % on speed).
+- Data:
+  - XV-15 hover is the wind-corrected FM from TM-86833 Appendix A, transcribed by hand.
+  - XV-15 airplane mode is digitized by eye, about +/-0.001 in C_P and +/-0.5 points in efficiency.
+  - "Propulsive force" in CR-114363 is taken as rotor thrust; the hub and spinner convention is unknown.
+- Sweeps: continuation from a fixed list of starting points (not an iteration). Solutions above the momentum limit
+  and failed solves are dropped. In hover the highest-FM solution is kept.
+- Option: `lift_design` defaults to off and `n_crit` to NeuralFoil's 9, so JVX, the Halo blade and the sizing are
+  unchanged.
+
+## Progress log
+
+- 2026-10-11 12:21: JVX and XV-15 curves, data files, test (550156f).
+- 2026-10-11 12:59: XV-15 on its own 64-series sections; hover cliff traced to outboard buffet (af67354).
+- 2026-10-11 14:29: airplane-mode offset checks, `n_crit` setting, laminar sensitivity (059ce61).
+- 2026-10-11 14:44: laminar bound curves in the figure (9e3b7c4).
+- 2026-10-11 16:43: merged to main in PR #32.
+- 2026-10-11: audited against AGENTS.md. This document was written alongside the code rather than first; Goal and
+  scope, References, Assumptions and this log were added afterwards, with no change to the results.
 
 ## Next
 
