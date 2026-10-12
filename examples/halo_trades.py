@@ -15,7 +15,7 @@ from examples.halo_schedule import block0_phases
 
 # Decision types: the second axis of the ledger, beside the programme phase.
 REQUIREMENT, ARCHITECTURE, TECHNOLOGY, MARGIN, MATURITY, VERIFICATION = (
-    "Requirement", "Architecture", "Technology and material", "Margin policy", "Maturity increase", "Verification")
+    "Requirement", "Architecture", "Technology and material", "Margin policy", "Design maturity", "Verification")
 decision_types = {
     REQUIREMENT: "What it must do; negotiated with the customer",
     ARCHITECTURE: "How the parts fit together and how they fail",

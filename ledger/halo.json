@@ -85,7 +85,7 @@
     "wing"
    ],
    "note": "Calibrated parametric; AFDD tiltrotor wing x 1.33 (XV-15); strength at ultimate not demonstrated",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "mass.tails": {
    "key": "mass.tails",
@@ -150,7 +150,7 @@
     "vertical_tail"
    ],
    "note": "Calibrated parametric; Raymer x XV-15 factor",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "mass.fuselage": {
    "key": "mass.fuselage",
@@ -214,7 +214,7 @@
     "fuselage"
    ],
    "note": "Calculated / layout; Raymer x 1.70, anchored to the drawn layout",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "mass.nacelles": {
    "key": "mass.nacelles",
@@ -278,7 +278,7 @@
     "nacelles"
    ],
    "note": "Calibrated parametric; AFDD-class estimate",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "mass.landing_gear": {
    "key": "mass.landing_gear",
@@ -342,7 +342,7 @@
     "landing_gear"
    ],
    "note": "Calibrated parametric; Raymer x XV-15 factor",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "mass.systems": {
    "key": "mass.systems",
@@ -399,7 +399,7 @@
     "systems"
    ],
    "note": "Calibrated parametric; Raymer; flight controls carry an XV-15 factor of about 4",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "mass.fixed_equipment": {
    "key": "mass.fixed_equipment",
@@ -456,7 +456,7 @@
     "equipment"
    ],
    "note": "Estimated; Assumed allowance",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "mass.rotors": {
    "key": "mass.rotors",
@@ -513,7 +513,7 @@
     "pt:propulsor"
    ],
    "note": "Calibrated parametric; AFDD blades and hubs, XV-15 calibrated",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "mass.rotor_gearboxes": {
    "key": "mass.rotor_gearboxes",
@@ -570,7 +570,7 @@
     "pt:gearbox"
    ],
    "note": "Calibrated parametric; AFDD drive system",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "mass.generator_gearboxes": {
    "key": "mass.generator_gearboxes",
@@ -627,7 +627,7 @@
     "pt:generator_gearbox"
    ],
    "note": "Calibrated parametric; AFDD drive system",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "mass.motors": {
    "key": "mass.motors",
@@ -684,7 +684,7 @@
     "pt:motor"
    ],
    "note": "Vendor data; Whole catalogue units plus inverter allowance",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "mass.generators": {
    "key": "mass.generators",
@@ -741,7 +741,7 @@
     "pt:generator"
    ],
    "note": "Vendor data; Whole catalogue units plus inverter allowance",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "mass.turboshafts": {
    "key": "mass.turboshafts",
@@ -798,7 +798,7 @@
     "pt:turboshaft"
    ],
    "note": "Vendor hardware; Fixed off-the-shelf engines plus installation",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "mass.battery": {
    "key": "mass.battery",
@@ -863,7 +863,7 @@
     "pt:battery"
    ],
    "note": "Calculated / layout; 50G cell data; 70 % cell-to-pack mass assumed",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "mass.heat_exchanger": {
    "key": "mass.heat_exchanger",
@@ -920,7 +920,7 @@
     "pt:heat_exchanger"
    ],
    "note": "Estimated; Thermal model, mass per watt assumed",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "mass.protection_and_bus_tie": {
    "key": "mass.protection_and_bus_tie",
@@ -979,7 +979,7 @@
     "pt:cable_bus_tie"
    ],
    "note": "Estimated; Simple ratings-based estimate",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "gap.hv_installation": {
    "key": "gap.hv_installation",
@@ -1041,7 +1041,7 @@
    ],
    "sizing_keys": [],
    "note": "Modelled but off by default; also adds about 3 % losses",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "gap.tilt_fittings": {
    "key": "gap.tilt_fittings",
@@ -1103,7 +1103,7 @@
    ],
    "sizing_keys": [],
    "note": "Owner to replace with a layout estimate",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "gap.conversion_actuators": {
    "key": "gap.conversion_actuators",
@@ -1158,7 +1158,7 @@
    ],
    "sizing_keys": [],
    "note": "Owner to replace",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "gap.coolant_loop": {
    "key": "gap.coolant_loop",
@@ -1213,7 +1213,7 @@
    ],
    "sizing_keys": [],
    "note": "Owner to replace",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "gap.tilt_joint_crossings": {
    "key": "gap.tilt_joint_crossings",
@@ -1268,7 +1268,7 @@
    ],
    "sizing_keys": [],
    "note": "Flex loops or slip rings; swivel joints",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "gap.wing_strength": {
    "key": "gap.wing_strength",
@@ -1331,7 +1331,7 @@
    ],
    "sizing_keys": [],
    "note": "The plan 054 bottom-up box clears ultimate strength (root strain margin +26 %, CalculiX) and buckling (none below ultimate, hot/wet) at 18 kg less wing than the AFDD reference. Open: root fittings",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "input.drag_excrescence": {
    "key": "input.drag_excrescence",
@@ -1386,7 +1386,7 @@
    ],
    "sizing_keys": [],
    "note": "Calibrated to NDARC XV-15 components, not flight",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "input.cell_to_pack": {
    "key": "input.cell_to_pack",
@@ -1434,7 +1434,7 @@
    ],
    "sizing_keys": [],
    "note": "Cylindrical-cell packs about 0.65-0.75",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "input.capacity_end_of_life": {
    "key": "input.capacity_end_of_life",
@@ -1482,7 +1482,7 @@
    ],
    "sizing_keys": [],
    "note": "Assumed 80 % of rated",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   },
   "gap.whirl_flutter": {
    "key": "gap.whirl_flutter",
@@ -1537,7 +1537,7 @@
    ],
    "sizing_keys": [],
    "note": "Carried by the v3.10 sizing (calibrated flutter speed >= 1.15 V_D, delta-3 free at -10.9 deg); the spread is the one-aircraft calibration (25 % of the plan 055 stiffness cost). Delta-3 back at -18 deg costs +393 lb (trade.delta3)",
-   "category": "Maturity increase"
+   "category": "Design maturity"
   }
  },
  "limits": {
@@ -4584,6 +4584,12 @@
    "source": "handbook estimate",
    "kind": "trade",
    "summary": "Tilt spindle and fittings: titanium, steel or composite: 2 options priced"
+  },
+  {
+   "date": "2026-10-12",
+   "source": "trade register (examples/halo_trades.py)",
+   "kind": "register",
+   "summary": "0 added, 0 retired below the line"
   }
  ],
  "history": [
@@ -13158,6 +13164,74 @@
   {
    "date": "2026-10-12",
    "source": "handbook estimate",
+   "sigma_takeoff_kg": 442.5,
+   "margin_99_kg": 1029.38,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 158.76
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 83.38
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 25.83
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 22.99
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 15.72
+    }
+   ]
+  },
+  {
+   "date": "2026-10-12",
+   "source": "trade register",
    "sigma_takeoff_kg": 442.5,
    "margin_99_kg": 1029.38,
    "top": [

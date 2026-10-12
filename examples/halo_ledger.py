@@ -136,7 +136,7 @@ def classify(ledger):
     quantity the increase-maturity type."""
     phase = next(iter(phases))
     for q in ledger.quantities.values():
-        q.category = "Maturity increase"
+        q.category = "Design maturity"
     for key, limit in ledger.limits.items():
         match = next((row for row in limit_patterns if row[0] in key), None)
         limit.category = match[3] if match else "Requirement"

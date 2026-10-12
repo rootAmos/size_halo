@@ -172,7 +172,7 @@
    "schedule": "",
    "action": "Fix bus voltage and architecture; write the electrical load list (conceptual design)",
    "detail": "330 ± 1e+02 kg (handbook or parametric model); take-off spread ±254 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Conceptual design",
    "value_usd": 308197.6488347699,
    "nonrecurring_usd": null,
@@ -282,7 +282,7 @@
    "schedule": "",
    "action": "Choose the spindle concept and bearing type (conceptual design)",
    "detail": "70 ± 50 kg (placeholder prior); take-off spread ±127 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Preliminary design",
    "value_usd": 95476.21774728343,
    "nonrecurring_usd": null,
@@ -326,7 +326,7 @@
    "schedule": "",
    "action": "Define the equipment list and architecture (lanes, actuators, computers) (conceptual design)",
    "detail": "407.3 ± 61 kg (handbook or parametric model); take-off spread ±155 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Preliminary design",
    "value_usd": 84959.41807888407,
    "nonrecurring_usd": null,
@@ -348,7 +348,7 @@
    "schedule": "",
    "action": "Size blades and hub to loads, frequencies and whirl stability (conceptual design)",
    "detail": "674.9 ± 51 kg (handbook or parametric model); take-off spread ±128 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Conceptual design",
    "value_usd": 58115.554211257004,
    "nonrecurring_usd": null,
@@ -370,7 +370,7 @@
    "schedule": "",
    "action": "Size primary structure for every load case (strength, stiffness, whirl flutter) (conceptual design)",
    "detail": "560.2 ± 56 kg (handbook or parametric model); take-off spread ±142 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Preliminary design",
    "value_usd": 37466.54835789619,
    "nonrecurring_usd": null,
@@ -392,7 +392,7 @@
    "schedule": "",
    "action": "Define the loop: fluid, pumps, routing (conceptual design)",
    "detail": "40 ± 30 kg (placeholder prior); take-off spread ±76 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Conceptual design",
    "value_usd": 36188.88108424975,
    "nonrecurring_usd": null,
@@ -414,7 +414,7 @@
    "schedule": "",
    "action": "Select actuator type (electromechanical or hydraulic) and redundancy (conceptual design)",
    "detail": "45 ± 30 kg (placeholder prior); take-off spread ±76 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Preliminary design",
    "value_usd": 30759.70246577228,
    "nonrecurring_usd": null,
@@ -436,7 +436,7 @@
    "schedule": "",
    "action": "Select the cell supplier and confirm the cell datasheet at end of life (conceptual design)",
    "detail": "495.1 ± 36 kg (analysis (layout, FE, CFD)); take-off spread ±90 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Conceptual design",
    "value_usd": 24290.122999653708,
    "nonrecurring_usd": null,
@@ -524,7 +524,7 @@
    "schedule": "",
    "action": "Flapping and loads with delta-3 free; flutter-in-the-loop sizing as the reference (plan 055) (conceptual design)",
    "detail": "0 ± 18 kg (handbook or parametric model); take-off spread ±45 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Conceptual design",
    "value_usd": 19345.7379710928,
    "nonrecurring_usd": null,
@@ -546,7 +546,7 @@
    "schedule": "",
    "action": "Size gears, shafts and bearings to the load spectrum (conceptual design)",
    "detail": "292.4 ± 29 kg (handbook or parametric model); take-off spread ±74 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Conceptual design",
    "value_usd": 19296.88213669552,
    "nonrecurring_usd": null,
@@ -590,7 +590,7 @@
    "schedule": "",
    "action": "Detail drawings and parts list weight (detailed design)",
    "detail": "389.8 ± 19 kg (analysis (layout, FE, CFD)); take-off spread ±49 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Preliminary design",
    "value_usd": 17856.14060035781,
    "nonrecurring_usd": null,
@@ -612,7 +612,7 @@
    "schedule": "",
    "action": "Select supplier and candidate unit; request mass and ratings (conceptual design)",
    "detail": "126.9 ± 19 kg (handbook or parametric model); take-off spread ±48 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Conceptual design",
    "value_usd": 17764.894380347498,
    "nonrecurring_usd": null,
@@ -656,7 +656,7 @@
    "schedule": "",
    "action": "Select suppliers for the main units; collect datasheet masses (preliminary design)",
    "detail": "266.3 ± 27 kg (handbook or parametric model); take-off spread ±68 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Preliminary design",
    "value_usd": 15992.12660915686,
    "nonrecurring_usd": null,
@@ -678,7 +678,7 @@
    "schedule": "",
    "action": "Installed weight from layout: mounts, cooling, harness, protection (preliminary design)",
    "detail": "425.6 ± 21 kg (handbook or parametric model); take-off spread ±54 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Conceptual design",
    "value_usd": 14465.566488783232,
    "nonrecurring_usd": null,
@@ -700,7 +700,7 @@
    "schedule": "",
    "action": "FE with calibrated structure, root fittings and a buckling step (conceptual design)",
    "detail": "0 ± 15 kg (analysis (layout, FE, CFD)); take-off spread ±38 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Conceptual design",
    "value_usd": 14095.16210644807,
    "nonrecurring_usd": null,
@@ -744,7 +744,7 @@
    "schedule": "",
    "action": "Select flex loop or slip ring; swivel or local cooling (conceptual design)",
    "detail": "20 ± 15 kg (placeholder prior); take-off spread ±38 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Preliminary design",
    "value_usd": 9014.874092380232,
    "nonrecurring_usd": null,
@@ -788,7 +788,7 @@
    "schedule": "",
    "action": "Installed weight from layout: mounts, cooling, harness, protection (preliminary design)",
    "detail": "281.7 ± 14 kg (handbook or parametric model); take-off spread ±36 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Conceptual design",
    "value_usd": 6331.808469230715,
    "nonrecurring_usd": null,
@@ -810,7 +810,7 @@
    "schedule": "",
    "action": "Pack concept with module count and structure (conceptual design)",
    "detail": "0.7 ± 0.025 - (handbook or parametric model); take-off spread ±41 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Conceptual design",
    "value_usd": 5959.632975041909,
    "nonrecurring_usd": null,
@@ -832,7 +832,7 @@
    "schedule": "",
    "action": "Component drag build-up from the drawn layout (conceptual design)",
    "detail": "1.27 ± 0.1 - (handbook or parametric model); take-off spread ±34 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Conceptual design",
    "value_usd": 5630.958568083138,
    "nonrecurring_usd": null,
@@ -854,7 +854,7 @@
    "schedule": "",
    "action": "Size gears, shafts and bearings to the load spectrum (conceptual design)",
    "detail": "144.2 ± 14 kg (handbook or parametric model); take-off spread ±37 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Conceptual design",
    "value_usd": 4681.629265184095,
    "nonrecurring_usd": null,
@@ -876,7 +876,7 @@
    "schedule": "",
    "action": "Size primary structure for every load case (strength, stiffness, whirl flutter) (conceptual design)",
    "detail": "194.8 ± 19 kg (handbook or parametric model); take-off spread ±49 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Preliminary design",
    "value_usd": 4512.434576118705,
    "nonrecurring_usd": null,
@@ -898,7 +898,7 @@
    "schedule": "",
    "action": "Weigh the delivered unit with its installation kit (test and validation)",
    "detail": "421.7 ± 11 kg (handbook or parametric model); take-off spread ±27 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Conceptual design",
    "value_usd": 4450.885417107322,
    "nonrecurring_usd": null,
@@ -920,7 +920,7 @@
    "schedule": "",
    "action": "Structural layout: joints, fittings, cut-outs and access panels (preliminary design)",
    "detail": "258.4 ± 19 kg (handbook or parametric model); take-off spread ±49 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Preliminary design",
    "value_usd": 3027.8405008748737,
    "nonrecurring_usd": null,
@@ -942,7 +942,7 @@
    "schedule": "",
    "action": "Supplier ageing data at the mission duty cycle (conceptual design)",
    "detail": "0.8 ± 0.05 - (handbook or parametric model); take-off spread ±24 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Preliminary design",
    "value_usd": 2871.5054323987674,
    "nonrecurring_usd": null,
@@ -1008,7 +1008,7 @@
    "schedule": "",
    "action": "Select supplier and candidate unit; request mass and ratings (conceptual design)",
    "detail": "28.47 ± 5.7 kg (handbook or parametric model); take-off spread ±14 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Conceptual design",
    "value_usd": 1779.8958832001858,
    "nonrecurring_usd": null,
@@ -1030,7 +1030,7 @@
    "schedule": "",
    "action": "Size primary structure for every load case (strength, stiffness, whirl flutter) (conceptual design)",
    "detail": "82.87 ± 8.3 kg (handbook or parametric model); take-off spread ±21 kg",
-   "category": "Maturity increase",
+   "category": "Design maturity",
    "phase": "Preliminary design",
    "value_usd": 816.0476436727677,
    "nonrecurring_usd": null,
@@ -3238,12 +3238,6 @@
  "runs": [
   {
    "date": "2026-10-11",
-   "source": "plan 059 fixed aircraft, 80 % payload (36f08aa)",
-   "kind": "drivers",
-   "summary": "top driver of Range: Miscellaneous drag area; Cruise L/D: Miscellaneous drag area"
-  },
-  {
-   "date": "2026-10-11",
    "source": "plan 059 every-input table",
    "kind": "coverage",
    "summary": "118 model inputs with their effect on every output"
@@ -3415,6 +3409,12 @@
    "source": "handbook estimate",
    "kind": "trade",
    "summary": "Tilt spindle and fittings: titanium, steel or composite: 2 options priced"
+  },
+  {
+   "date": "2026-10-12",
+   "source": "trade register (examples/halo_trades.py)",
+   "kind": "register",
+   "summary": "0 added, 0 retired below the line"
   }
  ],
  "history": [
@@ -11989,6 +11989,74 @@
   {
    "date": "2026-10-12",
    "source": "handbook estimate",
+   "sigma_takeoff_kg": 442.5,
+   "margin_99_kg": 1029.38,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 158.76
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 83.38
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 25.83
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 22.99
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 15.72
+    }
+   ]
+  },
+  {
+   "date": "2026-10-12",
+   "source": "trade register",
    "sigma_takeoff_kg": 442.5,
    "margin_99_kg": 1029.38,
    "top": [

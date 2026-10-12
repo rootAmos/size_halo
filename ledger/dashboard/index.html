@@ -144,7 +144,7 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
       <div style="display:grid;gap:4px">
         <span class="eyebrow" id="rank-eyebrow">Working draft</span>
         <h2 id="h-rank">Road to EIS</h2>
-        <p class="lede">Grouped by the phase in which each decision locks and ranked within it by its weight opportunity: the take-off weight it can save. Increasing maturity saves the 99 % margin we no longer have to carry; the other types save weight directly. Bars show the range on a common scale.</p>
+        <p class="lede">Grouped by the phase in which each decision locks and ranked within it by its weight opportunity: the take-off weight it can save. Design maturity saves the 99 % margin we no longer have to carry; the other types save weight directly. Bars show the range on a common scale.</p>
       </div>
       <div class="controls">
         <div class="controls" id="kinds" role="group" aria-label="Filter by decision type"></div>
@@ -208,7 +208,7 @@ const TYPES = {
   "Architecture": { color: "--t-arch", q: "How the parts fit and fail" },
   "Technology and material": { color: "--t-tech", q: "What it is made of and with" },
   "Margin policy": { color: "--t-margin", q: "How much margin and redundancy we buy" },
-  "Maturity increase": { color: "--t-evid", q: "Firm up an estimate before we commit: select, verify, size, lay out, weigh" },
+  "Design maturity": { color: "--t-evid", q: "Firm up an estimate before we commit: select, verify, size, lay out, weigh" },
   "Verification": { color: "--t-verif", q: "How we will prove it" },
 };
 const state = { kinds: new Set(Object.keys(TYPES)), owner: "", phase: "", sort: "value", open: null, grouped: true };
@@ -217,7 +217,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const fmt = (kg, d = 0) => kg == null || !isFinite(kg) ? "—" : (kg * LB).toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d });
 const usd = v => v == null || !isFinite(v) ? "—" : (v / 1e3).toLocaleString("en-US", { maximumFractionDigits: 0 });
-const kindColor = k => `var(${(TYPES[k] || TYPES["Maturity increase"]).color})`;
+const kindColor = k => `var(${(TYPES[k] || TYPES["Design maturity"]).color})`;
 let V = null;
 
 function remember() { try { localStorage.setItem("ledger-view", JSON.stringify({ sort: state.sort, owner: state.owner, phase: state.phase })); } catch (e) {} }
