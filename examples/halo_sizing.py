@@ -1380,7 +1380,11 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
     `parameters` (plan 059): input keys ("requirements.range_m", "assumptions.aspect_ratio_wing",
     "factors.wing_tiltrotor") made Opti parameters at their values, so the result's `parametric` holds
     d(output)/d(input) for `parametric_outputs` from the same solve. A field the model uses in Python logic cannot be
-    lifted and raises."""
+    lifted and raises.
+
+    With `whirl_flutter_model="eigenpair"` (plan 055) this iterates outside the optimization: if the post-solve
+    whirl-flutter scan fails, it re-solves from that result with the eigenpairs re-seeded from its least-damped modes,
+    at most `rounds_whirl_reseed` times (`whirl_round` counts them; the result reports `whirl_rounds`)."""
     if objective not in objectives:
         raise ValueError(f"Unknown objective '{objective}'.")
     if off_design is not None and objective not in ("payload", "range"):
