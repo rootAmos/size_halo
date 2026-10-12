@@ -2,6 +2,7 @@
 import unittest
 from dataclasses import replace
 
+import casadi as cas
 import numpy as onp
 
 from aircraft_closure.aeroelasticity import wing_flutter as wf
@@ -56,6 +57,29 @@ class TestConcentratedMass(unittest.TestCase):
     def test_zero_airspeed_has_no_aerodynamic_stiffness_or_damping(self):
         _, C_a, K_a, D_a, *_ = wf.aerodynamic_matrices(wf.goland_wing(), 4, 0.0, 1.225)
         self.assertEqual(float(onp.abs(C_a).max() + onp.abs(K_a).max() + onp.abs(D_a).max()), 0.0)
+
+
+class TestSymbolic(unittest.TestCase):
+    def test_matrices_stay_symbolic_and_match_numerical(self):
+        stiffness_torsion, mass_tip, velocity, density = (cas.MX.sym(name) for name in ("gj", "m", "v", "rho"))
+        wing = replace(wf.goland_wing(), stiffness_torsion_Nm2=stiffness_torsion)
+        symbolic = (*wf.structural_matrices(wing, wf.TipBody(mass_tip, 0.2), 4),
+                    *wf.aerodynamic_matrices(wing, 4, velocity, density))
+        for index, matrix in enumerate(symbolic):
+            if index != 7:                          # E_qdot depends on the chord only, numerical here
+                self.assertIsInstance(matrix, cas.MX)
+        values = (9e5, 80.0, 120.0, 1.1)
+        evaluated = cas.Function("f", [stiffness_torsion, mass_tip, velocity, density], list(symbolic))(*values)
+        numeric_wing = replace(wf.goland_wing(), stiffness_torsion_Nm2=values[0])
+        numeric = (*wf.structural_matrices(numeric_wing, wf.TipBody(values[1], 0.2), 4),
+                   *wf.aerodynamic_matrices(numeric_wing, 4, values[2], values[3]))
+        for x, y in zip(evaluated, numeric):
+            onp.testing.assert_allclose(onp.array(x), y, rtol=1e-12, atol=1e-9)
+
+    def test_lift_slope_factor_is_symbolic(self):
+        aspect_ratio = cas.MX.sym("aspect_ratio")
+        factor = cas.Function("f", [aspect_ratio], [wf.lift_slope_factor_helmbold(aspect_ratio)])(6.0)
+        self.assertAlmostEqual(float(factor), float(wf.lift_slope_factor_helmbold(6.0)), places=12)
 
 
 if __name__ == "__main__":

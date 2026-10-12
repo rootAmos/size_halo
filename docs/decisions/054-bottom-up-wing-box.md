@@ -98,16 +98,16 @@ At fixed fractions of each panel (fuselage side to tip), with the closed-form el
     Root upper skin 3.5 mm + 1.9 mm smeared stringers at 116 mm pitch, tapering to 1.2 + 0.6 mm; webs at the 1 mm
     minimum gauge; no stiffness caps; ribs 1.9 mm at 0.5 m. Root lower-cover strain 0.00447 (margin +5 %).
   - CalculiX on that layout (OpenVSP mesh at the sized rib pitch, banded gauges): symmetric beam 23.9 rad/s against
-    23.3 (1.03), chord 38.0 against 38.7 (0.98), **torsion 48.0 against 64.2 (0.75)**. Ultimate jump take-off root
+    23.3 (FE +3 %), chord 38.0 against 38.7 (-2 %), **torsion 48.0 against 64.2 (-25 %)**. Ultimate jump take-off root
     cap strain 0.00326, margin +31 % (the sizing's +5 % includes the plan 043 peak factor 1.33, fitted on the AFDD
     wing with discrete cap pads; the distributed covers do not show that peak).
   - Same-code AFDD default: 6,885.1 kg (15,179 lb), wing 407.9 kg (x 1.327).
-  - Torque case (CalculiX, clamped, pure tip torque): FE GJ 8.47 MN m2 against the bottom-up 6.02 (1.41): the
+  - Torque case (CalculiX, clamped, pure tip torque): FE GJ 8.47 MN m2 against the bottom-up 6.02 (FE +41 %): the
     rectangular box on the spar depths understates the enclosed area. The NDARC single-mode relation with the FE GJ
     gives 76.1 rad/s against the free-free FE torsion mode 48.0: the frequency relation, not the stiffness, is the
     optimistic part (it is shared with the AFDD wing).
   - Changes: enclosed area and cover lever arm from the airfoil's mean depth across the box (Simpson); root peak
-    factor 1.0 for the distributed covers (`HaloAssumptions.factor_peak_strain_wing_box`; FE / beam theory 0.97);
+    factor 1.0 for the distributed covers (`HaloAssumptions.factor_peak_strain_wing_box`; FE 3 % below beam theory);
     rib pitch as an optional design variable (`free_pitch_rib_wing`, 0.25-1.0 m). No factor: XV-15 +8 %, V-22 FSD
     -12 %, D266 -1 % (mean |error| 7 %).
   - Re-solve, free rib pitch, against the AFDD default: take-off 6,569.2 kg (14,483 lb, -316 kg); wing 360.7 kg
@@ -118,10 +118,10 @@ At fixed fractions of each panel (fuselage side to tip), with the closed-form el
     0.432), so the placement rotor speed variable sits at its 5 rad/s bound (inactive, harmless).
   - Buckling in CalculiX (`*BUCKLE` on the ultimate jump take-off): upper covers as layered S8R shells inside the
     mould line (skin + bottom flanges, stringer webs as a spanwise-only core, top flanges: the stringers' area and
-    lever arm), modes located by their peak node. At F = 0.8 the first factor was 0.97; at F = 0.75 (rib pitch
-    0.714 m, take-off 6,579.7 kg) the first factor 0.91 peaked at y = 0 inside the clamped centre section (an
+    lever arm), modes located by their peak node. At F = 0.8 the first mode had a margin of -3 % over ultimate; at F = 0.75
+    (rib pitch 0.714 m, take-off 6,579.7 kg) the first, -9 %, peaked at y = 0 inside the clamped centre section (an
     artefact of offset layered shells on clamped nodes; layered covers are now outboard of the clamp only); the
-    next modes are the 1 mm spar webs in shear at 1.09-1.13 x ultimate and the non-structural fairing at 1.13; no
+    next modes are the 1 mm spar webs in shear at +9 to +13 % over ultimate and the non-structural fairing at +13 %; no
     cover mode in the first five. The layered covers also add a spurious soft mode to the free-free dynamics, so
     the modal decks keep plain orthotropic covers.
   - Torsion frequency: with 90 modes the FE torsion mode is 57.7 rad/s free-free and 58.5 clamped; NDARC's relation
@@ -131,8 +131,8 @@ At fixed fractions of each panel (fuselage side to tip), with the closed-form el
     (`WingBoxLayout.correction_torsion_frequency`); bending frequencies agree with the FE within 8 % and are not
     corrected. The AFDD default keeps the relation: its torsion whirl margins are optimistic by the same 1.32
     (a separate decision).
-  - Spar webs: the strength-sized webs sat at the 1 mm minimum, and CalculiX buckled them in shear at 0.99-1.03 x
-    ultimate (1.49 x limit: no buckling below limit, none of the margin needed below ultimate or hot/wet). A solid
+  - Spar webs: the strength-sized webs sat at the 1 mm minimum, and CalculiX buckled them in shear at margins of -1
+    to +3 % over ultimate (+49 % over limit: no buckling below limit, none of the margin needed below ultimate or hot/wet). A solid
     web sized on its own (bare plate between ribs) needs 3.6 mm: webs 52 kg, take-off 6,904.9 kg (15,223 lb). Real
     composite webs are sandwich or stiffened, so the webs are now sandwich panels with a 1.5 mm minimum laminate,
     and hot/wet knockdowns apply to all buckling checks and the shear allowable. No factor: XV-15 +9 %, V-22 FSD
@@ -144,8 +144,8 @@ At fixed fractions of each panel (fuselage side to tip), with the closed-form el
     needs about 1.3 mm hot/wet) on a 6.0 mm core (minimum core; buckling needs less) along the whole span: the jump
     take-off shear enters at the nacelle, so the shear flow is nearly uniform.
   - CalculiX on that layout (equal rib bays, sandwich webs as layered shells): root strain FE 0.00347 against sizing
-    0.00341 (margin +26 %); FE GJ 1.18 x the bottom-up; free-free frequencies FE / bottom-up beam 0.92, chord 0.98,
-    torsion 1.07. Buckling under the ultimate jump take-off: no web or cover mode in the first five; first factor
-    1.10 at the clamped centreline (artefact), then the non-structural leading/trailing-edge fairing skins at
-    1.12-1.39 (1.01 hot/wet). Primary structure clears no-buckling-below-ultimate, hot/wet.
+    0.00341 (margin +26 %); FE GJ 18 % above the bottom-up; free-free frequencies FE against the bottom-up beam: bending
+    -8 %, chord -2 %, torsion +7 %. Buckling under the ultimate jump take-off: no web or cover mode in the first five; first mode at
+    the clamped centreline (artefact, margin +10 % over ultimate), then the non-structural leading/trailing-edge
+    fairing skins at +12 to +39 % (+1 % hot/wet). Primary structure clears no-buckling-below-ultimate, hot/wet.
   - Halo numbers in this plan are on the v3.6 baseline (AFDD default 15,179 lb), so the comparison is like-for-like.
