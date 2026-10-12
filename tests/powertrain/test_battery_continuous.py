@@ -155,6 +155,60 @@ class CollocatedRcStateTests(unittest.TestCase):
         for a, b in zip(coarse, fine):
             self.assertGreater(a / b, 3.0)
 
+class PowerSubstepTests(unittest.TestCase):
+    """Plan 060 part 3: the circuit stepped through a linearly varying terminal power."""
+
+    def setUp(self):
+        self.pack = halo_pack()
+
+    def test_voltage_at_power_balances_power(self):
+        """V(P) is the low-current root: P = V I with V = OCV - I R0 - sum v, and V above V*/2."""
+        for power_W in (-300e3, 0.0, 150e3, 450e3):
+            v_rc = (2.0, 5.0)
+            voltage_V = float(self.pack.voltage_at_power_V(power_W, 0.5, v_rc))
+            current_A = power_W / voltage_V
+            self.assertAlmostEqual(voltage_V, float(self.pack.voltage_terminal_V(current_A, 0.5, v_rc)), places=6)
+            self.assertGreater(voltage_V, (float(self.pack.voltage_open_circuit_V(0.5)) - sum(v_rc)) / 2)
+
+    def test_zero_power_relaxes_the_rc_branches_exactly(self):
+        soc, v_rc, _, currents = self.pack.integrate_power(0.0, 0.0, 0.6, (10.0, 4.0), 30.0, 3)
+        self.assertAlmostEqual(float(soc), 0.6, places=12)
+        for v0, v1, tau in zip((10.0, 4.0), v_rc, self.pack.cell.resistance_model.time_constants_s()):
+            self.assertAlmostEqual(float(v1), v0 * np.exp(-30.0 / tau), places=9)
+        self.assertTrue(all(abs(float(i)) < 1e-12 for i in currents))
+
+    def test_second_order_in_the_step(self):
+        """A 36 min interval with power from -380 to +310 kW (the cruise interval that pumped energy): end SOC
+        and end voltage converge at second order to a 4,096-step reference."""
+        def run(count):
+            soc, _, voltages, _ = self.pack.integrate_power(-380e3, 310e3, 0.3, (0.0, 0.0), 2172.0, count)
+            return float(soc), float(voltages[-1])
+        reference = run(4096)
+        errors = [abs(run(n)[0] - reference[0]) for n in (16, 32, 64)]
+        for a, b in zip(errors, errors[1:]):
+            self.assertGreater(a / b, 3.0)
+        self.assertLess(abs(run(73)[1] - reference[1]), 0.1)        # the default 30 s step: under 0.1 V
+
+    def test_no_free_energy_over_a_cycle(self):
+        """Charge then discharge with zero net terminal energy: the pack ends lower than it started (losses), so
+        the optimizer cannot pump the voltage for energy. The trapezoidal node rule of part 2 gained 18 kWh on
+        the first interval of this cycle."""
+        count = 2 * 73
+        soc_up, v_rc, _, _ = self.pack.integrate_power(-380e3, -380e3, 0.3, (0.0, 0.0), 2172.0, count)
+        soc_end, _, _, _ = self.pack.integrate_power(380e3, 380e3, soc_up, v_rc, 2172.0, count)
+        self.assertGreater(float(soc_up), 0.3)
+        self.assertLess(float(soc_end), 0.3)
+
+    def test_symbolic(self):
+        opti = asb.Opti()
+        power_W = opti.variable(init_guess=100e3)
+        soc, _, voltages, _ = self.pack.integrate_power(power_W, power_W, 0.8, (0.0, 0.0), 60.0, 4)
+        opti.subject_to(voltages[-1] >= 700.0)
+        opti.maximize(power_W / 1e5)
+        opti.subject_to(power_W <= 2e6)
+        solution = opti.solve(verbose=False)
+        self.assertAlmostEqual(float(solution.value(voltages[-1])), 700.0, places=3)
+
 
 if __name__ == "__main__":
     unittest.main()

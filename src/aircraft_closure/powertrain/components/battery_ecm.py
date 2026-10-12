@@ -287,6 +287,49 @@ class EquivalentCircuitBattery:
         return tuple((current_A * r_ohm - v_V) / tau_s for r_ohm, v_V, tau_s
                      in zip(resistances_rc_ohm, voltage_rc_V, self.cell.resistance_model.time_constants_s()))
 
+    def voltage_at_power_V(self, power_W, soc, voltage_rc_V, temperature_C=None):
+        """Instantaneous terminal voltage delivering terminal power P (discharge positive), the low-current root of
+        P = (E - I R0) I with E = OCV(s) - sum v_k: V = (E + sqrt(E^2 - 4 R0 P)) / 2, current I = P / V (plan 060
+        part 3). Near and beyond the matched load (E^2 - 4 R0 P below 1 % of E^2) the discriminant is clipped at
+        1 % of E^2, so the derivative stays finite for the optimizer; the voltage limits keep a solution far from
+        there (V near E / 2)."""
+        resistance_0_ohm = self.resistances_ohm(soc, temperature_C)[0]
+        driving_V = self.voltage_open_circuit_V(soc) - sum(voltage_rc_V)
+        discriminant_V2 = np.fmax(driving_V**2 - 4 * resistance_0_ohm * power_W, 0.01 * driving_V**2)
+        return (driving_V + np.sqrt(discriminant_V2)) / 2
+
+    def _advance(self, current_A, soc, voltage_rc_V, soc_resistance, duration_s, temperature_C):
+        """SOC and RC voltages after `duration_s` at constant current (exact for the RC branches)."""
+        resistances_rc_ohm = self.resistances_ohm(soc_resistance, temperature_C)[1:]
+        voltage_rc_end_V = tuple(current_A * r_ohm + (v_V - current_A * r_ohm) * np.exp(-duration_s / tau_s)
+                                 for r_ohm, v_V, tau_s in zip(resistances_rc_ohm, voltage_rc_V,
+                                                              self.cell.resistance_model.time_constants_s()))
+        return soc - current_A * duration_s / self.capacity_As, voltage_rc_end_V
+
+    def integrate_power(self, power_start_W, power_end_W, soc, voltage_rc_V, duration_s, count_steps,
+                        temperature_C=None):
+        """Plan 060 part 3: step the circuit through a terminal power linear from `power_start_W` to `power_end_W`
+        over `duration_s`, in `count_steps` explicit-midpoint steps (current from the power at the start state, a
+        half step, the current at the half-step state and power, the full step at that current; RC branches
+        exact for each constant current). Returns (soc_end, voltage_rc_end_V, voltages_end_V, currents_A): the
+        terminal voltage at the end of every step and the current of every step."""
+        step_s = duration_s / count_steps
+        voltages_end_V, currents_A = [], []
+        voltage_V = self.voltage_at_power_V(power_start_W, soc, voltage_rc_V, temperature_C)
+        for index in range(count_steps):
+            power_0_W = power_start_W + (power_end_W - power_start_W) * index / count_steps
+            power_half_W = power_start_W + (power_end_W - power_start_W) * (index + 0.5) / count_steps
+            power_1_W = power_start_W + (power_end_W - power_start_W) * (index + 1) / count_steps
+            soc_half, voltage_rc_half_V = self._advance(power_0_W / voltage_V, soc, voltage_rc_V, soc, step_s / 2,
+                                                        temperature_C)
+            current_A = power_half_W / self.voltage_at_power_V(power_half_W, soc_half, voltage_rc_half_V,
+                                                               temperature_C)
+            soc, voltage_rc_V = self._advance(current_A, soc, voltage_rc_V, soc_half, step_s, temperature_C)
+            voltage_V = self.voltage_at_power_V(power_1_W, soc, voltage_rc_V, temperature_C)
+            voltages_end_V.append(voltage_V)
+            currents_A.append(current_A)
+        return soc, voltage_rc_V, tuple(voltages_end_V), tuple(currents_A)
+
     def evaluate(self, current_A, soc, duration_s=0.0, voltage_rc_start_V=None, temperature_C=None):
         soc_next = soc - current_A * duration_s / self.capacity_As
         soc_mid = (soc + soc_next) / 2

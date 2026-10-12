@@ -1,4 +1,5 @@
 """Tier 17: equivalent-circuit battery in flight points and sub-segmented missions."""
+import math
 import unittest
 from dataclasses import replace
 
@@ -225,7 +226,8 @@ low_hover = Mission((HoverSegment(60.0, 0.0, 0.8, "hover"),))
 
 
 class CollocatedMissionTests(unittest.TestCase):
-    """Plan 060 part 2: `battery_dynamics="piecewise"`, nodes linked by the trapezoidal rule."""
+    """Plan 060: `battery_dynamics="piecewise"`: mass and temperatures by the trapezoidal rule between nodes, the
+    battery sub-stepped between them (part 3)."""
 
     @classmethod
     def setUpClass(cls):
@@ -237,24 +239,45 @@ class CollocatedMissionTests(unittest.TestCase):
                               polarization_start="steady", battery_dynamics=dynamics)
         opti.minimize(flown.mass_fuel_burnt_kg)
         s = opti.solve(verbose=False)
-        return s.value([m for m in flown.margins if m.label.startswith("hover") and "battery" in m.label][-1].value)
+        # The end node's minimum-voltage margin (not a sub-step's, not the maximum-voltage one).
+        return s.value([m for m in flown.margins if m.label.startswith("hover") and "battery" in m.label
+                        and " step " not in m.label and "max_voltage" not in m.label][-1].value)
 
     def test_nodes_and_weights(self):
         s = self.two_solution
         for segment in self.two.segments:
             self.assertEqual(len(segment.subsegments), 5)
             self.assertAlmostEqual(sum(s.value(p.duration_s) for p in segment.subsegments), s.value(segment.duration_s))
-        self.assertIn("cruise 4/4: battery voltage_V", [m.label for m in self.two.margins])
+        labels = [m.label for m in self.two.margins]
+        self.assertIn("cruise 4/4: battery voltage_V", labels)
+        # Sub-step limits between the nodes (hover: 2 steps of 7.5 s per interval for 9 battery nodes; cruise:
+        # 9 steps of 28 s); the step ending on a node is checked by the node itself.
+        self.assertIn("take-off hover 0/4 step 1/2: battery voltage_V", labels)
+        self.assertNotIn("take-off hover 0/4 step 2/2: battery voltage_V", labels)
+        self.assertIn("cruise 3/4 step 8/9: battery max_voltage_V", labels)
 
-    def test_trapezoidal_soc_and_mass(self):
+    def test_at_least_nine_battery_nodes_per_segment(self):
+        """A single-interval 60 s hover still gets 8 sub-steps (7.5 s); a long interval gets 30 s steps."""
+        flown, _ = fly_nodes(1, low_hover, polarization_start="steady")
+        labels = [m.label for m in flown.margins if " step " in m.label and m.label.endswith("battery voltage_V")]
+        self.assertEqual(len(labels), 7)
+        self.assertIn("hover 0/1 step 7/8: battery voltage_V", labels)
+        flown, _ = fly_nodes(1, low_hover, polarization_start="steady", step_battery_max_s=5.0)
+        self.assertIn("hover 0/1 step 11/12: battery voltage_V", [m.label for m in flown.margins])
+
+    def test_substepped_soc_and_trapezoidal_mass(self):
+        """SOC between nodes: the circuit stepped through the node powers (at least 9 battery nodes per segment:
+        at most 30 s steps); mass: the trapezoidal rule on fuel flow."""
         s = self.two_solution
         for segment in self.two.segments:
             nodes = segment.subsegments
             dt_s = s.value(segment.duration_s) / (len(nodes) - 1)
             for a, b in zip(nodes, nodes[1:]):
-                current_A = s.value(a.point.battery.current_A) + s.value(b.point.battery.current_A)
-                self.assertAlmostEqual(s.value(b.soc_start) - s.value(a.soc_start),
-                                       -dt_s / 2 * current_A / pack.capacity_As, places=9)
+                soc_end, _, _, _ = pack.integrate_power(
+                    s.value(a.point.battery.power_electric_W), s.value(b.point.battery.power_electric_W),
+                    s.value(a.soc_start), tuple(s.value(v) for v in a.point.battery.voltage_rc_V), dt_s,
+                    max(math.ceil(dt_s / 30.0), 2))
+                self.assertAlmostEqual(s.value(b.soc_start), float(soc_end), places=9)
                 fuel_flow = s.value(a.point.fuel_flow_kg_s) + s.value(b.point.fuel_flow_kg_s)
                 self.assertAlmostEqual(s.value(a.mass_start_kg) - s.value(b.mass_start_kg), dt_s / 2 * fuel_flow,
                                        places=6)

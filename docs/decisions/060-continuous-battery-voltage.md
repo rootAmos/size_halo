@@ -91,6 +91,36 @@ with their trapezoidal weights as `duration_s`, so existing sums (fuel, energy, 
 integrals; the segment's fuel is the mass difference. The trajectory option keeps the name "continuous"
 (RC states; its current was already a node variable).
 
+### Part 3: battery sub-steps between nodes (user 2026-10-12: "that sounds a lot better")
+
+Part 2 integrated SOC and the RC voltages with the trapezoidal rule on the node currents, while the turbines
+pay for the node powers. Over a 36 min cruise interval the node voltages differ by up to 190 V, so the mean of
+the currents and the mean of P / V disagree, and the optimizer pumped the voltage between nodes for about 43 kWh
+the turbines never delivered (SOC 0.30, 0.90, 0.36, 0.67, 0.30 in cruise). Part 2's sizing numbers are void.
+
+The flight physics stay on the coarse nodes (each node is a full flight point). The battery, cheap to evaluate,
+is integrated on a fine sub-grid inside each interval:
+- the battery terminal power is linear between the two nodes' powers (the same linear power the fuel and energy
+  sums integrate, so energy is consistent);
+- each sub-step solves the current from P = V(I) I, V = OCV(s) - sum v_k - I R0(s) (the low-current root
+  I = (E - sqrt(E^2 - 4 R0 P)) / (2 R0), E = OCV - sum v_k), explicit midpoint in time: the current at the
+  start state, a half step, the current again at the half-step state and power, then the full step with it;
+- the RC voltages advance exactly for that constant current (v -> I R_k + (v - I R_k) exp(-h / tau_k)) and the
+  SOC by -I h / Q;
+- the minimum and maximum voltage limits hold at the end of every sub-step;
+- the next node's SOC and RC voltages equal the sub-stepped values (replacing the trapezoidal equalities);
+  mass and temperatures keep the trapezoidal rule.
+Sub-steps per interval: ceil(dt / step_battery_max_s), and at least ceil(8 / n) for a segment of n intervals,
+so every segment has at least 9 battery nodes (user 2026-10-12: "we need at least 9 nodes per segment for the
+battery"); default step 30 s (73 per cruise interval, 8 in a 60 s hover). Both go on `build_mission`
+(`step_battery_max_s`, `count_nodes_battery_min`) and `HaloAssumptions`.
+
+Verification: the sub-stepped SOC and RC voltages against a fine closed-form reference at constant and
+linearly varying power (second order in the step), a power-balance identity at each sub-step, symbolic
+compatibility, and on the Halo: a forward simulation at 1 s through the solved node powers, with the energy
+mismatch between the SOC change and the delivered energy under 1 % in every interval, then the sizing at the
+default and half step.
+
 ## Assumptions
 
 - R_k and tau_k from the 25 C fit; the R_k SOC dependence is evaluated at the node SOC (trajectory) or the
@@ -153,3 +183,18 @@ integrals; the segment's fuel is the mass difference. The trajectory option keep
   current free at every node leaves this alternating pattern almost unpenalized, so the energy schedule within the
   mission is not physical although the sizing totals converge. Candidate fixes: a current-rate penalty or bound, or
   midpoint (Hermite-Simpson) collocation. Not yet done.
+- 2026-10-12: the zigzag is an exploit, not a schedule: per cruise interval the SOC change (from the current)
+  exceeds the delivered energy (from V I) by +18, +14, +8, +4 kWh. Part 2's numbers (64.1 kWh, 14,345 lb and
+  the node-count convergence) are withdrawn. Part 3 (battery sub-steps between nodes) replaces the trapezoidal
+  SOC and RC equalities.
+- 2026-10-12: part 3 in (`EquivalentCircuitBattery.integrate_power`, used between the nodes of "piecewise").
+  v3.10 sized at the default 30 s step: 14,369.5 lb, empty 10,405.0 lb, burnt 1,800.3 lb, battery 63.92 kWh,
+  min margin -1e-8 (349 s solve). SOC at the nodes 0.95, 0.92 (take-off), 0.70 (climb), 0.70, 0.73, 0.70,
+  0.58, 0.39 (cruise), 0.73 (loiter recharge), 0.33, 0.30; the battery gives about 130 kW in the take-off hover.
+  Engine-out binds at 525 V on its last node; the maximum voltage no longer binds. 1 s replay through the solved
+  node powers: SOC within 1.7e-4 of every node, at most 0.51 % of an interval's energy, losses positive in every
+  interval (no free energy). Pack voltage 728-852 V through the mission; engine-out lowest 524.4 V in the replay.
+  Open: the machine temperatures, still trapezoidal on 36 min cruise intervals, zigzag (generator 135, 90, 122,
+  95 C); the same sub-stepping would fix them.
+- 2026-10-12: half step (15 s, 691 s solve): 14,369.5 lb, 63.92 kWh, the same node SOCs to 0.001 and the same
+  engine-out voltages: the sizing is independent of the battery step at 30 s.
