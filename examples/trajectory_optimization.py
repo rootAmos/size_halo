@@ -101,6 +101,8 @@ class TrajectoryResult:
     mass_flow_air_kg_s: Any = None        # plan 049: ε-NTU cooler air flow and fan pressure rise at each node
     pressure_rise_fan_Pa: Any = None
     voltage_rc_V: tuple = ()              # plan 060: RC branch voltages at each node (continuous battery dynamics)
+    tilt_acceleration_deg_s2: Any = None  # plan 065: between adjacent intervals
+    pitch_rate_deg_s: Any = None          # plan 065: per interval
 
 
 def power_available_bus_W(model, altitude_m):
@@ -128,6 +130,7 @@ def _result(label, solution, model, trajectory):
         label=label, duration_s=v(t.duration_s)[0], time_s=v(t.time_s), x_m=v(t.x_m), altitude_m=altitude_m,
         velocity_m_s=v(t.velocity_m_s), gamma_deg=np.degrees(v(t.gamma_rad)), alpha_deg=v(t.alpha_deg),
         pitch_deg=v(t.pitch_deg), tilt_deg=v(t.tilt_deg), tilt_rate_deg_s=v(t.tilt_rate_deg_s),
+        tilt_acceleration_deg_s2=v(t.tilt_acceleration_deg_s2), pitch_rate_deg_s=v(t.pitch_rate_deg_s),
         thrust_per_rotor_N=v(t.thrust_per_rotor_N), speed_rotor_rad_s=v(t.speed_rotor_rad_s),
         speed_tip_m_s=v(t.speed_rotor_rad_s) * v(model.instance("propulsor").radius_m()),
         blade_loading=v(t.forces.rotor.blade_loading), advance_ratio=v(t.forces.rotor.advance_ratio),
