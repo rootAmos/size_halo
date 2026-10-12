@@ -26,6 +26,9 @@ class StructureLayout:
     fraction_chord_front_spar: float = 0.15
     fraction_chord_rear_spar: float = 0.60
     pitch_rib_wing_m: float = 0.5
+    # Plan 054: equal rib bays between the fairing-attach and nacelle ribs (the uniform pitch the bottom-up sizing
+    # assumes), none inside the fuselage. False: the array runs from the centreline at the pitch (short end bays).
+    ribs_between_attach_ribs: bool = False
     pitch_frame_m: float = 0.6
     height_floor_above_bottom_m: float = 0.35
     x_bulkhead_nose_m: float = 1.6
@@ -119,14 +122,22 @@ def build_structure(snapshot, layout=StructureLayout()):
     for name, fraction in (("FrontSpar", layout.fraction_chord_front_spar),
                            ("RearSpar", layout.fraction_chord_rear_spar)):
         _part(wing_id, index, vsp.FEA_SPAR, name, web, FeaPart__RelCenterLocation=fraction)
-    _part(wing_id, index, vsp.FEA_RIB_ARRAY, "Ribs", rib, FeaRibArray__RibAbsSpacing=layout.pitch_rib_wing_m,
-          FeaPart__AbsRelParmFlag=vsp.ABS, FeaRibArray__RelStartLocation=0.0, FeaRibArray__RelEndLocation=1.0)
     half_width_fairing_m = 0.5 * max(station.width_m for station in snapshot.wing_fairing.stations) \
         if snapshot.wing_fairing is not None else 0.0
+    y_nacelle_rib_m = semispan_m - 0.5 * snapshot.nacelle.width_m
+    if layout.ribs_between_attach_ribs:
+        count_bays = max(round((y_nacelle_rib_m - half_width_fairing_m) / layout.pitch_rib_wing_m), 2)
+        spacing_m = (y_nacelle_rib_m - half_width_fairing_m) / count_bays
+        _part(wing_id, index, vsp.FEA_RIB_ARRAY, "Ribs", rib, FeaRibArray__RibAbsSpacing=spacing_m,
+              FeaPart__AbsRelParmFlag=vsp.ABS, FeaRibArray__AbsStartLocation=half_width_fairing_m + spacing_m,
+              FeaRibArray__AbsEndLocation=y_nacelle_rib_m - 0.5 * spacing_m)
+    else:
+        _part(wing_id, index, vsp.FEA_RIB_ARRAY, "Ribs", rib, FeaRibArray__RibAbsSpacing=layout.pitch_rib_wing_m,
+              FeaPart__AbsRelParmFlag=vsp.ABS, FeaRibArray__RelStartLocation=0.0, FeaRibArray__RelEndLocation=1.0)
     _part(wing_id, index, vsp.FEA_RIB, "FairingAttachRib", rib, FeaPart__AbsRelParmFlag=vsp.ABS,
           FeaPart__AbsCenterLocation=half_width_fairing_m)
     _part(wing_id, index, vsp.FEA_RIB, "NacelleRib", rib, FeaPart__AbsRelParmFlag=vsp.ABS,
-          FeaPart__AbsCenterLocation=semispan_m - 0.5 * snapshot.nacelle.width_m)
+          FeaPart__AbsCenterLocation=y_nacelle_rib_m)
     structures["WingBox"] = vsp.GetFeaStructID(wing_id, index)
 
     # ---- Fuselage ----------------------------------------------------------------------
