@@ -139,14 +139,6 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
     <div class="tablewrap" style="max-height:640px;overflow-y:auto"><table id="cover"></table></div>
   </section>
 
-  <section class="panel" aria-labelledby="h-plan">
-    <div style="display:grid;gap:4px">
-      <h2 id="h-plan">Twelve months to first flight</h2>
-      <p class="lede" id="plan-lede">A simpler Block 0 article flies first; the final design (Block 1) runs in parallel and learns from the rig and the Block 0 build.</p>
-    </div>
-    <div class="tablewrap" id="gantt"></div>
-  </section>
-
   <div class="grid2">
     <section class="panel" aria-labelledby="h-rank">
       <div style="display:grid;gap:4px">
@@ -418,59 +410,20 @@ function register() {
   }).join("")}</div>`;
 }
 
-function gantt() {
-  const tasks = V.schedule || [];
-  if (!tasks.length) { $("gantt").innerHTML = `<p class="sub">No schedule in the ledger yet.</p>`; return; }
-  const ff = (V.baseline || {}).first_flight;
-  const t = d => Date.parse(d) / 864e5;
-  const lanes = [...new Set(tasks.map(k => k.lane))];
-  const monthStart = (d, add) => { const x = new Date(d * 864e5); return t(new Date(Date.UTC(x.getUTCFullYear(), x.getUTCMonth() + add, 1)).toISOString().slice(0, 10)); };
-  const lo = monthStart(Math.min(...tasks.map(k => t(k.start))), 0), hi = monthStart(Math.max(...tasks.map(k => t(k.end))), 1);
-  const W = 980, L = 170, R = 20, T = 34, RH = 30, laneGap = 10;
-  const rows = []; lanes.forEach(l => tasks.filter(k => k.lane === l).forEach(k => rows.push(k)));
-  const laneStart = {}; let y = T;
-  lanes.forEach(l => { laneStart[l] = y; y += tasks.filter(k => k.lane === l && k.start !== k.end).length * RH + (tasks.some(k => k.lane === l && k.start === k.end) ? 0 : 0) + laneGap; });
-  const H = y + 24;
-  const X = d => L + (t(d) - lo) / (hi - lo) * (W - L - R);
-  const months = []; { let d = new Date(lo * 864e5); while (t(d.toISOString().slice(0, 10)) < hi) { months.push(d.toISOString().slice(0, 10)); d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)); } }
-  const mname = (d, i) => ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].at(Number(d.slice(5, 7)) - 1) + (d.slice(5, 7) === "01" || i === 0 ? " " + d.slice(2, 4) : "");
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Twelve-month plan to first flight" style="width:100%;min-width:760px;height:auto;display:block">`;
-  s += months.map((m, i) => `<line x1="${X(m)}" x2="${X(m)}" y1="${T - 8}" y2="${H - 20}" stroke="var(--rule-soft)"/><text x="${X(m) + 3}" y="${T - 14}">${mname(m, i)}</text>`).join("");
-  const today = (V.as_of || "");
-  if (today && t(today) >= lo && t(today) <= hi) s += `<line x1="${X(today)}" x2="${X(today)}" y1="${T - 8}" y2="${H - 20}" stroke="var(--muted)" stroke-dasharray="2 3"/><text x="${X(today) + 3}" y="${H - 6}">today</text>`;
-  if (ff) s += `<line x1="${X(ff)}" x2="${X(ff)}" y1="${T - 8}" y2="${H - 20}" stroke="var(--crit)" stroke-width="1.5"/><text class="lab" x="${X(ff) + 4}" y="${H - 6}" style="fill:var(--crit)">first flight ${esc(ff)}</text>`;
-  lanes.forEach((l, li) => {
-    const y0 = laneStart[l];
-    const bars = tasks.filter(k => k.lane === l && k.start !== k.end), stones = tasks.filter(k => k.lane === l && k.start === k.end);
-    const color = l.startsWith("Block 1") ? "var(--t-margin)" : l === "Test" ? "var(--crit)" : "var(--accent)";
-    s += `<text class="lab" x="0" y="${y0 + 18}">${esc(l)}</text>`;
-    if (li) s += `<line x1="0" x2="${W - R}" y1="${y0 - laneGap / 2}" y2="${y0 - laneGap / 2}" stroke="var(--rule)"/>`;
-    bars.forEach((k, i) => {
-      const yy = y0 + i * RH + 6, x0 = X(k.start), x1 = Math.max(X(k.end), x0 + 3);
-      const label = esc(k.task), inside = (x1 - x0) > label.length * 6.2 + 10;
-      s += `<rect x="${x0}" y="${yy}" width="${x1 - x0}" height="18" rx="4" fill="${color}" fill-opacity=".22" stroke="${color}"><title>${label}: ${esc(k.start)} to ${esc(k.end)}</title></rect>`;
-      s += inside ? `<text class="lab" x="${x0 + 6}" y="${yy + 13}">${label}</text>` : `<text x="${x1 + 5}" y="${yy + 13}">${label}</text>`;
-    });
-    stones.forEach(k => {
-      const x = X(k.start), yy = y0 + Math.max(bars.length - 1, 0) * RH + 15;
-      const crit = k.start === ff;
-      s += `<path d="M${x} ${yy - 7}l7 7l-7 7l-7 -7z" fill="${crit ? "var(--crit)" : "var(--ink)"}"><title>${esc(k.task)}: ${esc(k.start)}</title></path>`;
-    });
-  });
-  $("gantt").innerHTML = s + `</svg><div class="legend" style="margin-top:8px">${tasks.filter(k => k.start === k.end).map(k => `<span><span class="num">${esc(k.start)}</span> ${esc(k.task)}</span>`).join("")}</div>`;
-}
-
+// "cost_per_payload_kg_nm" is derived: the CASM of a cargo aircraft, cost per mission / (payload kg x range nm);
+// its elasticity is the cost elasticity less those of payload and range.
 const COVER_COLUMNS = [
-  ["resized", "mass_takeoff_kg", "Take-off (re-sized)"], ["resized", "mass_empty_kg", "OEW (re-sized)"],
-  ["fixed", "range_m", "Range (fixed)"], ["fixed", "lift_to_drag_cruise", "Cruise L/D (fixed)"],
-  ["resized", "power_hover_take_off_W", "Hover power (re-sized)"], ["resized", "cost_per_mission_usd", "Cost per mission (re-sized)"],
+  ["resized", "mass_empty_kg", "OEW (re-sized)"],
+  ["fixed", "range_m", "Range (as built)"], ["fixed", "lift_to_drag_cruise", "Cruise L/D (as built)"],
+  ["resized", "power_hover_take_off_W", "Hover power (re-sized)"],
+  ["resized", "cost_per_payload_kg_nm", "USD per payload kg-nm (re-sized)"],
 ];
 const coverState = { q: "", group: "", sort: "0", used: true };
 function coverage() {
   const c = V.coverage || {};
   const rows = c.inputs || [];
   if (!rows.length) { $("cover").innerHTML = `<tbody><tr><td class="empty">No coverage table yet: run examples.halo_parametric --all, then examples.halo_war_room.</td></tr></tbody>`; return; }
-  $("cover-lede").textContent = `${rows.length} inputs of the sizing (${esc(c.source || "")}, ${esc(c.date || "")}), each with its elasticity (% output per % input) from one solve per mode: re-sized, where the mission is held and the aircraft re-closes, and fixed, where the sized aircraft flies for range. Sort by any column; inputs marked unquantified have no owner spread yet.`;
+  $("cover-lede").textContent = `${rows.length} inputs of the sizing (${esc(c.source || "")}, ${esc(c.date || "")}), each with its elasticity (% output per % input) from one solve per mode: re-sized, where the mission is held and the aircraft re-closes around the change, and as built, where the sized aircraft is frozen and flown off-design (80 % payload, full tanks, maximum range). USD per payload kg-nm is the cargo equivalent of CASM: cost per mission over payload times range. Sort by any column; inputs marked unquantified have no owner spread yet.`;
   const groups = [...new Set(rows.map(r => r.group))].sort();
   if (!$("cover-group").dataset.ready) {
     $("cover-group").innerHTML = `<option value="">All disciplines</option>` + groups.map(g => `<option>${esc(g)}</option>`).join("");
@@ -482,7 +435,12 @@ function coverage() {
     $("cover-used").checked = coverState.used;
     $("cover-used").onchange = e => { coverState.used = e.target.checked; coverage(); };
   }
-  const el = (r, [mode, out]) => { const m = (r.elasticity || {})[mode]; return m && m[out] != null ? m[out] : null; };
+  const el = (r, [mode, out]) => {
+    const m = (r.elasticity || {})[mode];
+    if (!m) return null;
+    if (out === "cost_per_payload_kg_nm") return m.cost_per_mission_usd == null ? null : m.cost_per_mission_usd - (m.mass_payload_kg || 0) - (m.range_m || 0);
+    return m[out] != null ? m[out] : null;
+  };
   const col = COVER_COLUMNS[+coverState.sort];
   let list = rows.filter(r => (!coverState.group || r.group === coverState.group)
     && (!coverState.q || (r.label + " " + r.key).toLowerCase().includes(coverState.q))
@@ -501,6 +459,6 @@ function log() {
 }
 
 fetch("view.json", { cache: "no-store" }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(v => {
-  V = v; summary(); coverage(); gantt(); matrix(); controls(); table(); riskMap(); burn(); register(); log();
+  V = v; summary(); coverage(); matrix(); controls(); table(); riskMap(); burn(); register(); log();
 }).catch(() => { $("meta").textContent = "The ledger view (view.json) did not load. Re-run the ledger export and republish."; });
 </script>
