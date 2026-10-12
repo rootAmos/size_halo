@@ -205,6 +205,15 @@ def solve_min_energy_transition(case, count_nodes=41, verbose=False, limits=Traj
     return _result("minimum-energy transition", solution, case.model, t)
 
 
+def solve_min_time_transition(case, count_nodes=41, verbose=False, limits=TrajectoryLimits()):
+    """Hover to wing-borne flight at 1.3 V_stall in minimum time; same end points and altitude band as the
+    minimum-energy transition."""
+    opti, t = _transition_problem(case, count_nodes, transition_guess(case, count_nodes=count_nodes), limits)
+    opti.minimize(t.duration_s / 10 + 1e-3 * _regularization(t, case.model))
+    solution = opti.solve(verbose=verbose, max_iter=3000)
+    return _result("minimum-time transition", solution, case.model, t)
+
+
 def solve_prescribed_transition(case, duration_s=60.0, fraction_hold=0.25, count_nodes=41, verbose=False,
                                 limits=TrajectoryLimits()):
     """Naive reference: level flight at constant acceleration over `duration_s`; nacelles held at 90 deg for

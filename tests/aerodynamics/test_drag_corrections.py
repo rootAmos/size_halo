@@ -7,8 +7,8 @@ import aerosandbox.tools.units as u
 
 from aircraft_closure.aerodynamics.buildup import BuildupAerodynamics
 from aircraft_closure.aerodynamics.scholz import InterferenceFactors, ScholzAerodynamics
-from examples.halo_sizing import HaloAssumptions, assumptions_plan030, build_halo_aerodynamics
-from examples.xv15_reference import Xv15Reference, build_xv15_aircraft
+from examples.halo_sizing import HaloAssumptions, assumptions_plan030, assumptions_v3_7, build_halo_aerodynamics
+from examples.xv15_reference import Xv15Reference, build_xv15_aircraft, build_xv15_drag_aircraft
 
 
 def scalar(x):
@@ -16,15 +16,17 @@ def scalar(x):
 
 
 reference = Xv15Reference()
-xv15 = build_xv15_aircraft(reference, mass_engine_kg=300.0)
-xv15 = replace(xv15, nacelles=replace(xv15.nacelles, length_m=9 * u.foot, diameter_m=3.3 * u.foot,
-                                      y_m=xv15.wing.span_m() / 2))
+xv15 = build_xv15_drag_aircraft(reference)          # plan 057: published sections, drawn bodies
+# Plan 034 calibration geometry: NACA 2423 / 0015 sections, round fuselage, 9 x 3.3 ft nacelles.
+xv15_plan034 = build_xv15_aircraft(reference, mass_engine_kg=300.0)
+xv15_plan034 = replace(xv15_plan034, nacelles=replace(xv15_plan034.nacelles, length_m=9 * u.foot,
+                                                      diameter_m=3.3 * u.foot, y_m=xv15_plan034.wing.span_m() / 2))
 tails = InterferenceFactors(horizontal_tail=1.08, vertical_tail=1.08)
 
 
-def drag_area_ft2(model):
-    result = model.evaluate(xv15, reference.velocity_cruise_m_s, reference.altitude_cruise_m, 0.0)
-    return scalar(result.cd0) * xv15.wing.area_m2 / u.foot**2
+def drag_area_ft2(model, aircraft=xv15):
+    result = model.evaluate(aircraft, reference.velocity_cruise_m_s, reference.altitude_cruise_m, 0.0)
+    return scalar(result.cd0) * aircraft.wing.area_m2 / u.foot**2
 
 
 class DragCorrectionTests(unittest.TestCase):
@@ -36,9 +38,19 @@ class DragCorrectionTests(unittest.TestCase):
     def test_halo_factors_calibrate_xv15_components_to_ndarc(self):
         """NDARC XV-15 cruise: wing, tails, fuselage and pylons 6.25 ft2 (Johnson 2010, Table 1)."""
         a = HaloAssumptions()
-        for model in (BuildupAerodynamics(interference=tails, factor_excrescence=a.factor_excrescence_buildup),
+        trip = dict(xtr_upper=a.fraction_chord_transition, xtr_lower=a.fraction_chord_transition)
+        for model in (BuildupAerodynamics(interference=tails, factor_excrescence=a.factor_excrescence_buildup, **trip),
                       ScholzAerodynamics(interference=tails, factor_excrescence=a.factor_excrescence_scholz)):
             self.assertAlmostEqual(drag_area_ft2(model) / 6.25, 1.0, delta=0.01, msg=type(model).__name__)
+
+    def test_v3_7_factors_calibrate_the_plan034_geometry(self):
+        """The v3.7 set keeps the plan 034 calibration: 1.27 / 1.17 on the 2423 wing, 10 % laminar, 9 ft nacelles."""
+        a = assumptions_v3_7
+        trip = dict(xtr_upper=a.fraction_chord_transition, xtr_lower=a.fraction_chord_transition)
+        for model in (BuildupAerodynamics(interference=tails, factor_excrescence=a.factor_excrescence_buildup, **trip),
+                      ScholzAerodynamics(interference=tails, factor_excrescence=a.factor_excrescence_scholz)):
+            self.assertAlmostEqual(drag_area_ft2(model, xv15_plan034) / 6.25, 1.0, delta=0.01,
+                                   msg=type(model).__name__)
 
     def test_excrescence_is_a_separate_item_proportional_to_components(self):
         clean = ScholzAerodynamics(interference=tails)

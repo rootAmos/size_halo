@@ -100,6 +100,15 @@ class Xv15Reference:
     length_interconnect_m: float = 32.17 * u.foot        # rotor centreline spacing
     area_wetted_nacelles_m2: float = 2 * 95 * u.foot**2  # assumed: ~9 ft x 3.3 ft cylinders
     mass_fixed_equipment_kg: float = 1023 * u.lbm
+    # ---- Drag calibration geometry (plan 057), used only by `build_xv15_drag_aircraft` ----
+    # Sections from TM X-62407 sec. 3.3: wing NACA 64A223, horizontal tail 64A015 (vertical tail 0009 mod, as above).
+    # Nacelle from the dimensioned XV-15 three-view (NASA SP-4517 / Bell): width 3.0 ft exactly (35 ft 2 in across the
+    # nacelles less 32 ft 2 in between rotor centrelines), front-view depth 3 ft 2 in, length spinner to tail about
+    # 12.5 ft (scaled from the plan and side views, about +/-5 %). Fuselage depth from the cabin sections of
+    # TM X-62407 fig. 3.5.1 (outer mould line about WL 20 to WL 92 at STA 310).
+    length_nacelle_drag_m: float = 12.5 * u.foot          # spinner to tail, airplane mode
+    diameter_nacelle_drag_m: float = 3.1 * u.foot         # body of revolution: mean of 3.0 ft wide, 3.17 ft deep
+    height_fuselage_drag_m: float = 6.0 * u.foot
     # ---- Tier 20 tiltrotor wing (plan 024) ----
     # Stick model of NASA/TP-2004-212262: nacelles 3,166 lb and rotors 1,118 lb (both sides); the rotor point mass
     # sits 47.3 in ahead of the wing elastic axis and the nacelle is a uniform 91.9 in beam centred 1.35 in aft.
@@ -215,6 +224,33 @@ def build_xv15_aircraft(reference=Xv15Reference(), factors=Xv15MassFactors(), ma
                                       mass_factor=factors.transmission),
         equipment=FixedEquipment(mass_kg=r.mass_fixed_equipment_kg, x_m=4.0),
     )
+
+
+def naca_6a_section(name_base, thickness_ratio, name):
+    """A NACA 6A section from a database one: the same camber line, thickness scaled by `thickness_ratio`."""
+    base = asb.Airfoil(name_base)
+    x = np.cosspace(0.0, 1.0, 120)
+    camber, thickness = base.local_camber(x), thickness_ratio * base.local_thickness(x)
+    upper = np.stack([x[::-1], (camber + thickness / 2)[::-1]], axis=1)
+    lower = np.stack([x[1:], (camber - thickness / 2)[1:]], axis=1)
+    return asb.Airfoil(name=name, coordinates=np.concatenate([upper, lower]))
+
+
+def build_xv15_drag_aircraft(reference=Xv15Reference()):
+    """The XV-15 outer shape for the NDARC drag calibration (plan 057): published sections, drawn bodies.
+
+    Wing NACA 64A223 (the 64A210 camber line at 23 %), horizontal tail 64A015 (64A010 at 15 %), nacelles and the
+    fuselage depth scaled from the TM X-62407 drawings. The mass validation keeps `build_xv15_aircraft` unchanged.
+    """
+    r = reference
+    xv15 = build_xv15_aircraft(r, mass_engine_kg=300.0)
+    return replace(
+        xv15,
+        wing=replace(xv15.wing, airfoil=naca_6a_section("naca64a210", 2.3, "naca64a223")),
+        horizontal_tail=replace(xv15.horizontal_tail, airfoil=naca_6a_section("naca64a010", 1.5, "naca64a015")),
+        fuselage=replace(xv15.fuselage, height_m=r.height_fuselage_drag_m),
+        nacelles=replace(xv15.nacelles, length_m=r.length_nacelle_drag_m, diameter_m=r.diameter_nacelle_drag_m,
+                         y_m=xv15.wing.span_m() / 2))
 
 
 def design_condition(mass_design_kg, reference=Xv15Reference()):
