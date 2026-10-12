@@ -23,14 +23,26 @@ class CostModelTests(unittest.TestCase):
         self.assertEqual(cost.per_mission_usd, 0.0)
         self.assertEqual(cost.acquisition_usd, 0.0)
 
+    def test_scaled_maintenance_follows_mass_and_power(self):
+        m = replace(CostModel(), maintenance_model="scaled")
+        cost = m.evaluate(**inputs)
+        hours = 3.2 * 3600.0
+        self.assertAlmostEqual(cost.time_usd, m.cost_operations_usd_s * hours)
+        self.assertAlmostEqual(cost.maintenance_airframe_usd, m.cost_maintenance_airframe_usd_kg_s * 3000.0 * hours)
+        self.assertAlmostEqual(cost.maintenance_powerplant_usd, (m.cost_maintenance_turboshaft_usd_W_s * 1.67e6
+                                                                 + m.cost_maintenance_machine_usd_W_s * 2.8e6) * hours)
+        heavier = m.evaluate(**dict(inputs, mass_airframe_kg=3300.0))
+        self.assertGreater(heavier.per_mission_usd, cost.per_mission_usd)
+        with self.assertRaises(ValueError):
+            replace(m, maintenance_model="nope").evaluate(**inputs)
+
     def test_closed_form_items(self):
         m = CostModel()
         cost = m.evaluate(**inputs)
         self.assertAlmostEqual(cost.fuel_usd, m.price_fuel_usd_kg * 780.0)
         self.assertAlmostEqual(cost.time_usd, m.cost_time_usd_s * 3.2 * 3600.0)
-        self.assertAlmostEqual(cost.maintenance_airframe_usd, m.cost_maintenance_airframe_usd_kg_s * 3000.0 * 3.2 * 3600.0)
-        self.assertAlmostEqual(cost.maintenance_powerplant_usd, (m.cost_maintenance_turboshaft_usd_W_s * 1.67e6
-                                                                 + m.cost_maintenance_machine_usd_W_s * 2.8e6) * 3.2 * 3600.0)
+        self.assertEqual(cost.maintenance_airframe_usd, 0.0)          # lumped into the hour (the reference)
+        self.assertEqual(cost.maintenance_powerplant_usd, 0.0)
         self.assertAlmostEqual(cost.electricity_usd, m.price_electricity_usd_J * 25.0 * joule_per_kWh
                                / m.efficiency_charger)
         acquisition_ex_battery_usd = (m.price_airframe_usd_kg * 3000.0 + m.price_machine_usd_W * 2.8e6

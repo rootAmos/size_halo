@@ -149,3 +149,13 @@ Design levers (elasticity, % per %):
   frequency-placement reference) and two priced trades: delta-3 (-11 deg saves 393 lb; spread 100 % of the gain
   until the flapping cost, limit 9 deg, is modelled) and the wing planform (AR 7.0, 28 %: -304 lb with delta-3 held).
   They rank first and second.
+
+### Cost axis (2026-10-11)
+
+Ledger `value_usd`: lifecycle operating cost per aircraft (cost per mission x 7,000 missions). Prices set by the
+user: Jet-A USD 3.20/gal, electricity USD 0.20/kWh (the CostModel defaults). Maintenance priced by airframe mass
+and rated power is the option `CostModel.maintenance_model="scaled"` (operations USD 200/fh, airframe USD 0.10/kg/fh,
+turboshafts USD 0.12/kW/fh, machines USD 0.02/kW/fh; assumed); the default stays "lumped" (USD 500/fh), so the
+reference cost is unchanged (user's choice, 2026-10-11). The war room uses "scaled": USD 0.53 per mission per
+take-off kg, USD 1,677 lifecycle per lb.
+

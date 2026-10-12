@@ -136,8 +136,9 @@ def maintenance_per_takeoff_kg_usd(resized, duration_h=3.2):
     maintenance by airframe mass and rated power (2026-10-11): the airframe follows the empty mass and the electric
     machines the hover power, per take-off kg of a pure empty-mass change; the fixed turboshafts add nothing. A
     table solved with the new cost model already holds it: then this returns 0."""
+    from dataclasses import replace
     from aircraft_closure.mission.cost import CostModel
-    model = CostModel()
+    model = replace(CostModel(), maintenance_model="scaled")    # the war room prices maintenance by mass and power
     if resized.get("cost_model_maintenance"):
         return 0.0
     row = lambda name: dict(zip(resized["inputs"], resized["jacobian"][resized["outputs"].index(name)]))

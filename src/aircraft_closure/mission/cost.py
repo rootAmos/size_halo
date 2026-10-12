@@ -4,8 +4,8 @@ The simplest useful direct-operating-cost form for an uncrewed hybrid-electric
 aircraft, written so every term is an AeroSandbox/CasADi expression of the
 sized design and the flown mission:
 
-    cost per mission = capital + fuel + ground electricity + battery + operations
-                       + airframe maintenance + powerplant maintenance
+    cost per mission = capital + fuel + ground electricity + battery + time
+                       (+ airframe maintenance + powerplant maintenance, `maintenance_model="scaled"`)
 
 * capital: (airframe x price per kg + electric machines x price per W +
   turboshafts x price per W) / missions in the airframe life (straight-line
@@ -16,13 +16,15 @@ sized design and the flown mission:
 * battery: pack price x (discharge throughput / cycle life + capacity /
   missions in the calendar life). Cycle ageing and calendar ageing add (a
   first-order approximation of the battery-replacement rate);
-* operations: mission duration x cost per flight hour (remote crew and ground
-  operations);
-* airframe maintenance: mission duration x airframe mass x rate per kg-hour;
-* powerplant maintenance: mission duration x (turboshaft rated power x its rate,
-  including the overhaul reserve, + electric machine rated power x its rate).
-  Maintenance scales with what is maintained, so a heavier or more powerful
-  design pays for it on every flight (user request, 2026-10-11).
+* time: mission duration x cost per flight hour. With `maintenance_model`
+  "lumped" (the default) the hour covers maintenance, remote crew and ground
+  operations (USD 500); with "scaled" it covers crew and ground operations only
+  (USD 200) and maintenance is priced by what is maintained:
+* airframe maintenance ("scaled"): duration x airframe mass x rate per kg-hour;
+* powerplant maintenance ("scaled"): duration x (turboshaft rated power x its
+  rate, including the overhaul reserve, + electric machine rated power x its
+  rate), so a heavier or more powerful design pays for it on every flight (the
+  user's request, 2026-10-11; the war room's cost axis uses it).
 
 The battery's pack price is not in `capital`: the battery term replaces the
 pack at the rate it is consumed. Prices are US dollars (a currency, not a
@@ -78,8 +80,13 @@ class CostModel:
     # Missions in the airframe life: assumed (15 years at about 470 missions per year, about 1,500 flight hours
     # per year at the Halo's ~3.2 h mission).
     count_missions_life: float = 7000.0
-    # Remote crew and ground operations, per second of mission: assumed USD 200 per flight hour.
-    cost_time_usd_s: float = 200.0 / 3600.0
+    # "lumped": `cost_time_usd_s` covers maintenance, crew and ground operations (the reference). "scaled": crew and
+    # ground operations at `cost_operations_usd_s`, maintenance by the rates below.
+    maintenance_model: str = "lumped"
+    # Maintenance, remote crew and ground operations, per second of mission: assumed USD 500 per flight hour.
+    cost_time_usd_s: float = 500.0 / 3600.0
+    # "scaled": remote crew and ground operations, per second of mission: assumed USD 200 per flight hour.
+    cost_operations_usd_s: float = 200.0 / 3600.0
     # Airframe maintenance (labour and parts; structure, rotors, gearboxes, systems), per kg of airframe per second:
     # assumed USD 0.10 per kg per flight hour, about USD 470 per flight hour for the Halo. Conklin & de Decker put
     # medium twin helicopters (4-6 t empty) at roughly USD 600-1,300 per flight hour with engines included.
@@ -107,9 +114,19 @@ class CostModel:
             electricity_usd=self.price_electricity_usd_J * energy_recharge_ground_J / self.efficiency_charger,
             battery_usd=(self.price_battery_usd_J * energy_discharge_battery_J / self.count_cycles_life_battery
                          + price_battery_usd / self.count_missions_calendar_battery),
-            time_usd=self.cost_time_usd_s * duration_mission_s,
+            **self._time_and_maintenance(mass_airframe_kg, power_rated_machines_W, power_rated_turboshafts_W,
+                                         duration_mission_s),
+        )
+
+    def _time_and_maintenance(self, mass_airframe_kg, power_rated_machines_W, power_rated_turboshafts_W,
+                              duration_mission_s):
+        if self.maintenance_model == "lumped":
+            return dict(time_usd=self.cost_time_usd_s * duration_mission_s)
+        if self.maintenance_model != "scaled":
+            raise ValueError(f"Unknown maintenance model '{self.maintenance_model}'.")
+        return dict(
+            time_usd=self.cost_operations_usd_s * duration_mission_s,
             maintenance_airframe_usd=self.cost_maintenance_airframe_usd_kg_s * mass_airframe_kg * duration_mission_s,
             maintenance_powerplant_usd=(self.cost_maintenance_turboshaft_usd_W_s * power_rated_turboshafts_W
                                         + self.cost_maintenance_machine_usd_W_s * power_rated_machines_W)
-            * duration_mission_s,
-        )
+            * duration_mission_s)
