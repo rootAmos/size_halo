@@ -87,7 +87,9 @@ open_trades = (
     # ---- Margin policy and verification ----------------------------------------------------------------------------
     ("trade.redundancy_level", "Redundancy: lanes, buses and battery strings (2/2/2 today)", MARGIN, "Electrical",
      CONCEPTUAL, ["mass.motors", "mass.protection_and_bus_tie", "mass.battery"],
-     "redundancy on/off, count_strings_battery 1 to 3", "Set by the safety assessment's failure rates"),
+     "redundancy on/off, count_strings_battery 1 to 3, count_lanes_motor 2 or 4",
+     "Set by the safety assessment's failure rates, not by weight: the priced options are the weight price of each "
+     "redundancy level (the layer costs 1,223 lb take-off; 4 lanes per rotor another 2,342 lb), not a case to drop it"),
     ("trade.battery_reserve", "Battery reserve and end-of-life sizing (30 % reserve, 80 % capacity)", MARGIN,
      "Chief engineer", CONCEPTUAL, ["mass.battery", "input.capacity_end_of_life"],
      "free_soc_reserve with bounds_soc_reserve; factor_capacity_ageing_battery", ""),
