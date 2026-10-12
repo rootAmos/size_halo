@@ -75,3 +75,14 @@ Every change is behind options; the default sizing (v3.10, 14,350 lb) is unchang
 - FE geometry: a point-defined 64A223 section meshed with 2,255 degenerate faces at the root leading edge
   (CalculiX: zero shell normal). OpenVSP's own 6-series section (Series 6 = 64A, ideal Cl from camber) matches
   the 64A223 within 0.4 % chord and is used instead.
+- 2026-10-12: CalculiX on D (64A section from OpenVSP's 6-series, sized layout, rib pitch 0.50 m; no degenerate
+  faces). Root cap strain in the ultimate jump take-off 0.00330 against 0.0047 (margin +29.9 %; the sizing's
+  beam theory 0.00379, +19.3 %, conservative). GJ 4.94 MN m2 against the bottom-up 4.20 (1.18). Free-free modes
+  against the bottom-up predictions: chord 33.4 / 33.5 rad/s, torsion 46.8 / 43.7, beam 19.3 / 20.4 (0.94).
+  Buckling under the ultimate jump take-off: first factor 1.03 (+3 %); hot/wet (modulus x 0.90): 0.93, a
+  negative margin (-7 %).
+  Open before D can be adopted: (1) the beam mode, which sets whirl flutter and binds in D, is 6 % softer in FE
+  than in the sizing, so D's flutter margin (301.9 kt against 302) is likely negative; a beam-stiffness knockdown
+  of 0.94 (or the FE beam frequency) in the sizing would close it. (2) Cover buckling is not checked hot/wet in
+  the sizing; a 0.90 modulus knockdown on the buckling allowable would. (3) The camber near 4 % rests on the 2423
+  maximum-lift surrogate.
