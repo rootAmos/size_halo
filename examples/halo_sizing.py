@@ -368,8 +368,13 @@ class HaloAssumptions:
     # on component drag, calibrated so the XV-15 components match NDARC's 6.25 ft2 (Johnson 2010, Table 1); trim
     # drag as a fraction of parasite + induced drag (assumed 2 %, within the 1-5 % usual for an aft tail at cruise).
     drag_corrections: bool = True   # plan 035 default (decided 2026-10-04); False before
-    factor_excrescence_buildup: float = 1.27
+    # Plan 054 (v3.9): recalibrated on the XV-15 with its published sections and drawn bodies
+    # (`build_xv15_drag_aircraft`) and fully turbulent surfaces; 1.27 and 1.17 before (2423, 10 % laminar, 9 ft nacelle).
+    factor_excrescence_buildup: float = 1.19
     factor_excrescence_scholz: float = 1.17
+    # Plan 054: boundary-layer trip, fraction of chord, on every AeroBuildup surface. 0: fully turbulent, as the wing
+    # sits in the proprotor slipstream in airplane mode (plan 025 assumed 10 % laminar, Scholz ch. 13).
+    fraction_chord_transition: float = 0.0
     fraction_trim_drag: float = 0.02                   # Scholz aero only; AeroBuildup trims from the tail load
     efficiency_tail: float = 0.9                       # tail dynamic-pressure ratio eta_H (Scholz ch. 11)
     angle_dihedral_tail_deg: float = 0.0               # 0: conventional horizontal tail
@@ -676,6 +681,7 @@ def build_halo_aerodynamics(requirements=HaloRequirements(), assumptions=HaloAss
         corrections = (dict(factor_excrescence=a.factor_excrescence_buildup,
                             trim=TailTrim(a.efficiency_tail, a.angle_dihedral_tail_deg)) if a.drag_corrections else {})
         return BuildupAerodynamics(cl_max=r.cl_max, drag_area_misc_m2=a.drag_area_misc_buildup_m2,
+                                   xtr_upper=a.fraction_chord_transition, xtr_lower=a.fraction_chord_transition,
                                    blown_wing=BlownWing() if a.blown_wing else None, **corrections)
     if a.aerodynamics_model == "scholz":
         corrections = (dict(factor_excrescence=a.factor_excrescence_scholz, fraction_trim_drag=a.fraction_trim_drag)
@@ -2079,7 +2085,11 @@ def _precursor(problem, factors, max_iter, cache, allow_continuation):
 # settings plan 035 changed (drag corrections, redundancy, unit-built machines, gearbox stages) to their earlier
 # values for every set below.
 pre_plan035 = dict(drag_corrections=False, redundancy=False, machine_mass_model="torque_density", gearbox_stages=False,
-                   heat_exchanger_model="mass_per_watt", factor_uprating_power_units=1.0)   # plan 048 defaults undone
+                   heat_exchanger_model="mass_per_watt", factor_uprating_power_units=1.0,   # plan 048 defaults undone
+                   factor_excrescence_buildup=1.27, factor_excrescence_scholz=1.17,
+                   fraction_chord_transition=0.1)                                          # plan 054 defaults undone
+# Plan 054 (v3.9): the drag calibration and transition before it.
+pre_plan054 = dict(factor_excrescence_buildup=1.27, factor_excrescence_scholz=1.17, fraction_chord_transition=0.1)
 # Plans 037 and 038 (the drawn layout and the wing check): XV-15 fuselage calibration, turbogenerators at the tips,
 # round 12.8 m fuselage with the tail at 11.4 m, NDARC spar caps without a minimum gauge, XV-15 pylon ratio.
 pre_layout = dict(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None,
@@ -2310,9 +2320,14 @@ assumptions_plan038 = HaloAssumptions(**pre_plan035)
 # v3.6 (15,179 lb): today's defaults with the mass-per-watt cooler and the machine units at their catalogue
 # continuous power (plan 048 made the plan 042 epsilon-NTU cooler and the 10 % uprating the defaults: v3.7).
 requirements_v3_6 = HaloRequirements()
-assumptions_v3_6 = HaloAssumptions(factor_uprating_power_units=1.0, heat_exchanger_model="mass_per_watt")
+assumptions_v3_6 = HaloAssumptions(**pre_plan054, factor_uprating_power_units=1.0, heat_exchanger_model="mass_per_watt")
 # v3.5 on the current code (not test-pinned): the pre-layout settings with the v3.6 cooler and units.
-assumptions_v3_5 = HaloAssumptions(**pre_layout, factor_uprating_power_units=1.0, heat_exchanger_model="mass_per_watt")
+assumptions_v3_5 = HaloAssumptions(**pre_layout, **pre_plan054, factor_uprating_power_units=1.0,
+                                   heat_exchanger_model="mass_per_watt")
+# v3.7 (14,357 lb): today's defaults with the plan 034 drag calibration and 10 % laminar flow (plan 054 made the
+# XV-15 recalibration, 1.19 fully turbulent, the default: v3.9).
+requirements_v3_7 = HaloRequirements()
+assumptions_v3_7 = HaloAssumptions(**pre_plan054)
 
 
 if __name__ == "__main__":
