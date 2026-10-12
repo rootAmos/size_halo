@@ -22,8 +22,9 @@ spins about +x (counter-clockwise seen from ahead, `rotation_sense=+1`, the CAMR
 the other sense. Rotor axes: z_r along the shaft (thrust, forward), x_r up, y_r right; azimuth from x_r.
 
 `whirl_flutter_matrices` builds M, C, K with `aerosandbox.numpy` so that they stay symbolic in the airframe and
-rotor inputs (for a later smooth eigenpair constraint inside `asb.Opti`). The eigenvalue sweep and the flutter speed
-(`whirl_modes`, `flutter_speed`) are numerical checks outside the optimization.
+rotor inputs. Inside `asb.Opti` the least-damped modes are held as eigenpair variables (`eigenpair_residual`, plan
+055, started from `least_damped_eigenpairs`), so a damping limit is a smooth constraint. The eigenvalue sweep and the
+flutter speed (`whirl_modes`, `flutter_speed`) are numerical checks outside the optimization.
 
 Against CAMRAD II on the XV-15 (examples/whirl_flutter_xv15.py) the model reproduces the 60 kt thick-to-thin wing
 drop but sits about 64 kt high (non-conservative); a calibrated airspeed knockdown of 0.84 is needed.
@@ -32,6 +33,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 import aerosandbox.numpy as np
+import casadi as cas
 import numpy as onp
 
 
@@ -591,6 +593,63 @@ def flutter_speed(airframe, rotor, speed_rotor_rad_s, density_kg_m3, velocities_
             return high, least(high)[0]
         previous = float(v)
     return None, None
+
+
+@dataclass(frozen=True)
+class Eigenpair:
+    """One mode of (lambda^2 M + lambda C + K) v = 0, lambda = sigma + i omega, v = v_r + i v_i, normalized so that
+    component `index` is 1 + 0 i. Numerical (a starting point) or symbolic (optimizer variables)."""
+    sigma: Any
+    omega: Any
+    vector_real: Any
+    vector_imag: Any
+    index: int
+    label: str = ""
+
+    @property
+    def damping_ratio(self):
+        """-sigma / |lambda|."""
+        return -self.sigma / np.sqrt(self.sigma**2 + self.omega**2)
+
+
+def eigenpair_residual(mass, damping, stiffness, pair):
+    """Real and imaginary parts of (lambda^2 M + lambda C + K) v for `pair` (plan 055), each of the system size.
+
+    With P = (sigma^2 - omega^2) M + sigma C + K and Q = 2 sigma omega M + omega C, the product is
+    (P v_r - Q v_i) + i (Q v_r + P v_i). Zero residuals with the normalization (component `index` = 1 + 0 i) define
+    the eigenpair smoothly in every input of the matrices, so an optimizer can hold its damping above a limit."""
+    s, w = pair.sigma, pair.omega
+    terms = (mass, damping, stiffness, s, w, pair.vector_real, pair.vector_imag)
+    if any(isinstance(t, cas.MX) for t in terms):
+        # One symbolic type throughout (a numpy array times a CasADi scalar would become an object array).
+        mass, damping, stiffness = (m if isinstance(m, cas.MX) else cas.MX(cas.DM(_numeric(m)))
+                                    for m in (mass, damping, stiffness))
+    p = (s**2 - w**2) * mass + s * damping + stiffness
+    q = 2 * s * w * mass + w * damping
+    vr, vi = pair.vector_real, pair.vector_imag
+    return p @ vr - q @ vi, q @ vr + p @ vi
+
+
+def least_damped_eigenpairs(mass, damping, stiffness, count=2, labels=None):
+    """The `count` least-damped oscillatory eigenpairs of numerical M, C, K, each normalized on its largest
+    displacement component; starting points for `eigenpair_residual` constraints. `labels`: names of the states
+    (the label of each pair is its largest component's)."""
+    mass, damping, stiffness = _numeric(mass), _numeric(damping), _numeric(stiffness)
+    size = mass.shape[0]
+    inverse = onp.linalg.inv(mass)
+    state = onp.block([[onp.zeros((size, size)), onp.eye(size)], [-inverse @ stiffness, -inverse @ damping]])
+    values, vectors = onp.linalg.eig(state)
+    pairs = []
+    for value, vector in zip(values, vectors.T):
+        if value.imag <= 1e-9:
+            continue                                   # one of each conjugate pair; real roots are not whirl modes
+        displacement = vector[:size]
+        index = int(onp.argmax(onp.abs(displacement)))
+        displacement = displacement / displacement[index]
+        pairs.append(Eigenpair(float(value.real), float(value.imag), displacement.real, displacement.imag, index,
+                               labels[index] if labels is not None else ""))
+    pairs.sort(key=lambda p: float(p.damping_ratio))
+    return pairs[:count]
 
 
 if __name__ == "__main__":
