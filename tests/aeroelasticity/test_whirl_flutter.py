@@ -3,11 +3,13 @@ import math
 import unittest
 from dataclasses import replace
 
+import aerosandbox as asb
 import casadi as cas
 import numpy as onp
 
-from aircraft_closure.aeroelasticity.whirl_flutter import (AirframeDynamics, GimballedProprotor,
-                                                           cantilever_wing_nacelle_airframe, flutter_speed,
+from aircraft_closure.aeroelasticity.whirl_flutter import (AirframeDynamics, Eigenpair, GimballedProprotor,
+                                                           cantilever_wing_nacelle_airframe, eigenpair_residual,
+                                                           flutter_speed, least_damped_eigenpairs, state_labels,
                                                            whirl_flutter_matrices, whirl_modes)
 
 speed_rotor_rad_s = 48.0
@@ -129,6 +131,60 @@ class TestSymbolic(unittest.TestCase):
             cantilever_wing_nacelle_airframe(4.2, 1.06e7, 3.2e7, 8e6, 40.0, 8.0, 970.0, 0.4, (300.0, 900.0, 900.0),
                                              1.2), rotor, 140.0, 48.0, 1.225, 4000.0)[2]
         self.assertTrue(onp.allclose(onp.asarray(evaluated), onp.asarray(numeric, float)))
+
+
+class TestEigenpairConstraint(unittest.TestCase):
+    """Plan 055: the least-damped mode as optimizer variables."""
+
+    def test_numerical_eigenpairs_satisfy_the_residual(self):
+        rotor = replace(rotor_gimbal, frequency_lag_per_rev=1.6, frequency_coning_per_rev=1.5)
+        airframe = cantilever_wing_nacelle_airframe(4.2, 1.06e7, 3.2e7, 8.0e6, 40.0, 8.0, 970.0, 0.4,
+                                                    (300.0, 900.0, 900.0), 1.2)
+        matrices = whirl_flutter_matrices(airframe, rotor, 140.0, speed_rotor_rad_s, 1.225, 4000.0)
+        pairs = least_damped_eigenpairs(*matrices, count=3, labels=state_labels(airframe, rotor))
+        self.assertEqual(len(pairs), 3)
+        self.assertLessEqual(pairs[0].damping_ratio, pairs[1].damping_ratio)
+        modes = whirl_modes(airframe, rotor, 140.0, speed_rotor_rad_s, 1.225, 4000.0)
+        self.assertAlmostEqual(pairs[0].damping_ratio, min(modes.damping_ratio), places=10)
+        scale = max(onp.abs(onp.asarray(m, float)).max() for m in matrices) * (1 + abs(pairs[0].omega))**2
+        for pair in pairs:
+            self.assertAlmostEqual(pair.vector_real[pair.index], 1.0)
+            self.assertAlmostEqual(pair.vector_imag[pair.index], 0.0)
+            real, imag = eigenpair_residual(*(onp.asarray(m, float) for m in matrices), pair)
+            self.assertLess(max(onp.abs(real).max(), onp.abs(imag).max()) / scale, 1e-10)
+
+    def test_minimum_pylon_stiffness_puts_flutter_at_the_required_airspeed(self):
+        """Smallest pylon frequency with the tracked whirl mode stable at 150 m/s, from a start that flutters there:
+        the scan then finds the flutter speed at 150 m/s."""
+        inertia, length, ratio, velocity = 1300.0, 1.3, 0.01, 150.0
+
+        def airframe(frequency):
+            k = inertia * frequency**2
+            c = 2 * ratio * frequency * inertia
+            return AirframeDynamics([[inertia, 0.0], [0.0, inertia]], [[c, 0.0], [0.0, c]], [[k, 0.0], [0.0, k]],
+                                    [[0.0, 0.0], [0.0, length], [-length, 0.0]], [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]],
+                                    ("pitch", "yaw"))
+
+        start = 0.8 * speed_rotor_rad_s
+        guess = least_damped_eigenpairs(*whirl_flutter_matrices(airframe(start), rotor_stiff, velocity,
+                                                                speed_rotor_rad_s, 1.225), count=1)[0]
+        opti = asb.Opti()
+        frequency = opti.variable(init_guess=start, scale=10.0, lower_bound=1.0)
+        size = len(guess.vector_real)
+        pair = Eigenpair(opti.variable(init_guess=guess.sigma), opti.variable(init_guess=guess.omega, scale=10.0),
+                         opti.variable(init_guess=guess.vector_real, n_vars=size),
+                         opti.variable(init_guess=guess.vector_imag, n_vars=size), guess.index)
+        real, imag = eigenpair_residual(*whirl_flutter_matrices(airframe(frequency), rotor_stiff, velocity,
+                                                                speed_rotor_rad_s, 1.225), pair)
+        opti.subject_to([real / 1e5 == 0, imag / 1e5 == 0, pair.vector_real[guess.index] == 1,
+                         pair.vector_imag[guess.index] == 0, pair.damping_ratio >= 0])
+        opti.minimize(frequency / speed_rotor_rad_s)
+        solution = opti.solve(verbose=False)
+        found = float(solution(frequency))
+        v_flutter, _ = flutter_speed(airframe(found), rotor_stiff, speed_rotor_rad_s, 1.225,
+                                     onp.arange(20.0, 400.0, 5.0), tolerance_m_s=0.01)
+        self.assertGreater(found, start)                     # the start flutters below 150 m/s
+        self.assertAlmostEqual(v_flutter, velocity, delta=0.5)
 
 
 class TestXv15AgainstCamrad(unittest.TestCase):
