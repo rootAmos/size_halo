@@ -86,3 +86,10 @@ Every change is behind options; the default sizing (v3.10, 14,350 lb) is unchang
   of 0.94 (or the FE beam frequency) in the sizing would close it. (2) Cover buckling is not checked hot/wet in
   the sizing; a 0.90 modulus knockdown on the buckling allowable would. (3) The camber near 4 % rests on the 2423
   maximum-lift surrogate.
+- 2026-10-12 (user): back to the 2423 section (the 6A section gains nothing fully turbulent); hot/wet buckling
+  not a concern; camber near 4 % accepted. E = C with the 2423 base and AR, t/c, camber free (from C):
+  13,808.8 lb (-542 against v3.10), empty 9,909.7, wing 740 lb, fuel burnt 1,741 lb, 177 ft2, span 38.3 ft,
+  AR 8.30, t/c 0.223, camber 0.0400 (at its bound), L/D 9.30, 168 kt; flutter at maximum speed (301.9 kt) and
+  stall at 120 kt bind. New `HaloAssumptions.factor_stiffness_beam_wing_box` (WingBoxLayout
+  `factor_stiffness_beam`): effective beam stiffness over the box value from the CalculiX beam frequency ratio,
+  so the flutter constraint sees the FE-consistent wing.
