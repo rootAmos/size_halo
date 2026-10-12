@@ -151,6 +151,11 @@ Recommendation: use `"published"` for the next reference re-solve as the conserv
   11 in `test_halo_ntu_cooling` with `test_halo_thermal`). The v3.7 NTU pickle is not cached (only
   its JSON: cooler 48.1 kg), so the effect is evaluated at plan 042's reported geometry (counts 708 x 11.1 x 21.7,
   nozzle 0.082 m², fan 8.6 kW), which reproduces its 47.6 kg.
+- 2026-10-11 (after plan 048): the published allowances are the v3.7 default; the v3.7 cooler is 58 kg at a peak heat
+  of 112 kW, so its specific power is 1.9 kW/kg (the 2.5 kW/kg above was the 48 kg estimated-allowance cooler),
+  still inside the published 1.75-6.7 kW/kg. Figure `docs/figures/ntu_validation.png`
+  (`python -m examples.ntu_validation_figure`): middle panel the design-point ratios, right panel the published
+  specific powers with Halo v3.7.
 
 ## Slide summary
 
