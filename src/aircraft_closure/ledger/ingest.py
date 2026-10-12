@@ -88,7 +88,7 @@ def ingest_evidence(ledger, key, value, sigma, source, fidelity, today=None, not
 
 
 def ingest_drivers(ledger, drivers, source, today=None):
-    """Plan 042: replace the driver table of each output in `drivers` ({output key: record}, see
+    """Plan 059: replace the driver table of each output in `drivers` ({output key: record}, see
     `Ledger.drivers`) and log it. Calibration factors are not in the records (they are not ranked)."""
     today = today or date.today()
     for key, record in drivers.items():
@@ -99,7 +99,7 @@ def ingest_drivers(ledger, drivers, source, today=None):
 
 
 def ingest_coverage(ledger, coverage, source, today=None):
-    """Plan 042: replace the every-input table (`Ledger.coverage`) and log it."""
+    """Plan 059: replace the every-input table (`Ledger.coverage`) and log it."""
     today = today or date.today()
     ledger.coverage = dict(coverage, source=source, date=today.isoformat())
     count = len(coverage.get("inputs", ()))

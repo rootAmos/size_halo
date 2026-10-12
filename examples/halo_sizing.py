@@ -381,7 +381,7 @@ class HaloAssumptions:
     # Reserve SOC: the mission SOC floor, which is also where the engine-out hover starts (0.30 when fixed).
     free_soc_reserve: bool = False
     bounds_soc_reserve: tuple = (0.20, 0.90)
-    # Plan 046 wing section. "family" (the reference from plan 042): the CST family around NACA 2423
+    # Plan 046 wing section. "family" (the reference from plan 059): the CST family around NACA 2423
     # (`aerodynamics.wing_section`) at `thickness_to_chord_wing` and `camber_wing`, with NeuralFoil polars that are
     # differentiable in both and section maximum lift scaling the stall cl_max; the same thickness sizes the AFDD
     # wing, so aero and structure read one section. At 23 % it is the coordinate airfoil exactly. "naca2423": the
@@ -1241,7 +1241,7 @@ class HaloSizingResult:
     wing_strain: Any = None
     # Plan 041 (closure system): first-order prices of the optimum from the same solve (SizingSensitivity).
     sensitivity: Any = None
-    # Plan 042: {"mode", "objective", "inputs", "input_values", "outputs", "output_values", "jacobian"} when the solve
+    # Plan 059: {"mode", "objective", "inputs", "input_values", "outputs", "output_values", "jacobian"} when the solve
     # lifted inputs to parameters (`solve_halo_sizing_once(parameters=...)`), else None.
     parametric: Any = None
 
@@ -1377,7 +1377,7 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
     "range" maximizes the range at `requirements.mass_payload_kg` (see `solve_halo_off_design`). Without
     `off_design`, objective "range" sizes the aircraft for maximum range at the required payload (plan 044).
 
-    `parameters` (plan 042): input keys ("requirements.range_m", "assumptions.aspect_ratio_wing",
+    `parameters` (plan 059): input keys ("requirements.range_m", "assumptions.aspect_ratio_wing",
     "factors.wing_tiltrotor") made Opti parameters at their values, so the result's `parametric` holds
     d(output)/d(input) for `parametric_outputs` from the same solve. A field the model uses in Python logic cannot be
     lifted and raises."""
@@ -1468,7 +1468,7 @@ def whirl_flutter_cleared(result, requirements, assumptions, tolerance_kt=0.5):
 
 
 def lift_parameters(opti, keys, requirements, assumptions, factors):
-    """Plan 042: replace the named fields of requirements, assumptions and calibration factors by Opti parameters at
+    """Plan 059: replace the named fields of requirements, assumptions and calibration factors by Opti parameters at
     their values; returns the three dataclasses and {key: parameter} in the order of `keys`."""
     holders = dict(requirements=requirements, assumptions=assumptions, factors=factors)
     lifted, changes = {}, {name: {} for name in holders}
@@ -1811,7 +1811,7 @@ def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerody
                       for m, price in zip(all_margins, prices[1:])))
     parametric = None
     if lifted:
-        # Plan 042: every performance output against every lifted input, from this solve (post-optimal, KKT).
+        # Plan 059: every performance output against every lifted input, from this solve (post-optimal, KKT).
         expressions = dict(
             mass_takeoff_kg=mass_takeoff_kg, range_m=r.range_m, mass_payload_kg=r.mass_payload_kg,
             mass_fuel_burnt_kg=flown.mass_fuel_burnt_kg, mass_empty_kg=breakdown.mass_empty_kg(),
@@ -2479,7 +2479,7 @@ def solve_halo_off_design(sized, range_nm=None, mass_payload_kg=None, requiremen
     payload. Take-off mass at or below the sized MTOW, fuel at or below the tank capacity (the sized fuel mass;
     `larger_tanks`: no tank limit), payload at or below the sized payload. One coupled solve from the sized point;
     `start` (an earlier OffDesignPoint) gives the guesses for take-off mass, payload, fuel and range. `parameters`
-    (plan 042): inputs lifted as in `solve_halo_sizing_once`; `result.parametric` is then the fixed-aircraft table."""
+    (plan 059): inputs lifted as in `solve_halo_sizing_once`; `result.parametric` is then the fixed-aircraft table."""
     if (range_nm is None) == (mass_payload_kg is None):
         raise ValueError("Give either range_nm (maximum payload) or mass_payload_kg (maximum range).")
     objective = "payload" if range_nm is not None else "range"

@@ -120,7 +120,7 @@ class IngestTest(unittest.TestCase):
         record = dict(label="Range", unit="nm", value=458.6, mode="fixed",
                       risks=[dict(key="k", label="Misc drag", share=0.68, effect=-10.3, elasticity=-0.09, kind="model",
                                   source="placeholder prior")], levers=[], blind=[], calibration=["Wing weight factor"])
-        ingest_drivers(ledger, {"range_m": record}, "plan 042", today)
+        ingest_drivers(ledger, {"range_m": record}, "plan 059", today)
         with tempfile.TemporaryDirectory() as directory:
             path = os.path.join(directory, "ledger.json")
             save(ledger, path)
@@ -134,10 +134,10 @@ class IngestTest(unittest.TestCase):
                      inputs=[dict(key="assumptions.length_fuselage_m", label="length fuselage m", group="Fuselage and tail",
                                   value=11.0, kind="setting", sigma=None,
                                   elasticity=dict(resized=dict(mass_takeoff_kg=0.62)))])
-        ingest_coverage(ledger, table, "plan 042 every-input table", today)
+        ingest_coverage(ledger, table, "plan 059 every-input table", today)
         coverage = view(ledger, today)["coverage"]
         self.assertEqual(coverage["inputs"][0]["elasticity"]["resized"]["mass_takeoff_kg"], 0.62)
-        self.assertEqual(coverage["source"], "plan 042 every-input table")
+        self.assertEqual(coverage["source"], "plan 059 every-input table")
 
     def test_cost_axis_from_option_cost_or_take_off_kg(self):
         ledger = two_item_ledger()

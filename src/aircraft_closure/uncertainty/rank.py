@@ -1,4 +1,4 @@
-"""Priority from impact x uncertainty (plan 042).
+"""Priority from impact x uncertainty (plan 059).
 
 For output i, the first-order spread owed to input j is |dy_i/dx_j| sigma_j; with independent inputs the output
 variance is the sum of their squares, and the variance share S_ij = (dy_i/dx_j sigma_j)^2 / sum_k (...)^2 says

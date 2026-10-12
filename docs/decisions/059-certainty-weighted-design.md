@@ -1,4 +1,4 @@
-# Plan 042: certainty-weighted design (impact x uncertainty = war-room priority)
+# Plan 059: certainty-weighted design (impact x uncertainty = war-room priority)
 
 ## Goal
 

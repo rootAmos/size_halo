@@ -1,4 +1,4 @@
-"""Plan 042: every Halo performance output against every uncertain input, from one sizing solve.
+"""Plan 059: every Halo performance output against every uncertain input, from one sizing solve.
 
 Lifts the inputs in `ledger/inputs.json` to Opti parameters, sizes the reference (re-sized mode: the mission held,
 the aircraft re-closes), and reports the elasticities (% output per % input), the drivers of each output by
@@ -94,7 +94,7 @@ def report(parametric, inputs):
     return elasticity
 
 
-# Outputs shown in the war room (plan 042: payload and range first), with display units.
+# Outputs shown in the war room (plan 059: payload and range first), with display units.
 war_room_outputs = {"range_m": ("Range", "nm", 1 / 1852.0), "lift_to_drag_cruise": ("Cruise L/D", "", 1.0)}
 
 
@@ -237,7 +237,7 @@ def main():
             print(f"  {mode}: d {output} / d {key}: KKT {table['jacobian'][i][k]:.5g}, re-solve {finite:.5g}")
 
     resized = tables["resized"]
-    manifest = build_manifest("halo sizing, parametric (plan 042)", inputs,
+    manifest = build_manifest("halo sizing, parametric (plan 059)", inputs,
                               dict(zip(resized["outputs"], resized["output_values"])),
                               sensitivity=dict(tables=tables, checks=checked))
     print(f"\nManifest: {write_manifest(path_runs, manifest)}")

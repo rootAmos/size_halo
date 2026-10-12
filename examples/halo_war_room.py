@@ -2,9 +2,9 @@
 
 - Plan 055 (whirl flutter in the sizing loop, PR #37 at bf74c0f): the stiffness the reference lacks to clear
   1.15 V_D (gap.whirl_flutter) and the priced delta-3 and wing-planform trades, from its results table.
-- Plan 042 (impact x uncertainty): what drives range, cruise L/D and take-off mass of the fixed aircraft (80 % of the
+- Plan 059 (impact x uncertainty): what drives range, cruise L/D and take-off mass of the fixed aircraft (80 % of the
   design payload), from a saved parametric table (`examples.halo_parametric`); calibration factors are not ranked.
-- Plan 042 --all: every continuous input with its elasticity on every output (the coverage table), and the trades
+- Plan 059 --all: every continuous input with its elasticity on every output (the coverage table), and the trades
   whose options are moves of continuous inputs priced from it to first order (take-off kg = sum dTOGW/dx dx, the
   re-sized KKT derivatives; confirm large moves by a re-solve).
 
@@ -66,7 +66,7 @@ def feed_drivers(ledger, path, today):
         parametric = pickle.load(file)
     inputs = registry(HaloRequirements(), HaloAssumptions(), calibration_factors(), load_overrides(path_inputs))
     ingest_drivers(ledger, driver_records(parametric, inputs),
-                   "plan 042 fixed aircraft, 80 % payload (36f08aa)", today)
+                   "plan 059 fixed aircraft, 80 % payload (36f08aa)", today)
 
 
 # Discipline of each input, by the first keyword its key contains (order matters).
@@ -218,7 +218,7 @@ def feed_coverage(ledger, path, today):
         if not r.get("note") and comments.get(r["key"].split(".", 1)[1]):
             r["note"] = comments[r["key"].split(".", 1)[1]]
     ingest_coverage(ledger, dict(outputs={m: t["outputs"] for m, t in tables.items()}, inputs=records),
-                    "plan 042 every-input table", today)
+                    "plan 059 every-input table", today)
     resized = tables["resized"]
     row = resized["jacobian"][resized["outputs"].index("mass_takeoff_kg")]
     row_cost = resized["jacobian"][resized["outputs"].index("cost_per_mission_usd")]
@@ -238,9 +238,9 @@ def feed_coverage(ledger, path, today):
             delta_cost = float(sum(derivative_cost[k] * (to(value[k]) - value[k]) for k, to in moves.items())
                                + maintenance_per_kg * delta)
             priced.append(TradeOption(label, "", delta, fraction_sigma_first_order * abs(delta),
-                                      "plan 042 every-input table, first order (KKT); re-solve to confirm",
+                                      "plan 059 every-input table, first order (KKT); re-solve to confirm",
                                       delta_cost_usd=delta_cost))
-        price_trade(ledger, key, priced, "plan 042 every-input table", today)
+        price_trade(ledger, key, priced, "plan 059 every-input table", today)
 
 
 def main(argv=None):

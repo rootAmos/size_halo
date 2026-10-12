@@ -1,4 +1,4 @@
-"""Plan 046: the wing-section thickness reaches the AFDD wing and its stiffness; the family is the default (plan 042)."""
+"""Plan 046: the wing-section thickness reaches the AFDD wing and its stiffness; the family is the default (plan 059)."""
 import unittest
 from dataclasses import replace
 

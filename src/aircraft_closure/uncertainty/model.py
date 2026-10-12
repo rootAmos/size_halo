@@ -1,4 +1,4 @@
-"""Inputs with their certainty, and the outputs they drive (plan 042).
+"""Inputs with their certainty, and the outputs they drive (plan 059).
 
 An input is anything a solve reads: requirement, assumption, technology level, calibration factor, design choice.
 Values are in SI, as the dataclass that holds them. `sigma` is one standard deviation in the same units; a range
