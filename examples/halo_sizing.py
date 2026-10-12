@@ -768,9 +768,19 @@ def halo_whirl_system(inputs, speed_rotor_rad_s, delta3_deg, assumptions):
 
 def warm_start_rotor_speeds(opti, points, speeds_start_rad_s):
     """Starting rotor speed of each point from {point label: rad/s} (e.g. an earlier result's `whirl_flutter`). The
-    flight points start at a generic 100 rad/s, a supersonic tip on the Halo rotor (plan 055)."""
+    flight points start at a generic 100 rad/s, a supersonic tip on the Halo rotor (plan 055). A label with a
+    subsegment or node suffix ("cruise 0/4", plan 060 "piecewise") that the earlier result does not carry takes the
+    speed of the first earlier point of the same segment."""
+    def base(label):
+        head, _, tail = label.rpartition(" ")
+        return head if head and "/" in tail and tail.replace("/", "").isdigit() else label
+
+    speeds_base_rad_s = {}
+    for label, speed_rad_s in speeds_start_rad_s.items():
+        speeds_base_rad_s.setdefault(base(label), speed_rad_s)
     for p in points:
-        speed, start_rad_s = p.speed_rotor_rad_s, speeds_start_rad_s.get(p.condition.label)
+        speed, label = p.speed_rotor_rad_s, p.condition.label
+        start_rad_s = speeds_start_rad_s.get(label, speeds_base_rad_s.get(base(label)))
         if start_rad_s is not None and isinstance(speed, cas.MX) and len(cas.symvar(speed)) == 1:
             symbol = cas.symvar(speed)[0]
             opti.set_initial(symbol, start_rad_s / float(cas.evalf(cas.jacobian(speed, symbol))))

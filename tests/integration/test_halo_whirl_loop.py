@@ -58,3 +58,22 @@ class HaloWhirlLoopTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class WarmStartRotorSpeedTests(unittest.TestCase):
+    def test_node_labels_fall_back_to_their_segment(self):
+        """Plan 060 nodes ("cruise 0/4") take the starting rotor speed of the earlier result's segment; an exact
+        label wins, and a label with no match keeps its own guess."""
+        from types import SimpleNamespace
+
+        import aerosandbox as asb
+
+        from examples.halo_sizing import warm_start_rotor_speeds
+        opti = asb.Opti()
+        points = []
+        for label in ("cruise 0/4", "cruise 1/4", "climb", "ferry 0/2"):
+            x = opti.variable(init_guess=50.0)
+            points.append(SimpleNamespace(speed_rotor_rad_s=2.0 * x, condition=SimpleNamespace(label=label)))
+        warm_start_rotor_speeds(opti, points, {"cruise 1/4": 30.0, "cruise 2/4": 31.0, "climb": 28.0})
+        speeds = [float(opti.value(p.speed_rotor_rad_s, opti.initial())) for p in points]
+        onp.testing.assert_allclose(speeds, [30.0, 30.0, 28.0, 100.0], rtol=1e-12)
