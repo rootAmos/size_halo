@@ -80,7 +80,9 @@ def make_figure(study, jvx, path):
             label=f"Hover FM (D-1 RMS {jvx.hover_fm_rms:.3f})")
     ax.plot(jvx.airplane_eta_measured[ok_a], jvx.airplane_eta_predicted[ok_a], "s", color=orange, ms=7, mec="white",
             label=f"Airplane-mode $\\eta$ (RMS {jvx.airplane_eta_rms:.3f})")
-    ax.set(xlim=(0.25, 0.95), ylim=(0.25, 0.95), xlabel="JVX test (NASA/TM-2016-219070)", ylabel="BEM prediction",
+    ax.set(xlim=(0.25, 0.95), ylim=(0.25, 0.95),
+           xlabel="measured hover FM or airplane-mode $\\eta$\n(JVX test, NASA/TM-2016-219070)",
+           ylabel="predicted hover FM or airplane-mode $\\eta$\n(blade-element momentum)",
            title=f"JVX validation (drag factor {jvx.drag_factor:.2f}; band $\\pm$0.03)")
     ax.legend(frameon=False, fontsize=11, loc="upper left")
     for ax in axes.ravel():
