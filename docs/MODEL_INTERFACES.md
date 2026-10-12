@@ -916,6 +916,21 @@ No new component class: the architecture is multiplicity plus Tier 15
   failure flags; `build_halo_redundancy`, `failure_hover_cases`,
   `halo_failure_hovers`, `HaloSizingResult.count_lanes_motor` and
   `failure_cases`; `assumptions_tier18`.
+
+## All-electric topology (plan 066)
+
+- `build_all_electric(motor, battery, propulsor, count_rotors=2, count_channels_per_rotor=2, electrical=None,
+  redundancy=None, gearbox=None)`: battery -> bus -> `count_rotors x count_channels_per_rotor` channels
+  (with `electrical`: protection_motor -> cable_motor -> inverter_motor -> motor) whose shafts combine on the
+  rotor shaft (direct drive) or on the `gearbox` input. A channel is a Tier 18 lane; a `redundancy` layer must
+  have `count_lanes == count_channels_per_rotor`. The `ElectricalLayer` generator fields may be None.
+- `degraded_state` reads an optional `condition.count_rotors_lane_out` (None = every rotor, the Tier 18
+  behaviour). `DegradedState.count_rotors_degraded`, `count_lanes_active_healthy` and
+  `power_shaft_lane_W(power_shaft_rotor_W, degraded=True)` (rotor power / active lanes; P / (n - 1) with one
+  channel out). `flight_point` is unchanged (series hybrid, symmetric lanes).
+- `examples/all_electric_tiltrotor.py`: `NotionalAllElectricTiltrotor` (literature-sourced inputs),
+  `build_notional_all_electric_tiltrotor(count_channels_per_rotor=3)`, `hover_port_values`,
+  `solve_hover_voltage`.
 ## Geometry export and cross-checks (plan 031)
 
 These functions are optional (they need the OpenVSP API, and PyVista for renders). They read numbers only and are
