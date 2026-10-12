@@ -125,3 +125,21 @@ integrals; the segment's fuel is the mass difference. The trajectory option keep
   to the same value. Node current rises 286 -> 294 A through the hover (constant power, falling OCV).
   Trapezoidal SOC, mass, RC and motor/generator temperature links checked against the solved nodes. Not yet
   run: the Halo sizing with "piecewise" (free memory 0.4 GB; several hundred MB needed).
+- 2026-10-12: Halo sizings (v3.7 reference, warm-started from it; closure < 1e-11, min margin -1e-8):
+
+  | battery_dynamics, subsegments | take-off | empty | fuel burnt | battery | parallel |
+  |---|---|---|---|---|---|
+  | quasi_steady (1,1,4,1,1,1)/3, the reference | 14,356.9 lb | 10,364.6 lb | 1,825.6 lb | 61.49 kWh | 20.16 |
+  | quasi_steady, doubled | 14,345.7 lb | 10,374.4 lb | 1,806.4 lb | 62.54 kWh | 20.51 |
+  | constant_current, default | 14,428 lb | 10,431 lb | | 64.3 kWh | 21.08 |
+  | piecewise, default | 14,343.0 lb | 10,392.8 lb | 1,787.3 lb | 64.08 kWh | 21.01 |
+  | piecewise, doubled | 14,356.9 lb | 10,397.3 lb | 1,795.9 lb | 63.97 kWh | 20.98 |
+
+  The pack converges at about 64.0 kWh with "piecewise" (0.2 % between default and doubled nodes); the
+  reference's mid-SOC end voltage undersizes it by 2.5 kWh (4 %; 62.5 kWh at doubled points, still converging
+  from below), about 30 lb of empty mass. The engine-out hover still binds at 525 V, now at the last node.
+  Take-off barely moves (-14 / +0 lb): the reference evaluates each point at its start mass, so it also
+  overstates fuel (1,826 vs 1,796 lb burnt), offsetting the battery. Within 0.1 % in take-off between node
+  counts. The doubled constant_current run was stopped by the machine (low memory) and not repeated.
+  "piecewise" binds the battery's maximum voltage at the first cruise node (in-flight recharge at the
+  instantaneous voltage); the reference holds that limit on the interval-mean voltage.
