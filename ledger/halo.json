@@ -31,6 +31,14 @@
      "source": "Halo sizing (baseline)",
      "fidelity": 1,
      "note": "sized mass"
+    },
+    {
+     "date": "2026-10-12",
+     "value": 389.8,
+     "sigma": 19.490000000000002,
+     "source": "plan 054 bottom-up wing box and CalculiX",
+     "fidelity": 2,
+     "note": "sandwich webs, hot/wet; v3.6 basis; no calibration factor (XV-15 +9 %, V-22 -10 %)"
     }
    ],
    "sensitivity": 2.5368810508980673,
@@ -40,35 +48,35 @@
     {
      "label": "Size primary structure for every load case (strength, stiffness, whirl flutter) (conceptual design)",
      "due": "2026-12-15",
-     "sigma_after": 36.708309435507175,
+     "sigma_after": 35.082,
      "owner": "Structures",
-     "done": false
+     "done": true
     },
     {
      "label": "Structural layout: joints, fittings, cut-outs and access panels (preliminary design)",
      "due": "2027-03-15",
-     "sigma_after": 28.550907338727807,
+     "sigma_after": 27.286000000000005,
      "owner": "Structures",
-     "done": false
+     "done": true
     },
     {
      "label": "FE sizing with buckling and fatigue; gauges back to the weight model (preliminary design)",
      "due": "2027-03-15",
-     "sigma_after": 20.393505241948432,
+     "sigma_after": 19.490000000000002,
      "owner": "Structures",
-     "done": false
+     "done": true
     },
     {
      "label": "Detail drawings and parts list weight (detailed design)",
      "due": "2027-06-15",
-     "sigma_after": 10.196752620974216,
+     "sigma_after": 9.745000000000001,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Weigh the first article (test and validation)",
      "due": "2027-10-10",
-     "sigma_after": 4.078701048389687,
+     "sigma_after": 3.898,
      "owner": "Structures",
      "done": false
     }
@@ -808,6 +816,14 @@
      "source": "Halo sizing (baseline)",
      "fidelity": 1,
      "note": "sized mass"
+    },
+    {
+     "date": "2026-10-12",
+     "value": 495.1329011675511,
+     "sigma": 35.63403802995403,
+     "source": "plan 060 piecewise battery, converged nodes",
+     "fidelity": 2,
+     "note": "64.1 against 61.5 kWh; take-off -14 lb (the reference also overstates fuel)"
     }
    ],
    "sensitivity": 2.5368810508980673,
@@ -817,28 +833,28 @@
     {
      "label": "Select the cell supplier and confirm the cell datasheet at end of life (conceptual design)",
      "due": "2026-12-15",
-     "sigma_after": 28.507230423963218,
+     "sigma_after": 29.707974070053066,
      "owner": "Electrical",
      "done": false
     },
     {
      "label": "Module design: cell-to-pack mass from a real module (preliminary design)",
      "due": "2027-03-15",
-     "sigma_after": 19.004820282642147,
+     "sigma_after": 19.805316046702043,
      "owner": "Electrical",
      "done": false
     },
     {
      "label": "Thermal-runaway containment test; add what containment needs (preliminary design)",
      "due": "2027-03-15",
-     "sigma_after": 14.253615211981609,
+     "sigma_after": 14.853987035026533,
      "owner": "Electrical",
      "done": false
     },
     {
      "label": "Weigh the first pack (test and validation)",
      "due": "2027-10-10",
-     "sigma_after": 4.751205070660537,
+     "sigma_after": 4.951329011675511,
      "owner": "Electrical",
      "done": false
     }
@@ -1270,6 +1286,14 @@
      "source": "placeholder prior",
      "fidelity": 0,
      "note": ""
+    },
+    {
+     "date": "2026-10-12",
+     "value": 0.0,
+     "sigma": 15.0,
+     "source": "plan 054 bottom-up wing box and CalculiX",
+     "fidelity": 2,
+     "note": "spread: root fittings and the clamped-centreline artefact (+10 % margin) unresolved"
     }
    ],
    "sensitivity": 2.5368810508980673,
@@ -1279,34 +1303,34 @@
     {
      "label": "FE with calibrated structure, root fittings and a buckling step (conceptual design)",
      "due": "2026-12-15",
-     "sigma_after": 24.0,
+     "sigma_after": 0.0,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Size stiffeners or sandwich covers to a non-negative margin (preliminary design)",
      "due": "2027-03-15",
-     "sigma_after": 10.0,
+     "sigma_after": 0.0,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Detail design of the covers (detailed design)",
      "due": "2027-06-15",
-     "sigma_after": 3.2,
+     "sigma_after": 0.0,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Static test of the wing box (test and validation)",
      "due": "2027-10-10",
-     "sigma_after": 0.8,
+     "sigma_after": 0.0,
      "owner": "Structures",
      "done": false
     }
    ],
    "sizing_keys": [],
-   "note": "FE peak cap strain 10 % over the ultimate allowable on raw gauges; 0.83 of it if the 1.33 calibration material is load-carrying",
+   "note": "The plan 054 bottom-up box clears ultimate strength (root strain margin +26 %, CalculiX) and buckling (none below ultimate, hot/wet) at 18 kg less wing than the AFDD reference. Open: root fittings",
    "category": "Maturity increase"
   },
   "input.drag_excrescence": {
@@ -1470,12 +1494,12 @@
    "lock_date": "2026-12-15",
    "evidence": [
     {
-     "date": "2026-10-11",
-     "value": 70.3,
-     "sigma": 35.0,
-     "source": "plan 055 sizing (bf74c0f)",
+     "date": "2026-10-12",
+     "value": 0.0,
+     "sigma": 17.567044909841247,
+     "source": "v3.10 sizing, eigenpair flutter in the loop (plan 057)",
      "fidelity": 1,
-     "note": "take-off +393 lb over the proxy"
+     "note": "constraint in the sizing; the gap is closed in the model"
     }
    ],
    "sensitivity": 2.5368810508980673,
@@ -1485,34 +1509,34 @@
     {
      "label": "Flapping and loads with delta-3 free; flutter-in-the-loop sizing as the reference (plan 055) (conceptual design)",
      "due": "2026-12-15",
-     "sigma_after": 24.604999999999997,
+     "sigma_after": 0.0,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Whole-aircraft symmetric and antisymmetric modes instead of the cantilever (about 10 % conservative) (preliminary design)",
      "due": "2027-03-15",
-     "sigma_after": 14.06,
+     "sigma_after": 0.0,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Second calibration aircraft (V-22 or JVX) for the flutter knockdown (preliminary design)",
      "due": "2027-03-15",
-     "sigma_after": 8.436,
+     "sigma_after": 0.0,
      "owner": "Structures",
      "done": false
     },
     {
      "label": "Ground vibration test of the first article; flutter clearance in flight (test and validation)",
      "due": "2027-10-10",
-     "sigma_after": 2.109,
+     "sigma_after": 0.0,
      "owner": "Structures",
      "done": false
     }
    ],
    "sizing_keys": [],
-   "note": "Take-off +393 lb on stiffness alone over the frequency-placement reference (calibrated flutter 262 kt against 302 kt), as empty mass at the growth factor; 0 if delta-3 -11 deg is accepted (trade.delta3)",
+   "note": "Carried by the v3.10 sizing (calibrated flutter speed >= 1.15 V_D, delta-3 free at -10.9 deg); the spread is the one-aircraft calibration (25 % of the plan 055 stiffness cost). Delta-3 back at -18 deg costs +393 lb (trade.delta3)",
    "category": "Maturity increase"
   }
  },
@@ -3338,7 +3362,7 @@
    "lock_date": "2027-03-15",
    "status": "open",
    "decision": "",
-   "note": "Frequency placement is a proxy the reference meets while fluttering at 262 kt against 302 kt (plan 040). Plan 055 sizes against the calibrated flutter speed directly: +393 lb on stiffness alone (gap.whirl_flutter); recommended margin policy: 1.15 V_D on the calibrated flutter speed",
+   "note": "Frequency placement is a proxy the v3.6 reference met while fluttering at 262 kt against 302 kt (plan 040). Since v3.10 (plan 057) the reference sizes to 1.15 V_D on the calibrated flutter speed (eigenpair, plan 055)",
    "discipline": "",
    "affects": [
     "mass.wing",
@@ -3620,10 +3644,10 @@
      "delta_nonrecurring_usd": null
     },
     {
-     "label": "AR 7.0, 28 % (thickness at its bound)",
+     "label": "AR 7.2, 27 % (calibrated flutter speed)",
      "quantity": "",
-     "delta_mean": -137.89224446843448,
-     "delta_sigma": 34.47306111710862,
+     "delta_mean": -158.7575183024739,
+     "delta_sigma": 39.689379575618474,
      "source": "plan 055 sizing (bf74c0f); sigma 25% of the change, assumed",
      "delta_cost_usd": null,
      "delta_nonrecurring_usd": null
@@ -3633,7 +3657,7 @@
    "lock_date": "2026-12-15",
    "status": "open",
    "decision": "",
-   "note": "Against the frequency proxy the optimizer thins and stretches the wing into flutter (AR 8.5: 188 kt); against the calibrated flutter speed it goes longer and thicker. Section chosen offline, thickness scaled only",
+   "note": "Against the frequency proxy the optimizer thins and stretches the wing into flutter (AR 8.5: 188 kt); against the calibrated flutter speed it goes longer and thicker (AR 7.2, 27 %: -350 lb with delta-3 free, plan 055). Section chosen offline, thickness scaled only",
    "discipline": "",
    "affects": [
     "mass.wing",
@@ -3649,24 +3673,24 @@
   },
   "trade.delta3": {
    "key": "trade.delta3",
-   "label": "Rotor pitch-flap coupling delta-3 (-18 deg today, the XV-15's)",
+   "label": "Rotor pitch-flap coupling delta-3 (-10.9 deg today, free in the sizing)",
    "owner": "Rotor and drive",
    "options": [
     {
-     "label": "-18 deg (the XV-15's)",
+     "label": "-10.9 deg, free in the sizing (today; flapping cost not modelled)",
      "quantity": "",
      "delta_mean": 0.0,
-     "delta_sigma": 0.0,
-     "source": "plan 055 sizing (bf74c0f); sigma 25% of the change, assumed",
+     "delta_sigma": 178.26201340820643,
+     "source": "v3.10 sizing, eigenpair flutter in the loop (plan 057); sigma the whole -18 deg cost until flapping is modelled",
      "delta_cost_usd": null,
      "delta_nonrecurring_usd": null
     },
     {
-     "label": "-11 deg (flapping cost not modelled)",
+     "label": "-18 deg (the XV-15's)",
      "quantity": "",
-     "delta_mean": -178.26201340820643,
-     "delta_sigma": 178.26201340820643,
-     "source": "plan 055 sizing (bf74c0f); sigma 100% of the change, assumed",
+     "delta_mean": 178.26201340820643,
+     "delta_sigma": 44.56550335205161,
+     "source": "plan 055 sizing (bf74c0f); sigma 25% of the change, assumed",
      "delta_cost_usd": null,
      "delta_nonrecurring_usd": null
     }
@@ -3675,7 +3699,7 @@
    "lock_date": "2027-03-15",
    "status": "open",
    "decision": "",
-   "note": "The strongest whirl-flutter lever, free of weight in the model; its cost is gimbal flapping (limit 9 deg: the XV-15's 12 deg stop less 3 deg), not modelled yet, and the flutter calibration was fitted at -18 deg",
+   "note": "The strongest whirl-flutter lever: the v3.10 reference takes it free (-10.9 deg, near its -10 deg bound) instead of the XV-15's -18 deg. Its cost is gimbal flapping (limit 9 deg: the XV-15's 12 deg stop less 3 deg), not modelled yet, and the flutter calibration was fitted at -18 deg",
    "discipline": "",
    "affects": [
     "gap.whirl_flutter",
@@ -4515,6 +4539,48 @@
   },
   {
    "date": "2026-10-11",
+   "source": "handbook estimate",
+   "kind": "trade",
+   "summary": "Tilt spindle and fittings: titanium, steel or composite: 2 options priced"
+  },
+  {
+   "date": "2026-10-12",
+   "source": "v3.10 sizing, eigenpair flutter in the loop (plan 057)",
+   "kind": "evidence",
+   "summary": "Wing stiffness to clear whirl flutter at 1.15 V_D: 0 ± 18 kg → belief 0 ± 18"
+  },
+  {
+   "date": "2026-10-12",
+   "source": "plan 055 sizing (bf74c0f)",
+   "kind": "trade",
+   "summary": "Rotor pitch-flap coupling delta-3 (-10.9 deg today, free in the sizing): 2 options priced"
+  },
+  {
+   "date": "2026-10-12",
+   "source": "plan 055 sizing (bf74c0f)",
+   "kind": "trade",
+   "summary": "Wing aspect ratio and thickness against whirl flutter (AR 6.12, 23 % today): 2 options priced"
+  },
+  {
+   "date": "2026-10-12",
+   "source": "plan 054 bottom-up wing box and CalculiX",
+   "kind": "evidence",
+   "summary": "Wing: 389.8 ± 19 kg → belief 389.8 ± 19"
+  },
+  {
+   "date": "2026-10-12",
+   "source": "plan 054 bottom-up wing box and CalculiX",
+   "kind": "evidence",
+   "summary": "Wing structure added for ultimate strength: 0 ± 15 kg → belief 0 ± 15"
+  },
+  {
+   "date": "2026-10-12",
+   "source": "plan 060 piecewise battery, converged nodes",
+   "kind": "evidence",
+   "summary": "Battery: 495.1 ± 36 kg → belief 495.1 ± 36"
+  },
+  {
+   "date": "2026-10-12",
    "source": "handbook estimate",
    "kind": "trade",
    "summary": "Tilt spindle and fittings: titanium, steel or composite: 2 options priced"
@@ -12678,6 +12744,482 @@
     {
      "key": "gap.wing_strength",
      "value_kg": 23.29
+    }
+   ]
+  },
+  {
+   "date": "2026-10-12",
+   "source": "v3.10 sizing, eigenpair flutter in the loop (plan 057)",
+   "sigma_takeoff_kg": 464.38,
+   "margin_99_kg": 1080.29,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.delta3",
+     "value_kg": 178.26
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 79.13
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.58
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.62
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    }
+   ]
+  },
+  {
+   "date": "2026-10-12",
+   "source": "plan 055 sizing (bf74c0f)",
+   "sigma_takeoff_kg": 464.38,
+   "margin_99_kg": 1080.29,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 137.89
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 79.13
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.58
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.62
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 21.88
+    }
+   ]
+  },
+  {
+   "date": "2026-10-12",
+   "source": "plan 055 sizing (bf74c0f)",
+   "sigma_takeoff_kg": 464.38,
+   "margin_99_kg": 1080.29,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 158.76
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 79.13
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 24.58
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 23.62
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 21.88
+    }
+   ]
+  },
+  {
+   "date": "2026-10-12",
+   "source": "plan 054 bottom-up wing box and CalculiX",
+   "sigma_takeoff_kg": 455.4,
+   "margin_99_kg": 1059.39,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 158.76
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 80.82
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 25.08
+    },
+    {
+     "key": "gap.wing_strength",
+     "value_kg": 24.09
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 22.32
+    }
+   ]
+  },
+  {
+   "date": "2026-10-12",
+   "source": "plan 054 bottom-up wing box and CalculiX",
+   "sigma_takeoff_kg": 442.5,
+   "margin_99_kg": 1029.38,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 158.76
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 83.38
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 25.83
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 22.99
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 15.72
+    }
+   ]
+  },
+  {
+   "date": "2026-10-12",
+   "source": "plan 060 piecewise battery, converged nodes",
+   "sigma_takeoff_kg": 442.5,
+   "margin_99_kg": 1029.38,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 158.76
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 83.38
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 25.83
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 22.99
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 15.72
+    }
+   ]
+  },
+  {
+   "date": "2026-10-12",
+   "source": "handbook estimate",
+   "sigma_takeoff_kg": 442.5,
+   "margin_99_kg": 1029.38,
+   "top": [
+    {
+     "key": "trade.redundancy_level",
+     "value_kg": 554.54
+    },
+    {
+     "key": "trade.payload_range",
+     "value_kg": 312.32
+    },
+    {
+     "key": "trade.hover_cases",
+     "value_kg": 276.69
+    },
+    {
+     "key": "trade.fuselage_material",
+     "value_kg": 172.11
+    },
+    {
+     "key": "trade.wing_planform",
+     "value_kg": 158.76
+    },
+    {
+     "key": "trade.load_factors",
+     "value_kg": 148.36
+    },
+    {
+     "key": "gap.hv_installation",
+     "value_kg": 83.38
+    },
+    {
+     "key": "trade.battery_reserve",
+     "value_kg": 65.62
+    },
+    {
+     "key": "trade.battery_life",
+     "value_kg": 63.45
+    },
+    {
+     "key": "trade.rotor_span",
+     "value_kg": 29.73
+    },
+    {
+     "key": "rotor_radius_m",
+     "value_kg": 26.41
+    },
+    {
+     "key": "gap.tilt_fittings",
+     "value_kg": 25.83
+    },
+    {
+     "key": "engine-out hover 3/3: battery end voltage_V",
+     "value_kg": 23.37
+    },
+    {
+     "key": "mass.systems",
+     "value_kg": 22.99
+    },
+    {
+     "key": "mass.rotors",
+     "value_kg": 15.72
     }
    ]
   }

@@ -1,7 +1,8 @@
 """War-room feed: model results into the master ledger and the dashboard view, without re-solving.
 
-- Plan 055 (whirl flutter in the sizing loop, PR #37 at bf74c0f): the stiffness the reference lacks to clear
-  1.15 V_D (gap.whirl_flutter) and the priced delta-3 and wing-planform trades, from its results table.
+- Plan 055 and v3.10 (plan 057): whirl flutter is in the reference sizing, so gap.whirl_flutter is closed in the
+  model (its spread is the calibration); delta-3 and wing-planform trades priced from the plan 055 table.
+- Plan 054 (FE-checked bottom-up wing box) and plan 060 (converged battery nodes) as evidence.
 - Plan 059 (impact x uncertainty): what drives range, cruise L/D and take-off mass of the fixed aircraft (80 % of the
   design payload), from a saved parametric table (`examples.halo_parametric`); calibration factors are not ranked.
 - Plan 059 --all: every continuous input with its elasticity on every output (the coverage table), and the trades
@@ -12,6 +13,7 @@
                                      [--all output/parametric_all.pkl]
 """
 import argparse
+import os
 import pickle
 from datetime import date
 
@@ -19,7 +21,7 @@ from aircraft_closure.ledger.ingest import ingest_coverage, ingest_drivers, inge
 from aircraft_closure.ledger.model import Quantity, TradeOption
 from aircraft_closure.ledger.store import load
 from aircraft_closure.uncertainty.registry import load_overrides
-from examples.halo_ledger import apply_paths, apply_schedule, classify, gaps, gates, path_ledger, write
+from examples.halo_ledger import apply_paths, apply_schedule, classify, gaps, gates, path_ledger, source_sizing, write
 from examples.halo_parametric import coverage_records, driver_records, path_inputs, registry
 from examples.halo_sizing import HaloAssumptions, HaloRequirements
 from examples.halo_trades import register
@@ -31,10 +33,18 @@ source_055 = "plan 055 sizing (bf74c0f)"
 takeoff_055_lb = dict(proxy=13_834, loop=14_227, delta3=13_834, wing=13_923, all=13_484)
 # Option uncertainty: the flutter calibration rests on one aircraft (XV-15); 25 % of each change, assumed.
 fraction_sigma_055 = 0.25
-
-
 # Delta-3's cost (gimbal flapping, limit 9 deg) is not modelled yet: its whole gain is uncertain until it is.
 fraction_sigma_delta3 = 1.0
+# Since v3.10 (plan 057, PR #41) the reference sizes against the calibrated flutter speed with delta-3 free
+# (-10.9 deg): the stiffness the plan 055 gap stood for is carried by the sizing.
+source_v310 = "v3.10 sizing, eigenpair flutter in the loop (plan 057)"
+# Plan 054 (bottom-up wing box, sandwich webs, hot/wet; v3.6 basis): CalculiX root strain margin +26 % over ultimate,
+# no web or cover buckling below ultimate; wing 389.8 kg against the AFDD reference's 407.9 kg.
+source_054 = "plan 054 bottom-up wing box and CalculiX"
+mass_wing_054_kg = 389.8
+# Plan 060 (piecewise battery voltage on nodes): the pack converges at 64.08 kWh against the reference's 61.49 kWh.
+source_060 = "plan 060 piecewise battery, converged nodes"
+ratio_battery_060 = 64.08 / 61.49
 
 
 def option(label, case, reference="loop", fraction_sigma=fraction_sigma_055):
@@ -49,24 +59,57 @@ def feed_flutter(ledger, today):
         ledger.quantities[key] = Quantity(key, label, "gap", "kg", owner, gate, gates[gate], note=note)
     q = ledger.quantities[key]
     q.sensitivity, q.sensitivity_source = ledger.growth_factor, "growth factor, latest sizing"
-    ingest_evidence(ledger, key, mass, sigma, source, fidelity, today, note="take-off +393 lb over the proxy")
-    price_trade(ledger, "trade.delta3", [
-        option("-18 deg (the XV-15's)", "loop"),
-        option("-11 deg (flapping cost not modelled)", "delta3", fraction_sigma=fraction_sigma_delta3)],
-        source_055, today)
-    # The wing alone (delta-3 at -18 deg), so the two trades do not count the delta-3 gain twice; together they reach
-    # 13,484 lb (AR 7.2, 27 %, delta-3 -10 deg), 743 lb under the compliant reference.
+    # The plan 055 gap (+393 lb over the proxy reference) is superseded: the reference now carries the constraint.
+    q.evidence = [e for e in q.evidence if e.source != source_055]
+    q.note = ("Carried by the v3.10 sizing (calibrated flutter speed >= 1.15 V_D, delta-3 free at -10.9 deg); the "
+              "spread is the one-aircraft calibration (25 % of the plan 055 stiffness cost). Delta-3 back at -18 deg "
+              "costs +393 lb (trade.delta3)")
+    stiffness_kg = (takeoff_055_lb["loop"] - takeoff_055_lb["proxy"]) / lb / ledger.growth_factor
+    ingest_evidence(ledger, key, 0.0, fraction_sigma_055 * stiffness_kg, source_v310, 1, today,
+                    note="constraint in the sizing; the gap is closed in the model")
+    # The -10.9 deg reference carries the flapping risk: if the flapping limit forces delta-3 back, the 393 lb return.
+    back = option("-18 deg (the XV-15's)", "loop", "delta3")
+    today_option = TradeOption("-10.9 deg, free in the sizing (today; flapping cost not modelled)", "", 0.0,
+                               fraction_sigma_delta3 * abs(back.delta_mean),
+                               f"{source_v310}; sigma the whole -18 deg cost until flapping is modelled")
+    price_trade(ledger, "trade.delta3", [today_option, back], source_055, today)
+    # The wing on top of delta-3 free (plan 055 "all": AR 7.2, 27 %, delta-3 -10 deg), as the v3.10 reference has it.
     price_trade(ledger, "trade.wing_planform", [
-        option("AR 6.12, 23 % (today)", "loop"), option("AR 7.0, 28 % (thickness at its bound)", "wing")],
+        option("AR 6.12, 23 % (today)", "delta3", "delta3"),
+        option("AR 7.2, 27 % (calibrated flutter speed)", "all", "delta3")],
         source_055, today)
 
 
-def feed_drivers(ledger, path, today):
-    with open(path, "rb") as file:
-        parametric = pickle.load(file)
+def feed_structures(ledger, today):
+    """Plan 054: the FE-checked bottom-up wing box as wing mass evidence, and the wing strength gap it closes."""
+    ingest_evidence(ledger, "mass.wing", mass_wing_054_kg, 0.05 * mass_wing_054_kg, source_054, 2, today,
+                    note="sandwich webs, hot/wet; v3.6 basis; no calibration factor (XV-15 +9 %, V-22 -10 %)")
+    q = ledger.quantities["gap.wing_strength"]
+    q.note = ("The plan 054 bottom-up box clears ultimate strength (root strain margin +26 %, CalculiX) and buckling "
+              "(none below ultimate, hot/wet) at 18 kg less wing than the AFDD reference. Open: root fittings")
+    ingest_evidence(ledger, "gap.wing_strength", 0.0, 15.0, source_054, 2, today,
+                    note="spread: root fittings and the clamped-centreline artefact (+10 % margin) unresolved")
+
+
+def feed_battery(ledger, today):
+    """Plan 060: the converged node discretization sizes the pack 4 % larger than the reference's points."""
+    q = ledger.quantities["mass.battery"]
+    sized = next(e for e in reversed(q.evidence) if e.source == source_sizing)
+    ingest_evidence(ledger, "mass.battery", sized.value * ratio_battery_060, sized.sigma, source_060, 2, today,
+                    note="64.1 against 61.5 kWh; take-off -14 lb (the reference also overstates fuel)")
+
+
+def feed_drivers(ledger, path, today, path_all=None):
+    """Range and L/D drivers of the fixed aircraft; from the every-input table's fixed mode when `path` is absent."""
+    if os.path.exists(path):
+        with open(path, "rb") as file:
+            parametric = pickle.load(file)
+    else:
+        with open(path_all, "rb") as file:
+            parametric = pickle.load(file)["tables"]["fixed"]
     inputs = registry(HaloRequirements(), HaloAssumptions(), calibration_factors(), load_overrides(path_inputs))
     ingest_drivers(ledger, driver_records(parametric, inputs),
-                   "plan 059 fixed aircraft, 80 % payload (36f08aa)", today)
+                   "plan 059 fixed aircraft, 80 % payload", today)
 
 
 # Discipline of each input, by the first keyword its key contains (order matters).
@@ -261,8 +304,13 @@ def main(argv=None):
     ledger = load(path_ledger)
     added, retired = register(ledger, gates, today.isoformat())
     feed_flutter(ledger, today)
-    feed_drivers(ledger, args.parametric, today)
-    feed_coverage(ledger, args.all, today)
+    feed_structures(ledger, today)
+    feed_battery(ledger, today)
+    # Without the solved tables the driver and coverage tables stay as last ingested (their dates say so).
+    if os.path.exists(args.parametric) or os.path.exists(args.all):
+        feed_drivers(ledger, args.parametric, today, args.all)
+    if os.path.exists(args.all):
+        feed_coverage(ledger, args.all, today)
     feed_estimates(ledger, today)
     classify(ledger)
     apply_paths(ledger)
