@@ -1,0 +1,492 @@
+<title>Halo Decision Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a war-room board. Summary strip, then the ranked priority list beside the risk-versus-schedule map, then burn-down and the log. */
+:root {
+  --bg: #f4f6f7; --panel: #ffffff; --ink: #14212b; --muted: #5b6b77; --rule: #d9e0e4; --rule-soft: #e9eef0;
+  --accent: #1d5ea8; --accent-soft: rgba(29, 94, 168, .10);
+  --t-req: #b0661a; --t-arch: #1d5ea8; --t-tech: #13837a; --t-margin: #7a4fb4; --t-evid: #5b6b77; --t-verif: #a8326e;
+  --crit: #c2362b; --warn: #b7791f; --good: #2f7d4f;
+  --display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f161c; --panel: #16212a; --ink: #e3eaee; --muted: #93a3ae; --rule: #2a3843; --rule-soft: #1f2b35;
+  --accent: #6aa6ec; --accent-soft: rgba(106, 166, 236, .14);
+  --t-req: #e0a05a; --t-arch: #6aa6ec; --t-tech: #4cc2b5; --t-margin: #b393e6; --t-evid: #9aa8b2; --t-verif: #e57aa8;
+  --crit: #ef6b5f; --warn: #e3ac4f; --good: #5fbf86; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0f161c; --panel: #16212a; --ink: #e3eaee; --muted: #93a3ae; --rule: #2a3843; --rule-soft: #1f2b35;
+  --accent: #6aa6ec; --accent-soft: rgba(106, 166, 236, .14);
+  --t-req: #e0a05a; --t-arch: #6aa6ec; --t-tech: #4cc2b5; --t-margin: #b393e6; --t-evid: #9aa8b2; --t-verif: #e57aa8;
+  --crit: #ef6b5f; --warn: #e3ac4f; --good: #5fbf86; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body); }
+.wrap { max-width: 1280px; margin: 0 auto; padding-inline: 20px; padding-block: 20px 48px; display: grid; gap: 20px; }
+h1, h2 { font-family: var(--display); font-weight: 600; margin: 0; text-wrap: balance; letter-spacing: .01em; }
+h1 { font-size: 30px; line-height: 1.1; }
+h2 { font-size: 19px; }
+.eyebrow { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; }
+header .meta { color: var(--muted); font-size: 13px; }
+.strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.stat { background: var(--panel); padding: 12px 14px; display: grid; gap: 4px; }
+.stat b { font: 600 24px/1.1 var(--display); }
+.stat b.crit { color: var(--crit); }
+.stat span { font-size: 12px; color: var(--muted); }
+.panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; min-width: 0; display: grid; gap: 12px; align-content: start; }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 20px; }
+@media (max-width: 980px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.lede { margin: 0; color: var(--muted); max-width: 70ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { font: 500 12px/1 var(--body); border: 1px solid var(--rule); background: transparent; color: var(--ink); border-radius: 999px; padding: 6px 10px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.chip[aria-pressed="false"] { color: var(--muted); opacity: .6; }
+.chip:focus-visible, select:focus-visible, button:focus-visible, tr:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+select { font: 13px var(--body); color: var(--ink); background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; padding: 5px 8px; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 720px; }
+th { font: 500 11px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+td { padding: 9px 8px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+tbody tr.row { cursor: pointer; }
+tbody tr.row:hover { background: var(--accent-soft); }
+td.rank { font: 500 13px var(--mono); color: var(--muted); width: 32px; }
+.item { font-weight: 500; }
+.sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.kind { font: 500 11px/1 var(--body); display: inline-flex; gap: 5px; align-items: center; white-space: nowrap; }
+.range { position: relative; height: 14px; min-width: 120px; }
+.range .track { position: absolute; inset: 6px 0; background: var(--rule-soft); border-radius: 2px; }
+.range .band { position: absolute; top: 4px; height: 6px; border-radius: 3px; opacity: .35; }
+.range .mark { position: absolute; top: 1px; width: 3px; height: 12px; border-radius: 1px; }
+.pill { font: 500 11px/1 var(--body); border-radius: 3px; padding: 3px 6px; white-space: nowrap; display: inline-block; }
+.pill.crit { background: color-mix(in srgb, var(--crit) 16%, transparent); color: var(--crit); }
+.pill.warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.pill.ok { color: var(--muted); }
+tr.detail td { background: var(--bg); font-size: 13px; }
+tr.detail .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 24px; }
+tr.detail h3 { font: 500 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+tr.detail ul { margin: 0; padding-left: 16px; }
+svg text { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+svg .lab { fill: var(--ink); font-weight: 500; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); }
+.log { display: grid; gap: 0; }
+.log div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--rule-soft); font-size: 13px; }
+.log .src { color: var(--muted); }
+a { color: var(--accent); }
+.empty { color: var(--muted); padding: 24px 0; }
+ol.path { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+ol.path li.done { color: var(--muted); }
+tr.phase td { background: var(--bg); border-bottom: 1px solid var(--rule); padding-top: 14px; }
+tr.phase b { font: 600 15px var(--display); margin: 0 8px; }
+table.matrix { min-width: 760px; }
+table.matrix th[scope="row"] { font: 500 13px var(--body); text-transform: none; letter-spacing: 0; color: var(--ink); white-space: nowrap; }
+table.matrix thead th { white-space: normal; vertical-align: bottom; }
+.mcell { border: 1px solid var(--panel); min-width: 96px; }
+.mcell b { font-size: 13px; }
+.empty-cell { color: var(--muted); text-align: center; }
+.gates { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px; }
+.gate h3 { font: 600 15px/1.2 var(--display); margin: 0 0 2px; }
+.gate .when { font: 12px var(--mono); color: var(--muted); margin-bottom: 8px; }
+.gate ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.gate li { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 8px; font-size: 13px; align-items: baseline; }
+.tag { font: 500 10.5px/1 var(--body); border-radius: 3px; padding: 3px 5px; text-align: center; white-space: nowrap; }
+.tag.priced { background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good); }
+.tag.model { background: var(--accent-soft); color: var(--accent); }
+.tag.owner { background: var(--rule-soft); color: var(--muted); }
+.tag.decided { background: var(--ink); color: var(--panel); }
+.tag.b0 { background: var(--accent-soft); color: var(--accent); }
+.tag.b1 { background: color-mix(in srgb, var(--t-margin) 16%, transparent); color: var(--t-margin); }
+@media (prefers-reduced-motion: no-preference) { tbody tr.row { transition: background .12s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div style="display:grid;gap:6px">
+      <span class="eyebrow">Chief engineer's war room</span>
+      <h1 id="title">Halo Decision Ledger</h1>
+    </div>
+    <div class="meta" id="meta">Loading the ledger…</div>
+  </header>
+
+  <section class="strip" id="strip" aria-label="Weight status"></section>
+  <p class="sub" id="cost-basis" style="margin:-12px 0 0">Cost per mission, scaled-maintenance option of the cost model: capital (airframe USD 1,500/kg, machines USD 150/kW, turboshafts USD 500/kW over 7,000 missions), Jet-A USD 3.20/gal, electricity USD 0.20/kWh, battery USD 500/kWh over 1,000 cycles and its calendar life, operations USD 200/flight hour, airframe maintenance USD 0.10/kg per flight hour, turboshaft maintenance USD 0.12/kW per flight hour, electric machines USD 0.02/kW per flight hour. Rates other than the energy prices are assumptions.</p>
+
+  <section class="panel" aria-labelledby="h-matrix">
+    <div style="display:grid;gap:4px">
+      <h2 id="h-matrix">Opportunity/design phase</h2>
+      <p class="lede">Programme phase against decision type: the weight opportunity (take-off lb each cell's decisions can save), shaded by size.</p>
+    </div>
+    <div class="tablewrap" id="matrix"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-cover">
+    <div style="display:grid;gap:4px">
+      <h2 id="h-cover">Design Variable Impact Matrix</h2>
+    </div>
+    <div class="controls">
+      <label for="cover-q" class="sub">Search</label>
+      <input id="cover-q" type="search" placeholder="torque box, drag, battery…" style="font:13px var(--body);color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:5px 8px;min-width:200px">
+      <label for="cover-group" class="sub">Discipline</label>
+      <select id="cover-group"><option value="">All disciplines</option></select>
+      <label for="cover-sort" class="sub">Sort by</label>
+      <select id="cover-sort"></select>
+      <label class="sub"><input type="checkbox" id="cover-used"> only inputs that move something</label>
+    </div>
+    <div class="tablewrap" style="max-height:640px;overflow-y:auto"><table id="cover"></table></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel" aria-labelledby="h-rank">
+      <div style="display:grid;gap:4px">
+        <span class="eyebrow" id="rank-eyebrow">Working draft</span>
+        <h2 id="h-rank">Road to EIS</h2>
+        <p class="lede">Grouped by the phase in which each decision locks and ranked within it by its weight opportunity: the take-off weight it can save. Increasing maturity saves the 99 % margin we no longer have to carry; the other types save weight directly. Bars show the range on a common scale.</p>
+      </div>
+      <div class="controls">
+        <div class="controls" id="kinds" role="group" aria-label="Filter by decision type"></div>
+        <label for="phase" class="sub">Phase</label>
+        <select id="phase"><option value="">All phases</option></select>
+        <label for="owner" class="sub">Owner</label>
+        <select id="owner"><option value="">All owners</option></select>
+        <label for="sort" class="sub">Sort</label>
+        <select id="sort">
+          <option value="value">Weight opportunity</option>
+          <option value="cost">Lifecycle cost per aircraft</option>
+          <option value="payload">Payload freed</option>
+          <option value="range">Range gained</option>
+          <option value="urgency">Weight opportunity per week to lock</option>
+        </select>
+        <label class="sub"><input type="checkbox" id="group-phase" checked> group by phase</label>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>#</th><th>Decision</th><th>Type</th><th>Weight opportunity, lb</th><th class="num">Expected</th><th class="num" title="Lifecycle operating cost per aircraft it can save: cost per mission x missions in the airframe life">Lifecycle $k</th><th class="num" title="Payload freed at the same take-off weight: take-off saving / growth factor">Payload lb</th><th class="num" title="Range the as-built aircraft gains from the empty weight freed">Range nm</th><th>Lock</th><th>Owner</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="10" class="empty">The ranking appears once the ledger loads.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div style="display:grid;gap:20px;align-content:start;min-width:0">
+      <section class="panel" aria-labelledby="h-map">
+        <h2 id="h-map">Risk against schedule</h2>
+        <p class="lede">What each decision is worth against the days left until it must be frozen. Top left is where to look first.</p>
+        <div class="controls"><label for="map-y" class="sub">Value</label>
+          <select id="map-y"><option value="weight">Weight opportunity, lb</option><option value="cost">Lifecycle cost per aircraft, $k</option><option value="payload">Payload freed, lb</option><option value="range">Range gained as built, nm</option></select></div>
+        <div id="map"></div>
+        <div class="legend" id="legend"></div>
+      </section>
+      <section class="panel" aria-labelledby="h-burn">
+        <h2 id="h-burn">Burn-down</h2>
+        <p class="lede">The 99 % take-off margin the uncertainty forces us to carry, after each ingest.</p>
+        <div id="burn"></div>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel" aria-labelledby="h-reg">
+    <div style="display:grid;gap:4px">
+      <h2 id="h-reg">Decision ledger by programme phase</h2>
+      <p class="lede" id="reg-lede">Decisions taken and open, by the programme phase in which they lock.</p>
+    </div>
+    <div id="register"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-log">
+    <h2 id="h-log">Ledger log</h2>
+    <div class="log" id="log"></div>
+  </section>
+</div>
+
+<script>
+const LB = 2.20462;
+const TYPES = {
+  "Requirement": { color: "--t-req", q: "What it must do" },
+  "Architecture": { color: "--t-arch", q: "How the parts fit and fail" },
+  "Technology and material": { color: "--t-tech", q: "What it is made of and with" },
+  "Margin policy": { color: "--t-margin", q: "How much margin and redundancy we buy" },
+  "Maturity increase": { color: "--t-evid", q: "Firm up an estimate before we commit: select, verify, size, lay out, weigh" },
+  "Verification": { color: "--t-verif", q: "How we will prove it" },
+};
+const state = { kinds: new Set(Object.keys(TYPES)), owner: "", phase: "", sort: "value", open: null, grouped: true };
+try { const s = JSON.parse(localStorage.getItem("ledger-view") || "{}"); if (s.sort) state.sort = s.sort; if (s.owner) state.owner = s.owner; if (s.phase) state.phase = s.phase; } catch (e) {}
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = (kg, d = 0) => kg == null || !isFinite(kg) ? "—" : (kg * LB).toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d });
+const usd = v => v == null || !isFinite(v) ? "—" : (v / 1e3).toLocaleString("en-US", { maximumFractionDigits: 0 });
+const kindColor = k => `var(${(TYPES[k] || TYPES["Maturity increase"]).color})`;
+let V = null;
+
+function remember() { try { localStorage.setItem("ledger-view", JSON.stringify({ sort: state.sort, owner: state.owner, phase: state.phase })); } catch (e) {} }
+
+// Unit cost of the re-sized reference, the cargo equivalent of CASM: cost per mission / (payload kg x range nm).
+function unitCost() {
+  const u = V.unit_cost || {};
+  if (u.usd_per_kg_nm == null) return ["—", "USD per payload kg-nm", ""];
+  return [`$${u.usd_per_kg_nm.toFixed(4)}`, `USD per payload kg-nm: $${Math.round(u.cost_per_mission_usd).toLocaleString("en-US")} per mission for ${fmtKg(u.mass_payload_kg)} kg over ${Math.round(u.range_nm)} nm`, ""];
+}
+const fmtKg = kg => Math.round(kg).toLocaleString("en-US");
+
+function summary() {
+  const p = V.portfolio, b = V.baseline || {};
+  const blind = V.priorities.filter(r => r.value_kg == null).length;
+  const flagged = V.priorities.filter(r => r.schedule).length;
+  const stats = [
+    [fmt(b.mass_takeoff_kg), "lb take-off, sized baseline", ""],
+    [fmt(p.takeoff_predicted_kg), "lb predicted with allowances and gaps (first order)", "crit"],
+    [fmt(p.takeoff_99_kg), "lb at 99 % confidence", "crit"],
+    [`±${fmt(p.sigma_takeoff_kg)}`, "lb take-off spread (1σ)", ""],
+    [fmt(p.allowance_empty_kg + p.gaps_empty_kg), `lb empty growth (allowance ${fmt(p.allowance_empty_kg)}, gaps ${fmt(p.gaps_empty_kg)}) against ${fmt(b.mass_payload_kg)} lb payload`, p.allowance_empty_kg + p.gaps_empty_kg > b.mass_payload_kg ? "crit" : ""],
+    unitCost(),
+    [String(blind), "unvalued: no sensitivity or option data yet", blind ? "crit" : ""],
+    [String(flagged), "schedule flags", flagged ? "crit" : ""],
+  ];
+  $("strip").innerHTML = stats.map(([v, l, c]) => `<div class="stat"><b class="num ${c}">${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+  $("meta").innerHTML = `As of <span class="num">${esc(V.as_of)}</span> · growth factor <span class="num">${V.growth_factor == null ? "—" : V.growth_factor.toFixed(2)}</span> lb take-off per lb empty · ${V.priorities.length} items tracked`;
+}
+
+function filtered() {
+  let rows = V.priorities.filter(r => state.kinds.has(r.category) && (!state.owner || r.owner === state.owner)
+    && (!state.phase || r.phase === state.phase));
+  const by = { cost: "value_usd", payload: "value_payload_kg", range: "value_range_nm" }[state.sort];
+  if (by) rows = rows.slice().sort((a, b) => (b[by] ?? -1) - (a[by] ?? -1));
+  if (state.sort === "urgency") {
+    const u = r => r.value_kg == null ? -1 : r.value_kg / Math.max((r.days_to_lock ?? 3650) / 7, 1);
+    rows = rows.slice().sort((a, b) => u(b) - u(a));
+  }
+  return rows;
+}
+
+function schedulePill(r) {
+  if (!r.schedule) return r.lock_date ? `<span class="num">${esc(r.lock_date)}</span><div class="sub num">${r.days_to_lock} days</div>` : `<span class="sub">no lock date</span>`;
+  const cls = r.schedule === "past lock" || r.schedule === "overdue" ? "crit" : "warn";
+  return `<span class="num">${esc(r.lock_date || "")}</span><div><span class="pill ${cls}">${esc(r.schedule)}</span></div>`;
+}
+
+function rangeBar(r, max) {
+  if (r.value_kg == null) return `<span class="sub">unknown</span>`;
+  const x = v => Math.max(0, Math.min(100, 100 * v / max));
+  const lo = x(Math.min(r.value_low_kg, r.value_high_kg)), hi = x(Math.max(r.value_low_kg, r.value_high_kg));
+  const c = kindColor(r.kind);
+  return `<div class="range" title="${fmt(r.value_low_kg)} to ${fmt(r.value_high_kg)} lb"><div class="track"></div><div class="band" style="left:${lo}%;width:${Math.max(hi - lo, .8)}%;background:${c}"></div><div class="mark" style="left:calc(${x(r.value_kg)}% - 1px);background:${c}"></div></div><div class="sub num">${fmt(r.value_low_kg)} to ${fmt(r.value_high_kg)}</div>`;
+}
+
+function detail(r) {
+  const q = V.quantities.find(q => q.key === r.key);
+  const parts = [`<div><h3>Why it ranks here</h3><div>${esc(r.detail)}</div>${r.share != null ? `<div class="sub">${(100 * r.share).toFixed(1)} % of the take-off variance</div>` : ""}${r.exposure_kg ? `<div class="sub">Exposure: ${fmt(r.exposure_kg)} lb take-off ${r.kind === "model gap" ? "(unbooked mean plus a 2σ overrun)" : r.kind === "decide trade" ? "(90 % half-range)" : "(2σ overrun)"}</div>` : ""}</div>`,
+    `<div><h3>Next action</h3><div>${esc(r.action)}</div></div>`];
+  const t = (V.trades || []).find(t => t.key === r.key);
+  if (t) {
+    if (t.block) parts.push(`<div><h3>${esc(t.block)}</h3><div>${t.block === "Block 0" ? "Must lock for the first flight article." : "Locks on the Block 1 calendar."}${t.block0_choice ? ` Block 0 choice: ${esc(t.block0_choice)}.` : ""}</div></div>`);
+    if (t.precedent) parts.push(`<div><h3>Precedent</h3><div>${esc(t.precedent)}</div>${(t.sources || []).map(([l, u]) => `<div class="sub"><a href="${esc(u)}" target="_blank" rel="noopener">${esc(l)}</a></div>`).join("")}</div>`);
+    if (t.note) parts.push(`<div><h3>Note</h3><div>${esc(t.note)}</div></div>`);
+  }
+  if (q && q.plan && q.plan.length) {
+    parts.push(`<div><h3>Maturity path</h3><ol class="path">${q.plan.map(a => `<li class="${a.done ? "done" : ""}">${a.done ? "✓ " : ""}${esc(a.label)} <span class="sub num">±${(+a.sigma_after).toPrecision(2)} ${esc(q.unit)}</span></li>`).join("")}</ol></div>`);
+  }
+  if (q) {
+    parts.push(`<div><h3>Estimate history</h3><ul>${q.evidence.map(e => `<li><span class="num">${esc(e.date)}</span> ${esc(e.source)}: <span class="num">${(+e.value).toPrecision(4)} ± ${(+e.sigma).toPrecision(2)}</span> ${esc(q.unit)} <span class="sub">(tier ${e.fidelity})</span></li>`).join("")}</ul></div>`);
+    if (q.note) parts.push(`<div><h3>Basis</h3><div>${esc(q.note)}</div></div>`);
+  }
+  return `<tr class="detail"><td></td><td colspan="9"><div class="cols">${parts.join("")}</div></td></tr>`;
+}
+
+function table() {
+  const rows = filtered();
+  const max = Math.max(1, ...rows.filter(r => r.value_high_kg != null).map(r => Math.max(r.value_high_kg, r.value_low_kg)));
+  if (!rows.length) { $("rows").innerHTML = `<tr><td colspan="10" class="empty">No items match these filters.</td></tr>`; return; }
+  const phases = state.grouped ? Object.entries(V.gates || {}).sort((a, b) => a[1].localeCompare(b[1])) : [["All phases", ""]];
+  let html = "";
+  phases.forEach(([phase, date], pi) => {
+    const group = state.grouped ? rows.filter(r => r.phase === phase) : rows;
+    if (!group.length) return;
+    const stake = group.reduce((t, r) => t + (r.value_kg || 0), 0);
+    if (state.grouped) html += `<tr class="phase"><td colspan="10"><span class="eyebrow">Phase ${pi + 1}</span><b>${esc(phase)}</b><span class="sub">locks ${esc(date)} · ${group.length} decisions · ${fmt(stake)} lb weight opportunity</span></td></tr>`;
+    html += group.map(r => {
+      const rank = V.priorities.indexOf(r) + 1;
+      const head = `<tr class="row" tabindex="0" data-key="${esc(r.key)}" aria-expanded="${state.open === r.key}">
+        <td class="rank">${rank}</td>
+        <td><div class="item">${esc(r.label)}</div><div class="sub">${esc(r.action)}</div></td>
+        <td><span class="kind"><span class="dot" style="background:${kindColor(r.category)}"></span>${esc(r.category)}</span></td>
+        <td style="min-width:140px">${rangeBar(r, max)}</td>
+        <td class="num" style="text-align:right">${r.value_kg == null ? "—" : fmt(r.value_kg)}</td>
+        <td class="num" style="text-align:right">${usd(r.value_usd)}${r.nonrecurring_usd != null ? `<div class="sub">dev ${usd(r.nonrecurring_usd)}</div>` : ""}</td>
+        <td class="num" style="text-align:right">${fmt(r.value_payload_kg)}</td>
+        <td class="num" style="text-align:right">${r.value_range_nm == null ? "—" : (+r.value_range_nm).toFixed(1)}</td>
+        <td>${schedulePill(r)}</td>
+        <td>${esc(r.owner)}</td></tr>`;
+      return head + (state.open === r.key ? detail(r) : "");
+    }).join("");
+  });
+  $("rows").innerHTML = html;
+  $("rows").querySelectorAll("tr.row").forEach(tr => {
+    const toggle = () => { state.open = state.open === tr.dataset.key ? null : tr.dataset.key; table(); };
+    tr.addEventListener("click", toggle);
+    tr.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+  });
+}
+
+function matrix() {
+  const phases = Object.entries(V.gates || {}).sort((a, b) => a[1].localeCompare(b[1]));
+  const types = Object.keys(TYPES);
+  const cell = (p, t) => V.priorities.filter(r => r.phase === p && r.category === t);
+  const total = c => c.reduce((a, r) => a + (r.value_kg || 0), 0);
+  const maxStake = Math.max(1, ...phases.flatMap(([p]) => types.map(t => total(cell(p, t)))));
+  $("matrix").innerHTML = `<table class="matrix"><thead><tr><th>Phase</th>${types.map(t => `<th title="${esc(TYPES[t].q)}"><span class="dot" style="background:var(${TYPES[t].color})"></span> ${esc(t)}</th>`).join("")}</tr></thead><tbody>${phases.map(([p, d], i) =>
+    `<tr><th scope="row">${i + 1}. ${esc(p)}<div class="sub num">locks ${esc(d)}</div></th>${types.map(t => {
+      const c = cell(p, t);
+      if (!c.length) return `<td class="mcell empty-cell">·</td>`;
+      const stake = total(c), unknown = c.filter(r => r.value_kg == null).length;
+      return `<td class="mcell" style="background:color-mix(in srgb, var(${TYPES[t].color}) ${Math.round(6 + 34 * stake / maxStake)}%, transparent)"><b class="num">${stake ? fmt(stake) + " lb" : "—"}</b><div class="sub">${c.length} decision${c.length > 1 ? "s" : ""}${unknown ? `, ${unknown} unvalued` : ""}</div></td>`;
+    }).join("")}</tr>`).join("")}</tbody></table>`;
+}
+
+function controls() {
+  $("kinds").innerHTML = Object.entries(TYPES).map(([k, v]) => `<button class="chip" type="button" id="type-${k.replace(/\s/g, "-")}" data-kind="${k}" title="${esc(v.q)}" aria-pressed="${state.kinds.has(k)}"><span class="dot" style="background:var(${v.color})"></span>${esc(k)}</button>`).join("");
+  $("kinds").querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    const k = b.dataset.kind; state.kinds.has(k) ? state.kinds.delete(k) : state.kinds.add(k);
+    b.setAttribute("aria-pressed", state.kinds.has(k)); table();
+  }));
+  const phases = Object.entries(V.gates || {}).sort((a, b) => a[1].localeCompare(b[1]));
+  if (state.phase && !phases.some(([p]) => p === state.phase)) state.phase = "";
+  $("phase").innerHTML = `<option value="">All phases</option>` + phases.map(([p, d], i) => {
+    const n = V.priorities.filter(r => r.phase === p).length;
+    return `<option value="${esc(p)}"${p === state.phase ? " selected" : ""}>${i + 1}. ${esc(p)} (${n}, locks ${esc(d)})</option>`;
+  }).join("");
+  $("phase").onchange = e => { state.phase = e.target.value; remember(); table(); };
+  const owners = [...new Set(V.priorities.map(r => r.owner))].sort();
+  $("owner").innerHTML = `<option value="">All owners</option>` + owners.map(o => `<option${o === state.owner ? " selected" : ""}>${esc(o)}</option>`).join("");
+  $("owner").onchange = e => { state.owner = e.target.value; remember(); table(); };
+  $("sort").value = state.sort;
+  $("sort").onchange = e => { state.sort = e.target.value; remember(); table(); };
+  $("group-phase").checked = state.grouped;
+  $("group-phase").onchange = e => { state.grouped = e.target.checked; table(); };
+  $("rank-eyebrow").textContent = `Working draft · as of ${V.as_of}`;
+  $("legend").innerHTML = Object.entries(TYPES).map(([k, v]) => `<span class="kind"><span class="dot" style="background:var(${v.color})"></span>${esc(k)}</span>`).join("");
+}
+
+function niceTicks(max, n = 4) {
+  const step0 = max / n, mag = Math.pow(10, Math.floor(Math.log10(step0))), r = step0 / mag;
+  const step = (r < 1.5 ? 1 : r < 3 ? 2 : r < 7 ? 5 : 10) * mag;
+  const t = []; for (let v = 0; v <= max + 1e-9; v += step) t.push(v); return t;
+}
+
+const MAP_Y = {
+  weight: { get: r => r.value_kg == null ? null : r.value_kg * LB, label: "weight opportunity, lb" },
+  cost: { get: r => r.value_usd == null ? null : r.value_usd / 1e3, label: "lifecycle cost per aircraft, $k" },
+  payload: { get: r => r.value_payload_kg == null ? null : r.value_payload_kg * LB, label: "payload freed, lb" },
+  range: { get: r => r.value_range_nm, label: "range gained as built, nm" },
+};
+let mapY = "weight";
+function riskMap() {
+  const W = 460, H = 300, L = 52, R = 14, T = 12, B = 54;
+  const axis = MAP_Y[mapY];
+  if (!$("map-y").onchange) $("map-y").onchange = e => { mapY = e.target.value; riskMap(); };
+  const pts = V.priorities.map((r, i) => ({ r, rank: i + 1, y: axis.get(r) })).filter(p => p.y != null && p.r.days_to_lock != null);
+  const blind = V.priorities.filter(r => axis.get(r) == null);
+  const xmax = Math.max(60, ...pts.map(p => p.r.days_to_lock)) * 1.05, xmin = Math.min(0, ...pts.map(p => p.r.days_to_lock));
+  const ymax = Math.max(1, ...pts.map(p => p.y)) * 1.1;
+  const X = d => L + (d - xmin) / (xmax - xmin) * (W - L - R), Y = v => T + (1 - v / ymax) * (H - T - B);
+  const yt = niceTicks(ymax), xt = niceTicks(xmax);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weight opportunity against days to lock" style="width:100%;height:auto;display:block">`;
+  s += yt.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--rule-soft)"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${v.toLocaleString("en-US")}</text>`).join("");
+  s += xt.map(d => `<text x="${X(d)}" y="${H - B + 16}" text-anchor="middle">${d}</text>`).join("");
+  if (xmin < 0) s += `<rect x="${X(xmin)}" y="${T}" width="${X(0) - X(xmin)}" height="${H - T - B}" fill="var(--crit)" fill-opacity=".08"/>`;
+  s += `<line x1="${X(0)}" x2="${X(0)}" y1="${T}" y2="${H - B}" stroke="var(--rule)"/>`;
+  s += `<text x="${(L + W - R) / 2}" y="${H - B + 34}" text-anchor="middle">days until the decision must be frozen</text><text x="12" y="${T + 8}" transform="rotate(-90 12 ${T + 8})" text-anchor="end">${axis.label}</text>`;
+  pts.slice().reverse().forEach(p => {
+    const cx = X(p.r.days_to_lock), cy = Y(p.y);
+    s += `<circle cx="${cx}" cy="${cy}" r="${p.rank <= 8 ? 6 : 4}" fill="${kindColor(p.r.category)}" fill-opacity="${p.rank <= 8 ? .9 : .45}" stroke="var(--panel)" stroke-width="1"><title>${esc(p.r.label)}: ${p.y.toLocaleString("en-US", { maximumFractionDigits: 1 })} (${axis.label}), ${p.r.days_to_lock} days</title></circle>`;
+    if (p.rank <= 8) s += `<text class="lab" x="${cx + 8}" y="${cy + 4}">${p.rank}</text>`;
+  });
+  s += `<text x="${L}" y="${H - 6}">${blind.length} unvalued decision${blind.length === 1 ? "" : "s"} not placed</text>`;
+  $("map").innerHTML = s + `</svg>`;
+}
+
+function burn() {
+  const h = V.history || [];
+  if (h.length < 2) { $("burn").innerHTML = `<p class="sub">One snapshot so far (${fmt(h[0]?.margin_99_kg)} lb on ${esc(h[0]?.date || "")}). The line grows with each new sizing, analysis or test.</p>`; return; }
+  const W = 460, H = 160, L = 52, R = 14, T = 10, B = 26;
+  const ys = h.map(e => e.margin_99_kg * LB), ymax = Math.max(...ys) * 1.1;
+  const X = i => L + i / (h.length - 1) * (W - L - R), Y = v => T + (1 - v / ymax) * (H - T - B);
+  const yt = niceTicks(ymax, 3);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="99 percent margin after each ingest" style="width:100%;height:auto;display:block">`;
+  s += yt.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--rule-soft)"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${v.toLocaleString("en-US")}</text>`).join("");
+  const line = ys.map((v, i) => `${X(i)},${Y(v)}`).join(" ");
+  s += `<polygon points="${X(0)},${Y(0)} ${line} ${X(h.length - 1)},${Y(0)}" fill="var(--accent)" fill-opacity=".10"/>`;
+  s += `<polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
+  s += `<circle cx="${X(h.length - 1)}" cy="${Y(ys.at(-1))}" r="4" fill="var(--accent)"/>`;
+  s += `<text x="${L}" y="${H - 6}">${esc(h[0].date)}</text><text x="${W - R}" y="${H - 6}" text-anchor="end">${esc(h.at(-1).date)}</text>`;
+  $("burn").innerHTML = s + `</svg>`;
+}
+
+function register() {
+  const trades = (V.trades || []).filter(t => t.status === "open" || t.status === "decided");
+  const open = trades.filter(t => t.status === "open"), decided = trades.filter(t => t.status === "decided");
+  const priced = open.filter(t => t.options > 1).length, model = open.filter(t => t.options < 2 && t.model_hook).length;
+  $("reg-lede").textContent = `${decided.length} decisions taken and ${open.length} open, by the programme phase in which they lock. Of the open ones, ${priced} are priced by the sizing, ${model} the sizing can price next and ${open.length - priced - model} need an owner's option estimates.`;
+  const phases = Object.entries(V.gates || {}).sort((a, b) => a[1].localeCompare(b[1]));
+  const tagOf = t => t.status === "decided" ? `<span class="tag decided">decided</span>` : t.options > 1 ? `<span class="tag priced">priced</span>` : t.model_hook ? `<span class="tag model">model can price</span>` : `<span class="tag owner">needs estimate</span>`;
+  const order = t => t.status === "decided" ? 0 : t.options > 1 ? 1 : t.model_hook ? 2 : 3;
+  $("register").innerHTML = `<div class="gates">${phases.map(([phase, date], i) => {
+    const items = trades.filter(t => t.lock_gate === phase).sort((a, b) => order(a) - order(b) || a.category.localeCompare(b.category));
+    const nd = items.filter(t => t.status === "decided").length;
+    return `<div class="gate"><span class="eyebrow">Phase ${i + 1}</span><h3>${esc(phase)}</h3><div class="when">locks ${esc(date)} · ${items.length - nd} open${nd ? `, ${nd} decided` : ""}</div><ul>${items.map(t =>
+      `<li>${tagOf(t)}<span>${esc(t.label)}${t.block ? ` <span class="tag ${t.block === "Block 0" ? "b0" : "b1"}">${esc(t.block)}</span>` : ""}${t.status === "open" && t.block0_choice ? `<div class="sub">Block 0: ${esc(t.block0_choice)}</div>` : ""}<div class="sub">${esc(t.category)} · ${esc(t.owner)}${t.status === "decided" ? ` · ${esc(t.decision)}${t.decided_date ? " (" + esc(t.decided_date) + ")" : ""}` : ""}${t.precedent ? " · precedent on file" : ""}</div></span></li>`).join("")}</ul></div>`;
+  }).join("")}</div>`;
+}
+
+// "cost_per_payload_kg_nm" is derived: the CASM of a cargo aircraft, cost per mission / (payload kg x range nm);
+// its elasticity is the cost elasticity less those of payload and range.
+const COVER_COLUMNS = [
+  ["resized", "mass_empty_kg", "OEW"],
+  ["fixed", "range_m", "Range"], ["fixed", "lift_to_drag_cruise", "Cruise L/D"],
+  ["resized", "power_hover_take_off_W", "Hover power"],
+  ["resized", "cost_per_payload_kg_nm", "USD per payload kg-nm"],
+];
+const coverState = { q: "", group: "", sort: "0", used: true };
+function coverage() {
+  const c = V.coverage || {};
+  const rows = c.inputs || [];
+  if (!rows.length) { $("cover").innerHTML = `<tbody><tr><td class="empty">No coverage table yet: run examples.halo_parametric --all, then examples.halo_war_room.</td></tr></tbody>`; return; }
+  const groups = [...new Set(rows.map(r => r.group))].sort();
+  if (!$("cover-group").dataset.ready) {
+    $("cover-group").innerHTML = `<option value="">All disciplines</option>` + groups.map(g => `<option>${esc(g)}</option>`).join("");
+    $("cover-sort").innerHTML = COVER_COLUMNS.map((c, i) => `<option value="${i}">${esc(c[2])}</option>`).join("");
+    $("cover-group").dataset.ready = "1";
+    $("cover-q").oninput = e => { coverState.q = e.target.value.toLowerCase(); coverage(); };
+    $("cover-group").onchange = e => { coverState.group = e.target.value; coverage(); };
+    $("cover-sort").onchange = e => { coverState.sort = e.target.value; coverage(); };
+    $("cover-used").checked = coverState.used;
+    $("cover-used").onchange = e => { coverState.used = e.target.checked; coverage(); };
+  }
+  const el = (r, [mode, out]) => {
+    const m = (r.elasticity || {})[mode];
+    if (!m) return null;
+    if (out === "cost_per_payload_kg_nm") return m.cost_per_mission_usd == null ? null : m.cost_per_mission_usd - (m.mass_payload_kg || 0) - (m.range_m || 0);
+    return m[out] != null ? m[out] : null;
+  };
+  const col = COVER_COLUMNS[+coverState.sort];
+  let list = rows.filter(r => (!coverState.group || r.group === coverState.group)
+    && (!coverState.q || (r.label + " " + r.key).toLowerCase().includes(coverState.q))
+    && (!coverState.used || COVER_COLUMNS.some(c => Math.abs(el(r, c) || 0) > 1e-4)));
+  list = list.slice().sort((a, b) => Math.abs(el(b, col) || 0) - Math.abs(el(a, col) || 0));
+  const max = Math.max(1e-6, ...list.map(r => Math.max(...COVER_COLUMNS.map(c => Math.abs(el(r, c) || 0)))));
+  const cell = v => v == null ? `<td class="sub">—</td>` : `<td class="num" style="text-align:right;background:color-mix(in srgb, ${v > 0 ? "var(--t-req)" : "var(--accent)"} ${Math.round(40 * Math.min(1, Math.abs(v) / max))}%, transparent)">${v >= 0 ? "+" : ""}${v.toFixed(3)}</td>`;
+  const spread = r => r.kind === "calibration" ? `<span class="sub">calibration</span>` : r.sigma == null ? `<span class="pill warn">unquantified</span>` : `<span class="num">±${(+r.sigma).toPrecision(2)}</span>`;
+  $("cover").innerHTML = `<thead><tr><th>Input</th><th>Discipline</th><th class="num">Value</th><th>Spread</th>${COVER_COLUMNS.map((c, i) => `<th class="num" style="text-align:right${i === +coverState.sort ? ";color:var(--ink)" : ""}">${esc(c[2])}</th>`).join("")}</tr></thead><tbody>${list.map(r =>
+    `<tr><td><div class="item">${esc(r.label)}${r.unit ? ` <span class="sub">[${esc(r.unit)}]</span>` : ""}</div><div class="sub">${esc(r.key)}${r.note ? " · " + esc(r.note) : ""}</div></td><td class="sub">${esc(r.group)}</td><td class="num">${typeof r.value === "number" ? (+r.value).toPrecision(4) : esc(r.value)}</td><td>${spread(r)}</td>${COVER_COLUMNS.map(c => cell(el(r, c))).join("")}</tr>`).join("")}</tbody>`;
+}
+
+function log() {
+  const runs = (V.runs || []).slice().reverse();
+  $("log").innerHTML = runs.length ? runs.map(r => `<div><span class="num src">${esc(r.date)}</span><span><b>${esc(r.source)}</b> <span class="sub">${esc(r.kind)}</span><br>${esc(r.summary)}</span></div>`).join("") : `<p class="empty">No ingests yet.</p>`;
+}
+
+fetch("view.json", { cache: "no-store" }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(v => {
+  V = v; summary(); coverage(); matrix(); controls(); table(); riskMap(); burn(); register(); log();
+}).catch(() => { $("meta").textContent = "The ledger view (view.json) did not load. Re-run the ledger export and republish."; });
+</script>
