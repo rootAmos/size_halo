@@ -196,3 +196,5 @@ default and half step.
   interval (no free energy). Pack voltage 728-852 V through the mission; engine-out lowest 524.4 V in the replay.
   Open: the machine temperatures, still trapezoidal on 36 min cruise intervals, zigzag (generator 135, 90, 122,
   95 C); the same sub-stepping would fix them.
+- 2026-10-12: half step (15 s, 691 s solve): 14,369.5 lb, 63.92 kWh, the same node SOCs to 0.001 and the same
+  engine-out voltages: the sizing is independent of the battery step at 30 s.
