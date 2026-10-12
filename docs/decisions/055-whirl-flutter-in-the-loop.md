@@ -85,4 +85,4 @@ airplane-mode rotor speeds (always wing beam).
 1. Delta-3: a flapping and loads model so it has a cost, and a knockdown check away from -18 deg.
 2. Make the eigenpair model the reference once delta-3 is settled; re-baseline (the proxy reference flutters).
 3. Spanwise wing: root and tip t/c (the user's direction: pick the section offline, scale thickness along the span).
-4. Feed the flutter-bounded levers into the plan 042 ledger (aspect ratio and t/c are flutter-limited).
+4. Feed the flutter-bounded levers into the plan 059 ledger (aspect ratio and t/c are flutter-limited).
