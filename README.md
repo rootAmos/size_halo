@@ -22,13 +22,13 @@ inputs without restructuring the model.
 | Stability | static margin and directional stability (Cn_β) margins |
 | Fixed input | two off-the-shelf 1,120 hp turboshafts; the engines are bought, not designed, so they are not a design variable |
 
-## Baseline design v3.7
+## Baseline design v3.10
 
 | | |
 |---|---|
-| **Take-off weight** | **14,357 lb** (6,512 kg), 822 lb lighter than v3.6 |
+| **Take-off weight** | **14,350 lb** (6,509 kg); whirl flutter cleared in the loop (317 kt against 302 kt, delta-3 -10.9 deg) |
 | Empty weight (OEW) | 10,365 lb (4,701 kg), of which powertrain 5,705 lb (55 %) |
-| Fuel / battery | 2,008 lb, 10 % reserve included / 61.5 kWh, 920 lb, two isolated strings |
+| Fuel / battery | 2,001 lb, 10 % reserve included / 61.5 kWh, 920 lb, two isolated strings |
 | Mission cruise | 165 kt at 10,000 ft, L/D 9.0 (cruise speed is optimized for weight; 210 kt is a dash capability) |
 | Turboshafts | 2 × 1,120 hp in the fuselage |
 | Rotors | 2 × 30.8 ft diameter, disk loading 9.6 lb/ft², tip speed 782 ft/s; rotor radius capped by the span |
@@ -37,10 +37,9 @@ inputs without restructuring the model.
 | Cooling | epsilon-NTU offset-strip-fin core in a ram-air duct with a hover fan, 58 kg (plans 042, 051) |
 | Fuselage | 36.1 ft long, unpressurized box section 5.5 × 6.6 ft |
 
-The empty-weight breakdown and figures below are still those of v3.6 (15,179 lb) until they are regenerated.
-
-The empty-weight breakdown and its uncertainty are under [Performance and weights](#performance-and-weights). The
-model works in SI internally; [docs/RESULTS.md](docs/RESULTS.md) gives the SI values alongside.
+The empty-weight breakdown, its uncertainty and the mission-profile figures below are still those of v3.6
+(15,179 lb) until they are regenerated. The model works in SI internally; [docs/RESULTS.md](docs/RESULTS.md) gives
+the SI values alongside.
 
 ![Halo-class 3-view and nacelle conversion](docs/figures/halo_views.png)
 
@@ -53,6 +52,19 @@ model works in SI internally; [docs/RESULTS.md](docs/RESULTS.md) gives the SI va
 - **Rotors and drive:** the 4,000 ft hover.
 - **Heat exchanger:** the hot-day hover.
 - **Tails:** static margin and directional stability.
+- **Whirl flutter:** cleared at 1.15 V_D by delta-3 (-10.9 deg), with no wing weight added.
+
+## What changed since v3.6
+
+| Area | Then | Now |
+|---|---|---|
+| Cooling | Heat exchanger by mass per watt (127 kg) | Epsilon-NTU offset-strip-fin core in a ram-air duct, 58 kg; matches OpenConcept within 0.04 % of heat and sits at 1.9 kW/kg inside the published 1.75-6.7 range (plans 042, 050, 051) |
+| Machines | Catalogue continuous ratings | Units uprated 10 % in continuous power on the same hardware; the generator drops from 3 units to 2 (plan 048) |
+| Drag | XV-15 calibration on assumed sections and 10 % laminar flow, factor 1.27 | Published 64A223 / 64A015 sections, three-view nacelles, fully turbulent in the slipstream: factor 1.19 (plan 057); six aero methods compared on one geometry (VSPAERO thin, mixed and panel, AeroSandbox VLM and lifting line, AeroBuildup) |
+| Whirl flutter | Frequency placement (the reference fluttered at 262 kt against 302 kt) | Calibrated rotor-pylon-wing eigenvalue model (plan 040) inside the optimizer as an eigenpair constraint, delta-3 a design variable (plan 055) |
+| Proprotor | Momentum plus profile, fitted to JVX | Same in the loop; a NeuralFoil blade-element-momentum model, validated on full-scale JVX and XV-15 data, designs the blade outside it (plans 047, 052) |
+| Wing | AFDD stiffness sizing x 1.33 | Same in the loop; spar-cap strain at ultimate available as a constraint (plan 043); NeuralFoil section-thickness trade (plan 046) |
+| Operations | Design point only | Off-design solve and payload-range (plan 045); battery size by objective (plan 044); trajectories fly the epsilon-NTU cooler (plan 049); minimum-energy and minimum-time transitions |
 
 ## Aircraft versions
 
@@ -87,7 +99,9 @@ reserve loiter, except where the table says otherwise.
 | v3.4 | 16,231 lb | as v3.0, **plus bus-out and string-out failure hovers** | Whole units of real machines, 2 lanes/2 buses/2 strings redundancy, gearbox stages, drag corrections |
 | v3.5 | 16,303 lb | as v3.4 | Trim drag from the tail load |
 | v3.6 | 15,179 lb | as v3.4 (the requirements table above) | Layout line (v3.3.4, v3.3.5) merged into v3.5, with every model on |
-| **v3.7 (baseline)** | **14,357 lb** | as v3.4 | Epsilon-NTU cooler (plan 042) and machine units uprated 10 % in continuous power (plan 048) |
+| v3.7 | 14,357 lb | as v3.4 | Epsilon-NTU cooler (plan 042) and machine units uprated 10 % in continuous power (plan 048) |
+| v3.9 | 14,359 lb | as v3.4 | XV-15 drag recalibration on the published geometry, fully turbulent (plan 057) |
+| **v3.10 (baseline)** | **14,350 lb** | as v3.4 | Whirl flutter as an eigenpair constraint in the loop, delta-3 free (plan 055) |
 
 ## Modules overview: What it does
 
@@ -100,7 +114,8 @@ flowchart LR
         PT["<b>powertrain/</b> + <b>core/</b><br/>rotor, motors, generators,<br/>battery, turboshaft, gearboxes<br/>joined by typed ports"]
         WT["<b>vehicle/</b> + <b>weights/</b><br/>AFDD, Raymer,<br/>mass and CG"]
         CTRL["<b>controls/</b><br/>static margin, trim"]
-        TH["<b>thermal/</b><br/>heat exchanger,<br/>short-time ratings"]
+        TH["<b>thermal/</b><br/>epsilon-NTU cooler,<br/>short-time ratings"]
+        AE["<b>aeroelasticity/</b><br/>whirl flutter,<br/>eigenpair constraint"]
     end
     PERF["<b>performance/</b> + <b>mission/</b><br/>flight points and<br/>mission segments"]
     OPTI{{"ONE asb.Opti problem<br/>IPOPT"}}
@@ -133,12 +148,12 @@ region, which objective, and which design variables.
 
 | Discipline | In the sizing loop now (seconds to minutes) | Next: fast checks (minutes to hours) | Later: targeted high fidelity (days) |
 |---|---|---|---|
-| Aerodynamics | AeroBuildup with Scholz corrections | VSPAERO vortex lattice and panel, validated against the XV-15 | ADflow RANS on airframe regions once the objective is defined: wing and wing-nacelle junction, fuselage aft body |
-| Proprotor | Momentum plus profile, fitted to JVX | XROTOR blade-element theory with XFOIL polars; OpenVSP prop modeling for rotor-wing interaction | CFD with the rotor modelled (actuator disk or rotating blades) for the prop blowing over the wing: download in hover, blown wing in conversion |
-| Powertrain | Component models with generic and scaled inputs | Supplier data sheets and efficiency maps | Hardware test data |
-| Thermal | Heat exchanger by mass per watt | ESDU intake and duct sizing; cooling loops by temperature level | CFD of the chosen intake and exhaust installation |
-| Structures | AFDD and Raymer weights with calibration factors | Nastran strength and buckling from the exported decks | Nastran flutter (SOL 145) and coupled rotor-wing whirl flutter |
-| Flight dynamics | Static stability, trim corridor | Linear models at the trim points | 6-DOF simulation |
+| Aerodynamics | AeroBuildup, XV-15-calibrated excrescence (x1.19), tail-load trim drag | **Done:** VSPAERO (thin, mixed, panel), AeroSandbox VLM and lifting line on the same geometry. Next: fix the AeroBuildup fuselage pitching moment | ADflow RANS on airframe regions once the objective is defined: wing and wing-nacelle junction, fuselage aft body |
+| Proprotor | Momentum plus profile, fitted to JVX | **Done:** NeuralFoil blade-element momentum, validated on JVX and XV-15, designs the blade. Next: feed its performance map into the loop; OpenVSP prop modeling for rotor-wing interaction | CFD with the rotor modelled for the prop blowing over the wing: download in hover, blown wing in conversion |
+| Powertrain | Component models, whole catalogue units, 10 % uprating | Supplier data sheets and efficiency maps | Hardware test data |
+| Thermal | **Epsilon-NTU core and ram-air duct**, checked against OpenConcept and Kellermann 2021 | ESDU intake and duct losses; cooling loops by temperature level | CFD of the chosen intake and exhaust installation |
+| Structures | AFDD and Raymer weights with calibration factors; **whirl flutter as an eigenpair constraint** | Bottom-up wing box with no calibration factor and CalculiX check (PR #36); classical wing flutter, beam elements and Theodorsen (PR #38) | Nastran strength, buckling and flutter (SOL 101, 105, 145) |
+| Flight dynamics | Static stability; computed conversion corridor; collocation transitions | Linear models at the trim points | 6-DOF simulation |
 
 ## By discipline
 
@@ -256,9 +271,18 @@ weight growth through re-sizing, and correlated errors between items, would wide
 ### Aerodynamics and proprotor
 
 **In the model**
-- AeroSandbox AeroBuildup in the sizing, with Scholz excrescence corrections, trim drag from the tail load, the blown
-  wing and hover download. An independent Scholz hand build-up agrees within about 2 % in CD0.
-- Proprotor: an analytic momentum-plus-profile-power model (neither an actuator disk nor a deck). One blade drag
+- AeroSandbox AeroBuildup in the sizing: NeuralFoil section polars on the wing and tails, slender-body drag on the
+  fuselage and nacelles, trim drag from the tail load, the blown wing and hover download.
+- **Drag calibration (plan 057).** On the XV-15 with its published sections (64A223 wing, 64A015 tail), the
+  three-view nacelle size and a fully turbulent wing (the slipstream trips it), the clean build-up is 311 counts
+  against NDARC's 370. The excrescence factor is 1.19 (DATCOM/Raymer/Scholz hand build-up: 1.17). It does not move the
+  Halo: the hovers size it, not cruise drag.
+- **Six methods on one geometry (PR #30).** VSPAERO thin, mixed and panel, AeroSandbox VLM and lifting line, and
+  AeroBuildup: AeroBuildup is mid-pack on lift slope and conservative on drag.
+- **Blade design (plans 047, 052).** A NeuralFoil blade-element-momentum rotor inside one Opti problem chooses chord
+  and twist for minimum cruise power at hover FM 0.79. Validated on full-scale data: JVX within about 0.02 in both
+  modes; XV-15 hover good up to C_T/sigma 0.12, airplane mode about 0.04 low.
+- Proprotor in the sizing: an analytic momentum-plus-profile-power model (neither an actuator disk nor a deck). One blade drag
   polar covers hover and airplane mode, with an airplane-mode increment and tip-Mach limits. It is fitted by least
   squares to the full-scale JVX proprotor test,
   [NASA/TM-2016-219070](https://ntrs.nasa.gov/citations/20160004035): figure of merit within 0.012, cruise
@@ -268,8 +292,10 @@ weight growth through re-sizing, and correlated errors between items, would wide
   model, and Scholz's V-tail interference factor applies to its drag.
 
 **Limits**
-- Drag is anchored to NASA NDARC's XV-15 estimate, not to flight data, and drag drives payload headroom more than
-  anything else.
+- Drag is anchored to NASA NDARC's XV-15 component estimate, not to flight data; the 1.19 markup carries gaps,
+  sponsons, inlets and exhausts the model does not have.
+- AeroBuildup overstates the fuselage pitching moment against the panel codes (+0.15 against +0.08 to +0.13), which
+  feeds the trim drag.
 - No conversion-mode aerodynamics.
 - The baseline sets the tail dihedral to 0° and sizes a conventional horizontal and vertical tail; the V-tail is
   drawn but not yet sized.
@@ -277,14 +303,13 @@ weight growth through re-sizing, and correlated errors between items, would wide
   speed is therefore set by the model's validity bounds (advance ratio at most 0.6, blade loading), not by physics.
 
 **Work package: aerodynamics and proprotor**, in order of information per unit time:
-1. **Validate what exists.** Check VSPAERO (vortex lattice and panel) and AeroBuildup against XV-15 wind-tunnel
-   and flight data, and anchor drag to the XV-15 power-required curve. Size the V-tail with its effectiveness
-   factor.
-2. **Proprotor by blade-element theory.**
-   - Define a blade (twist, chord, airfoils) and run Mark Drella's XROTOR with XFOIL polars for hover, conversion
-     and cruise, including stall.
-   - Feed the result back as a rotor performance map in place of the analytic model, with JVX kept as the
-     validation case.
+1. **Close the open checks.** Anchor drag to the XV-15 power-required curve (flight data), fix the AeroBuildup
+   fuselage moment, and size the V-tail with its effectiveness factor.
+2. **Proprotor into the loop.**
+   - Feed the blade-element-momentum rotor back as a performance map in place of the analytic model, with JVX kept
+     as the validation case.
+   - Replace AeroSandbox's early shock-buffet onset in the outboard stall margin (plan 052), which sets the blade
+     solidity today.
    - Use OpenVSP's prop modeling in VSPAERO for rotor-wing interaction: download in hover and the blown wing in
      cruise.
 3. **Targeted CFD, later, once it is clear exactly what to optimize** (which region, objective and design
@@ -308,7 +333,7 @@ weight growth through re-sizing, and correlated errors between items, would wide
 flowchart LR
     subgraph TG["2 x turbogenerator"]
         direction LR
-        TS["Turboshaft<br/>1,120 hp, fixed"] -- "shaft" --> GBG["Step-up<br/>gearbox"] -- "shaft" --> GEN["Generator<br/>3 units"]
+        TS["Turboshaft<br/>1,120 hp, fixed"] -- "shaft" --> GBG["Step-up<br/>gearbox"] -- "shaft" --> GEN["Generator<br/>2 units"]
     end
     subgraph PACK["Battery: 2 isolated strings"]
         S1["String 1"]
@@ -365,14 +390,17 @@ flowchart LR
     repository), with density and temperature lapse and a part-power fuel curve fitted to the deck. The loader is in
     [`powertrain/decks.py`](src/aircraft_closure/powertrain/decks.py), and the fit and its checks are in
     [design log 014](docs/decisions/014-turboshaft-deck-part-power.md);
-  - a heat exchanger and short-time thermal ratings.
+  - an epsilon-NTU offset-strip-fin heat exchanger in a ram-air duct, with a hover fan and net duct force (Meredith
+    effect) in airplane mode, and short-time thermal ratings with machine time constants. Checked against
+    OpenConcept code to code (worst heat difference 0.04 %) and against Kellermann et al. 2021 (same heat and face,
+    smaller core); at 1.9 kW/kg the cooling system sits inside the published 1.75-6.7 kW/kg range.
 - An electrical layer (inverter losses, DC cables, protection), built and switchable.
 
 **Limits**
 - Failures are single and symmetric; roll trim in a degraded state is not modelled.
 - One catalogue product per machine role.
-- The heat exchanger is sized by mass per watt; there is no battery chiller power, and losses do not depend on
-  temperature.
+- One coolant loop at 60 °C; no battery chiller power, and losses do not depend on temperature.
+- The duct inlet model gives about 5 times Kellermann's cooling drag (tens of newtons): conservative in cruise.
 - The electrical layer is off in the baseline.
 
 **Work package: propulsion, electrical and thermal management**
@@ -386,8 +414,8 @@ flowchart LR
   - Use the failure framework for architecture studies: asymmetric and double failures, and an interconnect shaft
     against electrical cross-strapping.
 - **Thermal management:**
-  - Size the ram-air intakes, ducts and exits with ESDU methods (pressure recovery, spillage and cooling drag), in
-    place of the heat exchanger's mass-per-watt assumption.
+  - Refine the ram-air intake and exit losses with ESDU methods (pressure recovery, spillage), to firm up the
+    cooling drag.
   - Lay out the cooling loops by temperature level. Separate the battery loop (coolest), the power-electronics loop
     and the motor and generator loop (warmest), so each runs at its own temperature and the heat exchangers are
     sized per loop.
@@ -398,20 +426,29 @@ flowchart LR
 
 **In the model**
 - Mass in the sizing is handbook-based:
-  - NDARC/AFDD tiltrotor wing sized for stiffness, whirl-flutter frequency margins and the jump take-off, times
-    1.33 from the XV-15 calibration;
+  - NDARC/AFDD tiltrotor wing sized for stiffness and the jump take-off, times 1.33 from the XV-15 calibration;
+    the spar-cap strain at ultimate load is available as a sizing constraint (`wing_strain_margin`, plan 043);
   - AFDD rotor and drive equations;
   - Raymer fuselage times 1.70, anchored to a drawn structural layout.
+- **Whirl flutter in the loop (plans 040, 055).** A coupled rotor-pylon-wing model (Johnson's rotor aerodynamics,
+  gimbal, lag and coning; wing beam, chord and torsion), calibrated on the XV-15 (knockdown 0.84 against CAMRAD II).
+  The optimizer does not call an eigen-solver: at 1.15 V_D / 0.84 the least-damped eigenvalues and mode shapes are
+  unknowns, (lambda^2 M + lambda C + K) v = 0 is a constraint, and their damping must stay non-negative. A full
+  eigenvalue scan checks each solved design and re-seeds the tracked modes if one slid. Freeing aspect ratio and
+  thickness is only safe with it: the frequency rule it replaced lets the wing flutter at 188 kt.
 - Downstream check only, never fed back: an OpenVSP structural layout exported to CalculiX and Nastran decks. A
   CalculiX wing-box check gives modal frequencies and a linear static jump take-off at ultimate load.
 
 **Limits**
-- **Wing strength at ultimate load is not yet demonstrated.** The linear finite-element check (v3.3.5) puts the peak
-  spar-cap strain 10 % above the ultimate allowable, a negative margin. The check models the raw AFDD gauges,
-  without the calibration material the sizing books, under an idealized root clamp.
-- **No buckling analysis yet.** Plate estimates suggest the unstiffened 1 mm covers and webs need stiffening to
-  reach ultimate load.
-- **Whirl flutter is a frequency margin, not a stability analysis.**
+- **Wing strength at ultimate load is demonstrated only on the open bottom-up branch.** On the AFDD wing the linear
+  finite-element check (v3.3.5) puts the peak spar-cap strain 10 % above the ultimate allowable. The bottom-up wing
+  box (PR #36: covers, stringers, webs, caps and ribs sized for strength, buckling and stiffness, no calibration
+  factor) gives +26 % strain margin and no buckling in CalculiX, and lands within 9 % of the XV-15, 10 % of the V-22
+  and 0 % of the D266 wings.
+- **Delta-3 has no cost yet.** The flutter fix moves delta-3 from -18 to -10.9 deg, but flapping and loads are not
+  modelled, and the XV-15 knockdown was fitted at -18 deg.
+- **Classical wing flutter is checked off-line** (PR #38): beam elements with Theodorsen strip theory stay above
+  1.8 x the requirement for any nacelle CG; it is not a constraint in the loop.
 - **Weights calibrate on one aircraft (the XV-15).** Flight controls carry a factor of about 4.
 
 **Work package: stress and aeroelasticity**
@@ -421,8 +458,9 @@ flowchart LR
   - Run strength and buckling (SOL 101 and 105), and size the panels to a margin of at least zero at ultimate load.
   - Return the result to the sizing as calibrated wing weights.
 - **Flutter:**
-  - Set up the flutter analysis in Nastran (SOL 145) with the nacelle and pylon mass and the rotor-pylon modes.
-  - Then whirl flutter with rotor aerodynamics, to replace the frequency-placement margins the sizing uses today.
+  - Give delta-3 a cost: a flapping and loads model, and a knockdown check away from -18 deg.
+  - Build the whirl-flutter airframe from the beam-element wing modes, with wing aerodynamics.
+  - Confirm in Nastran (SOL 145) with the nacelle and pylon mass and the rotor-pylon modes.
 
 ![Structural layout](docs/figures/halo_structure.png)
 
@@ -433,7 +471,10 @@ flowchart LR
   failed rotor.
 - Conversion corridor: the sized aircraft trimmed at every nacelle angle (ruddervator, rotor disc tilt, attitude,
   edgewise-flow, power and placard limits).
-- Point-mass trajectories by direct collocation inside that corridor: minimum-energy transition and time to climb.
+- Point-mass trajectories by direct collocation inside that corridor, flying the epsilon-NTU cooler (plan 049):
+  minimum-energy and minimum-time transitions, and minimum time to climb. On v3.10 the two transitions land on the
+  same path (9.0 kWh in 21.8 s against 9.1 kWh in 21.7 s): hover is what costs energy, so the cheapest transition
+  also leaves it as fast as the corridor allows, riding the attitude limit.
 
 **Limits**
 - The corridor and trajectories run on the sized aircraft after sizing; they do not feed back into it.
@@ -449,15 +490,15 @@ flowchart LR
 ![Computed conversion corridor](docs/figures/conversion_corridor.png)
 ![Trajectories in the computed conversion corridor](docs/figures/trajectory_conversion_corridor.png)
 
-The two trajectories fly different legs. The minimum-energy transition goes from hover at 500 ft to 1.3 × stall in
-airplane mode and stays near 500 ft (22 s). The minimum time to climb goes from hover at sea level to level flight
-at 10,000 ft and the 165 kt cruise speed, so most of its 228 s is the climb. The corridor is computed at sea level.
+The transitions go from hover at 500 ft to 1.3 × stall in airplane mode and stay within ±30 m of 500 ft. The
+minimum time to climb goes from hover at sea level to level flight at 10,000 ft and the 165 kt cruise speed
+(95.3 kWh in 228 s on v3.10), so most of it is the climb. The corridor is computed at sea level.
 
 ## How it is checked
 
-- **658 unit tests:** closed-form identities, limiting cases, sign conventions and trends, and every model exercised
-  symbolically inside `asb.Opti`. The full suite takes 10-17 min locally and currently exceeds the 30 min CI limit
-  (see [next steps](docs/NEXT_STEPS.md)).
+- **About 790 unit tests in 90 files:** closed-form identities, limiting cases, sign conventions and trends, and
+  every model exercised symbolically inside `asb.Opti`. The full suite exceeds the 30 min CI limit (see
+  [next steps](docs/NEXT_STEPS.md)); run the targeted module tests while developing.
 - **Six executed discipline notebooks** ([`notebooks/`](notebooks/)) size the baseline design and verify each
   discipline with numbered checks and plots (458 checks, all passing):
 
@@ -473,10 +514,15 @@ at 10,000 ft and the 165 kt cruise speed, so most of its 228 s is the climb. The
 - **External validation:**
   - **Bell XV-15** group weights. Uncalibrated, the models give 11,315 lb against 13,000 lb actual; explicit group
     factors close it.
-  - **JVX full-scale proprotor:** figure of merit within 0.012 and cruise efficiency within 0.013, with hover points
-    held out of the fit.
-  - **Tiltrotor wing weight:** fitted on the XV-15, then −2 % on the Bell D266 wing and −18 % on the V-22 FSD wing.
-  - **Drag:** AeroBuildup and an independent Scholz hand build-up agree within about 2 % in CD0.
+  - **JVX full-scale proprotor:** the sizing's rotor model within 0.012 in figure of merit and 0.013 in cruise
+    efficiency; the blade-element-momentum model within about 0.02 in both modes, and on the XV-15 (its own 64-series
+    sections) good in hover up to C_T/sigma 0.12, about 0.04 low in airplane mode.
+  - **Tiltrotor wing weight:** AFDD fitted on the XV-15 (x1.33), then −2 % on the Bell D266 wing and −18 % on the V-22
+    FSD wing. The bottom-up wing box (PR #36), with no factor: +9 %, −10 % and 0 %.
+  - **Drag:** XV-15 components against NDARC; AeroBuildup needs x1.19 and the DATCOM/Raymer/Scholz hand build-up
+    x1.17 on the published geometry.
+  - **Whirl flutter:** the XV-15 thin wing at 287 kt against CAMRAD II's 275 kt, the basis of the 0.84 knockdown.
+  - **Cooling:** epsilon-NTU against OpenConcept (11 cases, worst heat difference 0.04 %) and Kellermann et al. 2021.
 - **Cross-checks from another direction:** OpenVSP geometry and VSPAERO against AeroSandbox, a structural layout
   back-check of the weight equations, and a CalculiX finite-element check of the wing box.
 
@@ -509,11 +555,12 @@ spuriously. The OpenVSP and CalculiX tools are optional and need separate instal
 | `src/aircraft_closure/vehicle`, `weights` | Airframe components, mass and CG aggregation; AFDD rotorcraft weights |
 | `src/aircraft_closure/aerodynamics`, `controls` | Lift and drag build-ups, trim, download; static stability |
 | `src/aircraft_closure/mission`, `requirements`, `performance` | Segments and missions; capability requirements; coupled flight points |
-| `src/aircraft_closure/thermal`, `trajectory` | Heat rejection and ratings; collocation trajectories and the conversion corridor |
+| `src/aircraft_closure/thermal`, `trajectory` | Epsilon-NTU heat exchanger and ratings; collocation trajectories and the conversion corridor |
+| `src/aircraft_closure/aeroelasticity` | Whirl flutter: rotor-pylon-wing model, eigenvalue scan, eigenpair residual for the optimizer |
 | `src/aircraft_closure/export/openvsp` | Optional geometry, aero cross-check and FE decks; never imported by sizing |
 | `examples/` | The baseline design (`halo_sizing.py`), mission profiles, empty-weight uncertainty, XV-15 and JVX validation, conversion corridor and trajectories |
 | `notebooks/` | Six executed discipline notebooks |
-| `tutorials/` | A hands-on sizing workbook (4 notebooks) and a bottom-up tutorial series (26 notebooks) from AeroSandbox to the Halo driver |
+| `tutorials/` | A hands-on sizing workbook (4 notebooks) and a bottom-up tutorial series (27 notebooks) from AeroSandbox to the Halo driver |
 | `docs/` | [Results](docs/RESULTS.md), [next steps](docs/NEXT_STEPS.md), [aircraft versions](docs/AIRCRAFT_VERSIONS.md), [architecture](docs/ARCHITECTURE.md), [coding conventions](docs/CODING_CONVENTIONS.md), [design log](docs/decisions/) |
 
 Lower layers never import higher ones. Components build equations; callers own variables, constraints and

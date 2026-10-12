@@ -16,7 +16,7 @@ def scalar(x):
 
 
 reference = Xv15Reference()
-xv15 = build_xv15_drag_aircraft(reference)          # plan 054: published sections, drawn bodies
+xv15 = build_xv15_drag_aircraft(reference)          # plan 057: published sections, drawn bodies
 # Plan 034 calibration geometry: NACA 2423 / 0015 sections, round fuselage, 9 x 3.3 ft nacelles.
 xv15_plan034 = build_xv15_aircraft(reference, mass_engine_kg=300.0)
 xv15_plan034 = replace(xv15_plan034, nacelles=replace(xv15_plan034.nacelles, length_m=9 * u.foot,

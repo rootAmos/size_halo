@@ -1,4 +1,4 @@
-# Plan 054: baseline v3.9, the XV-15 drag calibration redone on the published geometry, fully turbulent
+# Plan 057: baseline v3.9, the XV-15 drag calibration redone on the published geometry, fully turbulent
 
 ## Goal and scope
 
@@ -73,19 +73,38 @@ leakage and protuberance drag the factor is meant to carry.
 
 ## Results
 
-RESULTS_PLACEHOLDER
+| Version | Take-off | Empty | Fuel | Cruise | Cruise L/D | Whirl flutter |
+|---|---|---|---|---|---|---|
+| v3.7 (plan 034 calibration, 10 % laminar) | 14,357 lb | 4,701 kg | 911 kg | 164.7 kt | 8.97 | frequency proxy (flutters, plan 040: 262 kt) |
+| v3.9 (this plan, frequency proxy) | 14,359 lb (+2) | 4,703 kg | 910 kg | 165.4 kt | 8.98 | frequency proxy |
+| **v3.10 (this plan + plan 055 eigenpair, delta-3 free)** | **14,350 lb (-7)** | 4,702 kg | 908 kg | 165.2 kt | 8.98 | **317 kt scanned at reserve loiter, delta-3 -10.9 deg** |
+
+- The recalibration does not move the Halo: the hovers size it, not cruise drag; the clean drag rises (fully
+  turbulent) and the smaller factor offsets it.
+- v3.10 makes the plan 055 eigenpair constraint the reference with delta-3 free (author's choice, 2026-10-11): the
+  optimizer takes delta-3 from -18 to -10.9 deg and clears 1.15 V_D = 302 kt with no wing weight; the lowest scanned
+  flutter speed is 317 kt (wing beam, reserve loiter), no re-seed rounds. The delta-3 caveat of plan 055 stands: no
+  flapping or loads cost, and the knockdown was fitted at -18 deg.
+- The eigenpair solve is warm-started from the frequency-proxy solution (`solve_halo_sizing` does this when no start
+  is given); a cold start failed in the eigen-seeding.
+- Off-design flights (plan 045) hold delta-3 at the sized value and carry no flutter constraint: flutter clearance is a
+  property of the sized wing. With the eigenpairs re-tracked the design-point flight stopped in a worse local
+  optimum (875 of 900 kg payload, the tank and end state of charge binding).
+- Trajectories on v3.10: minimum-energy transition 9.02 kWh in 21.8 s, minimum-time transition (new,
+  `solve_min_time_transition`) 9.06 kWh in 21.7 s, the same path; minimum time to climb 95.3 kWh in 228 s.
 
 ## Verification
 
 - `tests/aerodynamics/test_drag_corrections.py`: the v3.9 factors bring both build-ups to 6.25 ft2 within 1 % on
   `build_xv15_drag_aircraft` with the default transition; the v3.7 set (`assumptions_v3_7`) still does so on the
   plan 034 geometry.
-- `tests/integration/test_halo_plan035.py`: the default solve pinned at the v3.9 weight.
-- Earlier named sets keep 1.27 / 1.17 / 10 % through `pre_plan035`, `pre_plan054`, `assumptions_v3_6`,
+- `tests/integration/test_halo_plan035.py`: the default solve pinned at the v3.10 weight, flutter cleared by the scan.
+- Earlier named sets keep 1.27 / 1.17 / 10 % through `pre_plan035`, `pre_plan057`, `assumptions_v3_6`,
   `assumptions_v3_5` and `assumptions_v3_7`.
 
 ## Progress log
 
 - 2026-10-11: geometry pulled from TM X-62407 and the three-view; NeuralFoil transition study; author chose fully
-  turbulent; factors recalibrated; v3.9 solved. Plan 053 (coolant tubes, v3.8) is not merged yet: if it lands first,
+  turbulent; factors recalibrated; v3.9 solved (14,359 lb); v3.10 with the plan 055 eigenpair flutter constraint and
+  delta-3 free (14,350 lb). Plan 053 (coolant tubes, v3.8) is not merged yet: if it lands first,
   v3.9 is re-solved on top of it.

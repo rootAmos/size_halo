@@ -1,4 +1,4 @@
-"""Plan 054 figure: which aerodynamic model handles each part of the Halo in the sizing (AeroBuildup and additions).
+"""Plan 057 figure: which aerodynamic model handles each part of the Halo in the sizing (AeroBuildup and additions).
 
     python -m examples.halo_aero_model_map_figure output/halo_v3_9.pkl
 

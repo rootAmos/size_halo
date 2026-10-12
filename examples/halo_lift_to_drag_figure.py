@@ -1,4 +1,4 @@
-"""Plan 054 figure: Halo airframe L/D against equivalent airspeed, with the XV-15 for comparison.
+"""Plan 057 figure: Halo airframe L/D against equivalent airspeed, with the XV-15 for comparison.
 
     python -m examples.halo_lift_to_drag_figure output/halo_v3_9.pkl
 

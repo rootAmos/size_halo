@@ -292,20 +292,22 @@ class HaloAssumptions:
     frequency_torsion_wing_per_rev: float = Xv15Reference().frequency_torsion_wing_per_rev
     frequency_beam_wing_per_rev: float = Xv15Reference().frequency_beam_wing_per_rev
     frequency_chord_wing_per_rev: float = Xv15Reference().frequency_chord_wing_per_rev
-    # Plan 055: "frequency" checks whirl flutter by the per-rev placement margins above (the proxy; plan 040 found the
+    # Plan 055 ("none": no whirl-flutter constraint, used by off-design flights): "frequency" checks whirl flutter by the per-rev placement margins above (the proxy; plan 040 found the
     # reference meets them yet flutters at 262 kt against 302 kt). "eigenpair" replaces them with the XV-15-calibrated
     # reduced-order model in the loop: at every airplane-mode point the `count_modes_whirl` least-damped modes at
     # 1.15 V_D / knockdown are optimizer variables (eigenvalue and eigenvector), held at a damping ratio of at least
     # `damping_min_whirl`. Nacelle CG ahead of the spindle and delta-3 as in plan 040; `free_delta3` makes delta-3 a
     # design variable (the knockdown was fitted at -18 deg: least validated away from it, plan 040).
-    whirl_flutter_model: str = "frequency"
+    # v3.10 (2026-10-11, author: "flutter in loop, delta-3 free"): the eigenpair model with delta-3 free is the
+    # reference; v3.9 and earlier sets keep the frequency proxy (`pre_plan055`).
+    whirl_flutter_model: str = "eigenpair"
     count_modes_whirl: int = 2
     damping_min_whirl: float = 0.0
     factor_whirl_flutter_speed: float = 1.15             # of V_D
     factor_dive_speed: float = 1.25                      # V_D / V_max (assumed, plan 040)
     offset_cg_nacelle_m: float = 0.5                     # nacelle CG ahead of the spindle (assumed, plan 040)
     pitch_flap_coupling_deg: float = -18.0               # delta-3, the XV-15's
-    free_delta3: bool = False
+    free_delta3: bool = True
     bounds_delta3_deg: tuple = (-30.0, -10.0)            # 0 deg makes the coning mode critical (plan 040)
     rounds_whirl_reseed: int = 3                         # solves re-seeded from a solution that fails the scan
     thickness_to_chord_wing: float = 0.23               # NACA 2423 airfoil above (XV-15 64A223, V-22 23 %)
@@ -388,11 +390,11 @@ class HaloAssumptions:
     # on component drag, calibrated so the XV-15 components match NDARC's 6.25 ft2 (Johnson 2010, Table 1); trim
     # drag as a fraction of parasite + induced drag (assumed 2 %, within the 1-5 % usual for an aft tail at cruise).
     drag_corrections: bool = True   # plan 035 default (decided 2026-10-04); False before
-    # Plan 054 (v3.9): recalibrated on the XV-15 with its published sections and drawn bodies
+    # Plan 057 (v3.9): recalibrated on the XV-15 with its published sections and drawn bodies
     # (`build_xv15_drag_aircraft`) and fully turbulent surfaces; 1.27 and 1.17 before (2423, 10 % laminar, 9 ft nacelle).
     factor_excrescence_buildup: float = 1.19
     factor_excrescence_scholz: float = 1.17
-    # Plan 054: boundary-layer trip, fraction of chord, on every AeroBuildup surface. 0: fully turbulent, as the wing
+    # Plan 057: boundary-layer trip, fraction of chord, on every AeroBuildup surface. 0: fully turbulent, as the wing
     # sits in the proprotor slipstream in airplane mode (plan 025 assumed 10 % laminar, Scholz ch. 13).
     fraction_chord_transition: float = 0.0
     fraction_trim_drag: float = 0.02                   # Scholz aero only; AeroBuildup trims from the tail load
@@ -1264,6 +1266,13 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
     continuation, plan 026), then perturbed designs, then the generic guess.
     """
     a = assumptions
+    if a.whirl_flutter_model == "eigenpair" and initial is None:
+        # v3.10: the eigenpair constraint needs a start whose airplane-mode rotor speeds and modes exist (plan 055);
+        # solve with the frequency proxy first, then the eigenpair problem from it.
+        proxy = solve_halo_sizing(requirements, replace(a, whirl_flutter_model="frequency", free_delta3=False), factors,
+                                  verbose, max_iter, None, objective, staged_start, stage_fallback)
+        return solve_halo_sizing(requirements, a, factors, verbose, max_iter, proxy, objective, staged_start,
+                                 stage_fallback)
     if (a.machine_mass_model == "units" and a.integer_units
             and (a.count_units_motor is None or a.count_units_generator is None)):
         # Plan 035: whole units. Solve with the relaxed unit counts, round each up, re-solve with the counts fixed
@@ -1648,7 +1657,7 @@ def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerody
             whirl_margins, whirl_tracked, delta3_deg = halo_whirl_eigenpairs(opti, whirl_inputs, whirl_points,
                                                                              r.velocity_max_m_s, a)
             all_margins += tuple(whirl_margins)
-        elif a.whirl_flutter_model != "frequency":
+        elif a.whirl_flutter_model not in ("frequency", "none"):
             raise ValueError(f"Unknown whirl flutter model '{a.whirl_flutter_model}'.")
         for p in whirl_points if a.whirl_flutter_model == "frequency" else ():
             torsion_per_rev, beam_per_rev, _ = TiltrotorWingMassModel.frequency_per_rev(wing_masses,
@@ -2253,9 +2262,13 @@ def _precursor(problem, factors, max_iter, cache, allow_continuation):
 pre_plan035 = dict(drag_corrections=False, redundancy=False, machine_mass_model="torque_density", gearbox_stages=False,
                    heat_exchanger_model="mass_per_watt", factor_uprating_power_units=1.0,   # plan 048 defaults undone
                    factor_excrescence_buildup=1.27, factor_excrescence_scholz=1.17,
-                   fraction_chord_transition=0.1)                                          # plan 054 defaults undone
-# Plan 054 (v3.9): the drag calibration and transition before it.
-pre_plan054 = dict(factor_excrescence_buildup=1.27, factor_excrescence_scholz=1.17, fraction_chord_transition=0.1)
+                   fraction_chord_transition=0.1,                                          # plan 057 defaults undone
+                   whirl_flutter_model="frequency", free_delta3=False)                     # v3.10 defaults undone
+# Plan 057 (v3.9): the drag calibration and transition before it.
+# v3.10: whirl flutter by the frequency proxy, delta-3 fixed at -18 deg (the plan 055 eigenpair model off).
+pre_plan055 = dict(whirl_flutter_model="frequency", free_delta3=False)
+pre_plan057 = dict(factor_excrescence_buildup=1.27, factor_excrescence_scholz=1.17, fraction_chord_transition=0.1,
+                   **pre_plan055)
 # Plans 037 and 038 (the drawn layout and the wing check): XV-15 fuselage calibration, turbogenerators at the tips,
 # round 12.8 m fuselage with the tail at 11.4 m, NDARC spar caps without a minimum gauge, XV-15 pylon ratio.
 pre_layout = dict(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None,
@@ -2342,7 +2355,15 @@ def depends_on_variables(opti, expression):
 
 
 def assumptions_off_design(sized, assumptions):
-    """Plan 035 machine units of the sized aircraft fixed (the counts its solve used)."""
+    """Plan 035 machine units of the sized aircraft fixed (the counts its solve used); plan 055 delta-3 held at the
+    sized value (it is part of the rotor hub, not an operating choice). Whirl flutter is a property of the sized
+    wing, cleared by its sizing solve: off-design flights carry no flutter constraint ("none"). Re-tracking the
+    eigenpairs stopped the v3.10 design-point flight in a worse local optimum (875 of 900 kg payload), and the
+    frequency-placement proxy is infeasible for a wing sized against the eigenpairs (the half-payload flight failed)."""
+    if assumptions.whirl_flutter_model == "eigenpair":
+        delta3_deg = sized.delta3_deg if sized.delta3_deg is not None else assumptions.pitch_flap_coupling_deg
+        assumptions = replace(assumptions, whirl_flutter_model="none", free_delta3=False,
+                              pitch_flap_coupling_deg=float(delta3_deg))
     if assumptions.machine_mass_model != "units" or sized.machine_units is None:
         return assumptions
     counts = {name: n for name, (n, _) in sized.machine_units.items()}
@@ -2486,14 +2507,18 @@ assumptions_plan038 = HaloAssumptions(**pre_plan035)
 # v3.6 (15,179 lb): today's defaults with the mass-per-watt cooler and the machine units at their catalogue
 # continuous power (plan 048 made the plan 042 epsilon-NTU cooler and the 10 % uprating the defaults: v3.7).
 requirements_v3_6 = HaloRequirements()
-assumptions_v3_6 = HaloAssumptions(**pre_plan054, factor_uprating_power_units=1.0, heat_exchanger_model="mass_per_watt")
+assumptions_v3_6 = HaloAssumptions(**pre_plan057, factor_uprating_power_units=1.0, heat_exchanger_model="mass_per_watt")
 # v3.5 on the current code (not test-pinned): the pre-layout settings with the v3.6 cooler and units.
-assumptions_v3_5 = HaloAssumptions(**pre_layout, **pre_plan054, factor_uprating_power_units=1.0,
+assumptions_v3_5 = HaloAssumptions(**pre_layout, **pre_plan057, factor_uprating_power_units=1.0,
                                    heat_exchanger_model="mass_per_watt")
-# v3.7 (14,357 lb): today's defaults with the plan 034 drag calibration and 10 % laminar flow (plan 054 made the
+# v3.7 (14,357 lb): today's defaults with the plan 034 drag calibration and 10 % laminar flow (plan 057 made the
 # XV-15 recalibration, 1.19 fully turbulent, the default: v3.9).
 requirements_v3_7 = HaloRequirements()
-assumptions_v3_7 = HaloAssumptions(**pre_plan054)
+assumptions_v3_7 = HaloAssumptions(**pre_plan057)
+# v3.9 (14,359 lb): the plan 057 drag recalibration with the frequency-proxy whirl check (v3.10 put the plan 055
+# eigenpair model in the loop with delta-3 free).
+requirements_v3_9 = HaloRequirements()
+assumptions_v3_9 = HaloAssumptions(**pre_plan055)
 
 
 if __name__ == "__main__":

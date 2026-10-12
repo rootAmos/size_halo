@@ -1,4 +1,4 @@
-"""Plan 054 figure: the excrescence correction each drag model needs to match the NDARC XV-15 components.
+"""Plan 057 figure: the excrescence correction each drag model needs to match the NDARC XV-15 components.
 
     python -m examples.xv15_drag_calibration_figure
 

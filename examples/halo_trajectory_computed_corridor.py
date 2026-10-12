@@ -1,7 +1,7 @@
 """Tier 14 trajectories flown inside the computed conversion corridor (plan 039) instead of the assumed one.
 
 The aircraft is sized (`solve_halo_sizing()`), its corridor is computed from level-flight trim at sea level
-(`examples/halo_conversion_corridor.py`), and the minimum-energy transition and the minimum time to climb are flown
+(`examples/halo_conversion_corridor.py`), and the minimum-energy and minimum-time transitions and the minimum time to climb are flown
 with that corridor as their airspeed limits. The corridor is computed at sea level and the take-off mass; the climb
 applies it up to 10,000 ft, an approximation.
 
@@ -22,7 +22,7 @@ from aircraft_closure.trajectory.corridor import ComputedCorridor
 from examples.halo_conversion_corridor import run as run_corridor
 from examples.halo_sizing import HaloAssumptions, HaloRequirements, solve_halo_sizing
 from examples.trajectory_optimization import (describe, halo_trajectory_case, solve_min_energy_transition,
-                                              solve_min_time_climb)
+                                              solve_min_time_climb, solve_min_time_transition)
 
 
 def computed_corridor_case(sizing, assumed=None, requirements=HaloRequirements(), assumptions=HaloAssumptions()):
@@ -42,7 +42,7 @@ def run(sizing=None, path="output/trajectory/computed_corridor.png", requirement
     sizing = sizing if sizing is not None else solve_halo_sizing(r, a)
     assumed = halo_trajectory_case(sizing, r, a)
     case = computed_corridor_case(sizing, assumed, r, a)
-    results = [solve_min_energy_transition(case), solve_min_time_climb(case)]
+    results = [solve_min_energy_transition(case), solve_min_time_transition(case), solve_min_time_climb(case)]
     for result in results:
         print(describe(result))
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -63,9 +63,10 @@ def plot(case, results, path):
     ax.plot(low, tilts, color="#1d5c8f", lw=1.2)
     ax.plot(high, tilts, color="#1d5c8f", lw=1.2)
     colors = {"minimum-energy transition": "#2a78d6", "prescribed transition": "#eb6834",
-              "minimum time to climb": "#1baf7a"}
+              "minimum time to climb": "#1baf7a", "minimum-time transition": "#c2611f"}
     # Each leg's end points, from the problem definitions in examples/trajectory_optimization.py.
     legs = {"minimum-energy transition": "hover at 500 ft to 1.3 x stall in airplane mode, level",
+            "minimum-time transition": "same end points, minimum time",
             "minimum time to climb": "hover at sea level to 10,000 ft at 165 kt"}
     for result in results:
         leg = f": {legs[result.label]}" if result.label in legs else ""

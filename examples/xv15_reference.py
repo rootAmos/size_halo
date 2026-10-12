@@ -100,7 +100,7 @@ class Xv15Reference:
     length_interconnect_m: float = 32.17 * u.foot        # rotor centreline spacing
     area_wetted_nacelles_m2: float = 2 * 95 * u.foot**2  # assumed: ~9 ft x 3.3 ft cylinders
     mass_fixed_equipment_kg: float = 1023 * u.lbm
-    # ---- Drag calibration geometry (plan 054), used only by `build_xv15_drag_aircraft` ----
+    # ---- Drag calibration geometry (plan 057), used only by `build_xv15_drag_aircraft` ----
     # Sections from TM X-62407 sec. 3.3: wing NACA 64A223, horizontal tail 64A015 (vertical tail 0009 mod, as above).
     # Nacelle from the dimensioned XV-15 three-view (NASA SP-4517 / Bell): width 3.0 ft exactly (35 ft 2 in across the
     # nacelles less 32 ft 2 in between rotor centrelines), front-view depth 3 ft 2 in, length spinner to tail about
@@ -237,7 +237,7 @@ def naca_6a_section(name_base, thickness_ratio, name):
 
 
 def build_xv15_drag_aircraft(reference=Xv15Reference()):
-    """The XV-15 outer shape for the NDARC drag calibration (plan 054): published sections, drawn bodies.
+    """The XV-15 outer shape for the NDARC drag calibration (plan 057): published sections, drawn bodies.
 
     Wing NACA 64A223 (the 64A210 camber line at 23 %), horizontal tail 64A015 (64A010 at 15 %), nacelles and the
     fuselage depth scaled from the TM X-62407 drawings. The mass validation keeps `build_xv15_aircraft` unchanged.
