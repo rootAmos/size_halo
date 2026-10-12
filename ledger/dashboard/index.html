@@ -184,7 +184,7 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
       </section>
       <section class="panel" aria-labelledby="h-burn">
         <h2 id="h-burn">Burn-down</h2>
-        <p class="lede">The 99 % take-off margin the uncertainty forces us to carry, after each ingest.</p>
+        <p class="lede">The extra take-off weight we must hold in reserve to be 99 % sure the aircraft still closes, given how uncertain the estimates are today. It should fall as analyses and tests firm the estimates up.</p>
         <div id="burn"></div>
       </section>
     </div>
@@ -415,21 +415,39 @@ function riskMap() {
   $("map").innerHTML = s + `</svg>`;
 }
 
+// One point per ingest that moved the margin (by 1 lb or more), plus the first and the latest snapshot.
+function burnPoints() {
+  const all = V.history || [], pts = [];
+  all.forEach((e, i) => {
+    const last = pts.at(-1);
+    if (!last || i === all.length - 1 || Math.abs(e.margin_99_kg - last.margin_99_kg) * LB >= 1) pts.push(e);
+  });
+  return pts.map((e, i) => ({ ...e, lb: e.margin_99_kg * LB, delta: i ? (e.margin_99_kg - pts[i - 1].margin_99_kg) * LB : 0 }));
+}
 function burn() {
-  const h = V.history || [];
+  const h = burnPoints();
   if (h.length < 2) { $("burn").innerHTML = `<p class="sub">One snapshot so far (${fmt(h[0]?.margin_99_kg)} lb on ${esc(h[0]?.date || "")}). The line grows with each new sizing, analysis or test.</p>`; return; }
-  const W = 460, H = 160, L = 52, R = 14, T = 10, B = 26;
-  const ys = h.map(e => e.margin_99_kg * LB), ymax = Math.max(...ys) * 1.1;
-  const X = i => L + i / (h.length - 1) * (W - L - R), Y = v => T + (1 - v / ymax) * (H - T - B);
-  const yt = niceTicks(ymax, 3);
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="99 percent margin after each ingest" style="width:100%;height:auto;display:block">`;
-  s += yt.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--rule-soft)"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${v.toLocaleString("en-US")}</text>`).join("");
+  const W = 460, H = 200, L = 56, R = 14, T = 12, B = 44;
+  const ys = h.map(e => e.lb), ymin = Math.min(...ys), ymax = Math.max(...ys);
+  const pad = Math.max((ymax - ymin) * 0.15, 20), lo = Math.max(0, ymin - pad), hi = ymax + pad;
+  const X = i => L + i / (h.length - 1) * (W - L - R), Y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  const step = (hi - lo) / 3, mag = Math.pow(10, Math.floor(Math.log10(step))), nice = Math.ceil(step / mag) * mag;
+  const yt = []; for (let v = Math.ceil(lo / nice) * nice; v <= hi; v += nice) yt.push(v);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="99 percent take-off margin after each ingest" style="width:100%;height:auto;display:block">`;
+  s += yt.map(v => `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--rule-soft)"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${Math.round(v).toLocaleString("en-US")}</text>`).join("");
   const line = ys.map((v, i) => `${X(i)},${Y(v)}`).join(" ");
-  s += `<polygon points="${X(0)},${Y(0)} ${line} ${X(h.length - 1)},${Y(0)}" fill="var(--accent)" fill-opacity=".10"/>`;
   s += `<polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
-  s += `<circle cx="${X(h.length - 1)}" cy="${Y(ys.at(-1))}" r="4" fill="var(--accent)"/>`;
-  s += `<text x="${L}" y="${H - 6}">${esc(h[0].date)}</text><text x="${W - R}" y="${H - 6}" text-anchor="end">${esc(h.at(-1).date)}</text>`;
-  $("burn").innerHTML = s + `</svg>`;
+  h.forEach((e, i) => {
+    const big = Math.abs(e.delta) >= 10;
+    s += `<circle cx="${X(i)}" cy="${Y(e.lb)}" r="${i === h.length - 1 ? 5 : big ? 4 : 2.5}" fill="${e.delta > 0.5 ? "var(--crit)" : e.delta < -0.5 ? "var(--good)" : "var(--accent)"}"><title>${esc(e.date)} · ${esc(e.source)}: ${Math.round(e.lb).toLocaleString("en-US")} lb${i ? ` (${e.delta >= 0 ? "+" : ""}${Math.round(e.delta)} lb)` : ""}</title></circle>`;
+  });
+  s += `<text x="${L}" y="${H - B + 16}">${esc(h[0].date)}</text><text x="${W - R}" y="${H - B + 16}" text-anchor="end">${esc(h.at(-1).date)}</text>`;
+  s += `<text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle">each point: a sizing, analysis or test that moved the margin</text>`;
+  s += `<text x="12" y="${T + 4}" transform="rotate(-90 12 ${T + 4})" text-anchor="end">99 % margin, lb</text>`;
+  const moves = h.slice(1).filter(e => Math.abs(e.delta) >= 1).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 4);
+  const net = h.at(-1).lb - h[0].lb;
+  $("burn").innerHTML = s + `</svg><p class="sub" style="margin:4px 0 0">Today <b class="num">${Math.round(h.at(-1).lb).toLocaleString("en-US")} lb</b>, ${net <= 0 ? "down" : "up"} <span class="num">${Math.abs(Math.round(net)).toLocaleString("en-US")} lb</span> since ${esc(h[0].date)}. Green points retired uncertainty, red points added it (new unknowns or wider spreads).</p>`
+    + (moves.length ? `<div class="sub" style="margin-top:4px">Biggest moves:<ul style="margin:2px 0 0;padding-left:16px">${moves.map(e => `<li><span class="num" style="color:${e.delta > 0 ? "var(--crit)" : "var(--good)"}">${e.delta > 0 ? "+" : "−"}${Math.abs(Math.round(e.delta))} lb</span> ${esc(e.source)} <span class="num">(${esc(e.date)})</span></li>`).join("")}</ul></div>` : "");
 }
 
 function register() {
