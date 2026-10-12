@@ -61,6 +61,20 @@ def section_thickness_shape(name, fraction_chord):
     return float(onp.interp(fraction_chord, x, thickness) / thickness.max())
 
 
+def section_coordinates(name, thickness_to_chord, camber):
+    """Plan 062: coordinate airfoil of base section `name` at a (numeric) thickness ratio and camber, its thickness
+    and camber lines scaled as the family scales them (for the OpenVSP and FE geometry)."""
+    base = section_airfoil(name)
+    x = np.cosspace(0.0, 1.0, 120)
+    thickness_base = onp.max(onp.asarray(base.local_thickness(onp.linspace(0, 1, 2001)), dtype=float))
+    camber_line = base.local_camber(x) * camber / section_camber(name)
+    thickness = base.local_thickness(x) * thickness_to_chord / thickness_base
+    upper = np.stack([x[::-1], (camber_line + thickness / 2)[::-1]], axis=1)
+    lower = np.stack([x[1:], (camber_line - thickness / 2)[1:]], axis=1)
+    return asb.Airfoil(name=f"{name} t{thickness_to_chord:.3f} c{camber:.4f}",
+                       coordinates=np.concatenate([upper, lower]))
+
+
 def section_camber(name):
     """The base section's maximum camber (2 % exactly for NACA 2423, as plan 046 fixed it)."""
     return 0.02 if name == "naca2423" else float(section_airfoil(name).max_camber())

@@ -32,7 +32,8 @@ if __name__ == "__main__":
     chord_m = r["chord_wing_m"]
     wing = SurfaceSnapshot(span_m=r["span_wing_m"], chord_root_m=chord_m, chord_tip_m=chord_m,
                            x_le_root_m=r["x_le_wing_m"], z_m=1.2, thickness_to_chord=r["thickness_to_chord_wing"],
-                           camber=0.02)
+                           camber=r.get("camber_wing", 0.02),
+                           section_name=None if r.get("section_wing", "naca2423") == "naca2423" else r["section_wing"])
     snapshot = replace(halo_plan027_snapshot(), wing=wing)
     layout = replace(StructureLayout(), fraction_chord_front_spar=r["fraction_chord_front_spar"],
                      fraction_chord_rear_spar=r["fraction_chord_rear_spar"], pitch_rib_wing_m=r["pitch_rib_m"],

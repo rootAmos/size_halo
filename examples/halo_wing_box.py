@@ -29,6 +29,10 @@ def wing_box_layout(result, requirements, assumptions):
     return dict(mass_takeoff_kg=float(result.mass_takeoff_kg), span_wing_m=float(wing.span_m()),
                 chord_wing_m=float(wing.chord_mean_m()), x_le_wing_m=float(wing.x_le_root_m),
                 thickness_to_chord_wing=float(model.thickness_to_chord), width_fuselage_m=float(model.width_fuselage_m),
+                # Plan 062: the section the FE geometry meshes (base name and the sized camber).
+                section_wing=assumptions.wing_section_base,
+                camber_wing=float(result.design.camber_wing if result.design.camber_wing is not None
+                                  else assumptions.camber_wing),
                 mass_tip_kg=float(model.mass_tip_kg), radius_gyration_pylon_m=float(model.radius_gyration_pylon_m),
                 offset_cg_tip_m=float(model.offset_cg_tip_m), load_factor_ultimate=float(model.load_factor_ultimate),
                 load_factor_jump=float(model.load_factor_jump),

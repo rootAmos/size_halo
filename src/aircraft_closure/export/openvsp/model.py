@@ -133,6 +133,17 @@ def _add_surface(name, surface, parent_id, symmetric=True, vertical=False):
     _set(geom_id, "Tess_W", "Shape", 33)
     surface_id = vsp.GetXSecSurf(geom_id, 0)
     for index in range(vsp.GetNumXSec(surface_id)):
+        if getattr(s, "section_name", None) is not None:
+            # Plan 062: the named section as points (upper and lower surfaces from the leading edge).
+            vsp.ChangeXSecShape(surface_id, index, vsp.XS_FILE_AIRFOIL)
+            xsec_id = vsp.GetXSec(surface_id, index)
+            c = s.airfoil().coordinates
+            i_le = int(c[:, 0].argmin())
+            upper = [vsp.vec3d(float(x), float(y), 0.0) for x, y in c[i_le::-1]]
+            lower = [vsp.vec3d(float(x), float(y), 0.0) for x, y in c[i_le:]]
+            vsp.SetAirfoilUpperPnts(xsec_id, upper)
+            vsp.SetAirfoilLowerPnts(xsec_id, lower)
+            continue
         vsp.ChangeXSecShape(surface_id, index, vsp.XS_FOUR_SERIES)
         xsec_id = vsp.GetXSec(surface_id, index)
         _set_xsec(xsec_id, "ThickChord", s.thickness_to_chord)
