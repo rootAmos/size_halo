@@ -290,10 +290,13 @@ class EquivalentCircuitBattery:
     def voltage_at_power_V(self, power_W, soc, voltage_rc_V, temperature_C=None):
         """Instantaneous terminal voltage delivering terminal power P (discharge positive), the low-current root of
         P = (E - I R0) I with E = OCV(s) - sum v_k: V = (E + sqrt(E^2 - 4 R0 P)) / 2, current I = P / V (plan 060
-        part 3). Beyond the matched load (E^2 < 4 R0 P) the root is clipped to V = E / 2."""
+        part 3). Near and beyond the matched load (E^2 - 4 R0 P below 1 % of E^2) the discriminant is clipped at
+        1 % of E^2, so the derivative stays finite for the optimizer; the voltage limits keep a solution far from
+        there (V near E / 2)."""
         resistance_0_ohm = self.resistances_ohm(soc, temperature_C)[0]
         driving_V = self.voltage_open_circuit_V(soc) - sum(voltage_rc_V)
-        return (driving_V + np.sqrt(np.fmax(driving_V**2 - 4 * resistance_0_ohm * power_W, 0.0))) / 2
+        discriminant_V2 = np.fmax(driving_V**2 - 4 * resistance_0_ohm * power_W, 0.01 * driving_V**2)
+        return (driving_V + np.sqrt(discriminant_V2)) / 2
 
     def _advance(self, current_A, soc, voltage_rc_V, soc_resistance, duration_s, temperature_C):
         """SOC and RC voltages after `duration_s` at constant current (exact for the RC branches)."""
