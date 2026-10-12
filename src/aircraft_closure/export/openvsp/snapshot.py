@@ -236,7 +236,25 @@ def halo_plan027_snapshot():
     input yet (plan 032); in particular the V-tail sits about 2 m further
     forward than the sized tail position.
     """
-    span_wing_m, area_wing_m2, x_le_wing_untapered_m = 11.441, 21.388, 4.079
+    return halo_snapshot(span_wing_m=11.441, area_wing_m2=21.388, x_le_wing_untapered_m=4.079, radius_rotor_m=4.582,
+                         solidity=0.089, area_horizontal_tail_m2=3.732, area_vertical_tail_m2=1.658)
+
+
+def halo_reference_snapshot(reference):
+    """The current reference drawn as Halo, from `output/structure/reference.json` (`examples.halo_structure_reference`).
+
+    Same shape choices as `halo_plan027_snapshot`, at the solved wing, rotor and tail sizes.
+    """
+    r = reference
+    return halo_snapshot(span_wing_m=r["span_wing_m"], area_wing_m2=r["area_wing_m2"], x_le_wing_untapered_m=r["x_le_wing_m"],
+                         radius_rotor_m=r["radius_rotor_m"], solidity=r["solidity"],
+                         area_horizontal_tail_m2=r["area_horizontal_tail_m2"],
+                         area_vertical_tail_m2=r["area_vertical_tail_m2"])
+
+
+def halo_snapshot(span_wing_m, area_wing_m2, x_le_wing_untapered_m, radius_rotor_m, solidity, area_horizontal_tail_m2,
+                  area_vertical_tail_m2):
+    """Halo drawn from solved sizes; the shape choices are those listed in `halo_plan027_snapshot`."""
     # Taper 0.6 at the solved area and span, quarter-chord line unswept through the sized quarter chord.
     taper_wing = 0.6
     chord_root_wing_m = 2 * area_wing_m2 / (span_wing_m * (1 + taper_wing))
@@ -253,8 +271,9 @@ def halo_plan027_snapshot():
                                          width_fuselage_m=width_fuselage_m),
         nacelle=NacelleSnapshot(length_m=3.4, width_m=0.65, height_m=1.0, fraction_chord_spindle=0.25,
                                 offset_z_spindle_m=0.0, length_mast_m=1.0, offset_nose_m=0.35),
-        rotor=RotorSnapshot(radius_m=4.582, count_blades=3, solidity=0.089),
-        v_tail=v_tail_equivalent(area_horizontal_tail_m2=3.732, area_vertical_tail_m2=1.658, aspect_ratio=3.27,
+        rotor=RotorSnapshot(radius_m=radius_rotor_m, count_blades=3, solidity=solidity),
+        v_tail=v_tail_equivalent(area_horizontal_tail_m2=area_horizontal_tail_m2,
+                                 area_vertical_tail_m2=area_vertical_tail_m2, aspect_ratio=3.27,
                                  taper_ratio=0.5, sweep_le_deg=40.0, x_le_root_m=9.1, z_m=0.85,
                                  thickness_to_chord=0.12),
     )

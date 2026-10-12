@@ -1512,6 +1512,42 @@ structural layout for export". Everything here is a check or an export. Nothing 
 - An all-vortex-lattice model is singular, because a VLM body is a plate that coincides with the wing tip inside
   the tip nacelle. Bodies are therefore panelled.
 
+**Aero cross-check on the current reference** (2026-10-11; `halo_reference_snapshot` from
+`output/structure/reference.json`, 15,179 lb; `--plan027` reproduces the table above). Six methods on one
+drawn geometry, plus the OpenVSP parasite-drag tool; the sizing picks one (AeroBuildup since plan 027).
+
+![Aero methods compared](figures/aero_compare_reference.png)
+
+| | CL_alpha (/deg) | CL at 0 deg | dCm/dCL | Neutral point x (m) | e |
+|---|---|---|---|---|---|
+| VSPAERO VLM | 0.089 | 0.155 | −0.202 | 5.51 | 1.14 |
+| VSPAERO VLM + panel bodies | 0.101 | 0.098 | −0.123 | 5.36 | — |
+| VSPAERO panel | 0.115 | 0.124 | −0.143 | 5.40 | — |
+| AeroSandbox VLM (lifting surfaces only) | 0.086 | 0.145 | −0.238 | 5.59 | 1.05 |
+| AeroSandbox AeroBuildup | 0.098 | 0.246 | −0.094 | 5.30 | 0.82 |
+| AeroSandbox lifting line (NeuralFoil; AeroBuildup bodies) | 0.096 | 0.188 | +0.033 | 5.05 | 1.05 (total-drag fit) |
+
+- Lift slope and drag: AeroBuildup is mid-pack on lift slope and conservative on drag: about 25 % more induced
+  drag than either vortex lattice and more total drag than the lifting line. CD0 0.0214 against the OpenVSP
+  parasite tool's 0.0203.
+- Pitching moment, by build-up (dCm/dCL):
+
+  | | wing alone | wing + tail | full aircraft |
+  |---|---|---|---|
+  | AeroSandbox VLM | +0.008 | −0.239 | — |
+  | Lifting line | +0.001 | −0.180 | +0.032 |
+  | AeroBuildup | +0.019 | −0.306 | −0.095 |
+  | VSPAERO | | −0.202 (VLM) | −0.123 (VLM + panel bodies) |
+
+  The wing alone agrees. AeroBuildup's tail is too effective (it sees no wing downwash), and its bodies are too
+  destabilizing: +0.21 against VSPAERO's +0.08. The two partly cancel, leaving its neutral point 6-10 cm forward
+  of VSPAERO's. The lifting line takes its bodies from AeroBuildup, hence its unstable slope.
+- Bodies in AeroBuildup: fuselage +0.152 on dCm/dCL and −0.039 on Cm at zero lift, wing fairing +0.040 and
+  −0.005, nacelles +0.017 and 0. The Gilruth/Raymer fuselage estimate (K_f 0.010-0.016 /deg, wing quarter chord
+  at 0.46 of the fuselage length) gives +0.08 to +0.13. The fuselage is the main overestimate, and it carries most
+  of the Cm offset that the tail-load trim drag (plan 036) sees.
+- Open: AeroBuildup's CL at 0 deg is about 0.1 above the other methods (zero-lift angle about 1 deg).
+
 **Structure** (`structure.py`, `examples/halo_structure.py`).
 - **Wing box:** spars at 0.15 and 0.60 c, 0.5 m ribs, fairing-attach and nacelle ribs.
 - **Fuselage:** 0.6 m ring frames (I-section beams along the skin), four bulkheads, floor.

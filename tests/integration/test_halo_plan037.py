@@ -10,7 +10,9 @@ from examples.halo_sizing import HaloAssumptions, assumptions_plan037, requireme
 class FuselageFactorTests(unittest.TestCase):
     def test_default_and_legacy_sets(self):
         self.assertEqual(HaloAssumptions().mass_factor_fuselage, 1.70)
-        legacy = [name for name in dir(halo) if name.startswith("assumptions_") and name not in ("assumptions_plan037", "assumptions_plan038")
+        # v3.6 (plan 048) is post-layout: it keeps the layout fuselage factor.
+        post_layout = ("assumptions_plan037", "assumptions_plan038", "assumptions_v3_6")
+        legacy = [name for name in dir(halo) if name.startswith("assumptions_") and name not in post_layout
                   and isinstance(getattr(halo, name), HaloAssumptions)]
         self.assertGreaterEqual(len(legacy), 10)
         for name in legacy:

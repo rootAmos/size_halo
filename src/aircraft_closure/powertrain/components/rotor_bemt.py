@@ -30,6 +30,7 @@ Validity and calibration (plan 047): see `examples/jvx_rotor_bemt.py`; `drag_fac
 section drag and is the one calibration constant.
 """
 from dataclasses import dataclass, fields, replace
+from functools import lru_cache
 from typing import Any
 
 import aerosandbox as asb
@@ -60,29 +61,79 @@ def _as_vector(values):
     return values
 
 
+def camber_a_meanline(x, lift_design, a=0.3):
+    """NACA a-series mean line y/c at chord fractions x for design lift coefficient `lift_design`
+    (Abbott and von Doenhoff, Theory of Wing Sections, eq. 4.26); load uniform to x = a, then linear to zero."""
+    x = onp.clip(onp.asarray(x, dtype=float), 1e-9, 1 - 1e-9)
+    g = -1 / (1 - a) * (a**2 * (0.5 * onp.log(a) - 0.25) + 0.25)
+    h = 1 / (1 - a) * (0.5 * (1 - a)**2 * onp.log(1 - a) - 0.25 * (1 - a)**2) + g
+    d = onp.abs(a - x)
+    term = onp.where(d > 1e-12, 0.5 * (a - x)**2 * onp.log(onp.maximum(d, 1e-300)), 0.0)
+    y = lift_design / (2 * onp.pi * (a + 1)) * (
+        1 / (1 - a) * (term - 0.5 * (1 - x)**2 * onp.log(1 - x) + 0.25 * (1 - x)**2 - 0.25 * (a - x)**2)
+        - x * onp.log(x) + g - h * x)
+    return y
+
+
+@lru_cache(maxsize=64)
+def _section_airfoils(schedule, fractions):
+    base = asb.Airfoil(schedule.airfoil_base).to_kulfan_airfoil()
+    thickness_base = base.max_thickness()
+    camber = (base.upper_weights + base.lower_weights) / 2
+    half = (base.upper_weights - base.lower_weights) / 2
+    x = (1 - onp.cos(onp.linspace(0, onp.pi, 121))) / 2
+    result = []
+    for fraction in fractions:
+        scale = onp.interp(fraction, schedule.fraction_radius, schedule.thickness_to_chord) / thickness_base
+        if schedule.lift_design is None:
+            result.append(asb.KulfanAirfoil(name=f"section_{fraction:.3f}", upper_weights=camber + scale * half,
+                                            lower_weights=camber - scale * half,
+                                            leading_edge_weight=base.leading_edge_weight * scale,
+                                            TE_thickness=base.TE_thickness))
+            continue
+        # Base thickness form at the local t/c on an a-series mean line at the local design lift coefficient
+        # (thickness laid off vertically from the mean line).
+        thickness_half = scale * asb.KulfanAirfoil(upper_weights=half, lower_weights=-half,
+                                                   leading_edge_weight=0.0, TE_thickness=0.0).local_thickness(x) / 2
+        mean = camber_a_meanline(x, onp.interp(fraction, schedule.fraction_radius, schedule.lift_design),
+                                 schedule.mean_line_a)
+        upper = onp.stack([x[::-1], (mean + thickness_half)[::-1]], axis=1)
+        lower = onp.stack([x[1:], (mean - thickness_half)[1:]], axis=1)
+        result.append(asb.Airfoil(name=f"section_{fraction:.3f}", coordinates=onp.concatenate([upper, lower]))
+                      .to_kulfan_airfoil())
+    return tuple(result)
+
+
 @dataclass(frozen=True)
 class SectionSchedule:
-    """Fixed airfoil family along the blade: a base camber line with thickness scaled to the local t/c."""
+    """Fixed airfoil family along the blade: a base thickness form scaled to the local t/c, on the base camber
+    line (default) or, when `lift_design` is given, on a NACA a-series mean line at the local design lift
+    coefficient (e.g. the XV-15's NACA 64-935 to 64-208 sections, a = 0.3)."""
     fraction_radius: tuple = (0.10, 0.40, 0.75, 1.00)
     thickness_to_chord: tuple = (0.28, 0.18, 0.12, 0.09)    # XN-28/18/12/09 stand-in (assumed)
     airfoil_base: str = "naca64a210"
     model_size: str = "medium"
     angle_zero_lift_deg: float = -1.66       # NACA 64A210 camber line, NeuralFoil at Re 5e6
     fraction_chord_transition: float = 0.05  # forced transition x/c, both surfaces: full-scale blades run turbulent
+    n_crit: float = 9.0                      # e^N amplification for free transition (inflow turbulence; Mack: 1 % -> 2.6)
+    lift_design: tuple = None                # design lift coefficient at `fraction_radius`; None: base camber
+    mean_line_a: float = 0.3
 
     def airfoils(self, fractions):
-        base = asb.Airfoil(self.airfoil_base).to_kulfan_airfoil()
-        thickness_base = base.max_thickness()
-        camber = (base.upper_weights + base.lower_weights) / 2
-        half = (base.upper_weights - base.lower_weights) / 2
-        result = []
-        for fraction in fractions:
-            scale = onp.interp(fraction, self.fraction_radius, self.thickness_to_chord) / thickness_base
-            result.append(asb.KulfanAirfoil(name=f"section_{fraction:.3f}", upper_weights=camber + scale * half,
-                                            lower_weights=camber - scale * half,
-                                            leading_edge_weight=base.leading_edge_weight * scale,
-                                            TE_thickness=base.TE_thickness))
-        return result
+        return list(_section_airfoils(self, tuple(float(f) for f in fractions)))
+
+    def angles_zero_lift_deg(self, fractions):
+        """Zero-lift angle per station, for the stall-delay attached-lift line: the base value, or with
+        `lift_design` thin-airfoil theory for the a-series mean line, alpha_0 = alpha_ideal - c_li / (2 pi) with
+        alpha_ideal = -c_li h / (2 pi (a + 1)) (Abbott and von Doenhoff, eq. 4.27). Thin-airfoil theory, because
+        NeuralFoil's lift curve is unreliable on the thick (t/c > 0.25), cambered root sections."""
+        if self.lift_design is None:
+            return self.angle_zero_lift_deg
+        a = self.mean_line_a
+        g = -1 / (1 - a) * (a**2 * (0.5 * onp.log(a) - 0.25) + 0.25)
+        h = 1 / (1 - a) * (0.5 * (1 - a)**2 * onp.log(1 - a) - 0.25 * (1 - a)**2) + g
+        lift_design = onp.interp(onp.asarray(fractions, dtype=float), self.fraction_radius, self.lift_design)
+        return onp.degrees(-lift_design * h / (2 * onp.pi * (a + 1)) - lift_design / (2 * onp.pi))
 
 
 @dataclass(frozen=True)
@@ -182,6 +233,7 @@ class BladeElementRotor:
             aero = airfoil.get_aero_from_neuralfoil(alpha=alpha_deg[i], Re=reynolds[i], mach=mach[i],
                                                     xtr_upper=self.sections.fraction_chord_transition,
                                                     xtr_lower=self.sections.fraction_chord_transition,
+                                                    n_crit=self.sections.n_crit,
                                                     model_size=self.sections.model_size)
             cl_list.append(aero["CL"])
             cd_list.append(aero["CD"])
@@ -190,7 +242,7 @@ class BladeElementRotor:
             # Rotational stall delay (Snel's 3 (c/r)^2, saturated by tanh): lift moves toward the attached-flow
             # line 2 pi sin(alpha - alpha_0) / beta in proportion to the factor.
             factor = np.tanh(3 * (chord_m / r_m)**2)
-            lift_attached = 2 * np.pi * np.sind(alpha_deg - self.sections.angle_zero_lift_deg) / np.sqrt(1 - mach**2)
+            lift_attached = 2 * np.pi * np.sind(alpha_deg - self.sections.angles_zero_lift_deg(fractions)) / np.sqrt(1 - mach**2)
             cl = cl + factor * (lift_attached - cl)
         cd = (np.array(cd_list) if not isinstance(cd_list[0], onp.ndarray) else onp.concatenate(cd_list)) * self.drag_factor
 

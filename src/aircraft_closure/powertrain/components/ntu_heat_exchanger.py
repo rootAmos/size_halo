@@ -19,7 +19,22 @@ point needs two more unknowns that the caller's `asb.Opti` owns: the air mass fl
 * Mass: core (material and the coolant in it) plus explicit allowances, `mass_breakdown()`:
   ducts `mass_duct_per_area_kg_m2` x core face area; fans rating / `specific_power_fan_W_kg`; pump, pipes and
   loop coolant `mass_pump_pipes_kg` (fixed). The allowances are the author's estimates (plan 042).
+* `allowances="published"` (plan 051) replaces the pump-and-pipes estimate with OpenConcept's published models
+  (Brelje et al., NATO STO-MP-AVT-323-21; `openconcept/thermal/pump.py` and `hose.py`):
+  - pump: `power_rated_pump_W` / `specific_power_pump_W_kg` (OpenConcept: 1/450 kg per W of rated electrical
+    power). Default rating 1.7 kW: 2.0 kg/s of water-glycol through about 150 kPa in the core (plan 042's solved
+    153 kPa) and 154 kPa in 26 m of 25.4 mm line (Darcy with Blasius' friction factor, 3.8 m/s, Re 6e4), at
+    OpenConcept's pump efficiency 0.35. Chapman et al. (NASA/TM-2020-220473, Table 4) give 2.4 kg for a 1.18 kg/s
+    coolant pump, the same order;
+  - lines: `length_lines_m` of hose with wall thickness t = D p_design / (2 σ) (thin-wall hoop stress), wall mass
+    (D + t) π t ρ_hose plus the coolant π D² / 4 ρ_coolant per metre (OpenConcept defaults: D 25.4 mm, p_design
+    1.03 MPa, σ 2.07 MPa, ρ_hose 1,356 kg/m³: 0.85 kg/m wall and 0.53 kg/m coolant). Chapman et al. count only the
+    coolant in their lines (wall mass neglected), so OpenConcept's is the more complete published model.
+  Ducts and fans keep the estimates: Kellermann et al. 2021 do not publish their duct or fan masses, Chapman et al.
+  neglect inlet and nozzle masses (they assume these scale with the core), OpenConcept carries none, and Chapman's
+  fan correlation (mass from air flow, fitted to small cooling fans) is not credible at tens of kW (plan 051).
 """
+import math
 from dataclasses import dataclass, field, replace
 from typing import Any
 
@@ -75,14 +90,39 @@ class NtuRamAirHeatExchanger:
     specific_power_fan_W_kg: Any = 2000.0         # electric fan, motor and controller
     mass_duct_per_area_kg_m2: Any = 12.0          # inlet, diffuser and nozzle per m2 of core face
     mass_pump_pipes_kg: Any = 30.0                # pump, lines to the tips and back, loop coolant outside the core
+    allowances: str = "estimate"                  # "estimate" (plan 042) or "published" (plan 051: pump and lines)
+    power_rated_pump_W: Any = 1700.0              # "published": electrical rating
+    specific_power_pump_W_kg: Any = 450.0         # "published": OpenConcept SimplePump, 1/450 kg/W
+    length_lines_m: Any = 26.0                    # "published": supply and return to both tips
+    diameter_line_m: Any = 0.0254                 # "published": OpenConcept SimpleHose defaults from here on
+    pressure_design_line_Pa: Any = 1.03e6
+    stress_allowable_line_Pa: Any = 2.07e6
+    density_line_kg_m3: Any = 1356.3
     power_heat_scale_W: Any = 1e5                 # normalizes the heat-rejection margin
     coolant: Any = field(default_factory=water_glycol_properties)
 
+    def mass_lines_per_length_kg_m(self):
+        """Hose wall plus the coolant in it, per metre (OpenConcept `SimpleHose`)."""
+        diameter_m = self.diameter_line_m
+        thickness_m = diameter_m * self.pressure_design_line_Pa / (2 * self.stress_allowable_line_Pa)
+        return ((diameter_m + thickness_m) * math.pi * thickness_m * self.density_line_kg_m3
+                + math.pi * diameter_m**2 / 4 * self.coolant.density_kg_m3)
+
+    def mass_pump_pipes_published_kg(self):
+        return (self.power_rated_pump_W / self.specific_power_pump_W_kg
+                + self.length_lines_m * self.mass_lines_per_length_kg_m())
+
     def mass_breakdown(self):
+        if self.allowances == "estimate":
+            mass_pump_pipes_kg = self.mass_pump_pipes_kg
+        elif self.allowances == "published":
+            mass_pump_pipes_kg = self.mass_pump_pipes_published_kg()
+        else:
+            raise ValueError(f"Unknown allowances '{self.allowances}' (\"estimate\" or \"published\").")
         return NtuMassBreakdown(mass_core_kg=self.core.get_mass(),
                                 mass_ducts_kg=self.mass_duct_per_area_kg_m2 * self.core.area_frontal_m2(),
                                 mass_fans_kg=self.power_rated_fan_W / self.specific_power_fan_W_kg,
-                                mass_pump_pipes_kg=self.mass_pump_pipes_kg)
+                                mass_pump_pipes_kg=mass_pump_pipes_kg)
 
     def get_mass(self):
         return self.mass_breakdown().total_kg()

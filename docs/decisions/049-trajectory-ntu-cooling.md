@@ -90,3 +90,8 @@ sizing's airplane points, the fan is available at every node; at speed it is nea
   reference: 21.9 s, 9.6 kWh), fan peak 0.44 kW, fan energy 0.001 kWh, duct drag 60 N at the end; minimum time to
   climb 227.4 s, 94.7 kWh, fuel 29.5 kg, with the fan at its 8.6 kW rating for part of it (0.54 kWh of fan energy;
   the generator reaches 103 C, the motor 90 C). The energy change is mostly the lighter aircraft (-882 lb).
+- 2026-10-11 (plan 048 branch): is the climb's fan use cooling or thrust? `examples/halo_climb_fan_check.py` flies
+  the minimum-time climb of v3.7 (14,357 lb) as sized and with the fan rating cut to 100 W: 227.4 s / 95.1 kWh /
+  29.5 kg against 228.1 s / 94.9 kWh / 29.6 kg, every machine temperature limit met in both. Cooling does not need
+  the fan in the climb; the optimizer uses it for a sliver of thrust the ram-share weight leaves (0.7 s, 0.3 %).
+  Kept as a known small effect; a stricter fix would credit the duct force only from the ram share of the flow.

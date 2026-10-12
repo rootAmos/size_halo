@@ -40,6 +40,7 @@ import aerosandbox as asb
 import aerosandbox.numpy as np
 import aerosandbox.tools.units as u
 import casadi as cas
+import numpy as onp
 from aerosandbox.library.power_turboshaft import power_turboshaft, thermal_efficiency_turboshaft
 
 from aircraft_closure.aerodynamics.trim import TailTrim
@@ -49,7 +50,10 @@ from aircraft_closure.aerodynamics.simple import SimpleAerodynamics
 from aircraft_closure.aerodynamics.slipstream import BlownWing
 from aircraft_closure.aerodynamics.wing_section import SectionClMaxSurrogate, WingSectionFamily
 from aircraft_closure.controls.stability import DirectionalStability, LongitudinalStability
-from aircraft_closure.core.margins import margin_above, margin_below, margin_report
+from aircraft_closure.aeroelasticity.whirl_flutter import (Eigenpair, eigenpair_residual, flutter_speed,
+                                                           least_damped_eigenpairs, state_labels,
+                                                           whirl_flutter_matrices)
+from aircraft_closure.core.margins import Margin, margin_above, margin_below, margin_report
 from aircraft_closure.core.sensitivity import objective_sensitivities, parametric_jacobian
 from aircraft_closure.mission.cost import CostBreakdown, CostModel
 from aircraft_closure.mission.mission import Mission, build_mission
@@ -83,9 +87,10 @@ from aircraft_closure.vehicle.items import FixedEquipment, FuelLoad, LandingGear
 from aircraft_closure.thermal.heat import coolant_temperatures_C, thermal_parameters
 from aircraft_closure.vehicle.powertrain_installation import (InstalledCooling, InstalledInstance,
                                                               PowertrainInstallation)
-from aircraft_closure.vehicle.surfaces import (HorizontalTail, TiltrotorWingMassModel, VerticalTail, Wing,
-                                               aluminium_wing_material, graphite_epoxy_wing_material)
-from aircraft_closure.weights import afdd
+from aircraft_closure.vehicle.surfaces import (BottomUpWingMassModel, HorizontalTail, TiltrotorWingMassModel,
+                                               VerticalTail, Wing, aluminium_wing_material,
+                                               graphite_epoxy_wing_material)
+from aircraft_closure.weights import afdd, wing_box
 from examples.xv15_hot_day import temperature_from_fahrenheit_K, temperature_offset_K, xv15_lapse_model
 from examples.xv15_performance import fit_lapse_exponent
 from examples.xv15_reference import Xv15MassFactors, Xv15Reference, calibration_factors
@@ -284,12 +289,37 @@ class HaloAssumptions:
     # (NDARC 19-1.1) x its own XV-15 factor, built for the wing design rotor speed (a design variable) and checked
     # by whirl-flutter frequency margins at every airplane-mode point.
     # "raymer": Raymer GA wing x the XV-15 wing factor (the reference until plan 026).
+    # "bottom_up_tiltrotor" (plan 054): the bottom-up wing box (`weights.wing_box`), every primary item sized for
+    # its own load case, no calibration factor, same frequency margins; `pitch_rib_wing_m` sets the rib pitch.
     wing_weight_model: str = "afdd_tiltrotor"
+    pitch_rib_wing_m: float = 0.5
+    # Plan 054: the rib pitch as a design variable (closer ribs: lighter buckling-limited upper covers, heavier ribs).
+    free_pitch_rib_wing: bool = False
+    bounds_pitch_rib_wing_m: tuple = (0.25, 1.0)
+    # Plan 054: root bending peak over beam theory for the distributed covers; CalculiX on the sized layout gives 0.97
+    # (the plan 043 factor 1.33 was fitted on the AFDD wing with discrete cap pads).
+    factor_peak_strain_wing_box: float = 1.0
     # XV-15 symmetric wing modes in per rev of its airplane-mode rotor speed (torsion 1.09, beam 0.43, chord 0.83).
     frequency_torsion_wing_per_rev: float = Xv15Reference().frequency_torsion_wing_per_rev
     frequency_beam_wing_per_rev: float = Xv15Reference().frequency_beam_wing_per_rev
     frequency_chord_wing_per_rev: float = Xv15Reference().frequency_chord_wing_per_rev
-    thickness_to_chord_wing: float = 0.23                # NACA 2423 airfoil above (XV-15 64A223, V-22 23 %)
+    # Plan 055: "frequency" checks whirl flutter by the per-rev placement margins above (the proxy; plan 040 found the
+    # reference meets them yet flutters at 262 kt against 302 kt). "eigenpair" replaces them with the XV-15-calibrated
+    # reduced-order model in the loop: at every airplane-mode point the `count_modes_whirl` least-damped modes at
+    # 1.15 V_D / knockdown are optimizer variables (eigenvalue and eigenvector), held at a damping ratio of at least
+    # `damping_min_whirl`. Nacelle CG ahead of the spindle and delta-3 as in plan 040; `free_delta3` makes delta-3 a
+    # design variable (the knockdown was fitted at -18 deg: least validated away from it, plan 040).
+    whirl_flutter_model: str = "frequency"
+    count_modes_whirl: int = 2
+    damping_min_whirl: float = 0.0
+    factor_whirl_flutter_speed: float = 1.15             # of V_D
+    factor_dive_speed: float = 1.25                      # V_D / V_max (assumed, plan 040)
+    offset_cg_nacelle_m: float = 0.5                     # nacelle CG ahead of the spindle (assumed, plan 040)
+    pitch_flap_coupling_deg: float = -18.0               # delta-3, the XV-15's
+    free_delta3: bool = False
+    bounds_delta3_deg: tuple = (-30.0, -10.0)            # 0 deg makes the coning mode critical (plan 040)
+    rounds_whirl_reseed: int = 3                         # solves re-seeded from a solution that fails the scan
+    thickness_to_chord_wing: float = 0.23               # NACA 2423 airfoil above (XV-15 64A223, V-22 23 %)
     wing_material: str = "graphite_epoxy"                # or "aluminium" (the XV-15's)
     # Plan 038: None builds the pylon pitch inertia about the spindle from the tip components (rotor at the hub,
     # motor and gearbox near it, cowling spread along the nacelle); a number is the pylon radius of gyration / rotor
@@ -408,11 +438,14 @@ class HaloAssumptions:
     # Plan 042: "mass_per_watt" (the default above: mass = rating / specific power, quadratic loss law) or "ntu" (an
     # offset-strip-fin core by ε-NTU in a ram-air duct with a hover fan: core counts, nozzle area and fan rating are
     # design variables; per point an air-flow unknown with the duct residual, and a fan pressure rise in hover).
-    heat_exchanger_model: str = "mass_per_watt"
+    heat_exchanger_model: str = "ntu"    # v3.7 default (plan 048); "mass_per_watt" for v3.6 and earlier
     mass_flow_coolant_heat_exchanger_kg_s: float = 2.0     # "ntu": fixed water-glycol flow (16 K rise at 121 kW)
     specific_power_fan_heat_exchanger_W_kg: float = 2000.0  # "ntu": fan, motor and controller (author estimate)
     mass_duct_per_area_heat_exchanger_kg_m2: float = 12.0  # "ntu": inlet, diffuser, nozzle per m2 core face (estimate)
     mass_pump_pipes_heat_exchanger_kg: float = 30.0        # "ntu": pump, lines to the tips, loop coolant (estimate)
+    # Plan 051: "estimate" (the 30 kg above) or "published" (pump and lines from OpenConcept's models; ducts and fans
+    # keep the estimates, which no source replaces). "published" is the v3.7 default (plan 048, author 2026-10-11).
+    allowances_heat_exchanger: str = "published"
     # ---- Tier 18 redundancy (plan 032) ----
     # True: `count_lanes_motor` lane motors per rotor (each 1/N of the torque, on a combining gearbox input),
     # `count_buses` cross-strapped buses joined by normally open ties (contactor + cable), `count_strings_battery`
@@ -469,6 +502,13 @@ class HaloAssumptions:
     count_units_motor: Any = None
     count_units_generator: Any = None
     integer_units: bool = True
+    # Plan 048: a unit may run up to this factor above its catalogue continuous power (thermal and supplier margin on
+    # the same hardware: unit mass, peak torque and maximum speed unchanged; the inverter scales with the rated power).
+    # 1.0: the catalogue rating (v3.6 and earlier); 1.10: the author's assumption, the v3.7 default. A machine needing
+    # 2.004 units on power then fits in 2 uprated units instead of rounding up to 3. The integrated inverter keeps its
+    # catalogue mass (the same drive run harder). The thermal model still has to clear the machine temperature
+    # limits at the higher loading.
+    factor_uprating_power_units: float = 1.10
 
 
 @dataclass(frozen=True)
@@ -503,6 +543,7 @@ class HaloDesign:
     power_rated_heat_exchanger_W: Any = None      # Tier 19 thermal: heat rejected at the reference difference
     power_rated_gearbox_W: Any = None             # Tier 19 thermal: rotor gearbox rating; None: the motor rating
     area_spar_strain_m2: Any = None               # plan 043: spar caps added for the cap-strain margin; None: 0
+    pitch_rib_wing_m: Any = None                  # plan 054: rib pitch of the bottom-up wing box; None: assumption
     # Plan 042 "ntu" heat exchanger: core counts (air channels across, fin lengths along the air, layers), duct
     # nozzle area and hover fan rating; None with the mass-per-watt model.
     count_wide_heat_exchanger: Any = None
@@ -689,6 +730,106 @@ def stage_mass_ratio(stage_model, ratio):
     return stage_model.mass_factor(ratio) / stage_model.mass_factor(ratio_reference_gear_stages())
 
 
+def halo_whirl_inputs(wing, wing_masses, mass_wing_kg, radius_m, solidity):
+    """Plan 055: the sized-aircraft inputs of the plan 040 flutter model (symbolic or numeric)."""
+    model = wing.mass_model
+    return dict(length_m=(wing.span_m() - model.width_fuselage_m) / 2, stiffness_beam_Nm2=wing_masses.stiffness_beam_Nm2,
+                stiffness_chord_Nm2=wing_masses.stiffness_chord_Nm2,
+                stiffness_torsion_Nm2=wing_masses.stiffness_torsion_Nm2, mass_wing_kg_m=mass_wing_kg / wing.span_m(),
+                chord_m=wing.chord_mean_m(), mass_tip_kg=model.mass_tip_kg,
+                radius_gyration_spindle_m=model.radius_gyration_pylon_m, radius_m=radius_m, solidity=solidity)
+
+
+def halo_whirl_system(inputs, speed_rotor_rad_s, delta3_deg, assumptions):
+    """Plan 055: (airframe, rotor) of the plan 040 Halo flutter model from `halo_whirl_inputs`: the cantilever
+    semispan with its tip nacelle and the XV-15 blade dynamics scaled to the Halo rotor."""
+    from examples.halo_whirl_flutter import nacelle_airframe, rotor_for
+    a, i = assumptions, inputs
+    airframe = nacelle_airframe(i["length_m"], i["stiffness_beam_Nm2"], i["stiffness_chord_Nm2"],
+                                i["stiffness_torsion_Nm2"], i["mass_wing_kg_m"], i["chord_m"], i["mass_tip_kg"],
+                                i["radius_gyration_spindle_m"], a.length_mast_m, x_cg_m=a.offset_cg_nacelle_m)
+    rotor = replace(rotor_for(i["radius_m"], a.count_blades, i["solidity"], speed_rotor_rad_s),
+                    pitch_flap_coupling=np.tan(np.radians(delta3_deg)))
+    return airframe, rotor
+
+
+def warm_start_rotor_speeds(opti, points, speeds_start_rad_s):
+    """Starting rotor speed of each point from {point label: rad/s} (e.g. an earlier result's `whirl_flutter`). The
+    flight points start at a generic 100 rad/s, a supersonic tip on the Halo rotor (plan 055)."""
+    for p in points:
+        speed, start_rad_s = p.speed_rotor_rad_s, speeds_start_rad_s.get(p.condition.label)
+        if start_rad_s is not None and isinstance(speed, cas.MX) and len(cas.symvar(speed)) == 1:
+            symbol = cas.symvar(speed)[0]
+            opti.set_initial(symbol, start_rad_s / float(cas.evalf(cas.jacobian(speed, symbol))))
+
+
+def halo_whirl_eigenpairs(opti, inputs, points, velocity_max_m_s, assumptions):
+    """Plan 055: whirl-flutter damping margins at 1.15 V_D / knockdown, one per tracked mode and airplane-mode point.
+
+    At each point (one per distinct rotor speed) the `count_modes_whirl` least-damped modes of the starting design
+    become optimizer variables (eigenvalue and eigenvector, `eigenpair_residual`), each residual row scaled by its
+    starting magnitude. Returns (margins, tracked [(point label, mode label, Eigenpair, rotor speed)], delta-3 in
+    deg). Untracked modes are not constrained: the solution is checked by the eigenvalue scan afterwards
+    (`HaloSizingResult.whirl_flutter_check`). The starting design is the Opti's initial values (rotor speeds from
+    `warm_start_rotor_speeds`)."""
+    from examples.halo_whirl_flutter import density_kg_m3, knockdown
+    a = assumptions
+    delta3_deg = (opti.variable(init_guess=a.pitch_flap_coupling_deg, scale=10.0, lower_bound=a.bounds_delta3_deg[0],
+                                upper_bound=a.bounds_delta3_deg[1]) if a.free_delta3 else a.pitch_flap_coupling_deg)
+    velocity_m_s = a.factor_whirl_flutter_speed * a.factor_dive_speed * velocity_max_m_s / knockdown
+
+    def start_value(expression):
+        if isinstance(expression, (cas.MX, cas.SX)):
+            return onp.asarray(cas.Opti.value(opti, expression, values), dtype=float)
+        return onp.asarray(expression, dtype=float)
+
+    def same(x, y):
+        if isinstance(x, cas.MX) or isinstance(y, cas.MX):
+            return x is y or (isinstance(x, cas.MX) and isinstance(y, cas.MX) and cas.is_equal(x, y, 4))
+        return float(x) == float(y)
+
+    values = opti.initial() + opti.value_parameters()
+    margins, tracked, speeds = [], [], []
+    for p in points:
+        speed = p.speed_rotor_rad_s
+        if any(same(speed, q) for q in speeds):
+            continue
+        speeds.append(speed)
+        airframe, rotor = halo_whirl_system(inputs, speed, delta3_deg, a)
+        matrices = whirl_flutter_matrices(airframe, rotor, velocity_m_s, speed, density_kg_m3)
+        start = [start_value(m) for m in matrices]
+        labels = state_labels(airframe, rotor)
+        size = len(labels)
+        for guess in least_damped_eigenpairs(*start, count=a.count_modes_whirl, labels=labels):
+            omega = abs(guess.omega)
+            row_scale = cas.DM(onp.abs(start[2]).sum(1) + omega * onp.abs(start[1]).sum(1)
+                               + omega**2 * onp.abs(start[0]).sum(1))
+            pair = Eigenpair(opti.variable(init_guess=guess.sigma, scale=max(0.05 * omega, 1.0)),
+                             opti.variable(init_guess=guess.omega, scale=max(omega, 1.0), lower_bound=0.0),
+                             opti.variable(init_guess=guess.vector_real, n_vars=size),
+                             opti.variable(init_guess=guess.vector_imag, n_vars=size), guess.index, guess.label)
+            real, imag = eigenpair_residual(*matrices, pair)
+            opti.subject_to([real / row_scale == 0, imag / row_scale == 0, pair.vector_real[guess.index] == 1,
+                             pair.vector_imag[guess.index] == 0])
+            margins.append(Margin(f"whirl flutter damping, {guess.label} ({p.condition.label})",
+                                  pair.damping_ratio - a.damping_min_whirl))
+            tracked.append((p.condition.label, guess.label, pair, speed))
+    return margins, tracked, delta3_deg
+
+
+def halo_whirl_check(inputs, speeds_rotor_rad_s, delta3_deg, assumptions):
+    """Plan 055: the eigenvalue scan of plan 040 on solved (numeric) `halo_whirl_inputs`: per distinct rotor speed, the
+    calibrated flutter speed (kt; inf if stable to 600 kt) and its mode. Catches a mode the eigenpairs did not track."""
+    from examples.halo_whirl_flutter import density_kg_m3, knockdown, velocities_m_s
+    rows = []
+    for speed in sorted({round(float(s), 6) for s in speeds_rotor_rad_s}):
+        airframe, rotor = halo_whirl_system(inputs, speed, delta3_deg, assumptions)
+        v, label = flutter_speed(airframe, rotor, speed, density_kg_m3, velocities_m_s)
+        rows.append(dict(speed_rotor_rad_s=speed, label=label,
+                         velocity_flutter_kt=knockdown * v / u.knot if v is not None else onp.inf))
+    return tuple(rows)
+
+
 def halo_wing_section(design, assumptions):
     """Plan 046: (thickness ratio, camber, airfoil) of the wing; design values override the assumptions."""
     a, d = assumptions, design
@@ -752,12 +893,13 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
         # variables) only places the efficiency map. n: `count_units_*`, or the relaxed count the rubber ratings
         # would need (used only to find n). The inverter is added unless it is a Tier 15 component.
         inverter = None if a.electrical_layer else a.specific_power_inverter_W_kg
+        uprating = a.factor_uprating_power_units    # plan 048: uprated continuous power only
         motor = unit_machine(motor, a.count_units_motor, UnitMachineMassModel(
-            a.mass_unit_motor_kg, a.torque_peak_unit_motor_Nm, a.power_continuous_unit_motor_W,
-            a.speed_max_unit_motor_rad_s, specific_power_inverter_W_kg=inverter))
+            a.mass_unit_motor_kg, a.torque_peak_unit_motor_Nm, uprating * a.power_continuous_unit_motor_W,
+            a.speed_max_unit_motor_rad_s, specific_power_inverter_W_kg=inverter, factor_uprating_power=uprating))
         generator = unit_machine(generator, a.count_units_generator, UnitMachineMassModel(
-            a.mass_unit_generator_kg, a.torque_peak_unit_generator_Nm, a.power_continuous_unit_generator_W,
-            a.speed_max_unit_generator_rad_s, specific_power_inverter_W_kg=inverter))
+            a.mass_unit_generator_kg, a.torque_peak_unit_generator_Nm, uprating * a.power_continuous_unit_generator_W,
+            a.speed_max_unit_generator_rad_s, specific_power_inverter_W_kg=inverter, factor_uprating_power=uprating))
     # Tier 19: with thermal machines the drive is rated on its own (the motor's rating is continuous).
     # Tier 18: `motor` is one lane motor; the drive takes all of a rotor's lanes.
     lanes = count_lanes_motor(a)
@@ -839,7 +981,7 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                         x_m=0.0, z_m=1.2, mass_factor=factors.powerplant)
     if a.wing_weight_model == "raymer":
         wing_mass = dict(mass_factor=factors.wing)
-    elif a.wing_weight_model == "afdd_tiltrotor":
+    elif a.wing_weight_model in ("afdd_tiltrotor", "bottom_up_tiltrotor"):
         # Mass on one wing tip: rotor, motor and rotor gearbox, plus the turbogenerator and its nacelle section.
         mass_motors_tip_kg = motor.get_mass() if lanes == 1 else lanes * motor.get_mass()    # Tier 18 lanes
         mass_tip_kg = mass_rotors_kg / a.count_rotors + mass_motors_tip_kg + gearbox.get_mass()
@@ -878,17 +1020,40 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
             depths = asb.Airfoil(section.base_name).local_thickness(np.array([a.fraction_chord_front_spar,
                                                                               a.fraction_chord_rear_spar]))
             ratio_depth_spar_cap = float(np.mean(depths)) / section.thickness_base
-        materials = dict(graphite_epoxy=graphite_epoxy_wing_material, aluminium=aluminium_wing_material)
-        wing_mass = dict(mass_factor=factors.wing_tiltrotor, mass_model=TiltrotorWingMassModel(
-            mass_tip_kg=mass_tip_kg, radius_gyration_pylon_m=radius_gyration_pylon_m,
-            ratio_depth_spar_cap=ratio_depth_spar_cap, thickness_min_torque_box_m=a.thickness_min_torque_box_m,
-            speed_rotor_design_rad_s=(d.speed_rotor_wing_design_rad_s if d.speed_rotor_wing_design_rad_s is not None
-                                      else speed_rotor_design_rad_s),
-            width_fuselage_m=a.diameter_fuselage_m, frequency_torsion_per_rev=a.frequency_torsion_wing_per_rev,
-            frequency_beam_per_rev=a.frequency_beam_wing_per_rev, frequency_chord_per_rev=a.frequency_chord_wing_per_rev,
-            thickness_to_chord=halo_wing_section(d, a)[0], material=materials[a.wing_material](),
-            count_rotors=a.count_rotors, load_factor_jump=a.load_factor_jump, smoothing=a.smoothing_wing_tiltrotor,
-            area_spar_added_m2=d.area_spar_strain_m2 if d.area_spar_strain_m2 is not None else 0.0))
+        speed_wing_design_rad_s = (d.speed_rotor_wing_design_rad_s if d.speed_rotor_wing_design_rad_s is not None
+                                   else speed_rotor_design_rad_s)
+        if a.wing_weight_model == "bottom_up_tiltrotor":
+            # Plan 054: the bottom-up wing box, no calibration factor; the rotor ahead of the spindle on its mast
+            # sets the airplane-mode inertia torque.
+            materials_box = dict(graphite_epoxy=wing_box.graphite_epoxy_wing_box_material,
+                                 aluminium=wing_box.aluminium_wing_box_material)
+            layout_box = wing_box.WingBoxLayout(
+                fraction_chord_front_spar=a.fraction_chord_front_spar,
+                fraction_chord_rear_spar=a.fraction_chord_rear_spar,
+                pitch_rib_m=d.pitch_rib_wing_m if d.pitch_rib_wing_m is not None else a.pitch_rib_wing_m,
+                factor_peak_root=a.factor_peak_strain_wing_box)
+            wing_mass = dict(mass_factor=1.0, mass_model=BottomUpWingMassModel(
+                mass_tip_kg=mass_tip_kg, radius_gyration_pylon_m=radius_gyration_pylon_m,
+                speed_rotor_design_rad_s=speed_wing_design_rad_s, width_fuselage_m=a.diameter_fuselage_m,
+                offset_cg_tip_m=mass_rotors_kg / a.count_rotors * a.length_mast_m / mass_tip_kg,
+                frequency_torsion_per_rev=a.frequency_torsion_wing_per_rev,
+                frequency_beam_per_rev=a.frequency_beam_wing_per_rev,
+                frequency_chord_per_rev=a.frequency_chord_wing_per_rev,
+                thickness_to_chord=halo_wing_section(d, a)[0], material=materials_box[a.wing_material](),
+                layout=layout_box, count_rotors=a.count_rotors, load_factor_ultimate=a.load_factor_ultimate,
+                load_factor_jump=a.load_factor_jump, smoothing=a.smoothing_wing_tiltrotor))
+        else:
+            materials = dict(graphite_epoxy=graphite_epoxy_wing_material, aluminium=aluminium_wing_material)
+            wing_mass = dict(mass_factor=factors.wing_tiltrotor, mass_model=TiltrotorWingMassModel(
+                mass_tip_kg=mass_tip_kg, radius_gyration_pylon_m=radius_gyration_pylon_m,
+                ratio_depth_spar_cap=ratio_depth_spar_cap, thickness_min_torque_box_m=a.thickness_min_torque_box_m,
+                speed_rotor_design_rad_s=speed_wing_design_rad_s,
+                width_fuselage_m=a.diameter_fuselage_m, frequency_torsion_per_rev=a.frequency_torsion_wing_per_rev,
+                frequency_beam_per_rev=a.frequency_beam_wing_per_rev,
+                frequency_chord_per_rev=a.frequency_chord_wing_per_rev,
+                thickness_to_chord=halo_wing_section(d, a)[0], material=materials[a.wing_material](),
+                count_rotors=a.count_rotors, load_factor_jump=a.load_factor_jump, smoothing=a.smoothing_wing_tiltrotor,
+                area_spar_added_m2=d.area_spar_strain_m2 if d.area_spar_strain_m2 is not None else 0.0))
     else:
         raise ValueError(f"Unknown wing weight model '{a.wing_weight_model}'.")
     aspect_ratio_wing = d.aspect_ratio_wing if d.aspect_ratio_wing is not None else a.aspect_ratio_wing
@@ -949,7 +1114,8 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                 mass_flow_coolant_kg_s=a.mass_flow_coolant_heat_exchanger_kg_s,
                 specific_power_fan_W_kg=a.specific_power_fan_heat_exchanger_W_kg,
                 mass_duct_per_area_kg_m2=a.mass_duct_per_area_heat_exchanger_kg_m2,
-                mass_pump_pipes_kg=a.mass_pump_pipes_heat_exchanger_kg),
+                mass_pump_pipes_kg=a.mass_pump_pipes_heat_exchanger_kg,
+                allowances=a.allowances_heat_exchanger),
                 d.count_wide_heat_exchanger, d.count_long_heat_exchanger, d.count_tall_heat_exchanger,
                 d.area_nozzle_heat_exchanger_m2, d.power_rated_fan_heat_exchanger_W)
         else:
@@ -1042,6 +1208,13 @@ class HaloSizingResult:
     # and beam frequencies in per rev of that point's rotor speed.
     wing_masses_kg: tuple = ()
     whirl_flutter: tuple = ()
+    # Plan 055 ("eigenpair" model): the tracked modes at 1.15 V_D / knockdown (point, mode, damping ratio,
+    # frequency), the eigenvalue scan of the solved design per rotor speed (calibrated flutter speed, kt, and mode),
+    # and delta-3 (deg).
+    whirl_eigenpairs: tuple = ()
+    whirl_flutter_check: tuple = ()
+    delta3_deg: Any = None
+    whirl_rounds: int = 0             # re-seeded solves after a failed scan (plan 055)
     # Tier 22 (plan 029): the starting point that produced this result (StartRecord; None when the caller passed
     # `initial`) and the cost per mission of `HaloAssumptions.cost_model` (CostBreakdown, numeric).
     start: Any = None
@@ -1196,7 +1369,7 @@ def solve_halo_sizing(requirements=HaloRequirements(), assumptions=HaloAssumptio
 
 def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssumptions(), factors=None,
                            verbose=False, max_iter=3000, initial=None, objective="mass_takeoff", off_design=None,
-                           parameters=()):
+                           parameters=(), whirl_round=0):
     """One coupled solve from `initial` (None: the generic guess). Raises RuntimeError if IPOPT fails.
 
     `off_design` (plan 045, an `OffDesign`): fly the sized aircraft `off_design.sized` instead of sizing one; its
@@ -1272,9 +1445,26 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
                                         lower_bound=0.0)
         r = replace(r, mass_payload_kg=mass_payload_kg)
     aircraft = build_halo_aircraft(design, r, a, factors, lapse_exponent)
-    return _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerodynamics, longitudinal,
-                               directional, soc_reserve, altitude_cruise_m, r, a, objective, off_design, verbose,
-                               max_iter, lifted)
+    result = _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerodynamics, longitudinal,
+                                 directional, soc_reserve, altitude_cruise_m, r, a, objective, off_design, verbose,
+                                 max_iter, lifted, initial)
+    result = replace(result, whirl_rounds=whirl_round)
+    if (a.whirl_flutter_model != "eigenpair" or off_design is not None or whirl_flutter_cleared(result, r, a)
+            or whirl_round >= a.rounds_whirl_reseed):
+        return result
+    # Plan 055: a tracked eigenpair can slide onto a better-damped mode while the one it stood for goes unstable.
+    # The scan caught it: one more complete solve from this solution, its eigenpairs seeded from the modes that are
+    # least damped there (a different starting point, counted and capped; not a convergence loop on a quantity).
+    # A result still failing after `rounds_whirl_reseed` is returned as is; `whirl_flutter_cleared` tells.
+    return solve_halo_sizing_once(requirements, assumptions, factors, verbose, max_iter, result, objective,
+                                  off_design, parameters, whirl_round + 1)
+
+
+def whirl_flutter_cleared(result, requirements, assumptions, tolerance_kt=0.5):
+    """Plan 055: the scanned calibrated flutter speed is at least 1.15 V_D at every airplane-mode rotor speed."""
+    required_kt = (assumptions.factor_whirl_flutter_speed * assumptions.factor_dive_speed
+                   * requirements.velocity_max_m_s / u.knot)
+    return all(row["velocity_flutter_kt"] >= required_kt - tolerance_kt for row in result.whirl_flutter_check)
 
 
 def lift_parameters(opti, keys, requirements, assumptions, factors):
@@ -1368,13 +1558,18 @@ def halo_design_variables(opti, guess, initial, assumptions, requirements):
                          speed_tip_m_s=opti.variable(
                              init_guess=guess.speed_tip_m_s if guess.speed_tip_m_s is not None else 220.0, scale=100.0,
                              lower_bound=150.0, upper_bound=a.mach_tip_hover_max * speed_sound_sea_level_m_s))
-    is_afdd_wing = a.wing_weight_model == "afdd_tiltrotor"
+    is_afdd_wing = a.wing_weight_model in ("afdd_tiltrotor", "bottom_up_tiltrotor")   # tiltrotor wing: frequencies, strain
     if is_afdd_wing:
         # Tier 20: the rotor speed the wing's frequencies are placed against; airplane-mode points may not exceed it.
         design = replace(design, speed_rotor_wing_design_rad_s=opti.variable(
             init_guess=guess.speed_rotor_wing_design_rad_s if guess.speed_rotor_wing_design_rad_s is not None
             else 40.0, scale=10.0, lower_bound=5.0, upper_bound=200.0))
-        if a.wing_strain_margin:
+        if a.wing_weight_model == "bottom_up_tiltrotor" and a.free_pitch_rib_wing:
+            low, high = a.bounds_pitch_rib_wing_m
+            design = replace(design, pitch_rib_wing_m=opti.variable(
+                init_guess=guess.pitch_rib_wing_m if guess.pitch_rib_wing_m is not None else a.pitch_rib_wing_m,
+                lower_bound=low, upper_bound=high))
+        if a.wing_strain_margin and a.wing_weight_model == "afdd_tiltrotor":
             # Plan 043: spar-cap area the optimizer may add for the ultimate cap-strain margin.
             design = replace(design, area_spar_strain_m2=opti.variable(
                 init_guess=guess.area_spar_strain_m2 if guess.area_spar_strain_m2 is not None else 1e-5,
@@ -1410,11 +1605,12 @@ def halo_design_variables(opti, guess, initial, assumptions, requirements):
 
 def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerodynamics, longitudinal, directional,
                         soc_reserve, altitude_cruise_m, requirements, assumptions, objective, off_design, verbose,
-                        max_iter, lifted=None):
-    """The coupled mission, requirements, closure and solve of `solve_halo_sizing_once` (split out for plan 045)."""
+                        max_iter, lifted=None, initial=None):
+    """The coupled mission, requirements, closure and solve of `solve_halo_sizing_once` (split out for plan 045).
+    `initial`: the starting result (plan 055 takes its airplane-mode rotor speeds)."""
     r, a = requirements, assumptions
     is_ecm = a.battery_model == "ecm"
-    is_afdd_wing = a.wing_weight_model == "afdd_tiltrotor"
+    is_afdd_wing = a.wing_weight_model in ("afdd_tiltrotor", "bottom_up_tiltrotor")   # tiltrotor wing: frequencies, strain
     lanes = count_lanes_motor(a)
     instances = aircraft.powertrain.topology.instances
     battery = instances["battery"].component
@@ -1513,14 +1709,28 @@ def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerody
     all_margins = (design_margins + flown.margins + engine_out_margins
                    + tuple(m for p in requirement_points for m in p.margins)
                    + tuple(m for _, failure in failures for m in failure.margins))
-    whirl_points, wing_masses = [], None
+    whirl_points, wing_masses, whirl_inputs, whirl_tracked, delta3_deg = [], None, None, (), a.pitch_flap_coupling_deg
     if is_afdd_wing:
         # Tier 20 reduced-order whirl flutter: at every airplane-mode point the realized wing torsion and beam
         # frequencies, in per rev of that point's rotor speed, stay at or above the required placement.
         wing_masses = aircraft.wing.mass_model.masses(aircraft.wing, condition)
         whirl_points = [p for p in ([s.point for seg in flown.segments for s in (seg.subsegments or (seg,))]
                                     + list(requirement_points)) if p.condition.mode == "airplane"]
-        for p in whirl_points:
+        if a.whirl_flutter_model == "eigenpair":
+            # The eigenpair guesses are evaluated at the starting rotor speeds: take them from the start.
+            warm_start_rotor_speeds(opti, whirl_points, {w["label"]: w["speed_rotor_rad_s"]
+                                                         for w in getattr(initial, "whirl_flutter", ())})
+        # Plan 055: the calibrated flutter model's inputs (checked by the eigenvalue scan after every solve).
+        whirl_inputs = halo_whirl_inputs(aircraft.wing, wing_masses, breakdown.wing.mass, radius_m,
+                                         design.solidity if design.solidity is not None else a.solidity)
+        if a.whirl_flutter_model == "eigenpair":
+            # The calibrated flutter model in the loop replaces the per-rev placement proxy.
+            whirl_margins, whirl_tracked, delta3_deg = halo_whirl_eigenpairs(opti, whirl_inputs, whirl_points,
+                                                                             r.velocity_max_m_s, a)
+            all_margins += tuple(whirl_margins)
+        elif a.whirl_flutter_model != "frequency":
+            raise ValueError(f"Unknown whirl flutter model '{a.whirl_flutter_model}'.")
+        for p in whirl_points if a.whirl_flutter_model == "frequency" else ():
             torsion_per_rev, beam_per_rev, _ = TiltrotorWingMassModel.frequency_per_rev(wing_masses,
                                                                                          p.speed_rotor_rad_s)
             all_margins += (margin_above(f"whirl flutter torsion per rev ({p.condition.label})", torsion_per_rev,
@@ -1674,6 +1884,12 @@ def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerody
                                  torsion_per_rev=value(wing_masses.frequency_torsion_rad_s / p.speed_rotor_rad_s),
                                  beam_per_rev=value(wing_masses.frequency_beam_rad_s / p.speed_rotor_rad_s))
                             for p in whirl_points),
+        whirl_eigenpairs=tuple(dict(point=point, mode=mode, damping_ratio=value(pair.damping_ratio),
+                                    frequency_rad_s=value(pair.omega)) for point, mode, pair, _ in whirl_tracked),
+        whirl_flutter_check=halo_whirl_check({k: value(v) for k, v in whirl_inputs.items()},
+                                             [value(p.speed_rotor_rad_s) for p in whirl_points], value(delta3_deg), a)
+        if whirl_inputs is not None else (),
+        delta3_deg=value(delta3_deg),
         cost=CostBreakdown(**{f.name: value(getattr(cost, f.name)) for f in fields(CostBreakdown)}),
         machine_units=machine_units_record(instances, value, a),
         thermal_trace=thermal_trace(
@@ -2145,7 +2361,8 @@ def _precursor(problem, factors, max_iter, cache, allow_continuation):
 # Named earlier baselines, so each tier's notebook keeps reproducing its own result. `pre_plan035` pins the
 # settings plan 035 changed (drag corrections, redundancy, unit-built machines, gearbox stages) to their earlier
 # values for every set below.
-pre_plan035 = dict(drag_corrections=False, redundancy=False, machine_mass_model="torque_density", gearbox_stages=False)
+pre_plan035 = dict(drag_corrections=False, redundancy=False, machine_mass_model="torque_density", gearbox_stages=False,
+                   heat_exchanger_model="mass_per_watt", factor_uprating_power_units=1.0)   # plan 048 defaults undone
 # Plans 037 and 038 (the drawn layout and the wing check): XV-15 fuselage calibration, turbogenerators at the tips,
 # round 12.8 m fuselage with the tail at 11.4 m, NDARC spar caps without a minimum gauge, XV-15 pylon ratio.
 pre_layout = dict(mass_factor_fuselage=None, turbogenerators_on_wing_tips=True, height_fuselage_m=None,
@@ -2374,6 +2591,12 @@ assumptions_plan037 = HaloAssumptions(**pre_plan035, ratio_radius_gyration_pylon
 # inertia from the tip components, turbogenerators by the layout (13,038 lb).
 requirements_plan038 = HaloRequirements(mass_payload_kg=900.0)
 assumptions_plan038 = HaloAssumptions(**pre_plan035)
+# v3.6 (15,179 lb): today's defaults with the mass-per-watt cooler and the machine units at their catalogue
+# continuous power (plan 048 made the plan 042 epsilon-NTU cooler and the 10 % uprating the defaults: v3.7).
+requirements_v3_6 = HaloRequirements()
+assumptions_v3_6 = HaloAssumptions(factor_uprating_power_units=1.0, heat_exchanger_model="mass_per_watt")
+# v3.5 on the current code (not test-pinned): the pre-layout settings with the v3.6 cooler and units.
+assumptions_v3_5 = HaloAssumptions(**pre_layout, factor_uprating_power_units=1.0, heat_exchanger_model="mass_per_watt")
 
 
 if __name__ == "__main__":

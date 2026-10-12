@@ -170,15 +170,17 @@ class UnitMachineMassModel:
     count_units: Any = None
     specific_power_inverter_W_kg: Any = None
     smoothing_units: Any = 0.05
+    factor_uprating_power: Any = 1.0    # plan 048: `power_continuous_unit_W` is this x the catalogue rating
 
     def count_units_relaxed(self, machine):
         return np.softmax(machine.max_torque_Nm / self.torque_peak_unit_Nm,
                           machine.power_rated_W / self.power_continuous_unit_W, softness=self.smoothing_units)
 
     def mass_inverter_kg(self, machine):
+        """Integrated inverter at the catalogue rating: an uprating runs the same drive harder (plan 048)."""
         if self.specific_power_inverter_W_kg is None:
             return 0.0
-        return machine.power_rated_W / self.specific_power_inverter_W_kg
+        return machine.power_rated_W / self.factor_uprating_power / self.specific_power_inverter_W_kg
 
     def mass_kg(self, machine):
         count = self.count_units if self.count_units is not None else self.count_units_relaxed(machine)
