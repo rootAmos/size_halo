@@ -166,6 +166,9 @@ class HaloRequirements:
     temperature_hover_hot_K: float = temperature_from_fahrenheit_K(95.0)
     thrust_to_weight_hover_hot: float = 1.05
     duration_hover_hot_s: float = 60.0
+    # Plan 061 (v3.11): overall width with the rotors turning, span + 2R, at most this: ICAO code B / FAA ADG II,
+    # 24 m, so it can ground-taxi on airport taxiways. None: no limit (v3.10 and earlier).
+    max_width_overall_m: Any = 24.0
 
     def requirement_set(self):
         return RequirementSet(
@@ -383,7 +386,7 @@ class HaloAssumptions:
     free_altitude_cruise: bool = False
     bounds_altitude_cruise_m: tuple = (2000 * u.foot, 13000 * u.foot)
     # Wing aspect ratio: induced drag against wing weight, whirl-flutter stiffness and rotor-span clearance.
-    free_aspect_ratio_wing: bool = False
+    free_aspect_ratio_wing: bool = True               # plan 061 (v3.11); fixed at 6.12 before (pre_plan061)
     bounds_aspect_ratio_wing: tuple = (4.0, 12.0)
     # Reserve SOC: the mission SOC floor, which is also where the engine-out hover starts (0.30 when fixed).
     free_soc_reserve: bool = False
@@ -982,7 +985,8 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                                   thermal_efficiency=thermal_efficiency_turboshaft(d.mass_turboshaft_bare_kg),
                                   lapse_exponent=lapse_exponent, part_power_model=a.part_power_model,
                                   lapse_model=xv15_lapse_model(lapse_exponent) if a.temperature_lapse else None)
-    electrical = (build_halo_electrical(motor, generator, battery, np.sqrt(d.area_wing_m2 * a.aspect_ratio_wing),
+    electrical = (build_halo_electrical(motor, generator, battery, np.sqrt(d.area_wing_m2 * (
+        d.aspect_ratio_wing if d.aspect_ratio_wing is not None else a.aspect_ratio_wing)),
                                         requirements, a) if a.electrical_layer else None)
     redundancy = build_halo_redundancy(generator, battery, requirements, a)
     topology = build_series_hybrid(motor, generator, battery, turboshaft, gearbox, rotor, count_rotors=a.count_rotors,
@@ -1730,7 +1734,8 @@ def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerody
         margin_above("soc_after_engine_out_hover", soc_after_reserve, soc_emergency_floor),
         margin_above("stall_lift_at_120kt", lift_stall_N, weight_N),
         margin_below("rotor_radius_m", radius_m, (span_m - a.diameter_fuselage_m) / 2 - a.clearance_rotor_fuselage_m),
-    )
+    ) + ((margin_below("width_overall_m", span_m + 2 * radius_m, r.max_width_overall_m),)
+         if r.max_width_overall_m is not None else ())
     all_margins = (design_margins + flown.margins + engine_out_margins
                    + tuple(m for p in requirement_points for m in p.margins)
                    + tuple(m for _, failure in failures for m in failure.margins))
@@ -2393,7 +2398,10 @@ pre_plan035 = dict(drag_corrections=False, redundancy=False, machine_mass_model=
                    whirl_flutter_model="frequency", free_delta3=False)                     # v3.10 defaults undone
 # Plan 057 (v3.9): the drag calibration and transition before it.
 # v3.10: whirl flutter by the frequency proxy, delta-3 fixed at -18 deg (the plan 055 eigenpair model off).
-pre_plan055 = dict(whirl_flutter_model="frequency", free_delta3=False)
+# Plan 061 (v3.11): wing aspect ratio free; v3.10 and earlier fix it at 6.12 (and have no width limit,
+# `requirements_v3_10`).
+pre_plan061 = dict(free_aspect_ratio_wing=False)
+pre_plan055 = dict(whirl_flutter_model="frequency", free_delta3=False, **pre_plan061)
 pre_plan057 = dict(factor_excrescence_buildup=1.27, factor_excrescence_scholz=1.17, fraction_chord_transition=0.1,
                    **pre_plan055)
 # Plans 037 and 038 (the drawn layout and the wing check): XV-15 fuselage calibration, turbogenerators at the tips,
@@ -2645,8 +2653,11 @@ requirements_v3_7 = HaloRequirements()
 assumptions_v3_7 = HaloAssumptions(**pre_plan057)
 # v3.9 (14,359 lb): the plan 057 drag recalibration with the frequency-proxy whirl check (v3.10 put the plan 055
 # eigenpair model in the loop with delta-3 free).
-requirements_v3_9 = HaloRequirements()
+requirements_v3_9 = HaloRequirements(max_width_overall_m=None)
 assumptions_v3_9 = HaloAssumptions(**pre_plan055)
+# v3.10 (14,350 lb): AR fixed at 6.12, no width limit (v3.11 frees AR under the 24 m limit, plan 061).
+assumptions_v3_10 = HaloAssumptions(**pre_plan061)
+requirements_v3_10 = HaloRequirements(max_width_overall_m=None)
 
 
 if __name__ == "__main__":

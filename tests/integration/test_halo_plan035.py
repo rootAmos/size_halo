@@ -25,9 +25,11 @@ class Plan035ReferenceTests(unittest.TestCase):
         self.assertGreater(r.min_margin, -1e-6)
         self.assertLess(abs(r.closure_residual_kg), 1e-3)
         self.assertEqual(r.mass_payload_kg, 900.0)
-        # v3.10: plan 057 drag recalibration and the plan 055 whirl-flutter eigenpair constraint with delta-3 free
-        # (v3.7 was 14,357 lb, v3.6 15,179 lb).
-        self.assertAlmostEqual(r.mass_takeoff_kg / u.lbm, 14350, delta=20)
+        # v3.11: plan 061 wing aspect ratio free under the 24 m overall-width limit (v3.10, AR 6.12, was 14,350 lb;
+        # v3.7 14,357 lb, v3.6 15,179 lb).
+        self.assertAlmostEqual(r.mass_takeoff_kg / u.lbm, 14163, delta=20)
+        self.assertGreater(r.design.aspect_ratio_wing, 6.12)
+        self.assertLessEqual(r.span_m + 2 * r.radius_rotor_m, HaloRequirements().max_width_overall_m * (1 + 1e-6))
         self.assertTrue(whirl_flutter_cleared(r, HaloRequirements(), HaloAssumptions()))
 
     def test_machines_are_whole_units_on_two_lanes(self):

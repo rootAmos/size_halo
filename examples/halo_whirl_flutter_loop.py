@@ -24,7 +24,7 @@ cases = dict(proxy=dict(), loop=loop, delta3=dict(loop, free_delta3=True), wing=
 
 
 def run(name, sized, requirements=HaloRequirements()):
-    assumptions = replace(HaloAssumptions(), **cases[name])
+    assumptions = replace(HaloAssumptions(), **dict(dict(free_aspect_ratio_wing=False), **cases[name]))   # plan 055 study: AR fixed unless freed
     start = time.time()
     result = solve_halo_sizing_once(requirements, assumptions, initial=sized)
     d = result.design
