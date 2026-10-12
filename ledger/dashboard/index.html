@@ -125,8 +125,7 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
 
   <section class="panel" aria-labelledby="h-cover">
     <div style="display:grid;gap:4px">
-      <h2 id="h-cover">Design variable impact matrix</h2>
-      <p class="lede" id="cover-lede">Each continuous input of the sizing with its elasticity (% output per % input) from one solve per mode: re-sized (the mission held, the aircraft re-closes) and fixed (the sized aircraft flown for range). Sort by any column; spreads marked unquantified have no owner estimate yet.</p>
+      <h2 id="h-cover">Design Variable Impact Matrix</h2>
     </div>
     <div class="controls">
       <label for="cover-q" class="sub">Search</label>
@@ -453,7 +452,6 @@ function coverage() {
   const c = V.coverage || {};
   const rows = c.inputs || [];
   if (!rows.length) { $("cover").innerHTML = `<tbody><tr><td class="empty">No coverage table yet: run examples.halo_parametric --all, then examples.halo_war_room.</td></tr></tbody>`; return; }
-  $("cover-lede").textContent = `${rows.length} inputs of the sizing (${esc(c.source || "")}, ${esc(c.date || "")}), each with its elasticity (% output per % input) from one solve per mode: re-sized, where the mission is held and the aircraft re-closes around the change, and as built, where the sized aircraft is frozen and flown off-design (80 % payload, full tanks, maximum range). USD per payload kg-nm is the cargo equivalent of CASM: cost per mission over payload times range. Sort by any column; inputs marked unquantified have no owner spread yet.`;
   const groups = [...new Set(rows.map(r => r.group))].sort();
   if (!$("cover-group").dataset.ready) {
     $("cover-group").innerHTML = `<option value="">All disciplines</option>` + groups.map(g => `<option>${esc(g)}</option>`).join("");
