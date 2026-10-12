@@ -32,6 +32,10 @@ Approximations (plan 019):
   equivalent-circuit battery, SOC is coulomb-counted and the limits are current, voltage and the
   low-current root. The RC polarization is at its steady value at each node; there are no RC states.
   That is conservative for manoeuvres shorter than the 43 s time constant.
+  Plan 060: `battery_dynamics="continuous"` adds the RC branch voltages as collocated states,
+  dv_k/dt = (I R_k(s) - v_k) / tau_k, starting from rest, and evaluates the battery instantaneously at
+  each node (V = OCV - I R0 - sum v_k), so the sag builds up and recovers in time. Node spacing below about
+  tau_1 / 2 (4 s) keeps the trapezoidal error under 1 %.
 """
 from dataclasses import dataclass, replace
 from typing import Any
@@ -190,14 +194,16 @@ class TiltrotorPointMass:
             torque_motor_Nm=torque_motor_Nm, power_shaft_motor_W=motor_result.power_shaft_W,
             power_electric_motors_W=self.count("motor") * motor_result.power_electric_W)
 
-    def evaluate_supply(self, altitude_m, *, current_battery_A, torque_generator_Nm, soc):
-        """Battery and turbogenerators (all active, equal shares) feeding the bus."""
+    def evaluate_supply(self, altitude_m, *, current_battery_A, torque_generator_Nm, soc, voltage_rc_V=None):
+        """Battery and turbogenerators (all active, equal shares) feeding the bus. `voltage_rc_V`: RC branch
+        voltages at each node (plan 060), the battery then evaluated instantaneously; None: steady polarization."""
         battery_model = self.instance("battery")
         generator_model = self.instance("generator")
         turboshaft = self.instance("turboshaft")
         count_generators = self.count("generator")
         atmosphere = asb.Atmosphere(altitude=altitude_m)
-        battery = battery_model.evaluate(current_battery_A, soc)
+        battery = (battery_model.evaluate(current_battery_A, soc) if voltage_rc_V is None
+                   else battery_model.evaluate(current_battery_A, soc, 0.0, voltage_rc_V))
         speed_generator_rad_s = generator_model.loss_model.speed_peak_efficiency_rad_s
         generator = generator_model.evaluate(speed_generator_rad_s, torque_generator_Nm, battery.voltage_V)
         power_shaft_generator_W = speed_generator_rad_s * torque_generator_Nm
@@ -271,6 +277,7 @@ class TiltrotorTrajectory:
     acceleration_m_s2: Any
     rate_gamma_rad_s: Any
     thermal: Any = None
+    voltage_rc_V: tuple = ()             # plan 060: RC branch voltage states (continuous battery dynamics)
 
 
 @dataclass(frozen=True)
@@ -370,19 +377,39 @@ def _ntu_cooling(opti, exchanger, temperatures, heat_W, atmosphere, velocity_m_s
                              mass_flow_air_kg_s=mass_flow_air_kg_s, pressure_rise_fan_Pa=pressure_rise_fan_Pa)
 
 
+def battery_rc_states(opti, battery_model, current_battery_A, soc, time_s, count_nodes, voltage_rc_start_V=None,
+                      current_guess_A=0.0):
+    """Plan 060: the RC branch voltages as collocated states (trapezoidal, `Opti.constrain_derivative`) with their
+    start values; None starts from rest. Returns (states, constraints)."""
+    start_V = (0.0,) * len(battery_model.cell.resistance_model.time_constants_s())         if voltage_rc_start_V is None else tuple(voltage_rc_start_V)
+    resistances_rc_ohm = battery_model.resistances_ohm(0.5)[1:]
+    states = tuple(opti.variable(init_guess=current_guess_A * r_ohm * np.ones(count_nodes),
+                                 scale=max(abs(current_guess_A * r_ohm), 1.0))
+                   for r_ohm in resistances_rc_ohm)
+    for state, rate in zip(states, battery_model.derivative_voltage_rc_V_s(current_battery_A, soc, states)):
+        opti.constrain_derivative(rate, state, time_s)
+    return states, [state[0] == v_V for state, v_V in zip(states, start_V)]
+
+
 def _node_guess(value, count_nodes):
     return value * np.ones(count_nodes) if np.isscalar(value) else np.array(value, dtype=float)
 
 
 def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, count_nodes, duration_bounds_s, guess,
-                               limits=TrajectoryLimits(), corridor=None, temperature_start_C=None):
+                               limits=TrajectoryLimits(), corridor=None, temperature_start_C=None,
+                               battery_dynamics="quasi_steady", voltage_rc_start_V=None):
     """Direct-collocation tiltrotor trajectory on a fixed aircraft (orchestration: creates Opti variables).
 
     States per node: x, altitude, speed, flight-path angle (AeroSandbox point mass), mass (fuel burn),
     battery SOC and bus energy. Controls per node: alpha, nacelle tilt (with its rate bound), thrust
     and speed per rotor, battery current and generator torque. The final time is a variable within
     `duration_bounds_s`. Boundary conditions and the objective belong to the caller.
+
+    `battery_dynamics` "continuous" (plan 060, equivalent-circuit battery only) adds the RC branch voltages as
+    states from `voltage_rc_start_V` (None: rest); "quasi_steady" holds them at their steady values.
     """
+    if battery_dynamics not in ("quasi_steady", "continuous"):
+        raise ValueError(f"Unknown battery_dynamics '{battery_dynamics}'.")
     n = count_nodes
     g = lambda value: _node_guess(value, n)  # noqa: E731
     duration_s = opti.variable(init_guess=guess.duration_s, scale=guess.duration_s,
@@ -420,8 +447,15 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
     # alternate.)
     tilt_rate_deg_s = np.diff(tilt_deg) / np.diff(time_s)
 
+    is_ecm = isinstance(battery_model, EquivalentCircuitBattery)
+    if battery_dynamics == "continuous" and not is_ecm:
+        raise ValueError("battery_dynamics 'continuous' needs the equivalent-circuit battery.")
+    voltage_rc_V, constraints_rc = (battery_rc_states(opti, battery_model, current_battery_A, soc, time_s, n,
+                                                      voltage_rc_start_V, float(np.mean(g(guess.current_battery_A))))
+                                    if battery_dynamics == "continuous" else ((), []))
     supply = model.evaluate_supply(altitude_m, current_battery_A=current_battery_A,
-                                   torque_generator_Nm=torque_generator_Nm, soc=soc)
+                                   torque_generator_Nm=torque_generator_Nm, soc=soc,
+                                   voltage_rc_V=voltage_rc_V if voltage_rc_V else None)
     # The motors see the battery terminal (bus) voltage.
     forces = model.evaluate(velocity_m_s, altitude_m, alpha_deg, tilt_deg, thrust_per_rotor_N=thrust_per_rotor_N,
                             speed_rotor_rad_s=speed_rotor_rad_s, voltage_bus_V=supply.battery.voltage_V)
@@ -437,9 +471,9 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
     dynamics.constrain_derivatives(opti, time_s)
     derivatives = dynamics.state_derivatives()
     opti.constrain_derivative(-supply.fuel_flow_kg_s, mass_kg, time_s)
-    is_ecm = isinstance(battery_model, EquivalentCircuitBattery)
     if is_ecm:
-        # Coulomb counting; polarization at its steady value at each node (no RC states, plan 022).
+        # Coulomb counting; polarization at its steady value at each node (plan 022) or RC states (plan 060).
+        opti.subject_to(constraints_rc)
         opti.constrain_derivative(-current_battery_A / battery_model.capacity_As, soc, time_s)
         battery_limits = battery_model.get_limits()
         opti.subject_to([
@@ -508,4 +542,4 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
         thrust_per_rotor_N=thrust_per_rotor_N, speed_rotor_rad_s=speed_rotor_rad_s,
         current_battery_A=current_battery_A, torque_generator_Nm=torque_generator_Nm, forces=forces, supply=supply,
         corridor=corridor, acceleration_m_s2=derivatives["speed"], rate_gamma_rad_s=derivatives["gamma"],
-        thermal=thermal)
+        thermal=thermal, voltage_rc_V=voltage_rc_V)

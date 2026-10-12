@@ -26,6 +26,25 @@ gives every point its steady state (no history, i.e. continuous ratings);
 "coolant" starts the mission at each component's coolant temperature; a dict
 of start temperatures by instance name continues an earlier history. Every
 point then holds its temperature margins at the end of its interval.
+
+Plan 060: `battery_dynamics` "quasi_steady" (default) holds the end-of-interval
+voltage with OCV and R0 at the mid-interval SOC; "constant_current" evaluates it at
+the end SOC, the true minimum of the interval under constant discharge current
+(the RC update is already exact), so the limit holds at every instant as the
+subsegments converge (first order: the current is constant within a point).
+
+"piecewise" (plan 060 part 2, equivalent-circuit battery) is direct collocation:
+a segment of n subsegments has n + 1 nodes, each an instantaneous flight point
+(zero duration) whose current is solved from its power required, P = V(I) I with
+V = OCV(s) - I R0(s) - sum v_k (the low-current root). SOC, mass, the RC
+branch voltages and the Tier 19 temperatures are node values linked by the
+trapezoidal rule (SOC: -I/Q; mass: -fuel flow; v_k: (I R_k - v_k)/tau_k;
+T: (loss - (T - T_coolant)/R)/C), and the voltage, SOC, temperature and every
+point limit hold at every node. Current is piecewise linear in time within a
+segment (second order) and steps only where the flight condition does, at
+segment boundaries, where the states carry over. Each node is reported as a
+subsegment whose `duration_s` is its trapezoidal weight (dt/2 at the ends, dt
+inside), so the sums of fuel, energy and duration are the trapezoidal integrals.
 """
 from dataclasses import dataclass, replace
 from typing import Any
@@ -34,7 +53,7 @@ from aircraft_closure.core.margins import margin_above
 from aircraft_closure.performance.flight_point import build_flight_point
 from aircraft_closure.powertrain.components.battery_ecm import EquivalentCircuitBattery
 from aircraft_closure.powertrain.redundancy import battery_for_condition
-from aircraft_closure.thermal.heat import coolant_temperatures_C
+from aircraft_closure.thermal.heat import coolant_temperatures_C, thermal_parameters
 
 
 @dataclass(frozen=True)
@@ -70,7 +89,8 @@ class MissionResult:
 
 
 def build_mission(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_start, hybridization_electric_min=0.0,
-                  soc_floor=None, subsegments=1, polarization_start="rest", thermal_start="steady"):
+                  soc_floor=None, subsegments=1, polarization_start="rest", thermal_start="steady",
+                  battery_dynamics="quasi_steady"):
     """`hybridization_electric_min` < 0 allows in-flight recharging from the generators on free-split segments.
 
     SOC stays inside the battery's own window (min_soc..max_soc) at every segment end, so a mission cannot dip
@@ -86,6 +106,13 @@ def build_mission(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_star
         raise ValueError("subsegments needs one count >= 1 per segment.")
     if polarization_start not in ("rest", "steady"):
         raise ValueError(f"Unknown polarization_start '{polarization_start}'.")
+    if battery_dynamics not in ("quasi_steady", "constant_current", "piecewise"):
+        raise ValueError(f"Unknown battery_dynamics '{battery_dynamics}'.")
+    if battery_dynamics == "piecewise":
+        if not is_ecm:
+            raise ValueError("battery_dynamics 'piecewise' needs the equivalent-circuit battery.")
+        return _build_mission_nodes(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_start,
+                                    hybridization_electric_min, soc_floor, counts, polarization_start, thermal_start)
     if isinstance(thermal_start, dict):
         temperatures_C = dict(thermal_start)
     elif thermal_start == "coolant":
@@ -134,7 +161,10 @@ def build_mission(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_star
             elif is_ecm:
                 soc_end = point.battery.soc_next
                 voltage_rc_V = point.battery.voltage_rc_end_V
-                margins.append(margin_above(f"{condition.label}: battery end voltage_V", point.battery.voltage_end_V,
+                voltage_end_V = (point.battery.voltage_end_V if battery_dynamics == "quasi_steady" else
+                                 battery_for_condition(aircraft.powertrain.topology, condition).voltage_terminal_V(
+                                     point.battery.current_A, soc_end, voltage_rc_V))
+                margins.append(margin_above(f"{condition.label}: battery end voltage_V", voltage_end_V,
                                             battery.get_limits().min_voltage_V))
             else:
                 # Tier 18: a degraded point (a string isolated) depletes only the strings still connected.
@@ -167,4 +197,122 @@ def build_mission(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_star
         soc_end=sum(soc.values()) / len(soc) if soc_by_bus else soc, mass_end_kg=mass_kg,
         duration_s=sum(r.duration_s for r in results), margins=tuple(margins), temperatures_end_C=temperatures_C,
         soc_end_by_bus=soc_by_bus,
+    )
+
+
+def _guess(opti, expression, default):
+    """Numeric initial guess of an expression from the Opti's initial values (a number passes through)."""
+    if isinstance(expression, (int, float)):
+        return float(expression)
+    try:
+        return float(opti.value(expression, opti.initial()))
+    except Exception:  # noqa: BLE001 (an expression of parameters without values)
+        return default
+
+
+def _rates_temperature_C_s(aircraft, point, battery):
+    """dT/dt = (loss - (T - T_coolant) / R) / C per thermal-modelled instance at an instantaneous node."""
+    instances = aircraft.powertrain.topology.instances
+    rates = {}
+    for load in point.thermal.heat_loads:
+        if load.source not in point.thermal.temperatures_end_C:
+            continue
+        component = battery if load.source == "battery" else instances[load.source].component
+        p = thermal_parameters(component)
+        rates[load.source] = (load.power_W - point.thermal.power_to_coolant_W[load.source]) / p.capacity_J_K
+    return rates
+
+
+def _build_mission_nodes(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_start, hybridization_electric_min,
+                         soc_floor, counts, polarization_start, thermal_start):
+    """`build_mission` with `battery_dynamics="piecewise"` (plan 060 part 2): trapezoidal collocation on nodes."""
+    topology = aircraft.powertrain.topology
+    battery_design = topology.instances["battery"].component
+    soc_lower = battery_design.min_soc if soc_floor is None else soc_floor
+    count_rc = len(battery_design.cell.resistance_model.time_constants_s())
+    if isinstance(thermal_start, dict):
+        temperatures_C = dict(thermal_start)
+    elif thermal_start == "coolant":
+        temperatures_C = coolant_temperatures_C(aircraft.powertrain)
+    elif thermal_start == "steady":
+        temperatures_C = None
+    else:
+        raise ValueError(f"Unknown thermal_start '{thermal_start}'.")
+    voltage_rc_V = (0.0,) * count_rc if polarization_start == "rest" else None
+    mass_kg, soc = mass_start_kg, soc_start
+    results, margins = [], []
+    for segment, count in zip(mission.segments, counts):
+        dt_s = segment.duration_s() / count
+        nodes = []
+        for index in range(count + 1):
+            steady_start = False
+            if index > 0:
+                # The node's states are unknowns, tied to the previous node by the trapezoidal rule below.
+                mass_guess_kg = _guess(opti, mass_kg, 1000.0)
+                mass_kg = opti.variable(init_guess=mass_guess_kg, scale=mass_guess_kg)
+                soc = opti.variable(init_guess=_guess(opti, soc, 0.5), scale=0.1)
+                voltage_rc_V = tuple(opti.variable(init_guess=_guess(opti, v, 0.0), scale=10.0) for v in voltage_rc_V)
+                if temperatures_C is not None:
+                    temperatures_C = {name: opti.variable(init_guess=_guess(opti, t, 60.0), scale=50.0)
+                                      for name, t in temperatures_C.items()}
+            elif voltage_rc_V is None:
+                # "steady" start: fully developed at the first node's current (tied once the point is built).
+                voltage_rc_V = tuple(opti.variable(init_guess=0.0, scale=10.0) for _ in range(count_rc))
+                steady_start = True
+            condition = segment.flight_condition(soc)
+            condition = replace(condition, label=f"{condition.label} {index}/{count}")
+            battery = battery_for_condition(topology, condition)
+            point = build_flight_point(opti, aircraft, aerodynamics, condition, mass_kg,
+                                       hybridization_electric_min=hybridization_electric_min,
+                                       duration_s=0.0, voltage_rc_start_V=voltage_rc_V,
+                                       temperature_start_C=temperatures_C)
+            current_A = point.battery.current_A
+            if steady_start:
+                opti.subject_to([(v - current_A * r) / 10.0 == 0
+                                 for v, r in zip(voltage_rc_V, battery.resistances_ohm(soc)[1:])])
+            # The actuator disk is valid for non-negative thrust (relevant in descent).
+            opti.subject_to(point.thrust_per_rotor_N >= 0)
+            opti.subject_to([soc <= battery_design.max_soc, soc >= soc_lower])
+            margins.append(margin_above(f"{condition.label}: battery voltage_V", point.battery.voltage_V,
+                                        battery.get_limits().min_voltage_V))
+            margins.extend(point.margins)
+            node = dict(point=point, mass_kg=mass_kg, soc=soc, voltage_rc_V=voltage_rc_V,
+                        temperatures_C=temperatures_C, rate_soc_s=-current_A / battery.capacity_As,
+                        rates_rc_V_s=battery.derivative_voltage_rc_V_s(current_A, soc, voltage_rc_V),
+                        rates_temperature_C_s=(_rates_temperature_C_s(aircraft, point, battery)
+                                               if temperatures_C is not None else {}))
+            if nodes:
+                a, b = nodes[-1], node
+                scale_mass_kg = _guess(opti, a["mass_kg"], 1000.0)
+                opti.subject_to(
+                    [b["soc"] == a["soc"] + dt_s / 2 * (a["rate_soc_s"] + b["rate_soc_s"]),
+                     (b["mass_kg"] - a["mass_kg"] + dt_s / 2 * (a["point"].fuel_flow_kg_s + b["point"].fuel_flow_kg_s))
+                     / scale_mass_kg == 0]
+                    + [(vb - va - dt_s / 2 * (ra + rb)) / 10.0 == 0 for va, vb, ra, rb in
+                       zip(a["voltage_rc_V"], b["voltage_rc_V"], a["rates_rc_V_s"], b["rates_rc_V_s"])]
+                    + [(b["temperatures_C"][name] - a["temperatures_C"][name]
+                        - dt_s / 2 * (a["rates_temperature_C_s"][name] + b["rates_temperature_C_s"][name])) / 50.0 == 0
+                       for name in a["rates_temperature_C_s"]])
+            nodes.append(node)
+        weights_s = [dt_s / 2 if index in (0, count) else dt_s for index in range(count + 1)]
+        points = tuple(SegmentResult(
+            segment=segment, point=n["point"], duration_s=w, mass_start_kg=n["mass_kg"],
+            mass_fuel_burnt_kg=n["point"].fuel_flow_kg_s * w,
+            energy_battery_chemical_J=n["point"].battery.power_chemical_W * w,
+            energy_battery_terminal_J=n["point"].power_battery_W * w, soc_start=n["soc"], soc_end=n["soc"])
+            for n, w in zip(nodes, weights_s))
+        results.append(SegmentResult(
+            segment=segment, point=points[0].point, duration_s=segment.duration_s(),
+            mass_start_kg=points[0].mass_start_kg, mass_fuel_burnt_kg=points[0].mass_start_kg - nodes[-1]["mass_kg"],
+            energy_battery_chemical_J=sum(p.energy_battery_chemical_J for p in points),
+            energy_battery_terminal_J=sum(p.energy_battery_terminal_J for p in points),
+            soc_start=points[0].soc_start, soc_end=nodes[-1]["soc"], subsegments=points))
+        mass_kg, soc = nodes[-1]["mass_kg"], nodes[-1]["soc"]
+        voltage_rc_V, temperatures_C = nodes[-1]["voltage_rc_V"], nodes[-1]["temperatures_C"]
+    return MissionResult(
+        segments=tuple(results),
+        mass_fuel_burnt_kg=sum(r.mass_fuel_burnt_kg for r in results),
+        energy_battery_chemical_J=sum(r.energy_battery_chemical_J for r in results),
+        soc_end=soc, mass_end_kg=mass_kg, duration_s=sum(r.duration_s for r in results),
+        margins=tuple(margins), temperatures_end_C=temperatures_C,
     )

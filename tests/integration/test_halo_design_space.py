@@ -143,7 +143,7 @@ class CostObjectiveTests(unittest.TestCase):
         # The cost optimum may recharge the pack to the take-off SOC in flight: ground electricity is then zero.
         self.assertGreaterEqual(c.electricity_usd, -1e-6)
         self.assertAlmostEqual(c.per_mission_usd, c.capital_usd + c.fuel_usd + c.electricity_usd + c.battery_usd
-                               + c.time_usd)
+                               + c.time_usd + c.maintenance_airframe_usd + c.maintenance_powerplant_usd)
 
 
 class EnumerationAndSensitivityTests(unittest.TestCase):

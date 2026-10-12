@@ -2,12 +2,14 @@ name: tests
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
+  # Component and model tests: everything except tests/integration.
   unittest:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -18,4 +20,28 @@ jobs:
       - name: Unit tests
         env:
           MPLBACKEND: Agg
-        run: uv run python -m unittest discover -s tests -v
+          OMP_NUM_THREADS: 1
+        run: |
+          status=0
+          for dir in tests/*/; do
+            [ "$dir" = "tests/integration/" ] && continue
+            uv run python -m unittest discover -s "$dir" -t . || status=1
+          done
+          exit $status
+
+  # Full Halo sizings and validations: minutes each, so a job of their own.
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install (locked)
+        run: uv sync --locked
+      - name: Integration tests
+        env:
+          MPLBACKEND: Agg
+          OMP_NUM_THREADS: 1
+        run: uv run python -m unittest discover -s tests/integration -t . -v

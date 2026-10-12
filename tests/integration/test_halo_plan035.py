@@ -3,7 +3,8 @@ import unittest
 
 import aerosandbox.tools.units as u
 
-from examples.halo_sizing import HaloAssumptions, HaloRequirements, assumptions_plan030, solve_halo_sizing
+from examples.halo_sizing import (HaloAssumptions, HaloRequirements, assumptions_plan030, solve_halo_sizing,
+                                  whirl_flutter_cleared)
 
 
 class Plan035ReferenceTests(unittest.TestCase):
@@ -24,8 +25,10 @@ class Plan035ReferenceTests(unittest.TestCase):
         self.assertGreater(r.min_margin, -1e-6)
         self.assertLess(abs(r.closure_residual_kg), 1e-3)
         self.assertEqual(r.mass_payload_kg, 900.0)
-        # v3.7 (plan 048): epsilon-NTU cooler and 10 % uprated machine units (v3.6 was 15,179 lb).
-        self.assertAlmostEqual(r.mass_takeoff_kg / u.lbm, 14357, delta=20)
+        # v3.10: plan 057 drag recalibration and the plan 055 whirl-flutter eigenpair constraint with delta-3 free
+        # (v3.7 was 14,357 lb, v3.6 15,179 lb).
+        self.assertAlmostEqual(r.mass_takeoff_kg / u.lbm, 14350, delta=20)
+        self.assertTrue(whirl_flutter_cleared(r, HaloRequirements(), HaloAssumptions()))
 
     def test_machines_are_whole_units_on_two_lanes(self):
         r = self.result

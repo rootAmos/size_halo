@@ -118,29 +118,41 @@ def plot_power_map(power_map, corridor, sizing, model, path, ax=None):
     step_kW = 50.0
     levels = onp.arange(onp.floor(onp.nanmin(power_kW) / step_kW) * step_kW,
                         onp.nanmax(power_kW) + step_kW, step_kW)
-    filled = ax.contourf(velocity_kt, tilt, onp.ma.masked_invalid(power_kW), levels=levels, cmap="viridis")
+    filled = ax.contourf(velocity_kt, tilt, onp.ma.masked_invalid(power_kW), levels=levels, cmap="Blues")
     lines = ax.contour(velocity_kt, tilt, onp.ma.masked_invalid(power_kW),
-                       levels=[level for level in levels if level % (2 * step_kW) == 0], colors="white",
-                       linewidths=0.7)
-    ax.clabel(lines, fmt="%.0f", fontsize=7)
+                       levels=[level for level in levels if level % (2 * step_kW) == 0], colors="#14213D",
+                       linewidths=1.1)
+    ax.clabel(lines, fmt="%.0f", fontsize=9, colors="#14213D")
     ax.figure.colorbar(filled, ax=ax, label=f"Rotor shaft power, both rotors (kW); drive rating {rating_kW:.0f} kW")
     pairs = [(lo, hi) for lo, hi in corridor if lo.trim is not None and hi.trim is not None]
+    # Each stretch of a bound is coloured by the limit that sets it (disc tilt binds alongside the others and is
+    # left to the table; it is a trim-authority limit).
+    colours_limit = {"pitch_max": ("#C2611F", "angle of attack 12 deg (stall about 15 deg)"),
+                     "pitch_min": ("#E3A35F", "angle of attack min"),
+                     "edgewise_advance_ratio": ("#8A1F12", "edgewise advance ratio"),
+                     "rotor_power": ("#1A7F4B", "rotor power (drive rating)"),
+                     "wing_stall": ("#2A6FC2", "wing stall"), "blade_loading": ("#8A5BB8", "blade loading"),
+                     "tail_deflection": ("#5A6474", "tail deflection"), "placard_speed": ("#5A6474", "placard speed"),
+                     "hover": ("#9AA4B8", "hover: no low-speed limit")}
+
+    def limit_of(bound):
+        names = [n for n in bound.binding if n in colours_limit]
+        return names[0] if names else None
+
+    shown = set()
     for side in (0, 1):
-        ax.plot([p[side].velocity_m_s / u.knot for p in pairs], [p[side].tilt_deg for p in pairs], "-",
-                color="black", lw=1.5)
-    labels_map = {"disc_tilt": "disc tilt", "pitch_max": "attitude max", "pitch_min": "attitude min",
-                  "edgewise_advance_ratio": "edgewise mu", "rotor_power": "rotor power"}
-    for lo, hi in pairs[::2]:
-        for bound, align in ((lo, "right"), (hi, "left")):
-            names = [n for n in bound.binding if n not in ("hover",)]
-            if names:
-                ax.annotate(", ".join(labels_map.get(n, n.replace("_", " ")) for n in names),
-                            (bound.velocity_m_s / u.knot, bound.tilt_deg), xytext=(-3 if align == "right" else 3, 3),
-                            textcoords="offset points", ha=align, fontsize=7, color="#333333")
+        points = [p[side] for p in pairs]
+        for a, b in zip(points[:-1], points[1:]):
+            name = limit_of(b) if side == 0 else limit_of(a)
+            colour, label = colours_limit.get(name, ("#14213D", "other"))
+            ax.plot([a.velocity_m_s / u.knot, b.velocity_m_s / u.knot], [a.tilt_deg, b.tilt_deg], "-", color=colour,
+                    lw=3.5, solid_capstyle="round", label=None if label in shown else label)
+            shown.add(label)
+    ax.legend(loc="upper right", fontsize=8, title="Corridor edge set by", title_fontsize=8, framealpha=0.95)
     index = onp.unravel_index(onp.nanargmin(power_kW), power_kW.shape)
-    ax.plot(velocity_kt[index], tilt[index], "w*", ms=10)
+    ax.plot(velocity_kt[index], tilt[index], "*", color="#14213D", ms=12)
     ax.annotate(f"least power {power_kW[index]:.0f} kW", (velocity_kt[index], tilt[index]), xytext=(5, -10),
-                textcoords="offset points", color="white", fontsize=8)
+                textcoords="offset points", color="#14213D", fontsize=8)
     ax.set_xlabel("True airspeed (kt)")
     ax.set_ylabel("Nacelle angle (deg, 90 = hover)")
     ax.set_title(f"Power required across the conversion corridor: level flight, {sizing.mass_takeoff_kg:.0f} kg, "

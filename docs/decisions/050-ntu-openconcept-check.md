@@ -96,6 +96,8 @@ diameters are "OpenConcept's expressions" holds for the air side only.
   (4 tests) passes with the existing core tests (17 in the two modules). Result above: identical except the
   coolant-side hydraulic diameter (ours is Manglik and Bergles', OpenConcept's is the plain duct); heat within
   0.04 %, coolant loss +2.2 %. No change to the model.
+- 2026-10-11: figure `docs/figures/ntu_validation.png` (`python -m examples.ntu_validation_figure`), left panel: heat
+  parity with OpenConcept over the eleven stored cases; it also carries the plan 051 checks.
 
 ## Slide summary
 
