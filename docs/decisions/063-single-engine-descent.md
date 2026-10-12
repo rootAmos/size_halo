@@ -42,4 +42,18 @@ heat loads (`build_flight_point`), as the engine-out hovers do. `halo_mission` t
 
 ## Progress log
 
-- 2026-10-12: option, unit test. Sizing comparison pending.
+- 2026-10-12: option, unit test.
+- 2026-10-12: v3.11 with the battery stepped (15 s), 4 nodes per segment, warm-started:
+
+  | | both engines in descent | one engine in descent |
+  |---|---|---|
+  | take-off weight | 14,171 lb | 14,145 lb (-26) |
+  | empty weight | 10,240 lb | 10,225 lb |
+  | fuel burnt | 803.0 kg | 798.3 kg |
+  | battery | 59.8 kWh | 59.4 kWh |
+  | descent turbine power at the nodes | 22, 619, 22, 350 kW | 339, 327, 279, 280 kW |
+  | descent battery power at the nodes | +311, -266, +310, -9 kW | -5, +6, +52, +51 kW |
+
+  One engine removes the node-to-node oscillation: the running engine sits near 50 % throttle and the battery
+  stays near zero. Binding set unchanged (flutter, rotor radius, engine-out hover voltage and power). Engine-out
+  hover still ends on 525 V.
