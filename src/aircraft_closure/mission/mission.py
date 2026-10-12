@@ -22,14 +22,15 @@ of start temperatures by instance name continues an earlier history. Every
 point then holds its temperature margins at the end of its interval.
 
 Plan 060: `battery_dynamics` "quasi_steady" (default) holds the end-of-interval
-voltage with OCV and R0 at the mid-interval SOC; "piecewise" evaluates it at
+voltage with OCV and R0 at the mid-interval SOC; "constant_current" evaluates it at
 the end SOC, the true minimum of the interval under constant discharge current
 (the RC update is already exact), so the limit holds at every instant as the
 subsegments converge (first order: the current is constant within a point).
 
-"continuous" (plan 060 part 2, equivalent-circuit battery) is direct collocation:
+"piecewise" (plan 060 part 2, equivalent-circuit battery) is direct collocation:
 a segment of n subsegments has n + 1 nodes, each an instantaneous flight point
-(zero duration) with its own power balance and current. SOC, mass, the RC
+(zero duration) whose current is solved from its power required, P = V(I) I with
+V = OCV(s) - I R0(s) - sum v_k (the low-current root). SOC, mass, the RC
 branch voltages and the Tier 19 temperatures are node values linked by the
 trapezoidal rule (SOC: -I/Q; mass: -fuel flow; v_k: (I R_k - v_k)/tau_k;
 T: (loss - (T - T_coolant)/R)/C), and the voltage, SOC, temperature and every
@@ -98,11 +99,11 @@ def build_mission(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_star
         raise ValueError("subsegments needs one count >= 1 per segment.")
     if polarization_start not in ("rest", "steady"):
         raise ValueError(f"Unknown polarization_start '{polarization_start}'.")
-    if battery_dynamics not in ("quasi_steady", "piecewise", "continuous"):
+    if battery_dynamics not in ("quasi_steady", "constant_current", "piecewise"):
         raise ValueError(f"Unknown battery_dynamics '{battery_dynamics}'.")
-    if battery_dynamics == "continuous":
+    if battery_dynamics == "piecewise":
         if not is_ecm:
-            raise ValueError("battery_dynamics 'continuous' needs the equivalent-circuit battery.")
+            raise ValueError("battery_dynamics 'piecewise' needs the equivalent-circuit battery.")
         return _build_mission_nodes(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_start,
                                     hybridization_electric_min, soc_floor, counts, polarization_start, thermal_start)
     if isinstance(thermal_start, dict):
@@ -202,7 +203,7 @@ def _rates_temperature_C_s(aircraft, point, battery):
 
 def _build_mission_nodes(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_start, hybridization_electric_min,
                          soc_floor, counts, polarization_start, thermal_start):
-    """`build_mission` with `battery_dynamics="continuous"` (plan 060 part 2): trapezoidal collocation on nodes."""
+    """`build_mission` with `battery_dynamics="piecewise"` (plan 060 part 2): trapezoidal collocation on nodes."""
     topology = aircraft.powertrain.topology
     battery_design = topology.instances["battery"].component
     soc_lower = battery_design.min_soc if soc_floor is None else soc_floor

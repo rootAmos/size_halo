@@ -174,12 +174,12 @@ class SubsegmentMissionTests(unittest.TestCase):
 
 
 class ContinuousEndVoltageTests(unittest.TestCase):
-    """Plan 060: `battery_dynamics="piecewise"` holds the end voltage at the end SOC."""
+    """Plan 060: `battery_dynamics="constant_current"` holds the end voltage at the end SOC."""
 
     def test_end_voltage_margin_at_the_end_soc(self):
         low = Mission((HoverSegment(60.0, 0.0, 0.8, "low-SOC hover"),))
         margins = {}
-        for dynamics in ("quasi_steady", "piecewise"):
+        for dynamics in ("quasi_steady", "constant_current"):
             opti = asb.Opti()
             flown = build_mission(opti, aircraft, aero, low, 1550.0, 0.35, subsegments=2,
                                   polarization_start="steady", battery_dynamics=dynamics)
@@ -189,13 +189,13 @@ class ContinuousEndVoltageTests(unittest.TestCase):
             margin = next(m for m in flown.margins if m.label == "low-SOC hover 2/2: battery end voltage_V")
             b = last.point.battery
             margins[dynamics] = s.value(margin.value)
-            if dynamics == "piecewise":
+            if dynamics == "constant_current":
                 expected_V = pack.voltage_terminal_V(s.value(b.current_A), s.value(last.soc_end),
                                                      tuple(s.value(v) for v in b.voltage_rc_end_V))
                 min_V = pack.get_limits().min_voltage_V
                 self.assertAlmostEqual(margins[dynamics], (float(expected_V) - min_V) / min_V, places=9)
         # Discharging: the end-SOC voltage is lower than the mid-SOC one, so the margin is smaller.
-        self.assertLess(margins["piecewise"], margins["quasi_steady"])
+        self.assertLess(margins["constant_current"], margins["quasi_steady"])
 
 
 def thermal_ecm_aircraft():
@@ -216,7 +216,7 @@ def thermal_ecm_aircraft():
 def fly_nodes(subsegments, battery_mission, soc=0.35, flown_aircraft=aircraft, **kwargs):
     opti = asb.Opti()
     flown = build_mission(opti, flown_aircraft, aero, battery_mission, 1550.0, soc, subsegments=subsegments,
-                          battery_dynamics="continuous", **kwargs)
+                          battery_dynamics="piecewise", **kwargs)
     opti.minimize(flown.mass_fuel_burnt_kg)
     return flown, opti.solve(verbose=False)
 
@@ -225,13 +225,13 @@ low_hover = Mission((HoverSegment(60.0, 0.0, 0.8, "hover"),))
 
 
 class CollocatedMissionTests(unittest.TestCase):
-    """Plan 060 part 2: `battery_dynamics="continuous"`, nodes linked by the trapezoidal rule."""
+    """Plan 060 part 2: `battery_dynamics="piecewise"`, nodes linked by the trapezoidal rule."""
 
     @classmethod
     def setUpClass(cls):
         cls.two, cls.two_solution = fly_nodes(4, mission, soc=0.9)
 
-    def end_margin(self, subsegments, dynamics="continuous"):
+    def end_margin(self, subsegments, dynamics="piecewise"):
         opti = asb.Opti()
         flown = build_mission(opti, aircraft, aero, low_hover, 1550.0, 0.35, subsegments=subsegments,
                               polarization_start="steady", battery_dynamics=dynamics)
@@ -272,7 +272,7 @@ class CollocatedMissionTests(unittest.TestCase):
                                                                                     (0.0, 0.0))), places=6)
 
     def test_current_ramps_within_a_hover(self):
-        """Constant power demand while OCV falls: the node current rises through the hover (continuous)."""
+        """Constant power demand while OCV falls: the node current rises through the hover (piecewise linear)."""
         flown, s = fly_nodes(4, low_hover, polarization_start="steady")
         currents = [s.value(p.point.battery.current_A) for p in flown.segments[0].subsegments]
         self.assertTrue(all(a < b for a, b in zip(currents, currents[1:])))
@@ -280,11 +280,11 @@ class CollocatedMissionTests(unittest.TestCase):
     def test_end_voltage_converges_faster_than_points(self):
         reference = self.end_margin(32)
         error_nodes = abs(self.end_margin(2) - reference)
-        error_points = abs(self.end_margin(4, "piecewise") - reference)
+        error_points = abs(self.end_margin(4, "constant_current") - reference)
         self.assertLess(error_nodes, 1e-4)
         self.assertGreater(error_points, 10 * error_nodes)
         # The point models converge to the same voltage.
-        self.assertAlmostEqual(self.end_margin(64, "piecewise"), reference, delta=1e-3)
+        self.assertAlmostEqual(self.end_margin(64, "constant_current"), reference, delta=1e-3)
 
     def test_temperatures_are_collocated(self):
         from aircraft_closure.thermal.heat import coolant_temperatures_C, thermal_parameters
@@ -312,7 +312,7 @@ class CollocatedMissionTests(unittest.TestCase):
     def test_needs_the_equivalent_circuit_battery(self):
         from tests.performance.test_flight_point_thermal import base
         with self.assertRaises(ValueError):
-            build_mission(asb.Opti(), base, aero, mission, 1550.0, 0.9, battery_dynamics="continuous")
+            build_mission(asb.Opti(), base, aero, mission, 1550.0, 0.9, battery_dynamics="piecewise")
 
 
 if __name__ == "__main__":

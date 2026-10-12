@@ -10,8 +10,9 @@ plan 036 temperatures in the trajectory model.
 
 ## Scope
 
-In: an option `battery_dynamics` ("quasi_steady", the default and every existing reference; "continuous")
-for the trajectory builder, the sizing mission and `HaloAssumptions`; the battery's instantaneous terminal
+In: an option `battery_dynamics` ("quasi_steady", the default and every existing reference; in the sizing
+mission "constant_current" and "piecewise", in the trajectory "continuous") for the trajectory builder, the
+sizing mission and `HaloAssumptions`; the battery's instantaneous terminal
 voltage and RC-branch derivative; unit tests. Out: a full sizing or trajectory re-solve with the option on (a
 memory-limited run, queued with the HV bus trade); OCV hysteresis; a thermal-to-resistance feedback (plan 028).
 
@@ -41,7 +42,7 @@ recovery term decays while the OCV slope does not, so V is concave in time and i
 The start of a point is the end of the previous one with a lower or equal voltage drop on any step down, so
 the end voltage is the continuous-time minimum; what is wrong today is that it uses OCV and R0 at the
 mid-interval SOC, which overstates the end voltage while discharging (the engine-out hover's binding
-2.5 V/cell limit is the case that matters). "piecewise" evaluates the end voltage at the end SOC:
+2.5 V/cell limit is the case that matters). "constant_current" evaluates the end voltage at the end SOC:
 V_end = OCV(s1) - I R0(s1) - sum v_k(dt). Convergence in time then comes from `subsegments` (OCV, R and the
 power-demand current vary between points), checked below.
 
@@ -61,7 +62,7 @@ own the Opti states and constraints.
    zero at steady state, sign of recovery; the exact update satisfies the ODE (finite difference).
 2. Endpoint minimum: constant current from rest and a step-down, on a fine time grid, has its minimum voltage at
    an interval end.
-3. Sizing end voltage: constant-power discharge to low SOC; the "continuous" end voltage converges as the
+3. Sizing end voltage: constant-power discharge to low SOC; the "constant_current" end voltage converges as the
    subsegments increase and lies below the mid-SOC one.
 4. Trajectory RC states: the collocated states reproduce the closed-form constant-current rise and the
    zero-current relaxation, with second-order convergence in node spacing.
@@ -74,13 +75,16 @@ Part 1 keeps the sizing mission's current constant within each point, so the end
 order in the subsegments. Continuous current needs the mission as collocation nodes: a flight point at each of
 the n + 1 nodes of a segment (instantaneous battery: duration 0, its own power balance and current), SOC,
 mass and RC voltages as node variables, linked by the trapezoidal rule (`constrain_derivative`-style
-equalities), and the voltage limit at every node. Current is then piecewise linear within a segment (second
+equalities), and the voltage limit at every node. At each node the equivalent circuit is solved with the flight
+point's power balance: P_required = V I, V = OCV(s) - I R0(s) - sum v_k, so current and voltage both vary
+within the segment. Current is then piecewise linear within a segment (second
 order), stepping only where the flight condition steps (segment boundaries). Consequences: one more flight
 point per segment (about 13 more in the reference), the Tier 19 temperatures must also become node states,
 and `SegmentResult`/`battery_trace` consumers in `halo_sizing` read nodes. Verification needs full sizings.
 
-Implemented as `battery_dynamics="continuous"` in `build_mission` (`_build_mission_nodes`); part 1's
-end-SOC point model is renamed "piecewise". A node is a zero-duration flight point, which already returns the
+Implemented as `battery_dynamics="piecewise"` in `build_mission` (`_build_mission_nodes`); part 1's
+end-SOC point model is "constant_current" (names fixed 2026-10-12 with the user: "piecewise" is current that
+varies within each segment, solved at every node from the power required, and steps between segments). A node is a zero-duration flight point, which already returns the
 instantaneous battery voltage from the given RC state and the temperature equal to its given start with the
 loss and the heat to the coolant (so dT/dt = (loss - heat to coolant)/C). Nodes are reported as subsegments
 with their trapezoidal weights as `duration_s`, so existing sums (fuel, energy, duration) are the trapezoidal
@@ -115,9 +119,9 @@ integrals; the segment's fuel is the mass difference. The trajectory option keep
   voltage converges at first order (constant current within a point). Trajectory RC states match the closed
   form within 1 % at 2 s spacing, second order in the spacing. Not yet run: a full sizing or trajectory with
   the option (free memory 0.5 GB).
-- 2026-10-11: part 2 in (`battery_dynamics="continuous"` in the mission). On the four-rotor ECM fixture, 60 s
+- 2026-10-11: part 2 in (`battery_dynamics="piecewise"` in the mission, first named "continuous"). On the four-rotor ECM fixture, 60 s
   hover from SOC 0.35 with developed polarization, end-voltage margin by subsegments: nodes 0.21513 (1),
-  0.21509 (2), 0.21508 (4 to 32); points ("piecewise") 0.20520 (1), 0.21210 (4), 0.21469 (32), converging
+  0.21509 (2), 0.21508 (4 to 32); points ("constant_current") 0.20520 (1), 0.21210 (4), 0.21469 (32), converging
   to the same value. Node current rises 286 -> 294 A through the hover (constant power, falling OCV).
   Trapezoidal SOC, mass, RC and motor/generator temperature links checked against the solved nodes. Not yet
-  run: the Halo sizing with "continuous" (free memory 0.4 GB; several hundred MB needed).
+  run: the Halo sizing with "piecewise" (free memory 0.4 GB; several hundred MB needed).
