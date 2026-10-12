@@ -100,15 +100,6 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
 .tag.decided { background: var(--ink); color: var(--panel); }
 .tag.b0 { background: var(--accent-soft); color: var(--accent); }
 .tag.b1 { background: color-mix(in srgb, var(--t-margin) 16%, transparent); color: var(--t-margin); }
-.drivers { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px 28px; }
-.driver h3 { font: 600 16px/1.2 var(--display); margin: 0; }
-.driver .when { font: 12px var(--mono); color: var(--muted); margin: 2px 0 10px; }
-.driver ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
-.driver li { display: grid; grid-template-columns: minmax(0, 1fr) 96px 64px; gap: 10px; align-items: center; font-size: 13px; }
-.driver li .bar { height: 8px; border-radius: 2px; background: var(--rule-soft); position: relative; }
-.driver li .bar i { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: var(--accent); }
-.driver .levers { margin-top: 12px; display: grid; gap: 6px; font-size: 13px; }
-.driver .levers div { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 10px; }
 @media (prefers-reduced-motion: no-preference) { tbody tr.row { transition: background .12s; } }
 </style>
 
@@ -131,17 +122,9 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
     <div class="tablewrap" id="matrix"></div>
   </section>
 
-  <section class="panel" aria-labelledby="h-drivers">
-    <div style="display:grid;gap:4px">
-      <h2 id="h-drivers">What drives range</h2>
-      <p class="lede" id="drivers-lede">The sized aircraft flown off-design: which uncertainties move each output most (impact × uncertainty), and which design choices move it (levers). Calibration factors are left out: they stand in for design confidence.</p>
-    </div>
-    <div class="drivers" id="drivers"></div>
-  </section>
-
   <section class="panel" aria-labelledby="h-cover">
     <div style="display:grid;gap:4px">
-      <h2 id="h-cover">Every model input</h2>
+      <h2 id="h-cover">Design variable impact matrix</h2>
       <p class="lede" id="cover-lede">Each continuous input of the sizing with its elasticity (% output per % input) from one solve per mode: re-sized (the mission held, the aircraft re-closes) and fixed (the sized aircraft flown for range). Sort by any column; spreads marked unquantified have no owner estimate yet.</p>
     </div>
     <div class="controls">
@@ -227,7 +210,7 @@ const TYPES = {
   "Architecture": { color: "--t-arch", q: "How the parts fit and fail" },
   "Technology and material": { color: "--t-tech", q: "What it is made of and with" },
   "Margin policy": { color: "--t-margin", q: "How much margin and redundancy we buy" },
-  "Increase maturity": { color: "--t-evid", q: "Firm up an estimate before we commit: select, verify, size, lay out, weigh" },
+  "Maturity increase": { color: "--t-evid", q: "Firm up an estimate before we commit: select, verify, size, lay out, weigh" },
   "Verification": { color: "--t-verif", q: "How we will prove it" },
 };
 const state = { kinds: new Set(Object.keys(TYPES)), owner: "", phase: "", sort: "value", open: null };
@@ -236,7 +219,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const fmt = (kg, d = 0) => kg == null || !isFinite(kg) ? "—" : (kg * LB).toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d });
 const usd = v => v == null || !isFinite(v) ? "—" : (v / 1e3).toLocaleString("en-US", { maximumFractionDigits: 0 });
-const kindColor = k => `var(${(TYPES[k] || TYPES["Increase maturity"]).color})`;
+const kindColor = k => `var(${(TYPES[k] || TYPES["Maturity increase"]).color})`;
 let V = null;
 
 function remember() { try { localStorage.setItem("ledger-view", JSON.stringify({ sort: state.sort, owner: state.owner, phase: state.phase })); } catch (e) {} }
@@ -477,23 +460,8 @@ function gantt() {
   $("gantt").innerHTML = s + `</svg><div class="legend" style="margin-top:8px">${tasks.filter(k => k.start === k.end).map(k => `<span><span class="num">${esc(k.start)}</span> ${esc(k.task)}</span>`).join("")}</div>`;
 }
 
-function drivers() {
-  const d = Object.values(V.drivers || {});
-  if (!d.length) { $("drivers").innerHTML = `<p class="sub">No driver table yet: run examples.halo_parametric, then examples.halo_war_room.</p>`; return; }
-  const num = (v, unit) => `${(+v).toLocaleString("en-US", { maximumFractionDigits: Math.abs(v) < 10 ? 2 : 0 })}${unit ? " " + esc(unit) : ""}`;
-  $("drivers").innerHTML = d.map(r => `<div class="driver">
-    <h3>${esc(r.label)} <span class="num">${num(r.value, r.unit)}</span></h3>
-    <div class="when">${esc(r.mode === "fixed" ? "fixed aircraft" : "re-sized")} · ${esc(r.source)} · ${esc(r.date)}</div>
-    <ul>${(r.risks || []).map(k => `<li><span>${esc(k.label)}<div class="sub">${esc(k.kind)}${/placeholder/.test(k.source || "") ? " · placeholder spread" : ""}</div></span>
-      <span class="bar" title="${(100 * k.share).toFixed(0)} % of the variance"><i style="width:${Math.max(2, 100 * k.share).toFixed(1)}%"></i></span>
-      <span class="num" style="text-align:right">±${num(Math.abs(k.effect), r.unit)}</span></li>`).join("")}</ul>
-    <div class="levers"><span class="eyebrow">Design levers, % per %</span>${(r.levers || []).map(l => `<div><span>${esc(l.label)}${l.note ? `<div class="sub">${esc(l.note)}</div>` : ""}</span><span class="num" style="text-align:right">${l.elasticity >= 0 ? "+" : ""}${(+l.elasticity).toFixed(3)}</span></div>`).join("")}</div>
-    ${(r.calibration || []).length ? `<div class="sub" style="margin-top:10px">Not ranked (calibration): ${esc(r.calibration.join(", "))}</div>` : ""}
-  </div>`).join("");
-}
-
 const COVER_COLUMNS = [
-  ["resized", "mass_takeoff_kg", "Take-off (re-sized)"], ["resized", "mass_empty_kg", "Empty (re-sized)"],
+  ["resized", "mass_takeoff_kg", "Take-off (re-sized)"], ["resized", "mass_empty_kg", "OEW (re-sized)"],
   ["fixed", "range_m", "Range (fixed)"], ["fixed", "lift_to_drag_cruise", "Cruise L/D (fixed)"],
   ["resized", "power_hover_take_off_W", "Hover power (re-sized)"], ["resized", "cost_per_mission_usd", "Cost per mission (re-sized)"],
 ];
@@ -533,6 +501,6 @@ function log() {
 }
 
 fetch("view.json", { cache: "no-store" }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(v => {
-  V = v; summary(); drivers(); coverage(); gantt(); matrix(); controls(); table(); riskMap(); burn(); register(); log();
+  V = v; summary(); coverage(); gantt(); matrix(); controls(); table(); riskMap(); burn(); register(); log();
 }).catch(() => { $("meta").textContent = "The ledger view (view.json) did not load. Re-run the ledger export and republish."; });
 </script>

@@ -57,7 +57,7 @@ class Quantity:
     plan: list = field(default_factory=list)
     sizing_keys: tuple = ()           # result keys that sum to this item ("pt:" = powertrain instance)
     note: str = ""
-    category: str = "Increase maturity"  # decision type: how far to firm up the estimate before committing
+    category: str = "Maturity increase"  # decision type: how far to firm up the estimate before committing
 
     def belief(self):
         """(mean, sigma) from the evidence rule above; (nan, nan) with no evidence."""
