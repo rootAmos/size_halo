@@ -169,6 +169,33 @@ class SubsegmentMissionTests(unittest.TestCase):
             build_mission(asb.Opti(), aircraft, aero, mission, 1550.0, 0.9, subsegments=(1,))
         with self.assertRaises(ValueError):
             build_mission(asb.Opti(), aircraft, aero, mission, 1550.0, 0.9, polarization_start="warm")
+        with self.assertRaises(ValueError):
+            build_mission(asb.Opti(), aircraft, aero, mission, 1550.0, 0.9, battery_dynamics="stepwise")
+
+
+class ContinuousEndVoltageTests(unittest.TestCase):
+    """Plan 060: `battery_dynamics="continuous"` holds the end voltage at the end SOC."""
+
+    def test_end_voltage_margin_at_the_end_soc(self):
+        low = Mission((HoverSegment(60.0, 0.0, 0.8, "low-SOC hover"),))
+        margins = {}
+        for dynamics in ("quasi_steady", "continuous"):
+            opti = asb.Opti()
+            flown = build_mission(opti, aircraft, aero, low, 1550.0, 0.35, subsegments=2,
+                                  polarization_start="steady", battery_dynamics=dynamics)
+            opti.minimize(flown.mass_fuel_burnt_kg)
+            s = opti.solve(verbose=False)
+            last = flown.segments[0].subsegments[-1]
+            margin = next(m for m in flown.margins if m.label == "low-SOC hover 2/2: battery end voltage_V")
+            b = last.point.battery
+            margins[dynamics] = s.value(margin.value)
+            if dynamics == "continuous":
+                expected_V = pack.voltage_terminal_V(s.value(b.current_A), s.value(last.soc_end),
+                                                     tuple(s.value(v) for v in b.voltage_rc_end_V))
+                min_V = pack.get_limits().min_voltage_V
+                self.assertAlmostEqual(margins[dynamics], (float(expected_V) - min_V) / min_V, places=9)
+        # Discharging: the end-SOC voltage is lower than the mid-SOC one, so the margin is smaller.
+        self.assertLess(margins["continuous"], margins["quasi_steady"])
 
 
 if __name__ == "__main__":

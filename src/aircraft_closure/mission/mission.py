@@ -20,6 +20,12 @@ gives every point its steady state (no history, i.e. continuous ratings);
 "coolant" starts the mission at each component's coolant temperature; a dict
 of start temperatures by instance name continues an earlier history. Every
 point then holds its temperature margins at the end of its interval.
+
+Plan 060: `battery_dynamics` "quasi_steady" (default) holds the end-of-interval
+voltage with OCV and R0 at the mid-interval SOC; "continuous" evaluates it at
+the end SOC, the true minimum of the interval under constant discharge current
+(the RC update is already exact), so the limit holds at every instant as the
+subsegments converge.
 """
 from dataclasses import dataclass, replace
 from typing import Any
@@ -63,7 +69,8 @@ class MissionResult:
 
 
 def build_mission(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_start, hybridization_electric_min=0.0,
-                  soc_floor=None, subsegments=1, polarization_start="rest", thermal_start="steady"):
+                  soc_floor=None, subsegments=1, polarization_start="rest", thermal_start="steady",
+                  battery_dynamics="quasi_steady"):
     """`hybridization_electric_min` < 0 allows in-flight recharging from the generators on free-split segments.
 
     SOC stays inside the battery's own window (min_soc..max_soc) at every segment end, so a mission cannot dip
@@ -79,6 +86,8 @@ def build_mission(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_star
         raise ValueError("subsegments needs one count >= 1 per segment.")
     if polarization_start not in ("rest", "steady"):
         raise ValueError(f"Unknown polarization_start '{polarization_start}'.")
+    if battery_dynamics not in ("quasi_steady", "continuous"):
+        raise ValueError(f"Unknown battery_dynamics '{battery_dynamics}'.")
     if isinstance(thermal_start, dict):
         temperatures_C = dict(thermal_start)
     elif thermal_start == "coolant":
@@ -117,7 +126,10 @@ def build_mission(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_star
             if is_ecm:
                 soc_end = point.battery.soc_next
                 voltage_rc_V = point.battery.voltage_rc_end_V
-                margins.append(margin_above(f"{condition.label}: battery end voltage_V", point.battery.voltage_end_V,
+                voltage_end_V = (point.battery.voltage_end_V if battery_dynamics == "quasi_steady" else
+                                 battery_for_condition(aircraft.powertrain.topology, condition).voltage_terminal_V(
+                                     point.battery.current_A, soc_end, voltage_rc_V))
+                margins.append(margin_above(f"{condition.label}: battery end voltage_V", voltage_end_V,
                                             battery.get_limits().min_voltage_V))
             else:
                 # Tier 18: a degraded point (a string isolated) depletes only the strings still connected.

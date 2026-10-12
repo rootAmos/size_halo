@@ -28,6 +28,11 @@ the polarization fully developed, i.e. a constant load held for longer than
 about 3 tau_2 (~2 min). That is conservative for short pulses. Missions pass
 the RC state explicitly from point to point (starting from rest).
 
+`voltage_end_V` uses OCV and R0 at the mid-interval SOC (the reference).
+Plan 060: `voltage_terminal_V` is the instantaneous voltage at any SOC and RC
+state (at the end SOC it is the interval's minimum under constant discharge
+current), and `derivative_voltage_rc_V_s` the RC rates for collocated states.
+
 Cell resistance: R_k(SOC, T) = R_k,ref x exp(a x + b x^2) x (1 + c e^(-(s - s_lo)/w_lo)
 + d e^((s - s_hi)/w_hi)), x = T_ref / T - 1 (temperature in kelvin). Pack
 resistance is divided by `factor_power_density` (the author's explicit scaling
@@ -269,6 +274,18 @@ class EquivalentCircuitBattery:
             max_discharge_current_A=self.count_parallel * c.current_max_discharge_A * self.factor_power_density,
             max_charge_current_A=self.count_parallel * c.current_max_charge_A * self.factor_power_density,
             min_soc=self.min_soc, max_soc=self.max_soc)
+
+    def voltage_terminal_V(self, current_A, soc, voltage_rc_V, temperature_C=None):
+        """Instantaneous terminal voltage OCV(s) - I R0(s) - sum v_k (plan 060: the end-of-interval voltage at the
+        end SOC, and the trajectory's node voltage with RC states)."""
+        resistance_0_ohm = self.resistances_ohm(soc, temperature_C)[0]
+        return self.voltage_open_circuit_V(soc) - current_A * resistance_0_ohm - sum(voltage_rc_V)
+
+    def derivative_voltage_rc_V_s(self, current_A, soc, voltage_rc_V, temperature_C=None):
+        """RC branch voltage rates dv_k/dt = (I R_k(s) - v_k) / tau_k (plan 060, for collocated RC states)."""
+        resistances_rc_ohm = self.resistances_ohm(soc, temperature_C)[1:]
+        return tuple((current_A * r_ohm - v_V) / tau_s for r_ohm, v_V, tau_s
+                     in zip(resistances_rc_ohm, voltage_rc_V, self.cell.resistance_model.time_constants_s()))
 
     def evaluate(self, current_A, soc, duration_s=0.0, voltage_rc_start_V=None, temperature_C=None):
         soc_next = soc - current_A * duration_s / self.capacity_As
