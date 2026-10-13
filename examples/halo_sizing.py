@@ -265,6 +265,9 @@ class HaloAssumptions:
     # resistance follow SOC through long segments; and points in the 60 s engine-out hover (SOC 0.30 -> 0.10).
     subsegments_mission: tuple = (1, 1, 4, 1, 1, 1)
     subsegments_engine_out: int = 3
+    # Plan 063: turbogenerators running in the descent. None runs all; 1 flies it on one engine (the other shut
+    # down by choice), so the running one works near its efficient end of the part-power curve.
+    count_turbogenerators_descent: Any = None
     # Plan 060: "quasi_steady" (the reference) holds each point's end voltage at the mid-interval SOC;
     # "constant_current" at its end SOC (the instantaneous minimum under constant current); "piecewise" collocates the
     # mission on nodes (subsegments + 1 per segment), each node's current solved from its power required: current
@@ -1194,10 +1197,12 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
     )
 
 
-def halo_mission(requirements=HaloRequirements(), velocity_cruise_m_s=None, velocity_loiter_m_s=None):
+def halo_mission(requirements=HaloRequirements(), velocity_cruise_m_s=None, velocity_loiter_m_s=None,
+                 count_turbogenerators_descent=None):
     r = requirements
     climb = ClimbSegment(0.0, r.altitude_cruise_m, 6.0, 80.0, None, "climb")
-    descent = DescentSegment(r.altitude_cruise_m, 0.0, 5.0, 80.0, None, "descent")
+    descent = DescentSegment(r.altitude_cruise_m, 0.0, 5.0, 80.0, None, "descent",
+                             active_generator_count=count_turbogenerators_descent)
     distance_cruise_m = r.range_m - ground_distance_m(climb) - ground_distance_m(descent)
     return Mission((
         HoverSegment(r.duration_hover_s, 0.0, None, "take-off hover"),
@@ -1493,7 +1498,8 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
             upper_bound=r.velocity_max_m_s), velocity_loiter_m_s=opti.variable(
             init_guess=initial.velocity_loiter_m_s if initial else 80.0, scale=50.0, lower_bound=55.0,
             upper_bound=r.velocity_max_m_s))
-    mission = halo_mission(replace(r, altitude_cruise_m=altitude_cruise_m), **velocities)
+    mission = halo_mission(replace(r, altitude_cruise_m=altitude_cruise_m), **velocities,
+                           count_turbogenerators_descent=a.count_turbogenerators_descent)
 
     # ---- Aircraft, mission, requirements ----------------------------------------------
     if objective == "payload":
