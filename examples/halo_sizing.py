@@ -273,6 +273,10 @@ class HaloAssumptions:
     # mission on nodes (subsegments + 1 per segment), each node's current solved from its power required: current
     # piecewise linear within a segment, stepping at segment boundaries; SOC, RC voltages and temperatures carried.
     battery_dynamics: str = "quasi_steady"
+    # Plan 067: turbine maximum continuous power as a fraction of the take-off rating (same lapse), held at every
+    # airplane-mode mission point (0.90 for the 1,120 hp GASP deck: its cruise-T4 power over its max-T4 power); None:
+    # no cap (the reference, every point limited by the take-off rating only).
+    fraction_mcp_turboshaft: Any = None
     # Plan 060 part 3 ("piecewise"): battery sub-steps between the flight-point nodes, at most this long, and at
     # least this many battery nodes per segment.
     step_battery_max_s: float = 30.0
@@ -1800,6 +1804,9 @@ def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerody
     all_margins = (design_margins + flown.margins + engine_out_margins
                    + tuple(m for p in requirement_points for m in p.margins)
                    + tuple(m for _, failure in failures for m in failure.margins))
+    if a.fraction_mcp_turboshaft is not None:
+        all_margins += turboshaft_mcp_margins([s.point for seg in flown.segments for s in (seg.subsegments or (seg,))],
+                                              instances["turboshaft"].component, a.fraction_mcp_turboshaft)
     whirl_points, wing_masses, whirl_inputs, whirl_tracked, delta3_deg = [], None, None, (), a.pitch_flap_coupling_deg
     if is_afdd_wing:
         # Tier 20 reduced-order whirl flutter: at every airplane-mode point the realized wing torsion and beam
@@ -1946,6 +1953,9 @@ def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerody
                             hybridization=value(s.point.hybridization_electric),
                             hybridization_mean=value(hybridization_mean(s)),
                             power_rotors_W=value(a.count_rotors * s.point.power_shaft_rotor_W),
+                            power_available_turboshafts_W=value(
+                                (s.point.condition.active_generator_count or a.count_turbogenerators)
+                                * instances["turboshaft"].component.power_available_W(point_atmosphere(s.point))),
                             power_turboshafts_W=value((s.point.condition.active_generator_count
                                                        or a.count_turbogenerators) * s.point.engine.power_shaft_W),
                             power_battery_W=value(s.point.power_battery_W),
@@ -2225,6 +2235,19 @@ def heat_exchanger_summary(powertrain, value):
     else:
         summary.update(model="mass_per_watt", power_rated_W=value(exchanger.power_rated_W))
     return summary
+
+
+def point_atmosphere(point):
+    c = point.condition
+    return asb.Atmosphere(altitude=c.altitude_m, temperature_deviation=c.temperature_offset_K)
+
+
+def turboshaft_mcp_margins(points, turboshaft, fraction_mcp):
+    """Plan 067: each turboshaft's shaft power at or below the maximum continuous power, `fraction_mcp` x its power
+    available (take-off rating with lapse), at every airplane-mode point."""
+    return tuple(margin_below(f"{p.condition.label}: turboshaft MCP power_W", p.engine.power_shaft_W,
+                              fraction_mcp * turboshaft.power_available_W(point_atmosphere(p)))
+                 for p in points if p.condition.mode == "airplane")
 
 
 def battery_steps(a):
