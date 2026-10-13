@@ -100,6 +100,23 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
 .tag.decided { background: var(--ink); color: var(--panel); }
 .tag.b0 { background: var(--accent-soft); color: var(--accent); }
 .tag.b1 { background: color-mix(in srgb, var(--t-margin) 16%, transparent); color: var(--t-margin); }
+.cbars { display: grid; gap: 1px; }
+.cbar { display: grid; grid-template-columns: 26px minmax(0, 1fr) 52px; gap: 2px 8px; align-items: end; padding: 4px; border-radius: 3px; cursor: pointer; font-size: 12.5px; }
+.cbar:hover, .cbar:focus-visible { background: var(--accent-soft); }
+.cbar:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cbar .r { font: 500 12px var(--mono); color: var(--muted); text-align: right; }
+.cbar .m { display: grid; gap: 3px; min-width: 0; }
+.cbar .l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cbar .t { position: relative; height: 10px; background: var(--rule-soft); border-radius: 2px; }
+.cbar .t i { position: absolute; inset: 0 auto 0 0; border-radius: 2px; }
+.cbar .v { font: 500 12px var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+.cph { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; padding: 12px 4px 4px; border-bottom: 1px solid var(--rule); }
+.cph b { font: 600 15px var(--display); margin-left: 6px; }
+.caxis { display: grid; grid-template-columns: 26px minmax(0, 1fr) 52px; gap: 8px; padding: 0 4px; font: 11px var(--mono); color: var(--muted); }
+.caxis .ticks { position: relative; height: 16px; border-bottom: 1px solid var(--rule); }
+.caxis .ticks span { position: absolute; transform: translateX(-50%); font-variant-numeric: tabular-nums; }
+.caxis .ticks span:first-child { transform: none; }
+.caxis .ticks span:last-child { transform: translateX(-100%); }
 @media (prefers-reduced-motion: no-preference) { tbody tr.row { transition: background .12s; } }
 </style>
 
@@ -174,6 +191,11 @@ table.matrix thead th { white-space: normal; vertical-align: bottom; }
     </section>
 
     <div style="display:grid;gap:20px;align-content:start;min-width:0">
+      <section class="panel" aria-labelledby="h-cost">
+        <h2 id="h-cost">Cost opportunity</h2>
+        <p class="lede">The lifecycle operating cost per aircraft each decision can save (cost per mission x missions in the airframe life), ranked; the cost view of the weight opportunity beside it. Follows the type, phase, owner and grouping filters. Select a bar to open the decision.</p>
+        <div id="cost"></div>
+      </section>
       <section class="panel" aria-labelledby="h-map">
         <h2 id="h-map">Risk against schedule</h2>
         <p class="lede">What each decision is worth against the days left until it must be frozen. Top left is where to look first.</p>
@@ -300,7 +322,7 @@ function detail(r) {
 function table() {
   const rows = filtered();
   const max = Math.max(1, ...rows.filter(r => r.value_high_kg != null).map(r => Math.max(r.value_high_kg, r.value_low_kg)));
-  if (!rows.length) { $("rows").innerHTML = `<tr><td colspan="10" class="empty">No items match these filters.</td></tr>`; return; }
+  if (!rows.length) { $("rows").innerHTML = `<tr><td colspan="10" class="empty">No items match these filters.</td></tr>`; costChart(); return; }
   const phases = state.grouped ? Object.entries(V.gates || {}).sort((a, b) => a[1].localeCompare(b[1])) : [["All phases", ""]];
   let html = "";
   phases.forEach(([phase, date], pi) => {
@@ -325,10 +347,52 @@ function table() {
     }).join("");
   });
   $("rows").innerHTML = html;
+  costChart();
   $("rows").querySelectorAll("tr.row").forEach(tr => {
     const toggle = () => { state.open = state.open === tr.dataset.key ? null : tr.dataset.key; table(); };
     tr.addEventListener("click", toggle);
     tr.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+  });
+}
+
+// Cost opportunity: the same rows and filters as the weight ranking, valued by value_usd (lifecycle cost per aircraft).
+// Rows without a cost basis are counted, never drawn as zero.
+function costChart() {
+  const rows = filtered().filter(r => r.value_usd != null).sort((a, b) => b.value_usd - a.value_usd);
+  const none = filtered().filter(r => r.value_usd == null);
+  const noneNote = none.length ? `<details class="sub" style="margin-top:6px"><summary>${none.length} decision${none.length === 1 ? "" : "s"} with no cost basis yet, not shown</summary><ul style="margin:4px 0 0;padding-left:16px">${none.map(r => `<li>${esc(r.label)}</li>`).join("")}</ul></details>` : "";
+  if (!rows.length) { $("cost").innerHTML = `<p class="empty">No decisions with a cost basis match these filters.</p>` + noneNote; return; }
+  const k = r => r.value_usd / 1e3;
+  const ticks = niceTicks(Math.max(...rows.map(k)), 2), xmax = Math.max(ticks.at(-1), ...rows.map(k));
+  const pct = v => (100 * v / xmax).toFixed(2);
+  const rank = new Map(rows.map((r, i) => [r.key, i + 1]));
+  const bar = r => {
+    const when = r.days_to_lock == null ? "no lock date" : `${r.days_to_lock} days to lock`;
+    const tip = `${r.label}: $${Math.round(k(r)).toLocaleString("en-US")}k lifecycle cost per aircraft · ${fmt(r.value_kg)} lb weight opportunity · ${r.category} · ${r.phase}, ${when}${r.schedule ? " (" + r.schedule + ")" : ""}`;
+    return `<div class="cbar" role="button" tabindex="0" data-key="${esc(r.key)}" title="${esc(tip)}"><span class="r">${rank.get(r.key)}</span><span class="m"><span class="l">${esc(r.label)}${r.schedule ? ` <span class="pill ${r.schedule === "past lock" || r.schedule === "overdue" ? "crit" : "warn"}">${esc(r.schedule)}</span>` : ""}</span><span class="t"><i style="width:${pct(k(r))}%;background:${kindColor(r.category)}"></i></span></span><span class="v">${Math.round(k(r)).toLocaleString("en-US")}</span></div>`;
+  };
+  const phases = state.grouped ? Object.entries(V.gates || {}).sort((a, b) => a[1].localeCompare(b[1])) : [["", ""]];
+  let html = `<div class="caxis" aria-hidden="true"><span></span><span class="ticks">${ticks.map(v => `<span style="left:${pct(v)}%">${v.toLocaleString("en-US")}</span>`).join("")}</span><span style="text-align:right">$k</span></div>`;
+  html += `<div class="cbars" role="group" aria-label="Lifecycle cost per aircraft each decision can save, $k">`;
+  phases.forEach(([phase, date], pi) => {
+    const group = state.grouped ? rows.filter(r => r.phase === phase) : rows;
+    if (!group.length) return;
+    if (state.grouped) {
+      const stake = group.reduce((t, r) => t + k(r), 0);
+      html += `<div class="cph"><span><span class="eyebrow">Phase ${pi + 1}</span><b>${esc(phase)}</b></span><span class="sub">locks ${esc(date)} · ${group.length} decisions · <span class="num">$${Math.round(stake).toLocaleString("en-US")}k</span></span></div>`;
+    }
+    html += group.map(bar).join("");
+  });
+  html += `</div><div class="sub" style="text-align:center;margin-top:4px">lifecycle cost per aircraft it can save, $k</div>`;
+  $("cost").innerHTML = html + noneNote;
+  $("cost").querySelectorAll(".cbar[data-key]").forEach(el => {
+    const open = () => {
+      state.open = el.dataset.key; table();
+      const tr = document.querySelector(`#rows tr.row[data-key="${CSS.escape(el.dataset.key)}"]`);
+      if (tr) { tr.scrollIntoView({ block: "center", behavior: "smooth" }); tr.focus({ preventScroll: true }); }
+    };
+    el.addEventListener("click", open);
+    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
   });
 }
 
