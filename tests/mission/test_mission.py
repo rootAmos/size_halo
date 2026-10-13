@@ -36,6 +36,11 @@ class SegmentTests(unittest.TestCase):
         self.assertEqual(condition.climb_rate_m_s, -2.0)
         self.assertEqual(HoverSegment().flight_condition(0.8).mode, "hover")
 
+    def test_descent_active_generators(self):
+        # Plan 063: the descent passes its turbogenerator count to the flight point; None keeps all running.
+        self.assertIsNone(DescentSegment().flight_condition(0.8).active_generator_count)
+        self.assertEqual(DescentSegment(active_generator_count=1).flight_condition(0.8).active_generator_count, 1)
+
 
 class MissionTests(unittest.TestCase):
     def test_cruise_fuel_is_flow_times_time(self):

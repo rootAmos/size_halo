@@ -34,6 +34,7 @@ listed in plan 013. Illustrative study, not Archer data.
 """
 import time
 from dataclasses import dataclass, field, fields, replace
+from functools import partial
 from typing import Any
 
 import aerosandbox as asb
@@ -48,7 +49,8 @@ from aircraft_closure.aerodynamics.buildup import BuildupAerodynamics
 from aircraft_closure.aerodynamics.scholz import ScholzAerodynamics
 from aircraft_closure.aerodynamics.simple import SimpleAerodynamics
 from aircraft_closure.aerodynamics.slipstream import BlownWing
-from aircraft_closure.aerodynamics.wing_section import SectionClMaxSurrogate, WingSectionFamily
+from aircraft_closure.aerodynamics.wing_section import (SectionClMaxSurrogate, WingSectionFamily, section_airfoil,
+                                                       section_camber, section_thickness_shape)
 from aircraft_closure.controls.stability import DirectionalStability, LongitudinalStability
 from aircraft_closure.aeroelasticity.whirl_flutter import (Eigenpair, eigenpair_residual, flutter_speed,
                                                            least_damped_eigenpairs, state_labels,
@@ -166,6 +168,9 @@ class HaloRequirements:
     temperature_hover_hot_K: float = temperature_from_fahrenheit_K(95.0)
     thrust_to_weight_hover_hot: float = 1.05
     duration_hover_hot_s: float = 60.0
+    # Plan 061 (v3.11): overall width with the rotors turning, span + 2R, at most this: ICAO code B / FAA ADG II,
+    # 24 m, so it can ground-taxi on airport taxiways. None: no limit (v3.10 and earlier).
+    max_width_overall_m: Any = 24.0
 
     def requirement_set(self):
         return RequirementSet(
@@ -260,11 +265,18 @@ class HaloAssumptions:
     # resistance follow SOC through long segments; and points in the 60 s engine-out hover (SOC 0.30 -> 0.10).
     subsegments_mission: tuple = (1, 1, 4, 1, 1, 1)
     subsegments_engine_out: int = 3
+    # Plan 063: turbogenerators running in the descent. None runs all; 1 flies it on one engine (the other shut
+    # down by choice), so the running one works near its efficient end of the part-power curve.
+    count_turbogenerators_descent: Any = None
     # Plan 060: "quasi_steady" (the reference) holds each point's end voltage at the mid-interval SOC;
     # "constant_current" at its end SOC (the instantaneous minimum under constant current); "piecewise" collocates the
     # mission on nodes (subsegments + 1 per segment), each node's current solved from its power required: current
     # piecewise linear within a segment, stepping at segment boundaries; SOC, RC voltages and temperatures carried.
     battery_dynamics: str = "quasi_steady"
+    # Plan 060 part 3 ("piecewise"): battery sub-steps between the flight-point nodes, at most this long, and at
+    # least this many battery nodes per segment.
+    step_battery_max_s: float = 30.0
+    count_nodes_battery_min: int = 9
     # ---- Tier 15 electrical layer (plan 023) ----
     # True inserts inverters (motors) and active rectifiers (generators), DC feeder cables and protection
     # between the machines, the battery and the bus, and sizes the machines as bare machines. False keeps the
@@ -304,6 +316,9 @@ class HaloAssumptions:
     # Plan 054: root bending peak over beam theory for the distributed covers; CalculiX on the sized layout gives 0.97
     # (the plan 043 factor 1.33 was fitted on the AFDD wing with discrete cap pads).
     factor_peak_strain_wing_box: float = 1.0
+    # Plan 062: effective beam stiffness of the bottom-up box over its beam-theory value (CalculiX free-free over
+    # bottom-up beam frequency, squared: 0.94^2 = 0.886 on the free wing); 1.0: beam theory.
+    factor_stiffness_beam_wing_box: float = 1.0
     # XV-15 symmetric wing modes in per rev of its airplane-mode rotor speed (torsion 1.09, beam 0.43, chord 0.83).
     frequency_torsion_wing_per_rev: float = Xv15Reference().frequency_torsion_wing_per_rev
     frequency_beam_wing_per_rev: float = Xv15Reference().frequency_beam_wing_per_rev
@@ -383,7 +398,7 @@ class HaloAssumptions:
     free_altitude_cruise: bool = False
     bounds_altitude_cruise_m: tuple = (2000 * u.foot, 13000 * u.foot)
     # Wing aspect ratio: induced drag against wing weight, whirl-flutter stiffness and rotor-span clearance.
-    free_aspect_ratio_wing: bool = False
+    free_aspect_ratio_wing: bool = True               # plan 061 (v3.11); fixed at 6.12 before (pre_plan061)
     bounds_aspect_ratio_wing: tuple = (4.0, 12.0)
     # Reserve SOC: the mission SOC floor, which is also where the engine-out hover starts (0.30 when fixed).
     free_soc_reserve: bool = False
@@ -395,6 +410,9 @@ class HaloAssumptions:
     # coordinate airfoil, whatever `thickness_to_chord_wing` says (kept as a check). The free flags make thickness
     # and camber design variables ("family" only).
     wing_section_model: str = "family"
+    # Plan 062: the wing's base section, "naca2423" (the reference) or "naca64a223" (the XV-15 wing, as built for the
+    # plan 057 drag calibration). Set `camber_wing` to the base's camber (0.0133 for 64A223) to fly it as drawn.
+    wing_section_base: str = "naca2423"
     camber_wing: float = 0.02
     free_thickness_to_chord_wing: bool = False
     bounds_thickness_to_chord_wing: tuple = (0.15, 0.28)
@@ -782,9 +800,19 @@ def halo_whirl_system(inputs, speed_rotor_rad_s, delta3_deg, assumptions):
 
 def warm_start_rotor_speeds(opti, points, speeds_start_rad_s):
     """Starting rotor speed of each point from {point label: rad/s} (e.g. an earlier result's `whirl_flutter`). The
-    flight points start at a generic 100 rad/s, a supersonic tip on the Halo rotor (plan 055)."""
+    flight points start at a generic 100 rad/s, a supersonic tip on the Halo rotor (plan 055). A label with a
+    subsegment or node suffix ("cruise 0/4", plan 060 "piecewise") that the earlier result does not carry takes the
+    speed of the first earlier point of the same segment."""
+    def base(label):
+        head, _, tail = label.rpartition(" ")
+        return head if head and "/" in tail and tail.replace("/", "").isdigit() else label
+
+    speeds_base_rad_s = {}
+    for label, speed_rad_s in speeds_start_rad_s.items():
+        speeds_base_rad_s.setdefault(base(label), speed_rad_s)
     for p in points:
-        speed, start_rad_s = p.speed_rotor_rad_s, speeds_start_rad_s.get(p.condition.label)
+        speed, label = p.speed_rotor_rad_s, p.condition.label
+        start_rad_s = speeds_start_rad_s.get(label, speeds_base_rad_s.get(base(label)))
         if start_rad_s is not None and isinstance(speed, cas.MX) and len(cas.symvar(speed)) == 1:
             symbol = cas.symvar(speed)[0]
             opti.set_initial(symbol, start_rad_s / float(cas.evalf(cas.jacobian(speed, symbol))))
@@ -865,9 +893,10 @@ def halo_wing_section(design, assumptions):
     if a.wing_section_model == "naca2423":
         if d.thickness_to_chord_wing is not None or d.camber_wing is not None:
             raise ValueError("A thickness or camber design variable needs wing_section_model='family'.")
-        return thickness, camber, asb.Airfoil("naca2423")
+        return thickness, camber, section_airfoil(a.wing_section_base)
     if a.wing_section_model == "family":
-        return thickness, camber, WingSectionFamily().airfoil(thickness, camber)
+        family = WingSectionFamily(base_name=a.wing_section_base, camber_base=section_camber(a.wing_section_base))
+        return thickness, camber, family.airfoil(thickness, camber)
     raise ValueError(f"Unknown wing section model '{a.wing_section_model}'.")
 
 
@@ -998,7 +1027,8 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                                   thermal_efficiency=thermal_efficiency_turboshaft(d.mass_turboshaft_bare_kg),
                                   lapse_exponent=lapse_exponent, part_power_model=a.part_power_model,
                                   lapse_model=xv15_lapse_model(lapse_exponent) if a.temperature_lapse else None)
-    electrical = (build_halo_electrical(motor, generator, battery, np.sqrt(d.area_wing_m2 * a.aspect_ratio_wing),
+    electrical = (build_halo_electrical(motor, generator, battery, np.sqrt(d.area_wing_m2 * (
+        d.aspect_ratio_wing if d.aspect_ratio_wing is not None else a.aspect_ratio_wing)),
                                         requirements, a) if a.electrical_layer else None)
     redundancy = build_halo_redundancy(generator, battery, requirements, a)
     topology = build_series_hybrid(motor, generator, battery, turboshaft, gearbox, rotor, count_rotors=a.count_rotors,
@@ -1045,9 +1075,9 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
         if a.ratio_depth_spar_cap is not None:
             ratio_depth_spar_cap = a.ratio_depth_spar_cap
         else:
-            section = WingSectionFamily()
-            depths = asb.Airfoil(section.base_name).local_thickness(np.array([a.fraction_chord_front_spar,
-                                                                              a.fraction_chord_rear_spar]))
+            section = WingSectionFamily(base_name=a.wing_section_base)
+            depths = section_airfoil(section.base_name).local_thickness(np.array([a.fraction_chord_front_spar,
+                                                                                  a.fraction_chord_rear_spar]))
             ratio_depth_spar_cap = float(np.mean(depths)) / section.thickness_base
         speed_wing_design_rad_s = (d.speed_rotor_wing_design_rad_s if d.speed_rotor_wing_design_rad_s is not None
                                    else speed_rotor_design_rad_s)
@@ -1060,7 +1090,7 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                 fraction_chord_front_spar=a.fraction_chord_front_spar,
                 fraction_chord_rear_spar=a.fraction_chord_rear_spar,
                 pitch_rib_m=d.pitch_rib_wing_m if d.pitch_rib_wing_m is not None else a.pitch_rib_wing_m,
-                factor_peak_root=a.factor_peak_strain_wing_box)
+                factor_peak_root=a.factor_peak_strain_wing_box, factor_stiffness_beam=a.factor_stiffness_beam_wing_box)
             wing_mass = dict(mass_factor=1.0, mass_model=BottomUpWingMassModel(
                 mass_tip_kg=mass_tip_kg, radius_gyration_pylon_m=radius_gyration_pylon_m,
                 speed_rotor_design_rad_s=speed_wing_design_rad_s, width_fuselage_m=a.diameter_fuselage_m,
@@ -1070,7 +1100,9 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                 frequency_chord_per_rev=a.frequency_chord_wing_per_rev,
                 thickness_to_chord=halo_wing_section(d, a)[0], material=materials_box[a.wing_material](),
                 layout=layout_box, count_rotors=a.count_rotors, load_factor_ultimate=a.load_factor_ultimate,
-                load_factor_jump=a.load_factor_jump, smoothing=a.smoothing_wing_tiltrotor))
+                load_factor_jump=a.load_factor_jump, smoothing=a.smoothing_wing_tiltrotor,
+                thickness_shape=(None if a.wing_section_base == "naca2423"
+                                 else partial(section_thickness_shape, a.wing_section_base))))
         else:
             materials = dict(graphite_epoxy=graphite_epoxy_wing_material, aluminium=aluminium_wing_material)
             wing_mass = dict(mass_factor=factors.wing_tiltrotor, mass_model=TiltrotorWingMassModel(
@@ -1181,10 +1213,12 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
     )
 
 
-def halo_mission(requirements=HaloRequirements(), velocity_cruise_m_s=None, velocity_loiter_m_s=None):
+def halo_mission(requirements=HaloRequirements(), velocity_cruise_m_s=None, velocity_loiter_m_s=None,
+                 count_turbogenerators_descent=None):
     r = requirements
     climb = ClimbSegment(0.0, r.altitude_cruise_m, 6.0, 80.0, None, "climb")
-    descent = DescentSegment(r.altitude_cruise_m, 0.0, 5.0, 80.0, None, "descent")
+    descent = DescentSegment(r.altitude_cruise_m, 0.0, 5.0, 80.0, None, "descent",
+                             active_generator_count=count_turbogenerators_descent)
     distance_cruise_m = r.range_m - ground_distance_m(climb) - ground_distance_m(descent)
     return Mission((
         HoverSegment(r.duration_hover_s, 0.0, None, "take-off hover"),
@@ -1233,6 +1267,9 @@ class HaloSizingResult:
     # voltage_bus_V (interval mean), voltage_end_V, voltage_ocv_V, current_A, power_W (terminal).
     battery_trace: tuple = ()
     engine_out_trace: tuple = ()
+    # Plan 064: one row per mission node (or per segment point without nodes), every state the flight point
+    # holds: time, flight path, attitude, aero, rotor, powertrain powers, fuel, mass, battery and temperatures.
+    node_trace: tuple = ()
     # Tier 20 ("afdd_tiltrotor"): wing breakdown (name, kg) and per airplane-mode point the realized wing torsion
     # and beam frequencies in per rev of that point's rotor speed.
     wing_masses_kg: tuple = ()
@@ -1478,7 +1515,8 @@ def solve_halo_sizing_once(requirements=HaloRequirements(), assumptions=HaloAssu
             upper_bound=r.velocity_max_m_s), velocity_loiter_m_s=opti.variable(
             init_guess=initial.velocity_loiter_m_s if initial else 80.0, scale=50.0, lower_bound=55.0,
             upper_bound=r.velocity_max_m_s))
-    mission = halo_mission(replace(r, altitude_cruise_m=altitude_cruise_m), **velocities)
+    mission = halo_mission(replace(r, altitude_cruise_m=altitude_cruise_m), **velocities,
+                           count_turbogenerators_descent=a.count_turbogenerators_descent)
 
     # ---- Aircraft, mission, requirements ----------------------------------------------
     if objective == "payload":
@@ -1663,8 +1701,8 @@ def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerody
                           hybridization_electric_min=a.hybridization_electric_min,
                           # The engine-out reserve is assessed from the SOC floor, so hold it at every segment.
                           soc_floor=soc_reserve if a.soc_floor_every_segment else None,
-                          **(dict(subsegments=a.subsegments_mission, battery_dynamics=a.battery_dynamics)
-                             if is_ecm else {}),
+                          **(dict(subsegments=a.subsegments_mission, battery_dynamics=a.battery_dynamics,
+                                  **battery_steps(a)) if is_ecm else {}),
                           # Tier 19: machines start at the coolant temperature and carry their history.
                           **(dict(thermal_start="coolant") if thermal else {}))
     # Tier 19: the hover requirement is a 60 s hover from a cold start; airplane-mode requirements are steady.
@@ -1690,7 +1728,8 @@ def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerody
                 r.duration_engine_out_hover_s, 0.0, None, label, active_generator_count=a.count_turbogenerators - 1,
                 bus_tie=tie),)), mass_takeoff_kg, soc_reserve,
                 soc_floor=soc_emergency_floor, subsegments=a.subsegments_engine_out, polarization_start="steady",
-                battery_dynamics=a.battery_dynamics, **(dict(thermal_start=take_off_end_C) if thermal else {})))
+                battery_dynamics=a.battery_dynamics, **battery_steps(a),
+                **(dict(thermal_start=take_off_end_C) if thermal else {})))
         reserve = reserves[0]
         engine_out_points = reserve.segments[0].subsegments or reserve.segments
         engine_out = engine_out_points[0].point
@@ -1756,7 +1795,8 @@ def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerody
         *soc_margins_engine_out,
         margin_above("stall_lift_at_120kt", lift_stall_N, weight_N),
         margin_below("rotor_radius_m", radius_m, (span_m - a.diameter_fuselage_m) / 2 - a.clearance_rotor_fuselage_m),
-    )
+    ) + ((margin_below("width_overall_m", span_m + 2 * radius_m, r.max_width_overall_m),)
+         if r.max_width_overall_m is not None else ())
     all_margins = (design_margins + flown.margins + engine_out_margins
                    + tuple(m for p in requirement_points for m in p.margins)
                    + tuple(m for _, failure in failures for m in failure.margins))
@@ -1929,6 +1969,7 @@ def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerody
         battery_trace=battery_trace(tuple(p for s in flown.segments for p in (s.subsegments or (s,))), value)
         if is_ecm else (),
         engine_out_trace=battery_trace(engine_out_points, value),
+        node_trace=node_trace(flown.segments, a.count_rotors, a.count_turbogenerators, value),
         wing_masses_kg=tuple((f.name, value(getattr(wing_masses, f.name))) for f in fields(wing_masses)
                              if f.name.startswith("mass_")) if wing_masses is not None else (),
         whirl_flutter=tuple(dict(label=p.condition.label, speed_rotor_rad_s=value(p.speed_rotor_rad_s),
@@ -2049,7 +2090,8 @@ def halo_failure_hovers(opti, aircraft, aerodynamics, mass_takeoff_kg, requireme
         failure = build_mission(opti, aircraft, aerodynamics, Mission((HoverSegment(
             r.duration_engine_out_hover_s, 0.0, None, label, **counts),)), mass_takeoff_kg, soc_minimum,
             soc_floor=soc_emergency_floor, polarization_start="steady",
-            **(dict(subsegments=a.subsegments_engine_out, battery_dynamics=a.battery_dynamics) if is_ecm else {}),
+            **(dict(subsegments=a.subsegments_engine_out, battery_dynamics=a.battery_dynamics, **battery_steps(a))
+               if is_ecm else {}),
             **(dict(thermal_start=temperature_start_C) if temperature_start_C is not None else {}))
         failures.append((label, failure))
     return tuple(failures)
@@ -2183,6 +2225,59 @@ def heat_exchanger_summary(powertrain, value):
     else:
         summary.update(model="mass_per_watt", power_rated_W=value(exchanger.power_rated_W))
     return summary
+
+
+def battery_steps(a):
+    """`build_mission` keywords of the plan 060 part 3 battery sub-steps (used by "piecewise" only)."""
+    return dict(step_battery_max_s=a.step_battery_max_s, count_nodes_battery_min=a.count_nodes_battery_min)
+
+
+def node_trace(segments, count_rotors, count_turbogenerators, value):
+    """Plan 064: numeric state at every mission node, in mission order (one row per point without nodes).
+
+    Times are the node instants: a segment's nodes are evenly spaced over its duration ("label i/n"); a segment
+    without nodes is one row at its start. Flight path angle from the climb rate and airspeed (90 deg in a hover
+    climb, 0 in hover); pitch attitude is angle of attack plus flight path angle in airplane mode (None in hover,
+    where the model has no attitude). Powers are totals over the running units."""
+    rows, time_start_s = [], 0.0
+    for s in segments:
+        nodes = s.subsegments or (s,)
+        duration_s = value(s.segment.duration_s())
+        # Piecewise nodes ("label i/n", n + 1 of them) are instants; quasi-steady sub-points are intervals.
+        is_nodes = len(nodes) > 1 and nodes[-1].point.condition.label.endswith(f"{len(nodes) - 1}/{len(nodes) - 1}")
+        time_s = time_start_s
+        for index, n in enumerate(nodes):
+            p, c = n.point, n.point.condition
+            velocity_m_s, climb_m_s = value(c.velocity_m_s), value(c.climb_rate_m_s)
+            gamma_deg = (float(onp.degrees(onp.arcsin(onp.clip(climb_m_s / velocity_m_s, -1, 1))))
+                         if velocity_m_s > 0 else (90.0 if climb_m_s > 0 else 0.0))
+            alpha_deg = value(p.alpha_deg) if p.alpha_deg is not None else None
+            engines = c.active_generator_count or count_turbogenerators
+            thermal = p.thermal
+            rows.append(dict(
+                label=c.label, mode=c.mode,
+                time_s=(time_start_s + index / (len(nodes) - 1) * duration_s) if is_nodes else time_s,
+                altitude_m=value(c.altitude_m), velocity_m_s=velocity_m_s, climb_rate_m_s=climb_m_s,
+                flight_path_deg=gamma_deg, alpha_deg=alpha_deg,
+                pitch_deg=alpha_deg + gamma_deg if alpha_deg is not None else None,
+                cl=value(p.aero.cl) if p.aero is not None else None,
+                cd=value(p.aero.cd) if p.aero is not None else None,
+                mass_kg=value(n.mass_start_kg), weight_N=value(p.weight_N), fuel_flow_kg_s=value(p.fuel_flow_kg_s),
+                thrust_per_rotor_N=value(p.thrust_per_rotor_N), speed_rotor_rad_s=value(p.speed_rotor_rad_s),
+                power_shaft_rotors_W=value(count_rotors * p.power_shaft_rotor_W),
+                power_shaft_motors_W=value(count_rotors * p.speed_motor_rad_s * p.torque_motor_Nm),
+                power_electric_motors_W=value(p.power_electric_motors_W),
+                count_turbogenerators_running=engines,
+                power_shaft_turboshafts_W=value(engines * p.engine.power_shaft_W),
+                power_battery_W=value(p.power_battery_W), hybridization=value(p.hybridization_electric),
+                soc=value(n.soc_start), voltage_battery_V=value(p.battery.voltage_V),
+                current_battery_A=value(p.battery.current_A),
+                temperatures_C=({k: value(t) for k, t in thermal.temperatures_end_C.items()}
+                                if thermal is not None else {})))
+            if not is_nodes:
+                time_s += value(n.duration_s)
+        time_start_s += duration_s
+    return tuple(rows)
 
 
 def battery_trace(points, value):
@@ -2431,7 +2526,10 @@ pre_plan035 = dict(drag_corrections=False, redundancy=False, machine_mass_model=
                    whirl_flutter_model="frequency", free_delta3=False)                     # v3.10 defaults undone
 # Plan 057 (v3.9): the drag calibration and transition before it.
 # v3.10: whirl flutter by the frequency proxy, delta-3 fixed at -18 deg (the plan 055 eigenpair model off).
-pre_plan055 = dict(whirl_flutter_model="frequency", free_delta3=False)
+# Plan 061 (v3.11): wing aspect ratio free; v3.10 and earlier fix it at 6.12 (and have no width limit,
+# `requirements_v3_10`).
+pre_plan061 = dict(free_aspect_ratio_wing=False)
+pre_plan055 = dict(whirl_flutter_model="frequency", free_delta3=False, **pre_plan061)
 pre_plan057 = dict(factor_excrescence_buildup=1.27, factor_excrescence_scholz=1.17, fraction_chord_transition=0.1,
                    **pre_plan055)
 # Plans 037 and 038 (the drawn layout and the wing check): XV-15 fuselage calibration, turbogenerators at the tips,
@@ -2683,8 +2781,11 @@ requirements_v3_7 = HaloRequirements()
 assumptions_v3_7 = HaloAssumptions(**pre_plan057)
 # v3.9 (14,359 lb): the plan 057 drag recalibration with the frequency-proxy whirl check (v3.10 put the plan 055
 # eigenpair model in the loop with delta-3 free).
-requirements_v3_9 = HaloRequirements()
+requirements_v3_9 = HaloRequirements(max_width_overall_m=None)
 assumptions_v3_9 = HaloAssumptions(**pre_plan055)
+# v3.10 (14,350 lb): AR fixed at 6.12, no width limit (v3.11 frees AR under the 24 m limit, plan 061).
+assumptions_v3_10 = HaloAssumptions(**pre_plan061)
+requirements_v3_10 = HaloRequirements(max_width_overall_m=None)
 
 
 if __name__ == "__main__":

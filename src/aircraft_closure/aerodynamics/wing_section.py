@@ -29,12 +29,63 @@ import aerosandbox.numpy as np
 import numpy as onp
 
 
+def naca_6a_section(name_base, thickness_ratio, name):
+    """A NACA 6A section from a database one: the same camber line, thickness scaled by `thickness_ratio` (plan 057;
+    e.g. 64A223 = the 64A210 camber line with its thickness x 2.3)."""
+    base = asb.Airfoil(name_base)
+    x = np.cosspace(0.0, 1.0, 120)
+    camber, thickness = base.local_camber(x), thickness_ratio * base.local_thickness(x)
+    upper = np.stack([x[::-1], (camber + thickness / 2)[::-1]], axis=1)
+    lower = np.stack([x[1:], (camber - thickness / 2)[1:]], axis=1)
+    return asb.Airfoil(name=name, coordinates=np.concatenate([upper, lower]))
+
+
+# Plan 062: base sections by name; the 6A sections are built from their 10 % database parents.
+sections_6a = {"naca64a223": ("naca64a210", 2.3), "naca64a015": ("naca64a010", 1.5)}
+
+
+@lru_cache(maxsize=None)
+def section_airfoil(name):
+    """The coordinate airfoil of a base section: AeroSandbox's own, or a 6A section from `sections_6a`."""
+    if name in sections_6a:
+        parent, ratio = sections_6a[name]
+        return naca_6a_section(parent, ratio, name)
+    return asb.Airfoil(name)
+
+
+def section_thickness_shape(name, fraction_chord):
+    """Plan 062: the base section's local thickness at `fraction_chord` over its maximum thickness (a number)."""
+    airfoil = section_airfoil(name)
+    x = onp.linspace(0, 1, 2001)
+    thickness = onp.asarray(airfoil.local_thickness(x), dtype=float)
+    return float(onp.interp(fraction_chord, x, thickness) / thickness.max())
+
+
+def section_coordinates(name, thickness_to_chord, camber):
+    """Plan 062: coordinate airfoil of base section `name` at a (numeric) thickness ratio and camber, its thickness
+    and camber lines scaled as the family scales them (for the OpenVSP and FE geometry)."""
+    base = section_airfoil(name)
+    x = np.cosspace(0.0, 1.0, 120)
+    thickness_base = onp.max(onp.asarray(base.local_thickness(onp.linspace(0, 1, 2001)), dtype=float))
+    camber_line = base.local_camber(x) * camber / section_camber(name)
+    thickness = base.local_thickness(x) * thickness_to_chord / thickness_base
+    upper = np.stack([x[::-1], (camber_line + thickness / 2)[::-1]], axis=1)
+    lower = np.stack([x[1:], (camber_line - thickness / 2)[1:]], axis=1)
+    return asb.Airfoil(name=f"{name} t{thickness_to_chord:.3f} c{camber:.4f}",
+                       coordinates=np.concatenate([upper, lower]))
+
+
+def section_camber(name):
+    """The base section's maximum camber (2 % exactly for NACA 2423, as plan 046 fixed it)."""
+    return 0.02 if name == "naca2423" else float(section_airfoil(name).max_camber())
+
+
 @lru_cache(maxsize=None)
 def _base_parameters(name):
     """CST parameters of `name` exactly as `asb.Airfoil.get_aero_from_neuralfoil` builds them (normalized
     coordinates, 8 weights a side, leading-edge modification), the normalization's chord rotation in degrees (added
     to the angle of attack there) and the fit's measured maximum thickness."""
-    normalized = asb.Airfoil(name).normalize(return_dict=True)
+    normalized = section_airfoil(name).normalize(return_dict=True)
     base = normalized["airfoil"].to_kulfan_airfoil(n_weights_per_side=8, normalize_coordinates=False)
     x = onp.linspace(0, 1, 401)
     return (onp.asarray(base.upper_weights, dtype=float), onp.asarray(base.lower_weights, dtype=float),

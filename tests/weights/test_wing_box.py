@@ -125,5 +125,60 @@ class TestSymbolic(unittest.TestCase):
         self.assertAlmostEqual(float(solution(sizing.total())), float(numeric), delta=1e-6 * float(numeric))
 
 
+class TestSectionShape(unittest.TestCase):
+    """Plan 062: box depths from the section's own thickness shape."""
+
+    def test_naca2423_shape_reproduces_the_4_digit_formula(self):
+        from functools import partial
+
+        from aircraft_closure.aerodynamics.wing_section import section_thickness_shape
+        formula, shaped = xv15(), xv15(thickness_shape=partial(section_thickness_shape, "naca2423"))
+        self.assertAlmostEqual(float(shaped.depth_box_m), float(formula.depth_box_m), delta=0.01 * float(formula.depth_box_m))
+        self.assertAlmostEqual(float(shaped.total()), float(formula.total()), delta=0.01 * float(formula.total()))
+
+    def test_64a223_box_is_shallower_at_the_front_spar(self):
+        """The 6A section carries its thickness aft (40 % chord): thinner at the 15 % front spar, so the box between
+        the spars is shallower than the 2423's at the same thickness ratio."""
+        from functools import partial
+
+        from aircraft_closure.aerodynamics.wing_section import section_thickness_shape
+        shape = partial(section_thickness_shape, "naca64a223")
+        self.assertLess(shape(0.15), section_thickness_shape("naca2423", 0.15))
+        self.assertAlmostEqual(shape(0.40), 1.0, delta=0.01)
+        self.assertLess(float(xv15(thickness_shape=shape).depth_box_m), float(xv15().depth_box_m))
+
+    def test_shape_is_smooth_in_a_symbolic_thickness(self):
+        from functools import partial
+
+        from aircraft_closure.aerodynamics.wing_section import section_thickness_shape
+        shape = partial(section_thickness_shape, "naca64a223")
+        opti = asb.Opti()
+        thickness = opti.variable(init_guess=0.2, lower_bound=0.15, upper_bound=0.28)
+        sizing = xv15(thickness_to_chord=thickness, thickness_shape=shape, smoothing=1e-3)
+        opti.minimize(sizing.total())
+        solution = opti.solve(verbose=False)
+        self.assertGreater(float(solution(thickness)), 0.15)
+
+
+class TestBeamStiffnessFactor(unittest.TestCase):
+    def test_factor_scales_reported_stiffness_and_adds_caps(self):
+        """Plan 062: a beam factor below 1 reports factor x the box stiffness and sizes caps so the effective
+        stiffness still meets the requirement (the frequency-placement case, no imposed stiffness)."""
+        free = dict(stiffness_required_Nm2=None)
+        base = xv15(**free)
+        factored = xv15(layout=replace(wb.WingBoxLayout(), factor_stiffness_beam=0.886), **free)
+        # Strength-sized here (the beam requirement does not set the caps): the effective frequency falls by
+        # sqrt(0.886) and no caps are added.
+        self.assertAlmostEqual(float(factored.frequency_beam_rad_s) / float(base.frequency_beam_rad_s), 0.886**0.5,
+                               places=6)
+        self.assertGreaterEqual(float(factored.mass_caps_kg), float(base.mass_caps_kg))
+        # Stiffness-sized (an imposed beam requirement above the box): caps grow so the effective stiffness meets it.
+        required = (1e7, 3.0 * float(base.stiffness_beam_Nm2), 1e7)
+        stiff = xv15(stiffness_required_Nm2=required)
+        stiff_factored = xv15(stiffness_required_Nm2=required, layout=replace(wb.WingBoxLayout(), factor_stiffness_beam=0.886))
+        self.assertGreater(float(stiff_factored.mass_caps_kg), float(stiff.mass_caps_kg))
+        self.assertGreaterEqual(float(stiff_factored.stiffness_beam_Nm2), 0.99 * required[1])
+
+
 if __name__ == "__main__":
     unittest.main()

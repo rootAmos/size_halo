@@ -107,6 +107,7 @@ class DescentSegment:
     hybridization_electric: Any = None
     label: str = "descent"
     temperature_offset_K: Any = 0.0            # Tier 16: ISA + offset at the altitude
+    active_generator_count: Any = None         # plan 063: None all; fewer shuts turbogenerators down (by choice)
 
     def duration_s(self):
         return (self.altitude_start_m - self.altitude_end_m) / self.descent_rate_m_s
@@ -115,7 +116,8 @@ class DescentSegment:
         return FlightCondition(velocity_m_s=self.velocity_m_s, altitude_m=(self.altitude_start_m + self.altitude_end_m) / 2,
                                climb_rate_m_s=-self.descent_rate_m_s, soc=soc,
                                hybridization_electric=self.hybridization_electric, label=self.label,
-                               temperature_offset_K=self.temperature_offset_K)
+                               temperature_offset_K=self.temperature_offset_K,
+                               active_generator_count=self.active_generator_count)
 
 
 def ground_distance_m(segment):

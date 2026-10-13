@@ -23,6 +23,7 @@ import aerosandbox.numpy as np
 import aerosandbox.tools.units as u
 from aerosandbox.library.power_turboshaft import power_turboshaft
 
+from aircraft_closure.aerodynamics.wing_section import naca_6a_section
 from aircraft_closure.powertrain.components.gearbox import Gearbox
 from aircraft_closure.powertrain.components.propulsor import ActuatorDiskPropulsor
 from aircraft_closure.powertrain.components.turboshaft import SimpleTurboshaft
@@ -224,16 +225,6 @@ def build_xv15_aircraft(reference=Xv15Reference(), factors=Xv15MassFactors(), ma
                                       mass_factor=factors.transmission),
         equipment=FixedEquipment(mass_kg=r.mass_fixed_equipment_kg, x_m=4.0),
     )
-
-
-def naca_6a_section(name_base, thickness_ratio, name):
-    """A NACA 6A section from a database one: the same camber line, thickness scaled by `thickness_ratio`."""
-    base = asb.Airfoil(name_base)
-    x = np.cosspace(0.0, 1.0, 120)
-    camber, thickness = base.local_camber(x), thickness_ratio * base.local_thickness(x)
-    upper = np.stack([x[::-1], (camber + thickness / 2)[::-1]], axis=1)
-    lower = np.stack([x[1:], (camber - thickness / 2)[1:]], axis=1)
-    return asb.Airfoil(name=name, coordinates=np.concatenate([upper, lower]))
 
 
 def build_xv15_drag_aircraft(reference=Xv15Reference()):

@@ -60,6 +60,9 @@ class SurfaceSnapshot:
     dihedral_deg: float = 0.0
     sweep_deg: float = 0.0
     fraction_chord_sweep: float = 0.0  # chord station the sweep is measured at (0: leading edge)
+    # Plan 062: a named base section (`aerodynamics.wing_section`, e.g. "naca64a223") scaled to `thickness_to_chord`
+    # and `camber`, given to OpenVSP as points; None: the NACA 4-series section above.
+    section_name: str = None
 
     def x_le_tip_m(self):
         """Tip leading edge of a symmetric surface (span measured along the panels)."""
@@ -71,11 +74,17 @@ class SurfaceSnapshot:
         return f"naca{round(100 * self.camber)}{round(10 * self.camber_location) if self.camber else 0}" \
                f"{round(100 * self.thickness_to_chord):02d}"
 
+    def airfoil(self):
+        if self.section_name is None:
+            return asb.Airfoil(self.naca_name())
+        from aircraft_closure.aerodynamics.wing_section import section_coordinates
+        return section_coordinates(self.section_name, self.thickness_to_chord, self.camber)
+
     def to_asb(self, name):
         """AeroSandbox symmetric wing with the same root and tip sections as the OpenVSP surface."""
         semispan_m = self.span_m / 2
         dihedral_rad = math.radians(self.dihedral_deg)
-        airfoil = asb.Airfoil(self.naca_name())
+        airfoil = self.airfoil()
         return asb.Wing(name=name, symmetric=True, xsecs=[
             asb.WingXSec(xyz_le=[self.x_le_root_m, 0.0, self.z_m], chord=self.chord_root_m, airfoil=airfoil),
             asb.WingXSec(xyz_le=[self.x_le_tip_m(), semispan_m * math.cos(dihedral_rad),
