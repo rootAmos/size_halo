@@ -39,7 +39,7 @@ acceleration_gravity_m_s2 = 9.80665
 @dataclass(frozen=True)
 class NotionalAllElectricTiltrotor:
     """Literature-sourced inputs of the notional aircraft (SI)."""
-    mass_takeoff_kg: float = 1600.0                 # notional light cargo tiltrotor
+    mass_takeoff_kg: float = 1600.0                 # notional light tiltrotor
     count_rotors: int = 2
     diameter_rotor_m: float = 4.5                   # disk loading 490 N/m2, below the XV-15's 620 (NASA SP-2000-4517)
     figure_of_merit_hover: float = 0.75             # proprotor hover FM 0.7-0.8 (Johnson, Rotorcraft Aeromechanics)
