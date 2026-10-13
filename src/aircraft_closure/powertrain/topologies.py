@@ -16,6 +16,8 @@ from .ports import port_specs_for, rectifier_port_specs
 class ElectricalLayer:
     """Tier 15 feeder components, one set per feeder type (copied by the machine counts).
 
+    `build_all_electric` (plan 066) uses the motor and battery feeders only; the generator fields may be None.
+
     Motor feeder: bus -> protection_motor -> cable_motor -> inverter_motor -> motor.
     Generator feeder: generator -> inverter_generator (active rectifier) -> cable_generator ->
     protection_generator -> bus. Battery feeder: battery -> protection_battery -> cable_battery ->
@@ -94,18 +96,7 @@ def build_series_hybrid(motor, generator, battery, turboshaft, gearbox, propulso
         topology.add("generator_gearbox", generator_gearbox, port_specs_for(generator_gearbox), count=count_turbogenerators)
         topology.connect("turboshaft.shaft", "generator_gearbox.shaft_in")
         topology.connect("generator_gearbox.shaft_out", "generator.shaft")
-    battery_port, battery_combine = "battery.electrical", False
-    if r.count_strings_battery > 1:
-        topology.add("protection_string", r.protection_string, port_specs_for(r.protection_string),
-                     count=r.count_strings_battery)
-        topology.connect("battery.electrical", "protection_string.input", combine=True)
-        battery_port, battery_combine = "protection_string.output", True
-    if r.count_buses > 1:
-        # Normally open ties: the outer ports stay unconnected (boundaries) in normal operation.
-        topology.add("protection_bus_tie", r.protection_bus_tie, port_specs_for(r.protection_bus_tie),
-                     count=r.count_buses - 1)
-        topology.add("cable_bus_tie", r.cable_bus_tie, port_specs_for(r.cable_bus_tie), count=r.count_buses - 1)
-        topology.connect("protection_bus_tie.output", "cable_bus_tie.input")
+    battery_port, battery_combine = _add_redundancy_hardware(topology, r)
     if electrical is None:
         topology.connect("generator.electrical", "bus")
         topology.connect(battery_port, "bus")
@@ -118,23 +109,44 @@ def build_series_hybrid(motor, generator, battery, turboshaft, gearbox, propulso
     return topology
 
 
+def _add_redundancy_hardware(topology, r):
+    """Battery string contactors and normally open bus ties; returns the port (and combine flag) feeding the bus."""
+    battery_port, battery_combine = "battery.electrical", False
+    if r.count_strings_battery > 1:
+        topology.add("protection_string", r.protection_string, port_specs_for(r.protection_string),
+                     count=r.count_strings_battery)
+        topology.connect("battery.electrical", "protection_string.input", combine=True)
+        battery_port, battery_combine = "protection_string.output", True
+    if r.count_buses > 1:
+        # Normally open ties: the outer ports stay unconnected (boundaries) in normal operation.
+        topology.add("protection_bus_tie", r.protection_bus_tie, port_specs_for(r.protection_bus_tie),
+                     count=r.count_buses - 1)
+        topology.add("cable_bus_tie", r.cable_bus_tie, port_specs_for(r.cable_bus_tie), count=r.count_buses - 1)
+        topology.connect("protection_bus_tie.output", "cable_bus_tie.input")
+    return battery_port, battery_combine
+
+
 def _add_electrical_layer(topology, e, count_motors, count_turbogenerators, battery_port="battery.electrical",
                           battery_combine=False):
-    for name, count in (("protection_motor", count_motors), ("cable_motor", count_motors),
-                        ("inverter_motor", count_motors), ("cable_generator", count_turbogenerators),
-                        ("protection_generator", count_turbogenerators), ("protection_battery", 1),
-                        ("cable_battery", 1)):
-        component = getattr(e, name)
-        topology.add(name, component, port_specs_for(component), count=count)
-    topology.add("inverter_generator", e.inverter_generator, rectifier_port_specs(), count=count_turbogenerators)
+    """Motor, generator and battery feeders; `count_turbogenerators` 0 (all-electric) skips the generator ones."""
+    feeders = (("protection_motor", count_motors), ("cable_motor", count_motors), ("inverter_motor", count_motors),
+               ("cable_generator", count_turbogenerators), ("protection_generator", count_turbogenerators),
+               ("protection_battery", 1), ("cable_battery", 1))
+    for name, count in feeders:
+        if count:
+            component = getattr(e, name)
+            topology.add(name, component, port_specs_for(component), count=count)
+    if count_turbogenerators:
+        topology.add("inverter_generator", e.inverter_generator, rectifier_port_specs(), count=count_turbogenerators)
     topology.connect("protection_motor.input", "bus")
     topology.connect("protection_motor.output", "cable_motor.input")
     topology.connect("cable_motor.output", "inverter_motor.dc")
     topology.connect("inverter_motor.ac", "motor.electrical")
-    topology.connect("generator.electrical", "inverter_generator.ac")
-    topology.connect("inverter_generator.dc", "cable_generator.input")
-    topology.connect("cable_generator.output", "protection_generator.input")
-    topology.connect("protection_generator.output", "bus")
+    if count_turbogenerators:
+        topology.connect("generator.electrical", "inverter_generator.ac")
+        topology.connect("inverter_generator.dc", "cable_generator.input")
+        topology.connect("cable_generator.output", "protection_generator.input")
+        topology.connect("protection_generator.output", "bus")
     topology.connect(battery_port, "protection_battery.input", combine=battery_combine)
     topology.connect("protection_battery.output", "cable_battery.input")
     if e.dcdc is None:
@@ -143,6 +155,49 @@ def _add_electrical_layer(topology, e, count_motors, count_turbogenerators, batt
         topology.add("dcdc", e.dcdc, port_specs_for(e.dcdc))
         topology.connect("cable_battery.output", "dcdc.input")
         topology.connect("dcdc.output", "bus")
+
+
+def build_all_electric(motor, battery, propulsor, count_rotors=2, count_channels_per_rotor=2, electrical=None,
+                       redundancy=None, gearbox=None):
+    """battery -> bus -> n x r (inverter + motor channels) -> r rotors (plan 066); a description, never solved here.
+
+    Each rotor has `count_channels_per_rotor` independent channels, each a motor with (when `electrical` is
+    given) its own feeder: bus -> protection_motor -> cable_motor -> inverter_motor -> motor. A channel is a
+    Tier 18 lane: the channel shafts of a rotor combine (equal speed, torques add) on the `gearbox` input, or,
+    with `gearbox` None, directly on the rotor shaft (direct drive). `motor` is one channel's motor.
+
+    `electrical` (optional `ElectricalLayer`): only its motor and battery feeders (and `dcdc`) are used; the
+    generator fields may be None. Without it the motors and the battery join the bus directly (the inverter
+    is lumped into the motor efficiency). `redundancy` (optional `RedundancyLayer`) adds battery strings and
+    cross-strapped buses; its `count_lanes` must equal `count_channels_per_rotor`. A failure case (a channel
+    lost on one rotor) is a condition read by `redundancy.degraded_state`, not a different topology.
+    """
+    if redundancy is None:
+        redundancy = RedundancyLayer(count_lanes=count_channels_per_rotor)
+    elif redundancy.count_lanes != count_channels_per_rotor:
+        raise ValueError(f"redundancy.count_lanes ({redundancy.count_lanes}) must equal count_channels_per_rotor "
+                         f"({count_channels_per_rotor}): a channel is a lane.")
+    count_motors = count_rotors * count_channels_per_rotor
+    topology = Topology()
+    topology.add("battery", battery, port_specs_for(battery))
+    topology.add_bus("bus", count=redundancy.count_buses)
+    topology.add("motor", motor, port_specs_for(motor), count=count_motors)
+    if gearbox is not None:
+        topology.add("gearbox", gearbox, port_specs_for(gearbox), count=count_rotors)
+    topology.add("propulsor", propulsor, port_specs_for(propulsor), count=count_rotors)
+    battery_port, battery_combine = _add_redundancy_hardware(topology, redundancy)
+    if electrical is None:
+        topology.connect(battery_port, "bus")
+        topology.connect("motor.electrical", "bus")
+    else:
+        _add_electrical_layer(topology, electrical, count_motors, 0, battery_port, battery_combine)
+    combine = count_channels_per_rotor > 1
+    if gearbox is None:
+        topology.connect("motor.shaft", "propulsor.shaft", combine=combine)
+    else:
+        topology.connect("motor.shaft", "gearbox.shaft_in", combine=combine)
+        topology.connect("gearbox.shaft_out", "propulsor.shaft")
+    return topology
 
 
 def build_mechanical_tiltrotor(turboshaft, gearbox, propulsor, count_rotors=2):
