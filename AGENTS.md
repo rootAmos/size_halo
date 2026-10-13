@@ -148,6 +148,7 @@ Discipline guidance lives in `.claude/skills/<name>/SKILL.md`. Read the relevant
 - `mission-and-sizing`: mission analysis and the coupled sizing formulation
 - `control-surface-sizing`: tails, controls, stability and trim
 - `structural-mass-modeling`: structural mass buildup and calibration
+- `agent-orchestration`: how many subagents, which model, run-directly rules, handoffs
 
 ## Working in this repository
 
