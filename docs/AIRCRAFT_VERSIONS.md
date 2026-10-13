@@ -47,7 +47,8 @@ tests. Where the source gives only lb, the kg value is converted (1 lb = 0.45359
 | v3.6 | 6,885 kg (15,179 lb) | 900 kg | 210 kt | Layout line (v3.3.4, v3.3.5) merged into v3.5: drawn-layout fuselage, turbogenerators in the fuselage, corrected AFDD spar caps and minimum gauge, nacelle inertia from components. Lighter mainly in the fuselage and systems groups | v3.5 and v3.3.5 | `solve_halo_sizing(requirements_v3_6, assumptions_v3_6)` | `docs/decisions/037-halo-reference-layout.md`, `docs/decisions/038-wing-caps-pylon.md` (summary: `docs/RESULTS.md` section 3) |
 | v3.7 | 6,512 kg (14,357 lb) | 900 kg | 210 kt | Epsilon-NTU offset-strip-fin cooler in a ram-air duct (plan 042: 58 kg against 127 kg, pump and lines from published models, plan 051) and machine units uprated 10 % in continuous power on the same hardware (plan 048: the generator needs 2.004 catalogue units, now 2 uprated units instead of 3) | v3.6 | `solve_halo_sizing()` | `docs/decisions/048-machine-unit-uprating.md`, `docs/decisions/042-ntu-heat-exchanger.md` |
 | v3.9 | 6,513 kg (14,359 lb) | 900 kg | 210 kt | XV-15 drag calibration redone on the published sections, fuselage depth and three-view nacelles, fully turbulent: excrescence factor 1.27 -> 1.19 (plan 057) | v3.7 | `solve_halo_sizing(requirements_v3_9, assumptions_v3_9)` | `docs/decisions/057-xv15-drag-recalibration.md` |
-| **v3.10 (current baseline)** | **6,509 kg (14,350 lb)** | 900 kg | 210 kt | Whirl flutter in the loop: plan 055 eigenpair constraint at 1.15 V_D replaces the frequency proxy, delta-3 free (-10.9 deg); scanned flutter 317 kt against 302 kt | v3.9 | `solve_halo_sizing()` | `docs/decisions/055-whirl-flutter-in-the-loop.md`, `docs/decisions/057-xv15-drag-recalibration.md` |
+| v3.10 | 6,509 kg (14,350 lb) | 900 kg | 210 kt | Whirl flutter in the loop: plan 055 eigenpair constraint at 1.15 V_D replaces the frequency proxy, delta-3 free (-10.9 deg); scanned flutter 317 kt against 302 kt | v3.9 | `solve_halo_sizing(requirements_v3_10, assumptions_v3_10)` | `docs/decisions/055-whirl-flutter-in-the-loop.md`, `docs/decisions/057-xv15-drag-recalibration.md` |
+| **v3.11 (current baseline)** | **6,424 kg (14,163 lb)** | 900 kg | 210 kt | Wing aspect ratio free (7.42, narrower chord, 18.0 m2) under a 24 m overall-width limit, span + 2R (ICAO code B / FAA ADG II, not active at 20.8 m); delta-3 -10 deg (bound); scanned flutter 302 kt | v3.10 | `solve_halo_sizing()` | `docs/decisions/061-span-limit-free-aspect-ratio.md` |
 
 Steps that analysed an existing version without re-sizing it get no version of their own: trajectory
 optimization (Tier 14, `docs/decisions/019-trajectory-optimization.md`), design-space practice (Tier 22,
@@ -87,7 +88,8 @@ flowchart TD
     v3_3_5 -. merged .-> v3_6
     v3_6 --> v3_7["v3.7 plan 048<br/>14,357 lb"]
     v3_7 --> v3_9["v3.9 plan 057 drag<br/>14,359 lb"]
-    v3_9 --> v3_10["v3.10 current baseline, plan 055 flutter<br/>14,350 lb"]
+    v3_9 --> v3_10["v3.10 plan 055 flutter<br/>14,350 lb"]
+    v3_10 --> v3_11["v3.11 current baseline, plan 061 AR free<br/>14,163 lb"]
 ```
 
 ## Development step to version
