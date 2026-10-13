@@ -171,6 +171,7 @@ class UnitMachineMassModel:
     specific_power_inverter_W_kg: Any = None
     smoothing_units: Any = 0.05
     factor_uprating_power: Any = 1.0    # plan 048: `power_continuous_unit_W` is this x the catalogue rating
+    power_peak_unit_W: Any = None       # plan 040: published peak power per unit (None: not bounded)
 
     def count_units_relaxed(self, machine):
         return np.softmax(machine.max_torque_Nm / self.torque_peak_unit_Nm,
@@ -217,6 +218,9 @@ class Motor:
     # Tier 19: LumpedThermalModel or None. With one, the power rating is a continuous (thermal) rating that
     # short peaks may exceed; callers then constrain temperature instead of rated power (plan 028).
     thermal_model: Any = None
+    # Plan 040: the electromagnetic/drive peak-power corner (a published short-time peak), checked with or without
+    # the thermal model; None: no peak bound beyond the rated power.
+    power_peak_W: Any = None
 
     def get_mass(self):
         if self.mass_model is not None:

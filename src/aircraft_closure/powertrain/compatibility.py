@@ -3,7 +3,10 @@
 Operating margins compare each instance's port values with its own limits.
 Design margins compare adjacent ratings across connections and buses and use
 component parameters only. Max speed, max torque and rated power are
-independent bounds; no corner point combining them is assumed.
+independent bounds; no corner point combining them is assumed. With a thermal
+model the rated power is continuous and is not checked (temperature is); a
+machine's `power_peak_W` (plan 040) is then the shaft-power corner, checked
+in every case.
 """
 from dataclasses import dataclass, fields
 from typing import Any
@@ -125,6 +128,9 @@ def operating_margins(topology, port_values, atmosphere=None, components=None):
                 # Tier 19: with a thermal model the rating is continuous; the caller limits temperature instead.
                 margins.append(margin_below(f"{name} power_shaft_W", shaft.speed_rad_s * shaft.torque_Nm,
                                             component.power_rated_W))
+            if getattr(component, "power_peak_W", None) is not None:
+                margins.append(margin_below(f"{name} power_peak_W", shaft.speed_rad_s * shaft.torque_Nm,
+                                            component.power_peak_W))
             margins += [
                 margin_below(f"{name} torque_Nm", shaft.torque_Nm, component.max_torque_Nm),
                 margin_below(f"{name} speed_rad_s", shaft.speed_rad_s, component.max_speed_rad_s),

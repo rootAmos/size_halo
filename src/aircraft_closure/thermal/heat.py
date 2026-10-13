@@ -127,7 +127,8 @@ def evaluate_point_thermal(powertrain, heat_loads, atmosphere, velocity_m_s, mod
     cooling_result = None
     if cooling is not None:
         exchanger = cooling.heat_exchanger
-        rejected = [load for load in heat_loads if load.source not in cooling.sources_excluded]
+        # Plan 040: a per-bus group ("motor@A") is excluded with its instance.
+        rejected = [load for load in heat_loads if load.source.split("@")[0] not in cooling.sources_excluded]
         power_heat_W = sum((load.count * mean_W[load.source] for load in rejected), 0.0)
         power_heat_end_W = sum((load.count * end_W[load.source] for load in rejected), 0.0)
         if cooling_unknowns is None:

@@ -14,6 +14,12 @@ propagated from point to point, starting from rest (`polarization_start`
 "rest") or fully developed ("steady"); each point also reports its
 end-of-interval terminal voltage against the pack's minimum voltage.
 
+Plan 040: a per-bus engine-out point (`FlightCondition.bus_tie`, see
+`performance.bus_split`) has one string group per bus, each with its own SOC
+and RC voltages; the chain then carries them as dicts keyed "A" and "B",
+bounds each SOC and end voltage, and the mission's `soc_end` is their mean
+(the pack SOC, the groups being equal halves), with `soc_end_by_bus` per bus.
+
 Tier 19: component temperatures (machines and packs with a thermal model) propagate
 from point to point like the RC voltages. `thermal_start` "steady" (default)
 gives every point its steady state (no history, i.e. continuous ratings);
@@ -80,6 +86,7 @@ class MissionResult:
     duration_s: Any
     margins: tuple
     temperatures_end_C: Any = None      # Tier 19: by instance name (None: no thermal history)
+    soc_end_by_bus: Any = None          # plan 040: {"A": ..., "B": ...} after per-bus points (soc_end is their mean)
 
 
 def build_mission(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_start, hybridization_electric_min=0.0,
@@ -146,7 +153,17 @@ def build_mission(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_star
             opti.subject_to(point.thrust_per_rotor_N >= 0)
             fuel_kg = point.fuel_flow_kg_s * duration_s
             energy_chemical_J = point.battery.power_chemical_W * duration_s
-            if is_ecm:
+            if point.split is not None:
+                # Plan 040: per-bus string groups, each with its own SOC, RC history and end voltage.
+                states = point.split.buses
+                energy_chemical_J = sum(states[b].battery.power_chemical_W for b in states) * duration_s
+                soc_end = dict(point.split.soc_next)
+                voltage_rc_V = dict(point.split.voltage_rc_end_V)
+                for b in states:
+                    margins.append(margin_above(f"{condition.label}: battery {b} end voltage_V",
+                                                point.split.voltage_end_V[b], battery.get_limits().min_voltage_V))
+                    opti.subject_to([soc_end[b] <= battery.max_soc, soc_end[b] >= soc_lower])
+            elif is_ecm:
                 soc_end = point.battery.soc_next
                 voltage_rc_V = point.battery.voltage_rc_end_V
                 voltage_end_V = (point.battery.voltage_end_V if battery_dynamics == "quasi_steady" else
@@ -158,7 +175,10 @@ def build_mission(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_star
                 # Tier 18: a degraded point (a string isolated) depletes only the strings still connected.
                 capacity_J = battery_for_condition(aircraft.powertrain.topology, condition).energy_capacity_J
                 soc_end = soc - energy_chemical_J / capacity_J
-            opti.subject_to([soc_end <= battery.max_soc, soc_end >= soc_lower])
+            if point.split is None:
+                if isinstance(soc, dict) or isinstance(voltage_rc_V, dict):
+                    raise ValueError("A lumped point cannot follow per-bus points in one mission.")
+                opti.subject_to([soc_end <= battery.max_soc, soc_end >= soc_lower])
             margins.extend(point.margins)
             points.append(SegmentResult(segment=segment, point=point, duration_s=duration_s, mass_start_kg=mass_kg,
                                         mass_fuel_burnt_kg=fuel_kg, energy_battery_chemical_J=energy_chemical_J,
@@ -174,12 +194,14 @@ def build_mission(opti, aircraft, aerodynamics, mission, mass_start_kg, soc_star
                 energy_battery_chemical_J=sum(p.energy_battery_chemical_J for p in points),
                 energy_battery_terminal_J=sum(p.energy_battery_terminal_J for p in points),
                 soc_start=points[0].soc_start, soc_end=points[-1].soc_end, subsegments=tuple(points)))
+    soc_by_bus = soc if isinstance(soc, dict) else None
     return MissionResult(
         segments=tuple(results),
         mass_fuel_burnt_kg=sum(r.mass_fuel_burnt_kg for r in results),
         energy_battery_chemical_J=sum(r.energy_battery_chemical_J for r in results),
-        soc_end=soc, mass_end_kg=mass_kg, duration_s=sum(r.duration_s for r in results),
-        margins=tuple(margins), temperatures_end_C=temperatures_C,
+        soc_end=sum(soc.values()) / len(soc) if soc_by_bus else soc, mass_end_kg=mass_kg,
+        duration_s=sum(r.duration_s for r in results), margins=tuple(margins), temperatures_end_C=temperatures_C,
+        soc_end_by_bus=soc_by_bus,
     )
 
 

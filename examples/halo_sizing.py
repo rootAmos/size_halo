@@ -494,6 +494,14 @@ class HaloAssumptions:
     failure_string_out: bool = True                  # one battery string isolated, all engines
     failure_string_out_engine_out: bool = False      # double failure: a string and an engine
     failure_lane_out_engine_out: bool = False        # double failure: a lane per rotor and an engine
+    # Plan 040: how the engine-out hover treats the buses. "lumped": one junction (all sources share every load, the
+    # model before plan 040). Per bus (`performance.bus_split`): the failed turbogenerator's bus keeps its battery
+    # strings and lanes, the healthy bus its own, the lanes of a rotor may share torque unequally, and the bus tie is
+    # "open" (each bus on its own sources) or "closed" (the tie feeds the failed bus); "both" sizes to both tie
+    # states (two engine-out hovers). Per bus needs redundancy with two buses, the ECM pack and no electrical layer;
+    # otherwise the hover is lumped. Default "lumped" keeps the v3.7 reference; "both" adds about 1,200 lb with the
+    # peak-power corner below (re-baseline before switching it on).
+    engine_out_bus_model: str = "lumped"
     # ---- Plan 033 machine database and gearbox stages (refines Tier 13) ----
     # Machine mass: "units" (whole units of real machines, plan 035, the default), "torque_density"
     # (TorqueDensityMassModel above, the rubber reference until plan 035) or "database"
@@ -524,6 +532,12 @@ class HaloAssumptions:
     torque_peak_unit_motor_Nm: float = 1500.0
     power_continuous_unit_motor_W: float = 1400.0 * 1800 * u.rpm
     speed_max_unit_motor_rad_s: float = 2500 * u.rpm
+    # Plan 040: published peak power per unit (D1500: 285 kW at 1,800 rpm, a 30 s rating; SPX242: 380 kW). With the
+    # thermal model the continuous power is not a bound (temperature is), so this peak-power corner is what caps
+    # omega x Q between the torque and speed limits. None: no peak-power bound (the v3.7 reference); set 285e3 and
+    # 380e3 to apply the datasheet peaks.
+    power_peak_unit_motor_W: Any = None
+    power_peak_unit_generator_W: Any = None
     # Generator unit: Helix SPX242 demonstrator (31.2 kg, 470 N m peak, 315 kW continuous, 17,000 rpm max).
     mass_unit_generator_kg: float = 31.2
     torque_peak_unit_generator_Nm: float = 470.0
@@ -938,10 +952,12 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
         uprating = a.factor_uprating_power_units    # plan 048: uprated continuous power only
         motor = unit_machine(motor, a.count_units_motor, UnitMachineMassModel(
             a.mass_unit_motor_kg, a.torque_peak_unit_motor_Nm, uprating * a.power_continuous_unit_motor_W,
-            a.speed_max_unit_motor_rad_s, specific_power_inverter_W_kg=inverter, factor_uprating_power=uprating))
+            a.speed_max_unit_motor_rad_s, specific_power_inverter_W_kg=inverter, factor_uprating_power=uprating,
+            power_peak_unit_W=a.power_peak_unit_motor_W))
         generator = unit_machine(generator, a.count_units_generator, UnitMachineMassModel(
             a.mass_unit_generator_kg, a.torque_peak_unit_generator_Nm, uprating * a.power_continuous_unit_generator_W,
-            a.speed_max_unit_generator_rad_s, specific_power_inverter_W_kg=inverter, factor_uprating_power=uprating))
+            a.speed_max_unit_generator_rad_s, specific_power_inverter_W_kg=inverter, factor_uprating_power=uprating,
+            power_peak_unit_W=a.power_peak_unit_generator_W))
     # Tier 19: with thermal machines the drive is rated on its own (the motor's rating is continuous).
     # Tier 18: `motor` is one lane motor; the drive takes all of a rotor's lanes.
     lanes = count_lanes_motor(a)
@@ -1333,6 +1349,7 @@ def unit_machine(rubber, count_units, units):
     count = count_units if count_units is not None else units.count_units_relaxed(rubber)
     return replace(rubber, max_torque_Nm=count * units.torque_peak_unit_Nm,
                    power_rated_W=count * units.power_continuous_unit_W, max_speed_rad_s=units.speed_max_unit_rad_s,
+                   power_peak_W=None if units.power_peak_unit_W is None else count * units.power_peak_unit_W,
                    mass_model=replace(units, count_units=count))
 
 
@@ -1700,19 +1717,27 @@ def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerody
     cruise = next(s for s in flown.segments if isinstance(s.segment, CruiseSegment))
     loiter = next(s for s in flown.segments if isinstance(s.segment, LoiterSegment))
     # Engine-out hover: one turbogenerator plus the battery, at MTOM, from the SOC floor.
+    soc_margins_engine_out = ()
     if is_ecm:
         # Tier 17: sub-divided so the sag at the low-SOC end is seen; polarization already developed (steady)
-        # when the engine fails; SOC may fall to the emergency floor.
-        reserve = build_mission(opti, aircraft, aerodynamics, Mission((HoverSegment(
-            r.duration_engine_out_hover_s, 0.0, None, "engine-out hover",
-            active_generator_count=a.count_turbogenerators - 1),)), mass_takeoff_kg, soc_reserve,
-            soc_floor=soc_emergency_floor, subsegments=a.subsegments_engine_out, polarization_start="steady",
-            battery_dynamics=a.battery_dynamics, **battery_steps(a),
-            **(dict(thermal_start=take_off_end_C) if thermal else {}))
+        # when the engine fails; SOC may fall to the emergency floor. Plan 040: one hover per bus tie state.
+        reserves = []
+        for tie in engine_out_bus_ties(a):
+            label = "engine-out hover" if tie is None else f"engine-out hover, tie {tie}"
+            reserves.append(build_mission(opti, aircraft, aerodynamics, Mission((HoverSegment(
+                r.duration_engine_out_hover_s, 0.0, None, label, active_generator_count=a.count_turbogenerators - 1,
+                bus_tie=tie),)), mass_takeoff_kg, soc_reserve,
+                soc_floor=soc_emergency_floor, subsegments=a.subsegments_engine_out, polarization_start="steady",
+                battery_dynamics=a.battery_dynamics, **battery_steps(a),
+                **(dict(thermal_start=take_off_end_C) if thermal else {})))
+        reserve = reserves[0]
         engine_out_points = reserve.segments[0].subsegments or reserve.segments
         engine_out = engine_out_points[0].point
-        engine_out_margins = reserve.margins
+        engine_out_margins = tuple(m for each in reserves for m in each.margins)
         soc_after_reserve = reserve.soc_end
+        soc_margins_engine_out = tuple(
+            margin_above(f"soc_after_engine_out_hover (tie {tie}, bus {b})", soc, soc_emergency_floor)
+            for tie, each in zip(engine_out_bus_ties(a), reserves) for b, soc in (each.soc_end_by_bus or {}).items())
     else:
         engine_out = build_flight_point(opti, aircraft, aerodynamics, FlightCondition(
             mode="hover", altitude_m=0.0, soc=soc_reserve, active_generator_count=a.count_turbogenerators - 1,
@@ -1767,6 +1792,7 @@ def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerody
         margin_above("cn_beta_per_rad", cn_beta_per_rad, 0.06),
         margin_above("soc_end", flown.soc_end, soc_reserve),
         margin_above("soc_after_engine_out_hover", soc_after_reserve, soc_emergency_floor),
+        *soc_margins_engine_out,
         margin_above("stall_lift_at_120kt", lift_stall_N, weight_N),
         margin_below("rotor_radius_m", radius_m, (span_m - a.diameter_fuselage_m) / 2 - a.clearance_rotor_fuselage_m),
     ) + ((margin_below("width_overall_m", span_m + 2 * radius_m, r.max_width_overall_m),)
@@ -2041,6 +2067,16 @@ def failure_hover_cases(assumptions):
     return tuple(cases)
 
 
+def engine_out_bus_ties(assumptions):
+    """Plan 040: the bus tie states of the engine-out hovers, (None,) for the lumped hover."""
+    a = assumptions
+    ties = dict(lumped=(None,), open=("open",), closed=("closed",), both=("open", "closed"))
+    if a.engine_out_bus_model not in ties:
+        raise ValueError(f"Unknown engine_out_bus_model '{a.engine_out_bus_model}'.")
+    supported = a.redundancy and a.count_buses == 2 and a.battery_model == "ecm" and not a.electrical_layer
+    return ties[a.engine_out_bus_model] if supported else (None,)
+
+
 def halo_failure_hovers(opti, aircraft, aerodynamics, mass_takeoff_kg, requirements, assumptions,
                         temperature_start_C=None):
     """Tier 18 failure hovers: ((label, MissionResult), ...), each a 60 s hover at MTOM from the SOC floor to the
@@ -2249,8 +2285,10 @@ def battery_trace(points, value):
     rows, time_s = [], 0.0
     for p in points:
         b = p.point.battery
+        # Plan 040: per-bus points report the pack SOC (mean of the equal string groups) and bus B's battery.
+        soc_start, soc_end = (sum(x.values()) / len(x) if isinstance(x, dict) else x for x in (p.soc_start, p.soc_end))
         rows.append(dict(label=p.point.condition.label, time_start_s=time_s, duration_s=value(p.duration_s),
-                         soc_start=value(p.soc_start), soc_end=value(p.soc_end), voltage_bus_V=value(b.voltage_V),
+                         soc_start=value(soc_start), soc_end=value(soc_end), voltage_bus_V=value(b.voltage_V),
                          voltage_end_V=value(b.voltage_end_V), voltage_ocv_V=value(b.voltage_open_circuit_V),
                          current_A=value(b.current_A), power_W=value(b.power_electric_W)))
         time_s += rows[-1]["duration_s"]
@@ -2716,7 +2754,7 @@ requirements_plan027 = HaloRequirements(mass_payload_kg=900.0)
 assumptions_plan027 = HaloAssumptions(**pre_plan035, **pre_layout, thermal_model=False)
 # Tier 18 (plan 032): the reference with the sensible redundancy set (2 lanes per rotor, 2 cross-strapped buses,
 # 2 battery strings; lane-out, bus-out and string-out hovers).
-assumptions_tier18 = HaloAssumptions(**dict(pre_plan035, redundancy=True), **pre_layout)
+assumptions_tier18 = HaloAssumptions(**dict(pre_plan035, redundancy=True), **pre_layout, engine_out_bus_model="lumped")
 # Plan 030 reference: 900 kg, AFDD wing, AeroBuildup, thermal model, rubber machines (14,037 lb).
 requirements_plan030 = HaloRequirements(mass_payload_kg=900.0)
 assumptions_plan030 = HaloAssumptions(**pre_plan035, **pre_layout)
