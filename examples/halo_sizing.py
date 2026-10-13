@@ -1231,6 +1231,9 @@ class HaloSizingResult:
     # voltage_bus_V (interval mean), voltage_end_V, voltage_ocv_V, current_A, power_W (terminal).
     battery_trace: tuple = ()
     engine_out_trace: tuple = ()
+    # Plan 064: one row per mission node (or per segment point without nodes), every state the flight point
+    # holds: time, flight path, attitude, aero, rotor, powertrain powers, fuel, mass, battery and temperatures.
+    node_trace: tuple = ()
     # Tier 20 ("afdd_tiltrotor"): wing breakdown (name, kg) and per airplane-mode point the realized wing torsion
     # and beam frequencies in per rev of that point's rotor speed.
     wing_masses_kg: tuple = ()
@@ -1918,6 +1921,7 @@ def _solve_halo_coupled(opti, design, mass_takeoff_kg, mission, aircraft, aerody
         battery_trace=battery_trace(tuple(p for s in flown.segments for p in (s.subsegments or (s,))), value)
         if is_ecm else (),
         engine_out_trace=battery_trace(engine_out_points, value),
+        node_trace=node_trace(flown.segments, a.count_rotors, a.count_turbogenerators, value),
         wing_masses_kg=tuple((f.name, value(getattr(wing_masses, f.name))) for f in fields(wing_masses)
                              if f.name.startswith("mass_")) if wing_masses is not None else (),
         whirl_flutter=tuple(dict(label=p.condition.label, speed_rotor_rad_s=value(p.speed_rotor_rad_s),
@@ -2168,6 +2172,54 @@ def heat_exchanger_summary(powertrain, value):
 def battery_steps(a):
     """`build_mission` keywords of the plan 060 part 3 battery sub-steps (used by "piecewise" only)."""
     return dict(step_battery_max_s=a.step_battery_max_s, count_nodes_battery_min=a.count_nodes_battery_min)
+
+
+def node_trace(segments, count_rotors, count_turbogenerators, value):
+    """Plan 064: numeric state at every mission node, in mission order (one row per point without nodes).
+
+    Times are the node instants: a segment's nodes are evenly spaced over its duration ("label i/n"); a segment
+    without nodes is one row at its start. Flight path angle from the climb rate and airspeed (90 deg in a hover
+    climb, 0 in hover); pitch attitude is angle of attack plus flight path angle in airplane mode (None in hover,
+    where the model has no attitude). Powers are totals over the running units."""
+    rows, time_start_s = [], 0.0
+    for s in segments:
+        nodes = s.subsegments or (s,)
+        duration_s = value(s.segment.duration_s())
+        # Piecewise nodes ("label i/n", n + 1 of them) are instants; quasi-steady sub-points are intervals.
+        is_nodes = len(nodes) > 1 and nodes[-1].point.condition.label.endswith(f"{len(nodes) - 1}/{len(nodes) - 1}")
+        time_s = time_start_s
+        for index, n in enumerate(nodes):
+            p, c = n.point, n.point.condition
+            velocity_m_s, climb_m_s = value(c.velocity_m_s), value(c.climb_rate_m_s)
+            gamma_deg = (float(onp.degrees(onp.arcsin(onp.clip(climb_m_s / velocity_m_s, -1, 1))))
+                         if velocity_m_s > 0 else (90.0 if climb_m_s > 0 else 0.0))
+            alpha_deg = value(p.alpha_deg) if p.alpha_deg is not None else None
+            engines = c.active_generator_count or count_turbogenerators
+            thermal = p.thermal
+            rows.append(dict(
+                label=c.label, mode=c.mode,
+                time_s=(time_start_s + index / (len(nodes) - 1) * duration_s) if is_nodes else time_s,
+                altitude_m=value(c.altitude_m), velocity_m_s=velocity_m_s, climb_rate_m_s=climb_m_s,
+                flight_path_deg=gamma_deg, alpha_deg=alpha_deg,
+                pitch_deg=alpha_deg + gamma_deg if alpha_deg is not None else None,
+                cl=value(p.aero.cl) if p.aero is not None else None,
+                cd=value(p.aero.cd) if p.aero is not None else None,
+                mass_kg=value(n.mass_start_kg), weight_N=value(p.weight_N), fuel_flow_kg_s=value(p.fuel_flow_kg_s),
+                thrust_per_rotor_N=value(p.thrust_per_rotor_N), speed_rotor_rad_s=value(p.speed_rotor_rad_s),
+                power_shaft_rotors_W=value(count_rotors * p.power_shaft_rotor_W),
+                power_shaft_motors_W=value(count_rotors * p.speed_motor_rad_s * p.torque_motor_Nm),
+                power_electric_motors_W=value(p.power_electric_motors_W),
+                count_turbogenerators_running=engines,
+                power_shaft_turboshafts_W=value(engines * p.engine.power_shaft_W),
+                power_battery_W=value(p.power_battery_W), hybridization=value(p.hybridization_electric),
+                soc=value(n.soc_start), voltage_battery_V=value(p.battery.voltage_V),
+                current_battery_A=value(p.battery.current_A),
+                temperatures_C=({k: value(t) for k, t in thermal.temperatures_end_C.items()}
+                                if thermal is not None else {})))
+            if not is_nodes:
+                time_s += value(n.duration_s)
+        time_start_s += duration_s
+    return tuple(rows)
 
 
 def battery_trace(points, value):
