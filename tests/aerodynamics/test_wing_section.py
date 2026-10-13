@@ -114,5 +114,28 @@ class BuildupWithSectionFamilyTests(unittest.TestCase):
         self.assertLess(scalar(numeric), family_23)
 
 
+class SectionBaseTests(unittest.TestCase):
+    """Plan 062: the NACA 64A223 base (the XV-15 wing section)."""
+
+    def test_64a223_geometry(self):
+        from aircraft_closure.aerodynamics.wing_section import section_airfoil, section_camber
+        import numpy as onp
+        airfoil = section_airfoil("naca64a223")
+        x = onp.linspace(0, 1, 2001)
+        thickness = onp.asarray(airfoil.local_thickness(x), dtype=float)
+        self.assertAlmostEqual(thickness.max(), 0.23, delta=0.002)
+        self.assertAlmostEqual(x[thickness.argmax()], 0.40, delta=0.03)
+        self.assertAlmostEqual(section_camber("naca64a223"), 0.0133, delta=0.0005)
+        self.assertEqual(section_camber("naca2423"), 0.02)
+
+    def test_family_on_64a223_recovers_its_base(self):
+        from aircraft_closure.aerodynamics.wing_section import WingSectionFamily, section_camber
+        import numpy as onp
+        camber = section_camber("naca64a223")
+        member = WingSectionFamily(base_name="naca64a223", camber_base=camber).airfoil(0.23, camber)
+        x = onp.linspace(0, 1, 401)
+        self.assertAlmostEqual(float(onp.max(member.local_thickness(x))), 0.23, places=6)
+
+
 if __name__ == "__main__":
     unittest.main()

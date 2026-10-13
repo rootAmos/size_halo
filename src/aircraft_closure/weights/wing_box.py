@@ -113,6 +113,10 @@ class WingBoxLayout:
     # and CalculiX on the Halo wing box gives (58.5 / 77.6)^2 = 0.568 clamped (plan 054). Torsion frequency =
     # this factor x the NDARC value, sqrt(0.572); 1.0 is NDARC.
     correction_torsion_frequency: float = 0.756
+    # Plan 062: effective beam (flapwise) bending stiffness over the box value, the square of the CalculiX
+    # free-free over bottom-up beam frequency (0.94^2 on the free wing D); 1.0 is the box value. The caps are sized
+    # so the effective stiffness meets the requirement, and the effective stiffness is what flutter sees.
+    factor_stiffness_beam: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -184,10 +188,12 @@ def size_wing_box(span_m, chord_m, thickness_to_chord, mass_design_kg, mass_tip_
                   offset_cg_tip_m, speed_rotor_design_rad_s, frequency_torsion_per_rev, frequency_beam_per_rev,
                   frequency_chord_per_rev, width_attachment_m, material, layout=WingBoxLayout(),
                   load_factor_ultimate=4.5, load_factor_jump=2.0, count_rotors=2, smoothing=0.0,
-                  stiffness_required_Nm2=None):
+                  stiffness_required_Nm2=None, thickness_shape=None):
     """Size the wing box at `layout.count_stations` midpoint stations per panel (constant chord, span between rotor
     centrelines). `stiffness_required_Nm2` = (GJ, EI beam, EI chord) overrides the frequency placement (e.g. a
-    published wing's stiffness). Returns `WingBoxSizing`."""
+    published wing's stiffness). `thickness_shape` (plan 062): the section's local thickness over its maximum at a
+    chord fraction (numbers), so the depths are `thickness_to_chord` x the shape; None: the NACA 4-digit formula.
+    Returns `WingBoxSizing`."""
     m, lay = material, layout
     semispan_m = span_m / 2
     y_side_m = width_attachment_m / 2
@@ -196,12 +202,17 @@ def size_wing_box(span_m, chord_m, thickness_to_chord, mass_design_kg, mass_tip_
     tip_weight_N = mass_tip_kg * g_m_s2
     # Spar depths (webs, caps) and the airfoil's mean depth across the box (covers, enclosed area): the section is
     # deepest between the spars, so the spar average understates the torsion area (CalculiX GJ 1.41 x, plan 054).
-    depth_m = 0.5 * (naca_thickness_fraction(lay.fraction_chord_front_spar, thickness_to_chord)
-                     + naca_thickness_fraction(lay.fraction_chord_rear_spar, thickness_to_chord)) * chord_m
+    def thickness_fraction(fraction_chord):
+        if thickness_shape is None:
+            return naca_thickness_fraction(fraction_chord, thickness_to_chord)
+        return thickness_to_chord * thickness_shape(fraction_chord)
+
+    depth_m = 0.5 * (thickness_fraction(lay.fraction_chord_front_spar)
+                     + thickness_fraction(lay.fraction_chord_rear_spar)) * chord_m
     fractions_box = [lay.fraction_chord_front_spar + (lay.fraction_chord_rear_spar - lay.fraction_chord_front_spar)
                      * k / 8 for k in range(9)]
     weights_simpson = [1, 4, 2, 4, 2, 4, 2, 4, 1]
-    depth_box_m = sum(w * naca_thickness_fraction(x, thickness_to_chord) for w, x in zip(weights_simpson, fractions_box)) \
+    depth_box_m = sum(w * thickness_fraction(x) for w, x in zip(weights_simpson, fractions_box)) \
         / 24 * chord_m
     width_m = (lay.fraction_chord_rear_spar - lay.fraction_chord_front_spar) * chord_m
     area_enclosed_m2 = width_m * depth_box_m
@@ -280,7 +291,8 @@ def size_wing_box(span_m, chord_m, thickness_to_chord, mass_design_kg, mass_tip_
         beam_box_Nm2 = m.modulus_Pa * width_m * covers_m * (depth_effective_m / 2) ** 2 \
             + m.modulus_Pa * 2 * web_m * depth_m**3 / 12
         chord_box_Nm2 = m.modulus_Pa * covers_m * width_m**3 / 12 + m.modulus_Pa * 2 * depth_m * web_m * (width_m / 2) ** 2
-        area_caps_m2 = _max(_positive_part(beam_req_Nm2 - beam_box_Nm2, smoothing * beam_req_Nm2)
+        area_caps_m2 = _max(_positive_part(beam_req_Nm2 / lay.factor_stiffness_beam - beam_box_Nm2,
+                                           smoothing * beam_req_Nm2)
                             / (m.modulus_cap_Pa * (depth_m / 2) ** 2),
                             _positive_part(chord_req_Nm2 - chord_box_Nm2, smoothing * chord_req_Nm2)
                             / (m.modulus_cap_Pa * (width_m / 2) ** 2), beam_req_Nm2 / (m.modulus_cap_Pa * depth_m**2),
@@ -309,7 +321,8 @@ def size_wing_box(span_m, chord_m, thickness_to_chord, mass_design_kg, mass_tip_
 
     # Realized effective stiffness: flexibility-weighted for bending (weight (L - y)^2), uniform for torsion.
     weight_bending = [r["arm"] ** 2 for r in rows]
-    stiffness_beam_Nm2 = sum(weight_bending) / sum(w / r["beam"] for w, r in zip(weight_bending, rows))
+    stiffness_beam_Nm2 = lay.factor_stiffness_beam * sum(weight_bending) / sum(
+        w / r["beam"] for w, r in zip(weight_bending, rows))
     stiffness_chord_Nm2 = sum(weight_bending) / sum(w / r["chord"] for w, r in zip(weight_bending, rows))
     stiffness_torsion_Nm2 = len(rows) / sum(1 / r["torsion"] for r in rows)
 

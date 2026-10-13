@@ -280,6 +280,7 @@ class BottomUpWingMassModel:
     load_factor_ultimate: Any = 4.5
     load_factor_jump: Any = 2.0
     smoothing: Any = 0.0
+    thickness_shape: Any = None       # plan 062: section thickness / maximum at a chord fraction; None: NACA 4-digit
 
     def masses(self, wing, condition):
         return wing_box.size_wing_box(
@@ -290,7 +291,8 @@ class BottomUpWingMassModel:
             frequency_torsion_per_rev=self.frequency_torsion_per_rev, frequency_beam_per_rev=self.frequency_beam_per_rev,
             frequency_chord_per_rev=self.frequency_chord_per_rev, width_attachment_m=self.width_fuselage_m,
             material=self.material, layout=self.layout, load_factor_ultimate=self.load_factor_ultimate,
-            load_factor_jump=self.load_factor_jump, count_rotors=self.count_rotors, smoothing=self.smoothing)
+            load_factor_jump=self.load_factor_jump, count_rotors=self.count_rotors, smoothing=self.smoothing,
+            thickness_shape=self.thickness_shape)
 
     def mass_kg(self, wing, condition):
         return self.masses(wing, condition).total()

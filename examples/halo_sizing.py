@@ -34,6 +34,7 @@ listed in plan 013. Illustrative study, not Archer data.
 """
 import time
 from dataclasses import dataclass, field, fields, replace
+from functools import partial
 from typing import Any
 
 import aerosandbox as asb
@@ -48,7 +49,8 @@ from aircraft_closure.aerodynamics.buildup import BuildupAerodynamics
 from aircraft_closure.aerodynamics.scholz import ScholzAerodynamics
 from aircraft_closure.aerodynamics.simple import SimpleAerodynamics
 from aircraft_closure.aerodynamics.slipstream import BlownWing
-from aircraft_closure.aerodynamics.wing_section import SectionClMaxSurrogate, WingSectionFamily
+from aircraft_closure.aerodynamics.wing_section import (SectionClMaxSurrogate, WingSectionFamily, section_airfoil,
+                                                       section_camber, section_thickness_shape)
 from aircraft_closure.controls.stability import DirectionalStability, LongitudinalStability
 from aircraft_closure.aeroelasticity.whirl_flutter import (Eigenpair, eigenpair_residual, flutter_speed,
                                                            least_damped_eigenpairs, state_labels,
@@ -311,6 +313,9 @@ class HaloAssumptions:
     # Plan 054: root bending peak over beam theory for the distributed covers; CalculiX on the sized layout gives 0.97
     # (the plan 043 factor 1.33 was fitted on the AFDD wing with discrete cap pads).
     factor_peak_strain_wing_box: float = 1.0
+    # Plan 062: effective beam stiffness of the bottom-up box over its beam-theory value (CalculiX free-free over
+    # bottom-up beam frequency, squared: 0.94^2 = 0.886 on the free wing); 1.0: beam theory.
+    factor_stiffness_beam_wing_box: float = 1.0
     # XV-15 symmetric wing modes in per rev of its airplane-mode rotor speed (torsion 1.09, beam 0.43, chord 0.83).
     frequency_torsion_wing_per_rev: float = Xv15Reference().frequency_torsion_wing_per_rev
     frequency_beam_wing_per_rev: float = Xv15Reference().frequency_beam_wing_per_rev
@@ -402,6 +407,9 @@ class HaloAssumptions:
     # coordinate airfoil, whatever `thickness_to_chord_wing` says (kept as a check). The free flags make thickness
     # and camber design variables ("family" only).
     wing_section_model: str = "family"
+    # Plan 062: the wing's base section, "naca2423" (the reference) or "naca64a223" (the XV-15 wing, as built for the
+    # plan 057 drag calibration). Set `camber_wing` to the base's camber (0.0133 for 64A223) to fly it as drawn.
+    wing_section_base: str = "naca2423"
     camber_wing: float = 0.02
     free_thickness_to_chord_wing: bool = False
     bounds_thickness_to_chord_wing: tuple = (0.15, 0.28)
@@ -868,9 +876,10 @@ def halo_wing_section(design, assumptions):
     if a.wing_section_model == "naca2423":
         if d.thickness_to_chord_wing is not None or d.camber_wing is not None:
             raise ValueError("A thickness or camber design variable needs wing_section_model='family'.")
-        return thickness, camber, asb.Airfoil("naca2423")
+        return thickness, camber, section_airfoil(a.wing_section_base)
     if a.wing_section_model == "family":
-        return thickness, camber, WingSectionFamily().airfoil(thickness, camber)
+        family = WingSectionFamily(base_name=a.wing_section_base, camber_base=section_camber(a.wing_section_base))
+        return thickness, camber, family.airfoil(thickness, camber)
     raise ValueError(f"Unknown wing section model '{a.wing_section_model}'.")
 
 
@@ -1047,9 +1056,9 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
         if a.ratio_depth_spar_cap is not None:
             ratio_depth_spar_cap = a.ratio_depth_spar_cap
         else:
-            section = WingSectionFamily()
-            depths = asb.Airfoil(section.base_name).local_thickness(np.array([a.fraction_chord_front_spar,
-                                                                              a.fraction_chord_rear_spar]))
+            section = WingSectionFamily(base_name=a.wing_section_base)
+            depths = section_airfoil(section.base_name).local_thickness(np.array([a.fraction_chord_front_spar,
+                                                                                  a.fraction_chord_rear_spar]))
             ratio_depth_spar_cap = float(np.mean(depths)) / section.thickness_base
         speed_wing_design_rad_s = (d.speed_rotor_wing_design_rad_s if d.speed_rotor_wing_design_rad_s is not None
                                    else speed_rotor_design_rad_s)
@@ -1062,7 +1071,7 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                 fraction_chord_front_spar=a.fraction_chord_front_spar,
                 fraction_chord_rear_spar=a.fraction_chord_rear_spar,
                 pitch_rib_m=d.pitch_rib_wing_m if d.pitch_rib_wing_m is not None else a.pitch_rib_wing_m,
-                factor_peak_root=a.factor_peak_strain_wing_box)
+                factor_peak_root=a.factor_peak_strain_wing_box, factor_stiffness_beam=a.factor_stiffness_beam_wing_box)
             wing_mass = dict(mass_factor=1.0, mass_model=BottomUpWingMassModel(
                 mass_tip_kg=mass_tip_kg, radius_gyration_pylon_m=radius_gyration_pylon_m,
                 speed_rotor_design_rad_s=speed_wing_design_rad_s, width_fuselage_m=a.diameter_fuselage_m,
@@ -1072,7 +1081,9 @@ def build_halo_aircraft(design, requirements=HaloRequirements(), assumptions=Hal
                 frequency_chord_per_rev=a.frequency_chord_wing_per_rev,
                 thickness_to_chord=halo_wing_section(d, a)[0], material=materials_box[a.wing_material](),
                 layout=layout_box, count_rotors=a.count_rotors, load_factor_ultimate=a.load_factor_ultimate,
-                load_factor_jump=a.load_factor_jump, smoothing=a.smoothing_wing_tiltrotor))
+                load_factor_jump=a.load_factor_jump, smoothing=a.smoothing_wing_tiltrotor,
+                thickness_shape=(None if a.wing_section_base == "naca2423"
+                                 else partial(section_thickness_shape, a.wing_section_base))))
         else:
             materials = dict(graphite_epoxy=graphite_epoxy_wing_material, aluminium=aluminium_wing_material)
             wing_mass = dict(mass_factor=factors.wing_tiltrotor, mass_model=TiltrotorWingMassModel(
