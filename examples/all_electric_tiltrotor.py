@@ -30,6 +30,7 @@ from aircraft_closure.powertrain.components.converters import Inverter
 from aircraft_closure.powertrain.components.motor import Motor, rubber_machine
 from aircraft_closure.powertrain.components.propulsor import ActuatorDiskPropulsor
 from aircraft_closure.powertrain.components.protection import ProtectionUnit
+from aircraft_closure.powertrain.components.rotor import MomentumProfileRotor
 from aircraft_closure.powertrain.redundancy import degraded_state
 from aircraft_closure.powertrain.topologies import ElectricalLayer, build_all_electric
 
@@ -45,6 +46,9 @@ class NotionalAllElectricTiltrotor:
     figure_of_merit_hover: float = 0.75             # proprotor hover FM 0.7-0.8 (Johnson, Rotorcraft Aeromechanics)
     speed_tip_hover_m_s: float = 200.0              # XV-15 hover tip speed about 235 m/s; lower for noise (assumed)
     mass_per_disk_area_rotor_kg_m2: float = 3.0     # framework rubber-rotor default (topologies.SeriesHybridSizing)
+    # Plan 068: solidity of the rotor-speed model (XV-15 0.089, JVX 0.114; Johnson, Rotorcraft Aeromechanics);
+    # hover C_T/sigma 0.10 at the hover tip speed.
+    solidity_rotor: float = 0.10
     # Battery (Fredericks et al. 2018): pack 200 Wh/kg, about 5C peak (1 kW/kg), SOC window 0.10-0.95.
     energy_capacity_battery_J: float = 90.0 * 3.6e6
     specific_energy_pack_J_kg: float = 200.0 * 3600.0
@@ -79,21 +83,36 @@ def notional_propulsor(data, max_shaft_power_W=1e6):
                                  max_shaft_power_W=max_shaft_power_W)
 
 
+def notional_momentum_rotor(data, max_shaft_power_W=1e6):
+    """The rotor with rotor-speed physics (plan 068, for trajectories): `MomentumProfileRotor` with the framework's
+    JVX-calibrated polar (plan 016) on the notional disk and solidity."""
+    area_m2 = data.area_disk_m2()
+    return MomentumProfileRotor(area_disk_m2=area_m2, solidity=data.solidity_rotor,
+                                mass_kg=data.mass_per_disk_area_rotor_kg_m2 * area_m2,
+                                max_shaft_power_W=max_shaft_power_W)
+
+
 def power_shaft_hover_rotor_W(data, atmosphere=None):
     """Actuator-disk hover shaft power per rotor (closed form, no solve)."""
     atmosphere = atmosphere or asb.Atmosphere(altitude=0.0)
     return notional_propulsor(data).evaluate(0.0, atmosphere, thrust_N=data.thrust_hover_rotor_N()).shaft_power_W
 
 
-def build_notional_all_electric_tiltrotor(count_channels_per_rotor=3, data=None):
-    """The notional aircraft's topology, each channel rated for its rotor's hover power with one channel out."""
+def build_notional_all_electric_tiltrotor(count_channels_per_rotor=3, data=None, rotor_model="actuator_disk"):
+    """The notional aircraft's topology, each channel rated for its rotor's hover power with one channel out.
+
+    `rotor_model`: "actuator_disk" (plan 066) or "momentum_profile" (plan 068: `MomentumProfileRotor`, the rotor the
+    trajectory model needs); the channel ratings come from the actuator-disk hover power either way."""
+    if rotor_model not in ("actuator_disk", "momentum_profile"):
+        raise ValueError(f"Unknown rotor_model '{rotor_model}'.")
     if count_channels_per_rotor < 2:
         raise ValueError("One channel out needs at least two channels per rotor.")
     data = data or NotionalAllElectricTiltrotor()
     power_rotor_W = power_shaft_hover_rotor_W(data)
     power_rated_channel_W = power_rotor_W / (count_channels_per_rotor - 1)
     # The rotor (drive) is rated to all its channels together, as the series hybrid rates the rotor to its gearbox.
-    propulsor = notional_propulsor(data, count_channels_per_rotor * power_rated_channel_W)
+    rotor_builder = notional_propulsor if rotor_model == "actuator_disk" else notional_momentum_rotor
+    propulsor = rotor_builder(data, count_channels_per_rotor * power_rated_channel_W)
     speed_rad_s = data.speed_rotor_hover_rad_s()
     # McDonald machine about the hover point: rated power 1.25 x the peak-efficiency point, 1.5 x speed margin.
     motor = rubber_machine(Motor, speed_rad_s, power_rated_channel_W / (1.25 * speed_rad_s),

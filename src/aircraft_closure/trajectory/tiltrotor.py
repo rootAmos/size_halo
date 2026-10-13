@@ -36,6 +36,10 @@ Approximations (plan 019):
   dv_k/dt = (I R_k(s) - v_k) / tau_k, starting from rest, and evaluates the battery instantaneously at
   each node (V = OCV - I R0 - sum v_k), so the sag builds up and recovers in time. Node spacing below about
   tau_1 / 2 (4 s) keeps the trapezoidal error under 1 %.
+* Battery only (plan 068): a topology without a `generator` instance (e.g. `build_all_electric`) is supplied by
+  the battery alone; generator torque, turboshaft power and fuel flow are identically zero and the mass is
+  constant. Without a `gearbox` instance the motors drive the rotor directly (ratio 1, no loss). Feeder losses
+  (inverter, cable, protection) are not in the trajectory power chain, as for the series hybrid.
 """
 from dataclasses import dataclass, replace
 from typing import Any
@@ -97,7 +101,8 @@ class TiltrotorForces:
 
 @dataclass(frozen=True)
 class PowerSupply:
-    """Bus supply at each node: battery plus the active turbogenerators."""
+    """Bus supply at each node: battery plus the active turbogenerators (`generator` and `engine` None, the
+    generator and turboshaft quantities zero, for a battery-only topology; plan 068)."""
     battery: Any
     generator: Any
     engine: Any
@@ -109,10 +114,11 @@ class PowerSupply:
 
 @dataclass(frozen=True)
 class TiltrotorPointMass:
-    """Equation-only force and power model of a sized series-hybrid tiltrotor.
+    """Equation-only force and power model of a sized tiltrotor.
 
-    `aircraft` is a numeric `Aircraft` whose powertrain is the series-hybrid reference topology with a
-    `MomentumProfileRotor` propulsor; `aerodynamics` is a `SimpleAerodynamics`-like model.
+    `aircraft` is a numeric `Aircraft` whose powertrain is the series-hybrid reference topology or, battery only
+    (plan 068), a topology without generators such as `build_all_electric`, with a `MomentumProfileRotor`
+    propulsor; `aerodynamics` is a `SimpleAerodynamics`-like model.
     """
     aircraft: Any
     aerodynamics: Any
@@ -129,6 +135,13 @@ class TiltrotorPointMass:
     def count(self, name):
         return self.aircraft.powertrain.topology.instances[name].count
 
+    def has_instance(self, name):
+        return name in self.aircraft.powertrain.topology.instances
+
+    def is_battery_only(self):
+        """No turbogenerator in the topology (plan 068): the battery alone supplies the bus."""
+        return not self.has_instance("generator")
+
     def velocity_stall_m_s(self, mass_kg, altitude_m=0.0):
         """Airplane-mode (wing-borne) stall speed at the aerodynamics model's CLmax."""
         density_kg_m3 = asb.Atmosphere(altitude=altitude_m).density()
@@ -138,7 +151,10 @@ class TiltrotorPointMass:
     def evaluate(self, velocity_m_s, altitude_m, alpha_deg, tilt_deg, *, thrust_per_rotor_N, speed_rotor_rad_s,
                  voltage_bus_V=None):
         rotor_base = self.instance("propulsor")
-        gearbox = self.instance("gearbox")
+        # Plan 068: without a gearbox the motors drive the rotor shaft directly (ratio 1, no loss).
+        reduction_ratio, efficiency_gearbox = ((self.instance("gearbox").reduction_ratio,
+                                                self.instance("gearbox").efficiency)
+                                               if self.has_instance("gearbox") else (1.0, 1.0))
         motor = self.instance("motor")
         count_rotors = self.count("propulsor")
         atmosphere = asb.Atmosphere(altitude=altitude_m)
@@ -177,10 +193,10 @@ class TiltrotorPointMass:
         force_z_wind_N = -(thrust_net_N * np.sind(angle_thrust_velocity_deg) + lift_N)
 
         # Drive chain: gearbox loss on torque (as the flight point), motor losses from its own model.
-        speed_motor_rad_s = gearbox.reduction_ratio * speed_rotor_rad_s
+        speed_motor_rad_s = reduction_ratio * speed_rotor_rad_s
         # Tier 18: a rotor's lane motors share its gearbox input torque equally.
         lanes = self.count("motor") / count_rotors
-        torque_motor_Nm = rotor.shaft_power_W / (gearbox.efficiency * speed_motor_rad_s) / lanes
+        torque_motor_Nm = rotor.shaft_power_W / (efficiency_gearbox * speed_motor_rad_s) / lanes
         if voltage_bus_V is None:
             battery = self.instance("battery")
             voltage_bus_V = (battery.voltage_open_circuit_V(battery.max_soc)
@@ -196,8 +212,16 @@ class TiltrotorPointMass:
 
     def evaluate_supply(self, altitude_m, *, current_battery_A, torque_generator_Nm, soc, voltage_rc_V=None):
         """Battery and turbogenerators (all active, equal shares) feeding the bus. `voltage_rc_V`: RC branch
-        voltages at each node (plan 060), the battery then evaluated instantaneously; None: steady polarization."""
+        voltages at each node (plan 060), the battery then evaluated instantaneously; None: steady polarization.
+        Battery only (plan 068): `torque_generator_Nm` is ignored and the battery alone feeds the bus."""
         battery_model = self.instance("battery")
+        if self.is_battery_only():
+            battery = (battery_model.evaluate(current_battery_A, soc) if voltage_rc_V is None
+                       else battery_model.evaluate(current_battery_A, soc, 0.0, voltage_rc_V))
+            zero = 0 * current_battery_A
+            return PowerSupply(battery=battery, generator=None, engine=None, power_shaft_generator_W=zero,
+                               power_available_turboshaft_W=zero, power_bus_W=battery.power_electric_W,
+                               fuel_flow_kg_s=zero)
         generator_model = self.instance("generator")
         turboshaft = self.instance("turboshaft")
         count_generators = self.count("generator")
@@ -310,11 +334,10 @@ def _thermal_states(opti, model, forces, supply, altitude_m, velocity_m_s, time_
     With the ε-NTU cooler (plan 049) see `_ntu_cooling`.
     `temperature_start_C`: dict by instance name; None starts at the coolant temperature (a cold start)."""
     instances = model.aircraft.powertrain.topology.instances
-    losses = {
-        "motor": forces.power_electric_motors_W / model.count("motor") - forces.power_shaft_motor_W,
-        "generator": supply.generator.power_shaft_W - supply.generator.power_electric_W,
-        "battery": supply.battery.power_loss_W,
-    }
+    losses = {"motor": forces.power_electric_motors_W / model.count("motor") - forces.power_shaft_motor_W}
+    if supply.generator is not None:                     # plan 068: no generator in a battery-only topology
+        losses["generator"] = supply.generator.power_shaft_W - supply.generator.power_electric_W
+    losses["battery"] = supply.battery.power_loss_W
     temperatures, constraints, heat_W = {}, [], 0.0
     for name, loss_W in losses.items():
         component = instances[name].component
@@ -412,6 +435,9 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
     and speed per rotor, battery current and generator torque. The final time is a variable within
     `duration_bounds_s`. Boundary conditions and the objective belong to the caller.
 
+    Battery only (plan 068, a topology without generators): no generator torque variable (`torque_generator_Nm`
+    is zeros), no turboshaft or generator constraints, zero fuel flow (mass constant).
+
     `battery_dynamics` "continuous" (plan 060, equivalent-circuit battery only) adds the RC branch voltages as
     states from `voltage_rc_start_V` (None: rest); "quasi_steady" holds them at their steady values.
     """
@@ -428,7 +454,8 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
     count_rotors = model.count("propulsor")
     rotor = model.instance("propulsor")
     motor = model.instance("motor")
-    generator_model = model.instance("generator")
+    battery_only = model.is_battery_only()
+    generator_model = None if battery_only else model.instance("generator")
     battery_model = model.instance("battery")
     scale_power_W = count_rotors * motor.power_rated_W
 
@@ -448,7 +475,8 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
     thrust_per_rotor_N = opti.variable(init_guess=g(guess.thrust_per_rotor_N), scale=1e4, lower_bound=0.0)
     speed_rotor_rad_s = opti.variable(init_guess=g(guess.speed_rotor_rad_s), scale=50.0, lower_bound=10.0)
     current_battery_A = opti.variable(init_guess=g(guess.current_battery_A), scale=300.0)
-    torque_generator_Nm = opti.variable(init_guess=g(guess.torque_generator_Nm), scale=1000.0, lower_bound=0.0)
+    torque_generator_Nm = (np.zeros(n) if battery_only else
+                           opti.variable(init_guess=g(guess.torque_generator_Nm), scale=1000.0, lower_bound=0.0))
     # Nacelle rate per interval (n - 1 values): an exact bound on the piecewise-linear tilt history. (A
     # trapezoidal `derivative_of` variable only bounds the mean of adjacent node rates, which lets them
     # alternate.)
@@ -514,11 +542,15 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
                              pitch_rate_deg_s >= -limits.pitch_rate_max_deg_s]
     corridor_constraints = [] if corridor is None else [
         velocity_m_s >= corridor.velocity_min_m_s(tilt_deg), velocity_m_s <= corridor.velocity_max_m_s(tilt_deg)]
+    # Turbogenerator sources; none in a battery-only topology (plan 068).
+    generator_constraints = [] if battery_only else [
+        supply.power_shaft_generator_W <= supply.power_available_turboshaft_W,      # turboshaft shaft power
+        torque_generator_Nm <= generator_model.max_torque_Nm,
+    ]
     opti.subject_to([
         # Bus balance and sources (normalized by the installed motor rating).
         (supply.power_bus_W - power_demand_bus_W) / scale_power_W == 0,
-        supply.power_shaft_generator_W <= supply.power_available_turboshaft_W,      # turboshaft shaft power
-        torque_generator_Nm <= generator_model.max_torque_Nm,
+    ] + generator_constraints + [
         # Rotor (Tier 12 validity and hardware bounds) and drive.
         forces.rotor.blade_loading <= rotor.blade_loading_max,
         forces.rotor.mach_tip_helical <= rotor.mach_tip_helical_max,
@@ -538,7 +570,7 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
     # sizing: short-time ratings from thermal mass).
     if motor.thermal_model is None:
         opti.subject_to(forces.power_shaft_motor_W / scale_power_W <= motor.power_rated_W / scale_power_W)
-    if generator_model.thermal_model is None:
+    if not battery_only and generator_model.thermal_model is None:
         opti.subject_to(generator_model.loss_model.speed_peak_efficiency_rad_s * torque_generator_Nm / scale_power_W
                         <= generator_model.power_rated_W / scale_power_W)
     opti.subject_to(list(thermal.constraints))
