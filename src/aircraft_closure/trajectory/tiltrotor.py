@@ -427,7 +427,7 @@ def _node_guess(value, count_nodes):
 
 def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, count_nodes, duration_bounds_s, guess,
                                limits=TrajectoryLimits(), corridor=None, temperature_start_C=None,
-                               battery_dynamics="quasi_steady", voltage_rc_start_V=None):
+                               battery_dynamics="quasi_steady", voltage_rc_start_V=None, initial_from=None):
     """Direct-collocation tiltrotor trajectory on a fixed aircraft (orchestration: creates Opti variables).
 
     States per node: x, altitude, speed, flight-path angle (AeroSandbox point mass), mass (fuel burn),
@@ -440,6 +440,9 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
 
     `battery_dynamics` "continuous" (plan 060, equivalent-circuit battery only) adds the RC branch voltages as
     states from `voltage_rc_start_V` (None: rest); "quasi_steady" holds them at their steady values.
+
+    `initial_from` (plan 069, a previous segment's `TiltrotorTrajectory` in the same `opti`): the SOC and mass start
+    from its last node instead of `soc_initial` and `mass_initial_kg`, which are then initial guesses only.
     """
     if battery_dynamics not in ("quasi_steady", "continuous"):
         raise ValueError(f"Unknown battery_dynamics '{battery_dynamics}'.")
@@ -584,7 +587,9 @@ def build_tiltrotor_trajectory(opti, model, *, mass_initial_kg, soc_initial, cou
         opti.subject_to(supply.battery.power_electric_W / scale_power_W >= 0)
     if rotor.speed_tip_max_m_s is not None:
         opti.subject_to(speed_rotor_rad_s * rotor.radius_m() <= rotor.speed_tip_max_m_s)
-    opti.subject_to([x_m[0] == 0, mass_kg[0] == mass_initial_kg, soc[0] == soc_initial, energy_bus_J[0] == 0])
+    soc_start, mass_start_kg = ((soc_initial, mass_initial_kg) if initial_from is None
+                                else (initial_from.soc[-1], initial_from.mass_kg[-1]))
+    opti.subject_to([x_m[0] == 0, mass_kg[0] == mass_start_kg, soc[0] == soc_start, energy_bus_J[0] == 0])
     return TiltrotorTrajectory(
         time_s=time_s, duration_s=duration_s, dynamics=dynamics, x_m=x_m, altitude_m=altitude_m,
         velocity_m_s=velocity_m_s, gamma_rad=gamma_rad, mass_kg=mass_kg, soc=soc, energy_bus_J=energy_bus_J,
