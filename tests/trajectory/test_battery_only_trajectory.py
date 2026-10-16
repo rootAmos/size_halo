@@ -128,6 +128,16 @@ class TransitionClimbTests(unittest.TestCase):
         self.assertAlmostEqual(r.duration_s / duration_s, 1.0, places=6)
         self.assertGreaterEqual(r.energy_electric_J, self.energy.energy_electric_J * (1 - 1e-6))
 
+    def test_objective_extra(self):
+        """An extra objective term trades the main objective: a penalty on the nacelle angle converts sooner (lower
+        mean nacelle angle) and costs energy (never less than the optimum)."""
+        r = solve_transition_climb(self.model, mass_kg=mass_kg, soc_initial=soc_initial,
+                                   altitude_final_m=altitude_final_m, velocity_final_m_s=velocity_final_m_s,
+                                   count_nodes=count_nodes,
+                                   objective_extra=lambda opti, t: np.mean(t.tilt_deg / 90))
+        self.assertLess(np.mean(r.tilt_deg), np.mean(self.energy.tilt_deg) - 0.5)
+        self.assertGreaterEqual(r.energy_electric_J, self.energy.energy_electric_J * (1 - 1e-6))
+
     def test_steady_level_power_and_rule(self):
         power_W = solve_steady_level_power(self.model, mass_kg=mass_kg, soc=soc_initial, altitude_m=altitude_final_m,
                                            velocity_m_s=velocity_final_m_s)

@@ -124,7 +124,8 @@ def default_corridor(model, mass_kg):
 def solve_transition_climb(model, *, mass_kg, soc_initial, altitude_final_m, velocity_final_m_s,
                            altitude_initial_m=0.0, duration_bounds_s=(20.0, 900.0), objective="energy",
                            corridor=None, limits=TrajectoryLimits(), count_nodes=41, velocity_hover_m_s=1.0,
-                           duration_guess_s=None, configure=None, verbose=False, max_iter=3000):
+                           duration_guess_s=None, configure=None, objective_extra=None, verbose=False,
+                           max_iter=3000):
     """Take-off -> conversion -> climb segment on a fixed aircraft (orchestration: owns its `asb.Opti`).
 
     Starts in trimmed hover (nacelles 90 deg, `velocity_hover_m_s`, the speed-gamma states need a nonzero speed)
@@ -135,6 +136,8 @@ def solve_transition_climb(model, *, mass_kg, soc_initial, altitude_final_m, vel
     `objective`: "energy" minimizes the bus electric energy, which is the battery terminal energy on a battery-only
     aircraft; "time" minimizes the duration. `corridor`: None flies `default_corridor`. `configure(opti,
     trajectory)` may add constraints (e.g. a vertical climb to an obstacle height) before the solve.
+    `objective_extra(opti, trajectory)`: an optional dimensionless term added to the objective (e.g. a slew penalty
+    that picks the smooth member of a family of near-equal optima); None adds nothing.
     Returns a `TransitionClimbResult`.
     """
     if objective not in ("energy", "time"):
@@ -169,11 +172,12 @@ def solve_transition_climb(model, *, mass_kg, soc_initial, altitude_final_m, vel
     _trimmed(opti, t, -1)
     if configure is not None:
         configure(opti, t)
+    extra = objective_extra(opti, t) if objective_extra is not None else 0.0
     if objective == "energy":
         scale_J = power_hover_W * duration_guess_s
-        opti.minimize(t.energy_bus_J[-1] / scale_J + 1e-4 * _smoothing(t))
+        opti.minimize(t.energy_bus_J[-1] / scale_J + 1e-4 * _smoothing(t) + extra)
     else:
-        opti.minimize(t.duration_s / duration_guess_s + 1e-4 * _smoothing(t))
+        opti.minimize(t.duration_s / duration_guess_s + 1e-4 * _smoothing(t) + extra)
     solution = opti.solve(verbose=verbose, max_iter=max_iter)
     return _result(objective, solution, model, t)
 
